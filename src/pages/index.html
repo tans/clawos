@@ -34,29 +34,47 @@
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <h1 class="text-lg font-semibold">控制台</h1>
-          <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" data-action="check-env">检查环境</button>
-          </div>
+          <div class="text-xs text-base-content/60">按重要性分组：先核心操作，再维护诊断</div>
         </header>
 
         <section class="flex-1 p-6">
-          <div class="grid gap-4 xl:grid-cols-2">
-            <section class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-3">
-                <h2 class="card-title text-base">openclaw 控制</h2>
-                <div class="flex flex-wrap gap-2">
-                  <button class="btn btn-primary btn-sm" data-action="update-openclaw">升级 openclaw</button>
-                  <button class="btn btn-primary btn-sm" data-action="restart-gateway">重启 openclaw</button>
-                  <button class="btn btn-primary btn-sm" data-action="restart-qw-gateway">重启企微网关</button>
-                  <button class="btn btn-outline btn-sm" data-action="open-openclaw-console">打开 openclaw 原后台</button>
+          <div class="grid gap-4 xl:grid-cols-[1.3fr_1fr]">
+            <div class="space-y-4">
+              <section class="card card-compact border border-base-200 bg-base-100">
+                <div class="card-body gap-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <h2 class="card-title text-base">核心操作</h2>
+                    <span class="badge badge-primary badge-outline">高优先级</span>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-primary btn-sm" data-action="restart-gateway">重启 openclaw</button>
+                    <button class="btn btn-primary btn-sm" data-action="restart-qw-gateway">重启企微网关</button>
+                    <button class="btn btn-warning btn-sm" data-action="update-openclaw">升级 openclaw</button>
+                  </div>
                 </div>
-                <div class="mt-2 flex flex-wrap gap-2">
-                  <button class="btn btn-outline btn-sm" data-action="gateway-status">状态</button>
-                  <button class="btn btn-outline btn-sm" data-action="gateway-start">启动</button>
-                  <button class="btn btn-outline btn-sm" data-action="gateway-stop">停止</button>
+              </section>
+
+              <section class="card card-compact border border-base-200 bg-base-100">
+                <div class="card-body gap-3">
+                  <h2 class="card-title text-base">维护诊断</h2>
+                  <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-outline btn-sm" data-action="gateway-status">状态</button>
+                    <button class="btn btn-outline btn-sm" data-action="gateway-start">启动</button>
+                    <button class="btn btn-outline btn-sm" data-action="gateway-stop">停止</button>
+                    <button class="btn btn-outline btn-sm" data-action="check-env">检查环境</button>
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
+
+              <section class="card card-compact border border-base-200 bg-base-100">
+                <div class="card-body gap-3">
+                  <h2 class="card-title text-base">快捷入口</h2>
+                  <div class="flex flex-wrap gap-2">
+                    <button class="btn btn-ghost btn-sm" data-action="open-openclaw-console">打开 openclaw 原后台</button>
+                  </div>
+                </div>
+              </section>
+            </div>
 
             <section class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-2">
