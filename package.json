@@ -1,0 +1,20 @@
+{
+  "name": "clawos",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
+    "dev": "bun run tailwind:build && bun --watch src/server.ts",
+    "build": "bun run tailwind:build && bun build src/server.ts --compile --outfile dist/clawos.exe",
+    "start": "bun run src/server.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "json5": "^2.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.16",
+    "daisyui": "^5.5.18",
+    "tailwindcss": "^4.1.16"
+  }
+}

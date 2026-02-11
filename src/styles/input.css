@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+    themes: silk --default;
+}
+
+@layer base {
+    body {
+    }
+}

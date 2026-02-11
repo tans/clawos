@@ -1,0 +1,84 @@
+import { asObject, readNonEmptyString } from "../lib/value";
+import { readLocalClawosConfig } from "../config/local";
+
+const IS_WINDOWS = process.platform === "win32";
+
+export type CommandResult = {
+  ok: boolean;
+  code: number;
+  stdout: string;
+  stderr: string;
+  command: string;
+};
+
+export async function runProcess(args: string[]): Promise<CommandResult> {
+  const proc = Bun.spawn(args, {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  const [stdout, stderr, code] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+
+  return {
+    ok: code === 0,
+    code,
+    stdout,
+    stderr,
+    command: args.join(" "),
+  };
+}
+
+export async function runWslScript(script: string): Promise<CommandResult> {
+  const localConfig = readLocalClawosConfig();
+  const wslConfig = asObject(localConfig?.wsl);
+
+  const distro =
+    process.env.CLAWOS_WSL_DISTRO?.trim() || readNonEmptyString(wslConfig?.distro);
+  const wslBin =
+    process.env.CLAWOS_WSL_BIN?.trim() || readNonEmptyString(wslConfig?.wslBin) || "wsl.exe";
+
+  const args = IS_WINDOWS
+    ? [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-lc", script]
+    : ["bash", "-lc", script];
+
+  try {
+    return await runProcess(args);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      code: -1,
+      stdout: "",
+      stderr: message,
+      command: args.join(" "),
+    };
+  }
+}
+
+export function normalizeOutput(text: string): string[] {
+  return text
+    .split(/\r?\n/g)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0);
+}
+
+export function troubleshootingTips(stderr: string): string[] {
+  const text = stderr.toLowerCase();
+  const tips: string[] = [];
+
+  if (text.includes("0x8007019e") || (text.includes("wsl") && text.includes("not"))) {
+    tips.push("检测到 WSL 异常：请在 Windows 功能中启用 WSL 并重启系统。");
+  }
+  if (text.includes("permission denied")) {
+    tips.push("检测到权限不足：请使用管理员权限启动 clawos，或检查 WSL 内文件权限。");
+  }
+  if (text.includes("command not found")) {
+    tips.push("检测到命令不存在：请确认 openclaw、pnpm、nrm 已在 WSL 内安装并可执行。");
+  }
+
+  return tips;
+}

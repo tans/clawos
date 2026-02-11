@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clawos 控制台</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
+  </head>
+  <body class="bg-base-100 text-base-content overflow-x-auto">
+    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
+      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+        <div class="flex items-center gap-2 text-sm font-semibold">
+          <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
+          clawos
+        </div>
+        <nav class="flex flex-col gap-2">
+          <a class="btn btn-primary btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/channels"><i class="fa-solid fa-comments w-4 text-center" aria-hidden="true"></i><span>通讯渠道</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/agents"><i class="fa-solid fa-brain w-4 text-center" aria-hidden="true"></i><span>大模型</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/skills"><i class="fa-solid fa-graduation-cap w-4 text-center" aria-hidden="true"></i><span>技能学习</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/browser"><i class="fa-solid fa-globe w-4 text-center" aria-hidden="true"></i><span>浏览器</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/gateway"><i class="fa-solid fa-power-off w-4 text-center" aria-hidden="true"></i><span>开机启动</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/sessions"><i class="fa-solid fa-message w-4 text-center" aria-hidden="true"></i><span>会话</span></a>
+        </nav>
+      </aside>
+
+      <main class="flex min-h-screen flex-col">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
+          <h1 class="text-lg font-semibold">控制台</h1>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-outline btn-xs" data-action="check-env">检查环境</button>
+          </div>
+        </header>
+
+        <section class="flex-1 p-6">
+          <div class="grid gap-4 xl:grid-cols-2">
+            <section class="card card-compact border border-base-200 bg-base-100">
+              <div class="card-body gap-3">
+                <h2 class="card-title text-base">网关控制</h2>
+                <div class="flex flex-wrap gap-2">
+                  <button class="btn btn-primary btn-sm" data-action="update-openclaw">升级 openclaw</button>
+                  <button class="btn btn-primary btn-sm" data-action="restart-gateway">重启 gateway</button>
+                  <button class="btn btn-primary btn-sm" data-action="restart-qw-gateway">重启企微网关</button>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <button class="btn btn-outline btn-sm" data-action="gateway-status">状态</button>
+                  <button class="btn btn-outline btn-sm" data-action="gateway-start">启动</button>
+                  <button class="btn btn-outline btn-sm" data-action="gateway-stop">停止</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="card card-compact border border-base-200 bg-base-100">
+              <div class="card-body gap-2">
+                <h2 class="card-title text-base">状态</h2>
+                <div class="rounded-lg border border-base-200 bg-base-200/20 p-3">
+                  <div class="text-xs font-medium text-base-content/70" data-status="execution">执行模式: 未知</div>
+                  <div class="mt-2 grid gap-2 text-xs">
+                    <div class="flex items-center gap-2">
+                      <span class="h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="wsl" aria-hidden="true"></span>
+                      <span data-status-label="wsl">WSL: 未知</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="openclaw" aria-hidden="true"></span>
+                      <span data-status-label="openclaw">openclaw: 未知</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <span class="h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="gateway" aria-hidden="true"></span>
+                      <span data-status-label="gateway">gateway: 未知</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <section class="mt-4 card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-3">
+              <h2 class="card-title text-base">日志</h2>
+              <div class="text-xs text-base-content/70" data-task-meta>暂无任务</div>
+              <progress class="progress progress-neutral w-full hidden" value="0" max="100" data-task-progress></progress>
+              <pre class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-task-output>等待任务执行...</pre>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const statusBadges = {
+        execution: document.querySelector('[data-status="execution"]'),
+        wslLabel: document.querySelector('[data-status-label="wsl"]'),
+        openclawLabel: document.querySelector('[data-status-label="openclaw"]'),
+        gatewayLabel: document.querySelector('[data-status-label="gateway"]'),
+        wslLight: document.querySelector('[data-status-light="wsl"]'),
+        openclawLight: document.querySelector('[data-status-light="openclaw"]'),
+        gatewayLight: document.querySelector('[data-status-light="gateway"]'),
+      };
+
+      const taskMeta = document.querySelector('[data-task-meta]');
+      const taskProgress = document.querySelector('[data-task-progress]');
+      const taskOutput = document.querySelector('[data-task-output]');
+
+      let pollTimer = null;
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      function setLight(labelEl, lightEl, label, ok) {
+        if (labelEl) {
+          labelEl.textContent = `${label}: ${ok ? "正常" : "异常"}`;
+        }
+        if (!lightEl) return;
+        lightEl.classList.remove("bg-base-300", "bg-success", "bg-error");
+        lightEl.classList.add(ok ? "bg-success" : "bg-error");
+      }
+
+      function renderEnvironmentWarnings(warnings) {
+        taskProgress.classList.add("hidden");
+        if (!Array.isArray(warnings) || warnings.length === 0) {
+          return;
+        }
+        taskMeta.textContent = `环境检查告警 ${warnings.length} 条`;
+        const lines = warnings.map((item) => `[WARN] ${item}`);
+        taskOutput.textContent = lines.join("\n");
+        taskOutput.scrollTop = taskOutput.scrollHeight;
+      }
+
+      function renderTask(task) {
+        const percent = task.totalSteps > 0 ? Math.round((task.step / task.totalSteps) * 100) : 0;
+        taskProgress.value = percent;
+        const running = task.status === "running" || task.status === "pending";
+        taskProgress.classList.toggle("hidden", !running);
+        taskMeta.textContent = `${task.title} | ${task.status} | ${task.step}/${task.totalSteps}`;
+
+        const lines = task.logs.map((item) => `[${item.timestamp}] ${item.level.toUpperCase()} ${item.message}`);
+        taskOutput.textContent = lines.join("\n") || "暂无日志";
+        taskOutput.scrollTop = taskOutput.scrollHeight;
+      }
+
+      async function pollTask(taskId) {
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+
+        const tick = async () => {
+          try {
+            const data = await api(`/api/tasks/${taskId}`);
+            const task = data.task;
+            renderTask(task);
+            if (task.status === "success" || task.status === "failed") {
+              clearInterval(pollTimer);
+              pollTimer = null;
+            }
+          } catch (error) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+            taskProgress.classList.add("hidden");
+            taskMeta.textContent = `任务轮询失败: ${error.message}`;
+          }
+        };
+
+        await tick();
+        pollTimer = setInterval(tick, 1000);
+      }
+
+      async function startTask(url, body = null) {
+        const data = await api(url, {
+          method: "POST",
+          body: body ? JSON.stringify(body) : "{}",
+        });
+
+        if (!data.taskId) {
+          throw new Error("服务端未返回任务 ID");
+        }
+
+        if (data.reused) {
+          taskMeta.textContent = "已有同类任务在执行，已切换到当前任务日志";
+        }
+
+        await pollTask(data.taskId);
+      }
+
+      async function checkEnvironment() {
+        const data = await api("/api/system/check");
+        const info = data.info || {};
+
+        if (statusBadges.execution) {
+          statusBadges.execution.textContent = `执行模式: ${info.execution || "未知"}`;
+        }
+
+        setLight(statusBadges.wslLabel, statusBadges.wslLight, "WSL", Boolean(info.wslReady));
+        setLight(statusBadges.openclawLabel, statusBadges.openclawLight, "openclaw", Boolean(info.openclawReady));
+        setLight(statusBadges.gatewayLabel, statusBadges.gatewayLight, "gateway", Boolean(info.gatewayReady));
+
+        renderEnvironmentWarnings(info.warnings);
+      }
+
+      async function runAction(action) {
+        switch (action) {
+          case "check-env":
+            await checkEnvironment();
+            return;
+          case "update-openclaw":
+            await startTask("/api/gateway/update");
+            return;
+          case "restart-gateway":
+            await startTask("/api/gateway/action", { action: "restart" });
+            return;
+          case "restart-qw-gateway":
+            await startTask("/api/gateway/action", { action: "restart-qw-gateway" });
+            return;
+          case "gateway-status":
+            await startTask("/api/gateway/action", { action: "status" });
+            return;
+          case "gateway-start":
+            await startTask("/api/gateway/action", { action: "start" });
+            return;
+          case "gateway-stop":
+            await startTask("/api/gateway/action", { action: "stop" });
+            return;
+          default:
+            throw new Error(`未知动作: ${action}`);
+        }
+      }
+
+      document.querySelectorAll("[data-action]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const action = button.getAttribute("data-action");
+          if (!action) return;
+          button.disabled = true;
+          try {
+            await runAction(action);
+          } catch (error) {
+            taskProgress.classList.add("hidden");
+            taskMeta.textContent = `操作失败: ${error.message}`;
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+
+      (async function init() {
+        try {
+          await checkEnvironment();
+        } catch (error) {
+          taskProgress.classList.add("hidden");
+          taskMeta.textContent = `初始化失败: ${error.message}`;
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clawos 会话</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
+  </head>
+  <body class="bg-base-100 text-base-content overflow-x-auto">
+    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
+      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+        <div class="flex items-center gap-2 text-sm font-semibold">
+          <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
+          clawos
+        </div>
+        <nav class="flex flex-col gap-2">
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/channels"><i class="fa-solid fa-comments w-4 text-center" aria-hidden="true"></i><span>通讯渠道</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/agents"><i class="fa-solid fa-brain w-4 text-center" aria-hidden="true"></i><span>大模型</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/skills"><i class="fa-solid fa-graduation-cap w-4 text-center" aria-hidden="true"></i><span>技能学习</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/browser"><i class="fa-solid fa-globe w-4 text-center" aria-hidden="true"></i><span>浏览器</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/gateway"><i class="fa-solid fa-power-off w-4 text-center" aria-hidden="true"></i><span>开机启动</span></a>
+          <a class="btn btn-primary btn-sm justify-start gap-2" href="/sessions"><i class="fa-solid fa-message w-4 text-center" aria-hidden="true"></i><span>会话</span></a>
+        </nav>
+      </aside>
+
+      <main class="flex min-h-screen flex-col">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
+          <h1 class="text-lg font-semibold">会话</h1>
+          <button class="btn btn-outline btn-xs" data-action="reload">刷新</button>
+        </header>
+
+        <section class="flex-1 p-6">
+          <div class="grid gap-4 lg:grid-cols-[300px_1fr]">
+            <div class="card card-compact border border-base-200 bg-base-100">
+              <div class="card-body gap-3">
+                <div class="text-xs uppercase tracking-[0.18em] text-base-content/50">所有会话</div>
+                <div class="text-xs text-base-content/70" data-list-meta>尚未加载</div>
+                <div class="flex flex-col gap-2" data-session-list></div>
+              </div>
+            </div>
+
+            <div class="card card-compact border border-base-200 bg-base-100">
+              <div class="card-body gap-3">
+                <h2 class="text-base font-semibold" data-session-title>未选择会话</h2>
+                <div class="text-xs text-base-content/70" data-detail-meta>请选择左侧会话查看历史消息</div>
+                <div class="flex flex-col gap-2" data-message-list></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const listMetaEl = document.querySelector("[data-list-meta]");
+      const sessionListEl = document.querySelector("[data-session-list]");
+      const titleEl = document.querySelector("[data-session-title]");
+      const detailMetaEl = document.querySelector("[data-detail-meta]");
+      const messageListEl = document.querySelector("[data-message-list]");
+      const reloadBtn = document.querySelector('[data-action="reload"]');
+
+      let sessions = [];
+      let activeSessionKey = null;
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      function formatTs(ts) {
+        if (!Number.isFinite(ts)) {
+          return "";
+        }
+
+        try {
+          return new Date(ts).toLocaleString("zh-CN", {
+            hour12: false,
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch {
+          return "";
+        }
+      }
+
+      function roleLabel(role) {
+        const key = String(role || "unknown").toLowerCase();
+        if (["user", "human"].includes(key)) return "用户";
+        if (["assistant", "ai", "bot", "agent"].includes(key)) return "助手";
+        if (["system"].includes(key)) return "系统";
+        return key;
+      }
+
+      function clearChildren(el) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
+        }
+      }
+
+      function renderSessionList() {
+        clearChildren(sessionListEl);
+
+        if (!Array.isArray(sessions) || sessions.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
+          empty.textContent = "暂无会话数据";
+          sessionListEl.appendChild(empty);
+          listMetaEl.textContent = "共 0 条";
+          return;
+        }
+
+        listMetaEl.textContent = `共 ${sessions.length} 条`;
+
+        sessions.forEach((session) => {
+          const btn = document.createElement("button");
+          const active = session.key === activeSessionKey;
+          btn.className = `btn btn-sm justify-between ${active ? "btn-primary" : "btn-ghost"}`;
+          btn.type = "button";
+
+          const left = document.createElement("span");
+          left.className = "text-left";
+
+          const title = document.createElement("span");
+          title.className = "block text-xs font-semibold";
+          title.textContent = session.title || session.key;
+
+          const time = document.createElement("span");
+          time.className = "text-[11px] opacity-60";
+          time.textContent = formatTs(session.updatedAtMs) || session.key;
+
+          left.appendChild(title);
+          left.appendChild(time);
+          btn.appendChild(left);
+
+          if (session.active) {
+            const dot = document.createElement("span");
+            dot.className = "h-2 w-2 rounded-full bg-neutral";
+            btn.appendChild(dot);
+          }
+
+          btn.addEventListener("click", async () => {
+            await selectSession(session.key, session.title || session.key);
+          });
+
+          sessionListEl.appendChild(btn);
+        });
+      }
+
+      function renderMessageList(history) {
+        clearChildren(messageListEl);
+
+        if (!Array.isArray(history) || history.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
+          empty.textContent = "该会话暂无历史消息";
+          messageListEl.appendChild(empty);
+          return;
+        }
+
+        history.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "rounded-lg border border-base-200 bg-base-200/40 px-3 py-2 text-xs";
+
+          const head = document.createElement("div");
+          head.className = "mb-1 flex items-center justify-between text-[11px] opacity-60";
+
+          const role = document.createElement("span");
+          role.textContent = roleLabel(item.role);
+
+          const ts = document.createElement("span");
+          ts.textContent = formatTs(item.ts) || "";
+
+          head.appendChild(role);
+          head.appendChild(ts);
+
+          const content = document.createElement("p");
+          content.className = "whitespace-pre-wrap break-words";
+          content.textContent = item.text || "";
+
+          card.appendChild(head);
+          card.appendChild(content);
+          messageListEl.appendChild(card);
+        });
+      }
+
+      async function loadSessions() {
+        const data = await api("/api/sessions?limit=200");
+        sessions = Array.isArray(data.sessions) ? data.sessions : [];
+
+        if (!sessions.find((item) => item.key === activeSessionKey)) {
+          activeSessionKey = sessions[0]?.key || null;
+        }
+
+        renderSessionList();
+
+        if (activeSessionKey) {
+          const active = sessions.find((item) => item.key === activeSessionKey);
+          await selectSession(activeSessionKey, active?.title || activeSessionKey, false);
+        } else {
+          titleEl.textContent = "未选择会话";
+          detailMetaEl.textContent = "请选择左侧会话查看历史消息";
+          renderMessageList([]);
+        }
+      }
+
+      async function selectSession(sessionKey, title, rerender = true) {
+        activeSessionKey = sessionKey;
+        titleEl.textContent = title;
+        detailMetaEl.textContent = "正在加载历史消息...";
+        if (rerender) {
+          renderSessionList();
+        }
+
+        try {
+          const data = await api(`/api/sessions/${encodeURIComponent(sessionKey)}/history?limit=300`);
+          const history = Array.isArray(data.history) ? data.history : [];
+          detailMetaEl.textContent = `会话键: ${sessionKey} | 共 ${history.length} 条`;
+          renderMessageList(history);
+        } catch (error) {
+          detailMetaEl.textContent = `加载失败: ${error.message}`;
+          renderMessageList([]);
+        }
+      }
+
+      reloadBtn.addEventListener("click", async (event) => {
+        event.currentTarget.disabled = true;
+        listMetaEl.textContent = "正在刷新...";
+        try {
+          await loadSessions();
+        } catch (error) {
+          listMetaEl.textContent = `刷新失败: ${error.message}`;
+          clearChildren(sessionListEl);
+        } finally {
+          event.currentTarget.disabled = false;
+        }
+      });
+
+      (async function init() {
+        try {
+          await loadSessions();
+        } catch (error) {
+          listMetaEl.textContent = `初始化失败: ${error.message}`;
+          clearChildren(sessionListEl);
+          titleEl.textContent = "未选择会话";
+          detailMetaEl.textContent = "请先检查 gateway 连接状态";
+          renderMessageList([]);
+        }
+      })();
+    </script>
+  </body>
+</html>

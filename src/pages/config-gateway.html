@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clawos 开机启动</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
+  </head>
+  <body class="bg-base-100 text-base-content overflow-x-auto">
+    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
+      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+        <div class="flex items-center gap-2 text-sm font-semibold">
+          <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
+          clawos
+        </div>
+        <nav class="flex flex-col gap-2">
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/channels"><i class="fa-solid fa-comments w-4 text-center" aria-hidden="true"></i><span>通讯渠道</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/agents"><i class="fa-solid fa-brain w-4 text-center" aria-hidden="true"></i><span>大模型</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/skills"><i class="fa-solid fa-graduation-cap w-4 text-center" aria-hidden="true"></i><span>技能学习</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/browser"><i class="fa-solid fa-globe w-4 text-center" aria-hidden="true"></i><span>浏览器</span></a>
+          <a class="btn btn-primary btn-sm justify-start gap-2" href="/config/gateway"><i class="fa-solid fa-power-off w-4 text-center" aria-hidden="true"></i><span>开机启动</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/sessions"><i class="fa-solid fa-message w-4 text-center" aria-hidden="true"></i><span>会话</span></a>
+        </nav>
+      </aside>
+
+      <main class="flex min-h-screen flex-col">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
+          <h1 class="text-lg font-semibold">开机启动</h1>
+        </header>
+
+        <section class="flex-1 p-6">
+          <div class="card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-2">
+              <h2 class="card-title text-base">说明</h2>
+              <p class="text-sm text-base-content/80">该页面用于管理 Windows 开机自启动，原有 gateway 配置与日志展示已移除。</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

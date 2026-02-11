@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clawos 通讯渠道</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
+  </head>
+  <body class="bg-base-100 text-base-content overflow-x-auto">
+    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
+      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+        <div class="flex items-center gap-2 text-sm font-semibold">
+          <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
+          clawos
+        </div>
+        <nav class="flex flex-col gap-2">
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
+          <a class="btn btn-primary btn-sm justify-start gap-2" href="/config/channels"><i class="fa-solid fa-comments w-4 text-center" aria-hidden="true"></i><span>通讯渠道</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/agents"><i class="fa-solid fa-brain w-4 text-center" aria-hidden="true"></i><span>大模型</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/skills"><i class="fa-solid fa-graduation-cap w-4 text-center" aria-hidden="true"></i><span>技能学习</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/browser"><i class="fa-solid fa-globe w-4 text-center" aria-hidden="true"></i><span>浏览器</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/gateway"><i class="fa-solid fa-power-off w-4 text-center" aria-hidden="true"></i><span>开机启动</span></a>
+          <a class="btn btn-ghost btn-sm justify-start gap-2" href="/sessions"><i class="fa-solid fa-message w-4 text-center" aria-hidden="true"></i><span>会话</span></a>
+        </nav>
+      </aside>
+
+      <main class="flex min-h-screen flex-col">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
+          <h1 class="text-lg font-semibold">通讯渠道</h1>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
+            <button class="btn btn-primary btn-xs" data-action="save">保存配置</button>
+          </div>
+        </header>
+
+        <section class="flex-1 p-6">
+          <div class="card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-3">
+              <div class="text-xs text-base-content/70">用于管理渠道、账号与连接状态相关配置。</div>
+              <textarea class="textarea textarea-bordered h-[60vh] w-full font-mono text-xs" data-config-input></textarea>
+              <div class="text-xs text-base-content/70" data-meta>尚未加载</div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const SECTION = "channels";
+      const metaEl = document.querySelector("[data-meta]");
+      const inputEl = document.querySelector("[data-config-input]");
+
+      function pretty(value) {
+        return JSON.stringify(value || {}, null, 2);
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      async function loadSection() {
+        const data = await api(`/api/config/${SECTION}`);
+        inputEl.value = pretty(data.data);
+        metaEl.textContent = `${SECTION} 已加载`;
+      }
+
+      async function saveSection() {
+        let parsed;
+        try {
+          parsed = JSON.parse(inputEl.value || "{}");
+        } catch (error) {
+          throw new Error(`JSON 格式错误: ${error.message}`);
+        }
+
+        await api(`/api/config/${SECTION}`, {
+          method: "PUT",
+          body: JSON.stringify({ data: parsed }),
+        });
+
+        metaEl.textContent = `${SECTION} 配置已保存`;
+      }
+
+      document.querySelector('[data-action="reload"]').addEventListener("click", async (event) => {
+        event.currentTarget.disabled = true;
+        try {
+          await loadSection();
+        } catch (error) {
+          metaEl.textContent = `加载失败: ${error.message}`;
+        } finally {
+          event.currentTarget.disabled = false;
+        }
+      });
+
+      document.querySelector('[data-action="save"]').addEventListener("click", async (event) => {
+        event.currentTarget.disabled = true;
+        try {
+          await saveSection();
+        } catch (error) {
+          metaEl.textContent = `保存失败: ${error.message}`;
+        } finally {
+          event.currentTarget.disabled = false;
+        }
+      });
+
+      (async function init() {
+        try {
+          await loadSection();
+        } catch (error) {
+          metaEl.textContent = `初始化失败: ${error.message}`;
+        }
+      })();
+    </script>
+  </body>
+</html>
