@@ -3,6 +3,7 @@ import { resolveGatewayConnectionSettings } from "../gateway/settings";
 import { callGatewayMethod } from "../gateway/sock";
 import { runWslScript, troubleshootingTips } from "../tasks/shell";
 import { gatewayTroubleshootingTips } from "../gateway/sock";
+import { checkWslCommandRequirements } from "./wsl-requirements";
 import type { GatewayHelloPayload } from "../gateway/schema";
 
 type GatewayProbe =
@@ -47,8 +48,11 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     safeGatewayProbe("channels.status", { probe: false, timeoutMs: 3000 }, 12000),
   ]);
 
+  const wslCommandProbe = wslProbe.ok ? await checkWslCommandRequirements() : null;
+
   const gatewayReady = statusProbe.ok && healthProbe.ok;
   const openclawReady = statusProbe.ok;
+  const wslReady = wslProbe.ok && (!wslCommandProbe || wslCommandProbe.ok);
 
   const openclawVersion = statusProbe.ok
     ? readNonEmptyString(statusProbe.hello.server?.version) || null
@@ -72,6 +76,14 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     warnings.push(`WSL 检测失败：${wslProbe.stderr || `退出码 ${wslProbe.code}`}`);
     warnings.push(...troubleshootingTips(wslProbe.stderr || ""));
   }
+  if (wslProbe.ok && wslCommandProbe && !wslCommandProbe.ok) {
+    if (wslCommandProbe.missing.length > 0) {
+      warnings.push(`WSL 缺少命令：${wslCommandProbe.missing.join(", ")}`);
+    }
+    if (wslCommandProbe.stderr.trim().length > 0) {
+      warnings.push(`WSL 命令检测异常：${wslCommandProbe.stderr.trim()}`);
+    }
+  }
   if (!statusProbe.ok) {
     warnings.push(`status 调用失败：${statusProbe.error}`);
     warnings.push(...statusProbe.tips);
@@ -88,7 +100,8 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   return {
     os: process.platform,
     execution: `gateway-protocol (${connection.url})`,
-    wslReady: wslProbe.ok,
+    wslReady,
+    wslCommands: wslCommandProbe?.commands || [],
     openclawReady,
     gatewayReady,
     openclawVersion,

@@ -203,7 +203,7 @@ export function startGatewayControlTask(
   };
 
   const actionNameMap: Record<typeof action, string> = {
-    restart: "重启 gateway（CLI 兼容模式）",
+    restart: "重启 openclaw（CLI 兼容模式）",
     install: "安装 gateway 自启动（CLI 兼容模式）",
     uninstall: "取消 gateway 自启动（CLI 兼容模式）",
     start: "启动 gateway（CLI 兼容模式）",

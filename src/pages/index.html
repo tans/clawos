@@ -43,11 +43,12 @@
           <div class="grid gap-4 xl:grid-cols-2">
             <section class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
-                <h2 class="card-title text-base">网关控制</h2>
+                <h2 class="card-title text-base">openclaw 控制</h2>
                 <div class="flex flex-wrap gap-2">
                   <button class="btn btn-primary btn-sm" data-action="update-openclaw">升级 openclaw</button>
-                  <button class="btn btn-primary btn-sm" data-action="restart-gateway">重启 gateway</button>
+                  <button class="btn btn-primary btn-sm" data-action="restart-gateway">重启 openclaw</button>
                   <button class="btn btn-primary btn-sm" data-action="restart-qw-gateway">重启企微网关</button>
+                  <button class="btn btn-outline btn-sm" data-action="open-openclaw-console">打开 openclaw 原后台</button>
                 </div>
                 <div class="mt-2 flex flex-wrap gap-2">
                   <button class="btn btn-outline btn-sm" data-action="gateway-status">状态</button>
@@ -111,6 +112,7 @@
       const taskOutput = document.querySelector('[data-task-output]');
 
       let pollTimer = null;
+      let openclawConsoleUrl = "http://127.0.0.1:18789";
 
       async function api(path, options = {}) {
         const res = await fetch(path, {
@@ -216,6 +218,39 @@
         renderEnvironmentWarnings(info.warnings);
       }
 
+      function normalizeOpenclawConsoleUrl(rawUrl) {
+        if (typeof rawUrl !== "string" || rawUrl.trim().length === 0) {
+          return "http://127.0.0.1:18789";
+        }
+
+        const trimmed = rawUrl.trim();
+        try {
+          const parsed = new URL(trimmed);
+          if (parsed.protocol === "ws:") {
+            parsed.protocol = "http:";
+          } else if (parsed.protocol === "wss:") {
+            parsed.protocol = "https:";
+          }
+          return parsed.toString();
+        } catch {
+          return "http://127.0.0.1:18789";
+        }
+      }
+
+      async function loadOpenclawConsoleUrl() {
+        try {
+          const data = await api("/api/local/gateway");
+          const gateway = data.gateway || {};
+          openclawConsoleUrl = normalizeOpenclawConsoleUrl(gateway.url);
+        } catch {
+          openclawConsoleUrl = "http://127.0.0.1:18789";
+        }
+      }
+
+      function openOpenclawConsole() {
+        window.open(openclawConsoleUrl, "_blank", "noopener");
+      }
+
       async function runAction(action) {
         switch (action) {
           case "check-env":
@@ -229,6 +264,9 @@
             return;
           case "restart-qw-gateway":
             await startTask("/api/gateway/action", { action: "restart-qw-gateway" });
+            return;
+          case "open-openclaw-console":
+            openOpenclawConsole();
             return;
           case "gateway-status":
             await startTask("/api/gateway/action", { action: "status" });
@@ -262,6 +300,7 @@
 
       (async function init() {
         try {
+          await loadOpenclawConsoleUrl();
           await checkEnvironment();
         } catch (error) {
           taskProgress.classList.add("hidden");
