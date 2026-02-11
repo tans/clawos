@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>clawos 开机启动</title>
+    <title>ClawOS 开机启动</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
   </head>
@@ -12,7 +12,7 @@
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
         <div class="flex items-center gap-2 text-sm font-semibold">
           <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
-          clawos
+          ClawOS
         </div>
         <nav class="flex flex-col gap-2">
           <a class="btn btn-ghost btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
@@ -32,13 +32,99 @@
 
         <section class="flex-1 p-6">
           <div class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body gap-2">
-              <h2 class="card-title text-base">说明</h2>
-              <p class="text-sm text-base-content/80">该页面用于管理 Windows 开机自启动，原有 gateway 配置与日志展示已移除。</p>
+            <div class="card-body gap-4">
+              <h2 class="card-title text-base">自动启动本软件</h2>
+              <label class="label cursor-pointer justify-start gap-3">
+                <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
+                <span class="label-text">开机后自动启动 ClawOS</span>
+              </label>
+              <div id="status-text" class="text-sm text-base-content/70">正在读取状态...</div>
+              <div class="text-xs text-base-content/60">
+                说明：会写入当前用户注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`。
+              </div>
             </div>
           </div>
         </section>
       </main>
     </div>
+
+    <script>
+      const checkbox = document.querySelector("#clawos-autostart");
+      const statusText = document.querySelector("#status-text");
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      function renderState(state) {
+        if (!checkbox || !statusText) return;
+
+        if (!state.supported) {
+          checkbox.checked = false;
+          checkbox.disabled = true;
+          statusText.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
+          return;
+        }
+
+        checkbox.disabled = false;
+        checkbox.checked = Boolean(state.enabled);
+        statusText.textContent = state.enabled
+          ? "已启用：开机后会自动启动 ClawOS。"
+          : "未启用：开机后不会自动启动 ClawOS。";
+      }
+
+      async function loadState() {
+        if (!checkbox || !statusText) return;
+        checkbox.disabled = true;
+        statusText.textContent = "正在读取状态...";
+        const data = await api("/api/system/autostart/clawos");
+        renderState(data.state || {});
+      }
+
+      async function saveState(enabled) {
+        if (!checkbox || !statusText) return;
+        checkbox.disabled = true;
+        statusText.textContent = "正在保存...";
+        const data = await api("/api/system/autostart/clawos", {
+          method: "PUT",
+          body: JSON.stringify({ enabled: Boolean(enabled) }),
+        });
+        renderState(data.state || {});
+      }
+
+      if (checkbox) {
+        checkbox.addEventListener("change", async () => {
+          const nextValue = checkbox.checked;
+          try {
+            await saveState(nextValue);
+          } catch (error) {
+            checkbox.checked = !nextValue;
+            checkbox.disabled = false;
+            if (statusText) {
+              statusText.textContent = `保存失败: ${error.message}`;
+            }
+          }
+        });
+      }
+
+      (async function init() {
+        try {
+          await loadState();
+        } catch (error) {
+          if (checkbox) checkbox.disabled = false;
+          if (statusText) {
+            statusText.textContent = `初始化失败: ${error.message}`;
+          }
+        }
+      })();
+    </script>
   </body>
 </html>

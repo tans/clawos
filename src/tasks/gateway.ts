@@ -120,7 +120,7 @@ export function startGatewayUpdateTask(): { task: Task; reused: boolean } {
         "执行 update.run",
         "update.run",
         {
-          note: "clawos 控制台触发更新",
+          note: "ClawOS 控制台触发更新",
           timeoutMs: 20 * 60_000,
           restartDelayMs: 0,
         },

@@ -74,7 +74,7 @@ export function troubleshootingTips(stderr: string): string[] {
     tips.push("检测到 WSL 异常：请在 Windows 功能中启用 WSL 并重启系统。");
   }
   if (text.includes("permission denied")) {
-    tips.push("检测到权限不足：请使用管理员权限启动 clawos，或检查 WSL 内文件权限。");
+    tips.push("检测到权限不足：请使用管理员权限启动 ClawOS，或检查 WSL 内文件权限。");
   }
   if (text.includes("command not found")) {
     tips.push("检测到命令不存在：请确认 openclaw、pnpm、nrm 已在 WSL 内安装并可执行。");

@@ -62,13 +62,13 @@ function buildConnectParams(settings: GatewayConnectionSettings): Record<string,
       version: VERSION,
       platform: process.platform,
       mode: "cli",
-      displayName: "clawos",
-      instanceId: `clawos-${Date.now().toString(36)}`,
+      displayName: "ClawOS",
+      instanceId: `ClawOS-${Date.now().toString(36)}`,
     },
     role: "operator",
     scopes: ["operator.admin", "operator.approvals", "operator.pairing"],
     locale: "zh-CN",
-    userAgent: `clawos/${VERSION}`,
+    userAgent: `ClawOS/${VERSION}`,
   };
 
   if (Object.keys(auth).length > 0) {
@@ -358,9 +358,9 @@ export function gatewayTroubleshootingTips(rawMessage: string): string[] {
       "网关 Origin 校验未通过：请在 openclaw 配置中设置 gateway.controlUi.allowedOrigins，至少包含 http://127.0.0.1:8080 和 http://localhost:8080。"
     );
     tips.push(
-      "可在 clawos 中设置 CLAWOS_GATEWAY_ORIGIN 或 clawos.json 的 gateway.origin，强制 WebSocket 握手使用指定 Origin。"
+      "可在 ClawOS 中设置 CLAWOS_GATEWAY_ORIGIN 或 clawos.json 的 gateway.origin，强制 WebSocket 握手使用指定 Origin。"
     );
-    tips.push("修改后执行 openclaw gateway restart，再回到 clawos 点击“检查环境”。");
+    tips.push("修改后执行 openclaw gateway restart，再回到 ClawOS 点击“检查环境”。");
   }
   if (text.includes("invalid request") || text.includes("not supported") || text.includes("not found")) {
     tips.push("方法调用失败：请确认当前 openclaw 版本支持该 Gateway Protocol 方法。");

@@ -42,9 +42,9 @@ try {
   });
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  console.error(`clawos 启动失败：${message}`);
+  console.error(`ClawOS 启动失败：${message}`);
   console.error("请检查 8080 端口是否被占用，或使用管理员权限重试。");
   process.exit(1);
 }
 
-console.log(`clawos listening on http://localhost:${server.port}`);
+console.log(`ClawOS listening on http://localhost:${server.port}`);

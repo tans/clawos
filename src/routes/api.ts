@@ -8,6 +8,7 @@ import { ALLOWED_CONFIG_SECTIONS, applyOpenclawConfig, readOpenclawConfig } from
 import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
+import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
 import { checkEnvironment } from "../system/environment";
 import {
   startGatewayControlTask,
@@ -56,6 +57,14 @@ async function parseJsonBody(req: Request): Promise<Record<string, unknown>> {
   return ensureObjectData(body);
 }
 
+function readRequiredBoolean(body: Record<string, unknown>, field: string): boolean {
+  const value = body[field];
+  if (typeof value !== "boolean") {
+    throw new HttpError(400, `${field} 必须是 boolean。`);
+  }
+  return value;
+}
+
 function parseLocalGatewayBody(body: Record<string, unknown>): Partial<LocalGatewayConnectionConfig> {
   const fields = ["url", "token", "password", "origin"] as const;
   const patch: Partial<LocalGatewayConnectionConfig> = {};
@@ -78,7 +87,7 @@ function parseLocalGatewayBody(body: Record<string, unknown>): Partial<LocalGate
 async function saveConfigSection(section: string, data: Record<string, unknown>): Promise<void> {
   const config = await readOpenclawConfig();
   config[section] = data;
-  await applyOpenclawConfig(config, `clawos 保存 ${section} 配置`);
+  await applyOpenclawConfig(config, `ClawOS 保存 ${section} 配置`);
 }
 
 async function handleConfigSectionSave(req: Request): Promise<Response> {
@@ -134,6 +143,18 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   if (path === "/api/system/check" && req.method === "GET") {
     const info = await checkEnvironment();
     return jsonResponse({ ok: true, info });
+  }
+
+  if (path === "/api/system/autostart/clawos" && req.method === "GET") {
+    const state = await getClawosAutoStartState();
+    return jsonResponse({ ok: true, state });
+  }
+
+  if (path === "/api/system/autostart/clawos" && req.method === "PUT") {
+    const body = await parseJsonBody(req);
+    const enabled = readRequiredBoolean(body, "enabled");
+    const state = await setClawosAutoStartEnabled(enabled);
+    return jsonResponse({ ok: true, state });
   }
 
   if (path === "/api/config" && req.method === "GET") {
