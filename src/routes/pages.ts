@@ -5,6 +5,7 @@ import configAgentsHtml from "../pages/config-agents.html" with { type: "text" }
 import configSkillsHtml from "../pages/config-skills.html" with { type: "text" };
 import configBrowserHtml from "../pages/config-browser.html" with { type: "text" };
 import configGatewayHtml from "../pages/config-gateway.html" with { type: "text" };
+import sidebarUpdateJs from "../pages/sidebar-update.js" with { type: "text" };
 import cssContent from "../../dist/output.css" with { type: "text" };
 
 const PAGES: Record<string, string> = {
@@ -28,6 +29,12 @@ export function handlePageRequest(path: string): Response | null {
   if (path === "/styles.css") {
     return new Response(cssContent, {
       headers: { "content-type": "text/css; charset=utf-8" },
+    });
+  }
+
+  if (path === "/sidebar-update.js") {
+    return new Response(sidebarUpdateJs, {
+      headers: { "content-type": "application/javascript; charset=utf-8" },
     });
   }
 

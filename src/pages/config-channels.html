@@ -23,6 +23,12 @@
           <a class="btn btn-ghost btn-sm justify-start gap-2" href="/config/gateway"><i class="fa-solid fa-power-off w-4 text-center" aria-hidden="true"></i><span>开机启动</span></a>
           <a class="btn btn-ghost btn-sm justify-start gap-2" href="/sessions"><i class="fa-solid fa-message w-4 text-center" aria-hidden="true"></i><span>会话</span></a>
         </nav>
+
+        <div class="mt-auto border-t border-base-200 pt-3" data-app-update-widget>
+          <div class="text-xs text-base-content/70">版本：<span data-app-version>v-</span></div>
+          <button class="btn btn-primary btn-xs mt-2 hidden w-full" type="button" data-app-update-button>更新</button>
+          <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
+        </div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
@@ -45,6 +51,8 @@
         </section>
       </main>
     </div>
+
+    <script src="/sidebar-update.js"></script>
 
     <script>
       const SECTION = "channels";

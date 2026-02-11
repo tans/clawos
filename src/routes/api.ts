@@ -9,6 +9,7 @@ import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
+import { getSelfUpdateStatus } from "../system/self-update";
 import { checkEnvironment } from "../system/environment";
 import {
   startGatewayControlTask,
@@ -16,6 +17,7 @@ import {
   startGatewayUpdateTask,
   startQwGatewayRestartTask,
 } from "../tasks/gateway";
+import { startSelfUpdateTask } from "../tasks/self-update";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 
 function sanitizeIdentifier(value: unknown, field: string): string {
@@ -155,6 +157,18 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     const enabled = readRequiredBoolean(body, "enabled");
     const state = await setClawosAutoStartEnabled(enabled);
     return jsonResponse({ ok: true, state });
+  }
+
+  if (path === "/api/app/update/status" && req.method === "GET") {
+    const status = await getSelfUpdateStatus(false);
+    return jsonResponse({ ok: true, status });
+  }
+
+  if (path === "/api/app/update/run" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const force = body.force === true;
+    const { task, reused } = startSelfUpdateTask(force ? "force" : "manual");
+    return jsonResponse({ ok: true, taskId: task.id, task, reused });
   }
 
   if (path === "/api/config" && req.method === "GET") {
