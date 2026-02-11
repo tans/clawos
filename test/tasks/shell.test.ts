@@ -9,7 +9,7 @@ describe("runWslScript shell mode", () => {
       wslBin: "wsl.exe",
     });
 
-    expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-ic", "openclaw --version"]);
+    expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-lic", "openclaw --version"]);
   });
 
   it("uses non-interactive bash in non-windows path", () => {
