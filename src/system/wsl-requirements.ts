@@ -17,6 +17,7 @@ export type WslCommandCheckResult = {
   missing: string[];
   code: number;
   stderr: string;
+  command: string;
 };
 
 type WslRunner = (script: string) => Promise<CommandResult>;
@@ -96,5 +97,6 @@ export async function checkWslCommandRequirements(
     missing,
     code: result.code,
     stderr: result.stderr,
+    command: result.command,
   };
 }

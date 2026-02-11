@@ -74,12 +74,14 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const warnings: string[] = [];
   if (!wslProbe.ok) {
     warnings.push(`WSL 检测失败：${wslProbe.stderr || `退出码 ${wslProbe.code}`}`);
+    warnings.push(`WSL 执行命令：${wslProbe.command}`);
     warnings.push(...troubleshootingTips(wslProbe.stderr || ""));
   }
   if (wslProbe.ok && wslCommandProbe && !wslCommandProbe.ok) {
     if (wslCommandProbe.missing.length > 0) {
       warnings.push(`WSL 缺少命令：${wslCommandProbe.missing.join(", ")}`);
     }
+    warnings.push(`WSL 命令探测执行：${wslCommandProbe.command}`);
     if (wslCommandProbe.stderr.trim().length > 0) {
       warnings.push(`WSL 命令检测异常：${wslCommandProbe.stderr.trim()}`);
     }

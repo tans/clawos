@@ -12,6 +12,20 @@ export type CommandResult = {
   command: string;
 };
 
+function formatProcessCommand(args: string[]): string {
+  return args
+    .map((arg) => {
+      if (arg.length === 0) {
+        return '""';
+      }
+      if (/[\s"'\\]/.test(arg)) {
+        return JSON.stringify(arg);
+      }
+      return arg;
+    })
+    .join(" ");
+}
+
 export function buildWslProcessArgs(
   script: string,
   options: { isWindows: boolean; distro?: string; wslBin?: string }
@@ -93,7 +107,7 @@ export async function runProcess(args: string[]): Promise<CommandResult> {
     code,
     stdout,
     stderr,
-    command: args.join(" "),
+    command: formatProcessCommand(args),
   };
 }
 
@@ -122,7 +136,7 @@ export async function runWslScript(script: string): Promise<CommandResult> {
       code: -1,
       stdout: "",
       stderr: message,
-      command: args.join(" "),
+      command: formatProcessCommand(args),
     };
   }
 }
