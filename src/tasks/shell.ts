@@ -11,6 +11,19 @@ export type CommandResult = {
   command: string;
 };
 
+export function buildWslProcessArgs(
+  script: string,
+  options: { isWindows: boolean; distro?: string; wslBin?: string }
+): string[] {
+  if (!options.isWindows) {
+    return ["bash", "-lc", script];
+  }
+
+  const wslBin = options.wslBin?.trim() || "wsl.exe";
+  const distro = options.distro?.trim();
+  return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-ic", script];
+}
+
 export async function runProcess(args: string[]): Promise<CommandResult> {
   const proc = Bun.spawn(args, {
     stdout: "pipe",
@@ -41,9 +54,11 @@ export async function runWslScript(script: string): Promise<CommandResult> {
   const wslBin =
     process.env.CLAWOS_WSL_BIN?.trim() || readNonEmptyString(wslConfig?.wslBin) || "wsl.exe";
 
-  const args = IS_WINDOWS
-    ? [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-lc", script]
-    : ["bash", "-lc", script];
+  const args = buildWslProcessArgs(script, {
+    isWindows: IS_WINDOWS,
+    distro,
+    wslBin,
+  });
 
   try {
     return await runProcess(args);
@@ -78,6 +93,7 @@ export function troubleshootingTips(stderr: string): string[] {
   }
   if (text.includes("command not found")) {
     tips.push("检测到命令不存在：请确认 openclaw、pnpm、nrm 已在 WSL 内安装并可执行。");
+    tips.push("若命令仅在 .bashrc 中加载，请确保通过 `wsl -d <distro> -- bash -ic \"<command>\"` 执行。");
   }
 
   return tips;
