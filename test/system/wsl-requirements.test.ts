@@ -24,10 +24,8 @@ describe("wsl command requirements", () => {
 
   it("builds probe script with all required commands", () => {
     const script = buildWslCommandProbeScript();
-    expect(script).toContain("cmd='openclaw'");
-    expect(script).toContain("cmd='git'");
-    expect(script).toContain("cmd='pnpm'");
-    expect(script).toContain("cmd='nrm'");
+    expect(script).toContain("for cmd in 'openclaw' 'git' 'pnpm' 'nrm'; do");
+    expect(script).toContain('path="$(command -v "$cmd" 2>/dev/null | head -n 1)"');
     expect(script).toContain("command -v \"$cmd\"");
   });
 

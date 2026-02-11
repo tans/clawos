@@ -5,6 +5,7 @@ import type { GatewayCallResult } from "../gateway/schema";
 import { runTask, type Step } from "./runner";
 import { normalizeOutput, runProcess } from "./shell";
 import { existsSync } from "node:fs";
+import path from "node:path";
 
 const IS_WINDOWS = process.platform === "win32";
 export const DEFAULT_QWCLI_EXE_PATH = "c:\\xiake\\qwcli\\cli.exe";
@@ -21,11 +22,15 @@ export function resolveQwcliExePath(): string {
   return DEFAULT_QWCLI_EXE_PATH;
 }
 
-export function buildQwGatewayStartCommand(exePath: string): string {
-  return `Start-Process -FilePath '${escapePowerShellSingleQuoted(exePath)}'`;
+export function resolveQwcliWorkingDirectory(exePath: string): string {
+  return path.win32.dirname(exePath);
 }
 
-export function buildQwGatewayStartArgs(exePath: string): string[] {
+export function buildQwGatewayStartCommand(exePath: string, workingDirectory: string): string {
+  return `Start-Process -FilePath '${escapePowerShellSingleQuoted(exePath)}' -WorkingDirectory '${escapePowerShellSingleQuoted(workingDirectory)}'`;
+}
+
+export function buildQwGatewayStartArgs(exePath: string, workingDirectory: string): string[] {
   return [
     "powershell.exe",
     "-NoProfile",
@@ -33,7 +38,7 @@ export function buildQwGatewayStartArgs(exePath: string): string[] {
     "-ExecutionPolicy",
     "Bypass",
     "-Command",
-    buildQwGatewayStartCommand(exePath),
+    buildQwGatewayStartCommand(exePath, workingDirectory),
   ];
 }
 
@@ -275,6 +280,7 @@ export function startQwGatewayRestartTask(): { task: Task; reused: boolean } {
           `企微网关可执行文件不存在：${qwcliExePath}。请检查路径是否拼写正确，或通过 CLAWOS_QWCLI_EXE_PATH 指定正确路径。`
         );
       }
+      const qwcliWorkingDirectory = resolveQwcliWorkingDirectory(qwcliExePath);
 
       const steps: Array<{ name: string; command: string; args: string[]; allowExitCodes?: number[] }> = [
         {
@@ -285,8 +291,8 @@ export function startQwGatewayRestartTask(): { task: Task; reused: boolean } {
         },
         {
           name: "启动企微网关进程",
-          command: `powershell.exe ... ${buildQwGatewayStartCommand(qwcliExePath)}`,
-          args: buildQwGatewayStartArgs(qwcliExePath),
+          command: `powershell.exe ... ${buildQwGatewayStartCommand(qwcliExePath, qwcliWorkingDirectory)}`,
+          args: buildQwGatewayStartArgs(qwcliExePath, qwcliWorkingDirectory),
         },
       ];
 

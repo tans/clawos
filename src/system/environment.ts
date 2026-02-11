@@ -38,6 +38,24 @@ async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 100
   }
 }
 
+function simplifyWslCommandForDisplay(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  const distroMatch = trimmed.match(/\bwsl(?:\.exe)?\b(?:\s+-d\s+([^\s]+))?/i);
+  const distro = distroMatch?.[1] || "<distro>";
+
+  if (trimmed.includes("set +e") && trimmed.includes("__CLAWOS_WSL_CMD_OK__")) {
+    return `wsl.exe -d ${distro} -- bash -lic "<命令检测脚本: openclaw git pnpm nrm>"`;
+  }
+  if (trimmed.includes("echo WSL_OK")) {
+    return `wsl.exe -d ${distro} -- bash -lic "<基础探测脚本: echo WSL_OK>"`;
+  }
+  return trimmed;
+}
+
 export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const connection = await resolveGatewayConnectionSettings();
 
@@ -74,14 +92,14 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const warnings: string[] = [];
   if (!wslProbe.ok) {
     warnings.push(`WSL 检测失败：${wslProbe.stderr || `退出码 ${wslProbe.code}`}`);
-    warnings.push(`WSL 执行命令：${wslProbe.command}`);
+    warnings.push(`WSL 执行命令：${simplifyWslCommandForDisplay(wslProbe.command)}`);
     warnings.push(...troubleshootingTips(wslProbe.stderr || ""));
   }
   if (wslProbe.ok && wslCommandProbe && !wslCommandProbe.ok) {
     if (wslCommandProbe.missing.length > 0) {
       warnings.push(`WSL 缺少命令：${wslCommandProbe.missing.join(", ")}`);
     }
-    warnings.push(`WSL 命令探测执行：${wslCommandProbe.command}`);
+    warnings.push(`WSL 命令探测执行：${simplifyWslCommandForDisplay(wslCommandProbe.command)}`);
     if (wslCommandProbe.stderr.trim().length > 0) {
       warnings.push(`WSL 命令检测异常：${wslCommandProbe.stderr.trim()}`);
     }

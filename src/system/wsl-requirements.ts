@@ -28,20 +28,19 @@ function shellQuote(value: string): string {
 
 export function buildWslCommandProbeScript(commands = Array.from(REQUIRED_WSL_COMMANDS)): string {
   const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
-  const lines: string[] = ["set +e"];
-
-  for (const command of normalized) {
-    lines.push(`cmd=${shellQuote(command)}`);
-    lines.push('if command -v "$cmd" >/dev/null 2>&1; then');
-    lines.push('  path="$(command -v "$cmd" | head -n 1)"');
-    lines.push(`  echo "${OK_PREFIX}:$cmd:$path"`);
-    lines.push("else");
-    lines.push(`  echo "${MISSING_PREFIX}:$cmd"`);
-    lines.push("fi");
-  }
-
-  lines.push("exit 0");
-  return lines.join("\n");
+  const commandList = normalized.map((item) => shellQuote(item)).join(" ");
+  return [
+    "set +e",
+    `for cmd in ${commandList}; do`,
+    '  path="$(command -v "$cmd" 2>/dev/null | head -n 1)"',
+    '  if [ -n "$path" ]; then',
+    `    echo "${OK_PREFIX}:$cmd:$path"`,
+    "  else",
+    `    echo "${MISSING_PREFIX}:$cmd"`,
+    "  fi",
+    "done",
+    "exit 0",
+  ].join("\n");
 }
 
 export function parseWslCommandProbeOutput(
