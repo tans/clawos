@@ -10,9 +10,15 @@
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="flex items-center gap-2 text-sm font-semibold">
-          <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
-          ClawOS
+        <div class="flex items-center justify-between gap-2 text-sm font-semibold">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
+            <span>ClawOS</span>
+          </div>
+          <button class="btn btn-ghost btn-xs gap-1" type="button" data-openclaw-entry>
+            <i class="fa-solid fa-up-right-from-square text-[10px]" aria-hidden="true"></i>
+            <span>Openclaw</span>
+          </button>
         </div>
         <nav class="flex flex-col gap-2">
           <a class="btn btn-primary btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
@@ -66,21 +72,6 @@
                 </div>
               </section>
 
-              <section class="card card-compact border border-base-200 bg-base-100 quick-openclaw-panel">
-                <div class="card-body gap-3">
-                  <div class="flex items-center justify-between gap-2">
-                    <h2 class="card-title text-base">快捷入口</h2>
-                    <span class="badge badge-outline badge-sm">外部后台</span>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <button class="btn btn-sm quick-openclaw-btn gap-2" data-action="open-openclaw-console">
-                      <i class="fa-solid fa-up-right-from-square w-4 text-center" aria-hidden="true"></i>
-                      <span>打开 openclaw 原后台</span>
-                    </button>
-                  </div>
-                  <div class="text-xs text-base-content/60">跳转到 openclaw 默认控制台（新窗口打开）</div>
-                </div>
-              </section>
             </div>
 
             <section class="card card-compact border border-base-200 bg-base-100">
@@ -137,7 +128,6 @@
       const taskOutput = document.querySelector('[data-task-output]');
 
       let pollTimer = null;
-      let openclawConsoleUrl = "http://127.0.0.1:18789";
 
       async function api(path, options = {}) {
         const res = await fetch(path, {
@@ -243,39 +233,6 @@
         renderEnvironmentWarnings(info.warnings);
       }
 
-      function normalizeOpenclawConsoleUrl(rawUrl) {
-        if (typeof rawUrl !== "string" || rawUrl.trim().length === 0) {
-          return "http://127.0.0.1:18789";
-        }
-
-        const trimmed = rawUrl.trim();
-        try {
-          const parsed = new URL(trimmed);
-          if (parsed.protocol === "ws:") {
-            parsed.protocol = "http:";
-          } else if (parsed.protocol === "wss:") {
-            parsed.protocol = "https:";
-          }
-          return parsed.toString();
-        } catch {
-          return "http://127.0.0.1:18789";
-        }
-      }
-
-      async function loadOpenclawConsoleUrl() {
-        try {
-          const data = await api("/api/local/gateway");
-          const gateway = data.gateway || {};
-          openclawConsoleUrl = normalizeOpenclawConsoleUrl(gateway.url);
-        } catch {
-          openclawConsoleUrl = "http://127.0.0.1:18789";
-        }
-      }
-
-      function openOpenclawConsole() {
-        window.open(openclawConsoleUrl, "_blank", "noopener");
-      }
-
       async function runAction(action) {
         switch (action) {
           case "check-env":
@@ -289,9 +246,6 @@
             return;
           case "restart-qw-gateway":
             await startTask("/api/gateway/action", { action: "restart-qw-gateway" });
-            return;
-          case "open-openclaw-console":
-            openOpenclawConsole();
             return;
           case "gateway-status":
             await startTask("/api/gateway/action", { action: "status" });
@@ -325,7 +279,6 @@
 
       (async function init() {
         try {
-          await loadOpenclawConsoleUrl();
           await checkEnvironment();
         } catch (error) {
           taskProgress.classList.add("hidden");

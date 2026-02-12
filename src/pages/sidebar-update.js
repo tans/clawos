@@ -1,4 +1,58 @@
-(function initClawosSidebarUpdate() {
+(function initClawosSidebar() {
+  const DEFAULT_OPENCLAW_CONSOLE_URL = "http://127.0.0.1:18789";
+
+  function normalizeOpenclawConsoleUrl(rawUrl) {
+    if (typeof rawUrl !== "string" || rawUrl.trim().length === 0) {
+      return DEFAULT_OPENCLAW_CONSOLE_URL;
+    }
+
+    const trimmed = rawUrl.trim();
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol === "ws:") {
+        parsed.protocol = "http:";
+      } else if (parsed.protocol === "wss:") {
+        parsed.protocol = "https:";
+      }
+      return parsed.toString();
+    } catch {
+      return DEFAULT_OPENCLAW_CONSOLE_URL;
+    }
+  }
+
+  async function api(path, options = {}) {
+    const res = await fetch(path, {
+      headers: { "content-type": "application/json" },
+      ...options,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || `请求失败: ${res.status}`);
+    }
+    return data;
+  }
+
+  async function loadOpenclawConsoleUrl() {
+    try {
+      const data = await api("/api/local/gateway");
+      const gateway = data.gateway || {};
+      return normalizeOpenclawConsoleUrl(gateway.url);
+    } catch {
+      return DEFAULT_OPENCLAW_CONSOLE_URL;
+    }
+  }
+
+  const openclawEntryButton = document.querySelector("[data-openclaw-entry]");
+  if (openclawEntryButton instanceof HTMLButtonElement) {
+    void (async () => {
+      const openclawConsoleUrl = await loadOpenclawConsoleUrl();
+      openclawEntryButton.addEventListener("click", () => {
+        window.open(openclawConsoleUrl, "_blank", "noopener");
+      });
+    })();
+  }
+
   const root = document.querySelector("[data-app-update-widget]");
   if (!root) {
     return;
@@ -14,19 +68,6 @@
 
   let latestStatus = null;
   let running = false;
-
-  async function api(path, options = {}) {
-    const res = await fetch(path, {
-      headers: { "content-type": "application/json" },
-      ...options,
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) {
-      throw new Error(data.error || `请求失败: ${res.status}`);
-    }
-    return data;
-  }
 
   function renderStatus(status) {
     latestStatus = status;

@@ -3,6 +3,7 @@ import { ensureLocalConfigTemplateFile } from "./config/local";
 import { HttpError, jsonResponse } from "./lib/http";
 import { handleApiRequest } from "./routes/api";
 import { handlePageRequest } from "./routes/pages";
+import { openBrowser } from "./system/browser";
 
 let server: ReturnType<typeof Bun.serve>;
 
@@ -47,4 +48,6 @@ try {
   process.exit(1);
 }
 
-console.log(`ClawOS listening on http://localhost:${server.port}`);
+const serverUrl = `http://localhost:${server.port}`;
+console.log(`ClawOS listening on ${serverUrl}`);
+openBrowser(serverUrl);

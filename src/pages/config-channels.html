@@ -10,9 +10,15 @@
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="flex items-center gap-2 text-sm font-semibold">
-          <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
-          ClawOS
+        <div class="flex items-center justify-between gap-2 text-sm font-semibold">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-neutral" aria-hidden="true"></span>
+            <span>ClawOS</span>
+          </div>
+          <button class="btn btn-ghost btn-xs gap-1" type="button" data-openclaw-entry>
+            <i class="fa-solid fa-up-right-from-square text-[10px]" aria-hidden="true"></i>
+            <span>Openclaw</span>
+          </button>
         </div>
         <nav class="flex flex-col gap-2">
           <a class="btn btn-ghost btn-sm justify-start gap-2" href="/"><i class="fa-solid fa-gauge-high w-4 text-center" aria-hidden="true"></i><span>控制台</span></a>
