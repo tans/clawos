@@ -63,6 +63,19 @@ function outputPreview(text: string, maxLines = 3): string {
   return lines.length > maxLines ? `${preview} | ...` : preview;
 }
 
+function isBenignShellNoise(line: string): boolean {
+  const normalized = line.trim().toLowerCase();
+  return normalized === "logout";
+}
+
+function sanitizeProbeStderr(stderr: string): string {
+  const lines = stderr
+    .split(/\r?\n/g)
+    .map((line) => sanitizeProbeLine(line))
+    .filter((line) => line.length > 0 && !isBenignShellNoise(line));
+  return lines.join("\n");
+}
+
 function sanitizeProbeLine(rawLine: string): string {
   return rawLine
     .replace(/\u0000/g, "")
@@ -183,8 +196,9 @@ function evaluateProbeResult(result: CommandResult, commands: string[]): ProbeEv
     !hasProbeSignals
       ? `WSL 命令探测输出异常：未收到探测标记行（stdout预览：${outputPreview(result.stdout)}）。`
       : `WSL 命令探测输出异常：探测标记不完整或命令名缺失（期望 ${commands.length} 行，识别到 ${recognizedSignalCount} 行）。`;
+  const normalizedStderr = sanitizeProbeStderr(result.stderr);
   const stderr = probeOutputIssue
-    ? [result.stderr.trim(), extraProbeError].filter((item) => item.length > 0).join("\n")
+    ? [normalizedStderr, extraProbeError].filter((item) => item.length > 0).join("\n")
     : result.stderr;
 
   return {

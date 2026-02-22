@@ -124,6 +124,20 @@ describe("wsl command requirements", () => {
     expect(result.stderr).toContain("未收到探测标记行");
   });
 
+  it("filters benign logout noise from anomaly stderr", async () => {
+    const result = await checkWslCommandRequirements(["git"], async () =>
+      runnerResult({
+        ok: true,
+        stdout: "",
+        stderr: "logout",
+      })
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.stderr).not.toContain("logout");
+    expect(result.stderr).toContain("未收到探测标记行");
+  });
+
   it("flags probe output anomaly when marker lines have empty command names", async () => {
     const result = await checkWslCommandRequirements(
       ["openclaw", "git", "pnpm", "nrm"],
