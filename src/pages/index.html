@@ -405,6 +405,9 @@
                     case "ok":
                         statusText = "正常";
                         break;
+                    case "local-only":
+                        statusText = "仅本机直连";
+                        break;
                     case "disabled":
                         statusText = "已禁用";
                         break;
@@ -427,6 +430,21 @@
                 const lines = [`状态: ${statusText}`, `模式: ${mode}`];
                 if (typeof info.checkedAt === "string" && info.checkedAt) {
                     lines.push(`检测时间: ${info.checkedAt}`);
+                }
+                if (info.direct127 && typeof info.direct127 === "object") {
+                    lines.push(
+                        `127.0.0.1+端口: ${info.direct127.ok ? "通过" : "失败"} (${info.direct127.url || "-"})`,
+                    );
+                }
+                if (info.wslCdp && typeof info.wslCdp === "object") {
+                    lines.push(
+                        `WSL cdpUrl: ${info.wslCdp.ok ? "通过" : "失败"} (${info.wslCdp.url || "-"})`,
+                    );
+                }
+                if (info.recommendPortProxy === true && info.portProxyCommand) {
+                    lines.push("");
+                    lines.push("建议执行端口转发命令:");
+                    lines.push(String(info.portProxyCommand));
                 }
 
                 if (Array.isArray(info.warnings) && info.warnings.length > 0) {
