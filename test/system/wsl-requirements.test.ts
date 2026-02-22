@@ -143,4 +143,34 @@ describe("wsl command requirements", () => {
     expect(result.missing).toEqual([]);
     expect(result.stderr).toContain("探测标记不完整或命令名缺失");
   });
+
+  it("falls back to non-login probe when primary output is anomalous", async () => {
+    const result = await checkWslCommandRequirements(
+      ["openclaw", "git"],
+      async () =>
+        runnerResult({
+          ok: true,
+          stdout: "logout",
+          stderr: "logout",
+          command: "wsl.exe ... bash -lic ...",
+        }),
+      async () =>
+        runnerResult({
+          ok: true,
+          stdout: [
+            "__CLAWOS_WSL_CMD_OK__:openclaw:/usr/local/bin/openclaw",
+            "__CLAWOS_WSL_CMD_OK__:git:/usr/bin/git",
+          ].join("\n"),
+          command: "wsl.exe ... bash -lc ...",
+        })
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.missing).toEqual([]);
+    expect(result.command).toContain("bash -lc");
+    expect(result.commands).toEqual([
+      { command: "openclaw", exists: true, path: "/usr/local/bin/openclaw" },
+      { command: "git", exists: true, path: "/usr/bin/git" },
+    ]);
+  });
 });

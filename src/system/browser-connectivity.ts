@@ -129,6 +129,14 @@ function dedupe(items: string[]): string[] {
   return Array.from(new Set(items));
 }
 
+function supportsGatewayMethod(hello: GatewayHelloPayload | undefined, method: string): boolean {
+  const methods = Array.isArray(hello?.features?.methods) ? hello.features?.methods : null;
+  if (!methods) {
+    return true;
+  }
+  return methods.includes(method);
+}
+
 function escapeBashSingleQuoted(raw: string): string {
   return raw.replaceAll("'", "'\"'\"'");
 }
@@ -266,7 +274,8 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
   const portProxyCommand = cdpEndpoint ? buildPortProxyCommand(cdpEndpoint.port) : null;
   const recommendPortProxy = shouldProbe && direct127Ok && !wslCdpOk;
 
-  const browserProbe = shouldProbe
+  const supportsBrowserRequest = configProbe.ok ? supportsGatewayMethod(configProbe.hello, "browser.request") : false;
+  const browserProbe = shouldProbe && supportsBrowserRequest
     ? await safeGatewayProbe(
         "browser.request",
         {

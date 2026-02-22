@@ -38,6 +38,14 @@ async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 100
   }
 }
 
+function supportsGatewayMethod(hello: GatewayHelloPayload | undefined, method: string): boolean {
+  const methods = Array.isArray(hello?.features?.methods) ? hello.features?.methods : null;
+  if (!methods) {
+    return true;
+  }
+  return methods.includes(method);
+}
+
 type BrowserMode = "cdp" | "local";
 
 function readBrowserConfigFromConfigProbe(probe: GatewayProbe): Record<string, unknown> | null {
@@ -135,7 +143,12 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const browserCdpUrl = readNonEmptyString(browserConfig?.cdpUrl) || null;
 
   const shouldProbeBrowser = gatewayReady && browserEnabled && browserConfigured;
-  const browserProbe = shouldProbeBrowser
+  const supportsBrowserRequest = statusProbe.ok
+    ? supportsGatewayMethod(statusProbe.hello, "browser.request")
+    : healthProbe.ok
+      ? supportsGatewayMethod(healthProbe.hello, "browser.request")
+      : false;
+  const browserProbe = shouldProbeBrowser && supportsBrowserRequest
     ? await safeGatewayProbe(
         "browser.request",
         {

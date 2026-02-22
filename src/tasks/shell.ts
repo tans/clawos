@@ -28,7 +28,7 @@ function formatProcessCommand(args: string[]): string {
 
 export function buildWslProcessArgs(
   script: string,
-  options: { isWindows: boolean; distro?: string; wslBin?: string }
+  options: { isWindows: boolean; distro?: string; wslBin?: string; loginShell?: boolean }
 ): string[] {
   if (!options.isWindows) {
     return ["bash", "-lc", script];
@@ -36,7 +36,8 @@ export function buildWslProcessArgs(
 
   const wslBin = options.wslBin?.trim() || "wsl.exe";
   const distro = options.distro?.trim();
-  return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-lic", script];
+  const shellFlag = options.loginShell === false ? "-lc" : "-lic";
+  return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", shellFlag, script];
 }
 
 export function parseWslDistroList(stdout: string): string[] {
@@ -111,7 +112,7 @@ export async function runProcess(args: string[]): Promise<CommandResult> {
   };
 }
 
-export async function runWslScript(script: string): Promise<CommandResult> {
+export async function runWslScript(script: string, options: { loginShell?: boolean } = {}): Promise<CommandResult> {
   const localConfig = readLocalClawosConfig();
   const wslConfig = asObject(localConfig?.wsl);
 
@@ -125,6 +126,7 @@ export async function runWslScript(script: string): Promise<CommandResult> {
     isWindows: IS_WINDOWS,
     distro,
     wslBin,
+    loginShell: options.loginShell,
   });
 
   try {

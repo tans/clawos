@@ -16,6 +16,17 @@ describe("runWslScript shell mode", () => {
     expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-lic", "openclaw --version"]);
   });
 
+  it("uses non-login bash in windows path when loginShell is false", () => {
+    const args = buildWslProcessArgs("openclaw --version", {
+      isWindows: true,
+      distro: "Ubuntu",
+      wslBin: "wsl.exe",
+      loginShell: false,
+    });
+
+    expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-lc", "openclaw --version"]);
+  });
+
   it("uses non-interactive bash in non-windows path", () => {
     const args = buildWslProcessArgs("openclaw --version", {
       isWindows: false,

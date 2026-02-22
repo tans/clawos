@@ -22,6 +22,14 @@ export type WslCommandCheckResult = {
 };
 
 type WslRunner = (script: string) => Promise<CommandResult>;
+type ProbeEvaluation = {
+  hasProbeSignals: boolean;
+  recognizedSignalCount: number;
+  commandStatuses: WslCommandStatus[];
+  missing: string[];
+  probeOutputIssue: boolean;
+  stderr: string;
+};
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'\\''`)}'`;
@@ -149,41 +157,87 @@ export function parseWslCommandProbeOutput(
   return normalized.map((command) => map.get(command) || { command, exists: false });
 }
 
-export async function checkWslCommandRequirements(
-  commands = Array.from(REQUIRED_WSL_COMMANDS),
-  runner: WslRunner = runWslScript
-): Promise<WslCommandCheckResult> {
-  const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
-  const script = buildWslCommandProbeScript(normalized);
-  const result = await runner(script);
+function evaluateProbeResult(result: CommandResult, commands: string[]): ProbeEvaluation {
   const signalCount = countProbeSignals(result.stdout);
-  const recognizedSignalCount = countRecognizedProbeSignals(result.stdout, normalized);
+  const recognizedSignalCount = countRecognizedProbeSignals(result.stdout, commands);
   const hasProbeSignals = signalCount > 0;
-  const commandStatuses = parseWslCommandProbeOutput(result.stdout, normalized);
+  const commandStatuses = parseWslCommandProbeOutput(result.stdout, commands);
   const probeOutputIssue =
-    result.ok && (!hasProbeSignals || recognizedSignalCount !== normalized.length);
+    result.ok && (!hasProbeSignals || recognizedSignalCount !== commands.length);
   const missing = probeOutputIssue
     ? []
     : hasProbeSignals
       ? commandStatuses.filter((item) => !item.exists).map((item) => item.command)
       : result.ok
         ? []
-        : normalized;
+        : commands;
   const extraProbeError =
     !hasProbeSignals
       ? "WSL 命令探测输出异常：未收到探测标记行。"
-      : `WSL 命令探测输出异常：探测标记不完整或命令名缺失（期望 ${normalized.length} 行，识别到 ${recognizedSignalCount} 行）。`;
+      : `WSL 命令探测输出异常：探测标记不完整或命令名缺失（期望 ${commands.length} 行，识别到 ${recognizedSignalCount} 行）。`;
   const stderr = probeOutputIssue
     ? [result.stderr.trim(), extraProbeError].filter((item) => item.length > 0).join("\n")
     : result.stderr;
 
   return {
-    ok: result.ok && hasProbeSignals && !probeOutputIssue && missing.length === 0,
-    commands: commandStatuses,
+    hasProbeSignals,
+    recognizedSignalCount,
+    commandStatuses,
     missing,
-    code: result.code,
-    stdout: result.stdout,
+    probeOutputIssue,
     stderr,
-    command: result.command,
+  };
+}
+
+export async function checkWslCommandRequirements(
+  commands = Array.from(REQUIRED_WSL_COMMANDS),
+  runner: WslRunner = runWslScript,
+  fallbackRunner?: WslRunner
+): Promise<WslCommandCheckResult> {
+  const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
+  const script = buildWslCommandProbeScript(normalized);
+  const primaryResult = await runner(script);
+  let selectedResult = primaryResult;
+  let evaluation = evaluateProbeResult(primaryResult, normalized);
+
+  let fallback: WslRunner | undefined = fallbackRunner;
+  if (!fallback && runner === runWslScript) {
+    fallback = (nextScript: string) => runWslScript(nextScript, { loginShell: false });
+  }
+
+  if (evaluation.probeOutputIssue && fallback) {
+    const fallbackResult = await fallback(script);
+    const fallbackEvaluation = evaluateProbeResult(fallbackResult, normalized);
+    if (fallbackEvaluation.hasProbeSignals && !fallbackEvaluation.probeOutputIssue) {
+      selectedResult = fallbackResult;
+      evaluation = fallbackEvaluation;
+    } else {
+      const fallbackSummary = [
+        `WSL 命令探测回退(-lc)仍异常。`,
+        fallbackEvaluation.stderr.trim(),
+      ]
+        .filter((item) => item.length > 0)
+        .join("\n");
+      evaluation = {
+        ...evaluation,
+        stderr: [evaluation.stderr.trim(), fallbackSummary]
+          .filter((item) => item.length > 0)
+          .join("\n"),
+      };
+    }
+  }
+
+  return {
+    ok:
+      selectedResult.ok &&
+      evaluation.hasProbeSignals &&
+      !evaluation.probeOutputIssue &&
+      evaluation.missing.length === 0,
+    commands: evaluation.commandStatuses,
+    missing: evaluation.missing,
+    code: selectedResult.code,
+    stdout: selectedResult.stdout,
+    stderr: evaluation.stderr,
+    command: selectedResult.command,
   };
 }
