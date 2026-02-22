@@ -1,0 +1,273 @@
+# openclaw.configref.toml
+# OpenClaw ConfigRef (TOML) — 字段级参考（给人类/AI检索/问答/自动生成）
+#
+# 重要：OpenClaw 的“全部字段”是动态的（安装哪些渠道/插件/skills，就会多出哪些 schema）。
+# 因此：
+# - 本 ConfigRef 覆盖“全部顶层模块 + 参考文档列出的全部章节主题”
+# - 字段级的“完全枚举”，应通过运行时 `config.schema` 导出 JSON Schema 后生成（见 meta.schema_source）
+#
+# 你可以把这个文件当作：
+# - LLM 工具调用时的“字段字典索引”
+# - 生成器输出的人类可读参考（也可再渲染成 Markdown/HTML）
+
+[meta]
+source_docs = "https://docs.openclaw.ai/gateway/configuration-reference"
+runtime_config = "~/.openclaw/openclaw.json"
+runtime_format = "json5"
+strict_validation = true
+
+[meta.schema_source]
+kind = "gateway_rpc"
+rpc = "config.schema"
+howto = "openclaw gateway call config.schema --params '{}'"
+notes = [
+  "config.schema 返回完整 JSON Schema（含 UI hints），是字段完全枚举的权威来源。",
+  "plugins/channels/skills 的字段会随安装组件变化，因此静态文档无法做到永远完整。",
+]
+
+# -----------------------------
+# 顶层模块（全部）
+# -----------------------------
+[[section]]
+path = "channels"
+summary = "Channels"
+desc = "各通讯渠道与访问策略；provider section 存在时自动启动（除非 enabled=false）。"
+
+[[section]]
+path = "session"
+summary = "Session"
+desc = "会话行为与默认策略。"
+
+[[section]]
+path = "messages"
+summary = "Messages"
+desc = "响应前缀、ack reaction、入站去抖、TTS、Talk 等。"
+
+[[section]]
+path = "tools"
+summary = "Tools"
+desc = "工具策略/分组/Profiles/Providers/执行与安全。"
+
+[[section]]
+path = "models"
+summary = "Models"
+desc = "模型与提供商：自定义 base URL、provider aliases、OpenAI-compatible providers 等。"
+
+[[section]]
+path = "skills"
+summary = "Skills"
+desc = "技能加载、安装策略、entries（每个 skill 的专属配置）。"
+
+[[section]]
+path = "plugins"
+summary = "Plugins"
+desc = "扩展插件：加载路径、allow/deny、entries（插件专属配置）。"
+
+[[section]]
+path = "browser"
+summary = "Browser"
+desc = "浏览器与调试相关配置。"
+
+[[section]]
+path = "ui"
+summary = "UI"
+desc = "控制台/展示相关配置。"
+
+[[section]]
+path = "gateway"
+summary = "Gateway"
+desc = "网关：端口、绑定、鉴权、OpenAI-compatible endpoints、多实例隔离、hooks、Gmail、Canvas host 等。"
+
+[[section]]
+path = "discovery"
+summary = "Discovery"
+desc = "Bonjour/mDNS 与广域 DNS-SD 发现。"
+
+[[section]]
+path = "environment"
+summary = "Environment"
+desc = "内联 env、shellEnv、变量替换等。"
+
+[[section]]
+path = "auth"
+summary = "Auth storage"
+desc = "认证存储与 profiles。"
+
+[[section]]
+path = "logging"
+summary = "Logging"
+desc = "日志配置。"
+
+[[section]]
+path = "wizard"
+summary = "Wizard"
+desc = "引导/安装助手输出（平台相关）。"
+
+[[section]]
+path = "identity"
+summary = "Identity"
+desc = "智能体身份（name/theme/emoji/avatar）。"
+
+[[section]]
+path = "cron"
+summary = "Cron"
+desc = "网关调度器（并发、webhook、sessionRetention 等）。"
+
+[[section]]
+path = "$include"
+summary = "Config includes ($include)"
+desc = "拆分与合并配置：单文件替换/多文件深度合并/层级与路径限制。"
+
+# -----------------------------
+# 核心字段（文档中明确给出语义/默认/约束的代表字段）
+# -----------------------------
+[[field]]
+path = "channels.defaults.groupPolicy"
+type = "enum"
+choices = ["allowlist", "open", "disabled"]
+default = "allowlist"
+summary = "默认群聊策略"
+desc = "当 provider 未设置 groupPolicy 时使用该默认值。"
+
+[[field]]
+path = "channels.modelByChannel"
+type = "map<object>"
+summary = "按 channel ID 固定模型"
+desc = "值接受 provider/model 或已配置模型别名；当 session 未已有 override 时生效。"
+
+[[field]]
+path = "channels.*.dmPolicy"
+type = "enum"
+choices = ["pairing", "allowlist", "open", "disabled"]
+default = "pairing"
+summary = "DM 策略（通用）"
+desc = "pairing 默认；open 需 allowFrom 包含 \"*\"；disabled 忽略所有 DM。"
+
+[[field]]
+path = "channels.*.groupPolicy"
+type = "enum"
+choices = ["allowlist", "open", "disabled"]
+default = "allowlist"
+summary = "群聊策略（通用）"
+desc = "allowlist 默认；open 绕过 allowlist（仍可能 requireMention）；disabled 屏蔽群消息。"
+
+[[field]]
+path = "channels.whatsapp.textChunkLimit"
+type = "int?"
+summary = "WhatsApp 文本分片上限"
+desc = "用于长文本分片发送（参考文档示例）。"
+
+[[field]]
+path = "channels.whatsapp.chunkMode"
+type = "enum?"
+choices = ["length", "newline"]
+summary = "WhatsApp 分片模式"
+desc = "length/ newline（参考文档示例）。"
+
+[[field]]
+path = "channels.whatsapp.mediaMaxMb"
+type = "int?"
+summary = "WhatsApp 媒体最大 MB"
+desc = "限制媒体下载/转发大小（参考文档示例）。"
+
+[[field]]
+path = "channels.whatsapp.sendReadReceipts"
+type = "bool?"
+summary = "WhatsApp 已读回执"
+desc = "自聊天模式通常为 false（参考文档示例）。"
+
+[[field]]
+path = "cron.enabled"
+type = "bool"
+default = true
+summary = "启用 Cron 调度器"
+desc = "网关调度器开关。"
+
+[[field]]
+path = "cron.maxConcurrentRuns"
+type = "int"
+default = 2
+summary = "Cron 最大并发"
+desc = "同时运行的 cron job 上限。"
+
+[[field]]
+path = "cron.webhook"
+type = "url?"
+summary = "Cron 旧版 webhook（deprecated）"
+desc = "仅用于历史存储的 notify:true jobs 的兜底 webhook。"
+
+[[field]]
+path = "cron.webhookToken"
+type = "string?"
+sensitive = true
+summary = "Cron webhook Bearer token"
+desc = "delivery.mode=webhook 时用于 outbound POST 的 bearer token；为空则不发送 auth header。"
+
+[[field]]
+path = "cron.sessionRetention"
+type = "oneof(duration,false)"
+default = "24h"
+summary = "Cron session 保留时长"
+desc = "完成的 cron sessions 在该时长后被清理；默认 24h。"
+
+[[field]]
+path = "identity.name"
+type = "string?"
+summary = "身份名"
+desc = "由 onboarding assistant 写入；用于派生提及与 ack reaction 的默认值。"
+
+[[field]]
+path = "identity.theme"
+type = "string?"
+summary = "身份主题"
+desc = "用于 UI/提示（参考文档示例）。"
+
+[[field]]
+path = "identity.emoji"
+type = "string?"
+summary = "身份 emoji"
+desc = "用于派生 messages.ackReaction 与 mentionPatterns（参考文档说明）。"
+
+[[field]]
+path = "identity.avatar"
+type = "oneof(path,url,data_uri)?"
+summary = "头像"
+desc = "接受：workspace 相对路径、http(s) URL、data: URI。"
+
+[[field]]
+path = "environment.env.vars.<KEY>"
+type = "string?"
+sensitive = true
+summary = "内联环境变量（仅补缺）"
+desc = "仅在进程环境缺失该 key 时生效，不覆盖已有 env。"
+
+[[field]]
+path = "environment.env.shellEnv.enabled"
+type = "bool?"
+default = true
+summary = "从登录 shell 导入 env"
+desc = "自动补齐期望 env；受 timeoutMs 控制。"
+
+[[field]]
+path = "strings.${VAR_NAME}"
+type = "string_substitution"
+summary = "环境变量替换"
+desc = "任意字符串字段可用 ${VAR}；可用 $${VAR} 转义；缺失变量通常会报错（以 schema 实现为准）。"
+
+[[field]]
+path = "$include"
+type = "oneof(string,list<string>)"
+summary = "配置拆分与合并"
+desc = "单文件替换；数组按顺序深度合并；同级键在 include 后覆盖；最多 10 层；路径需在配置目录边界内解析。"
+
+# -----------------------------
+# 生成器提示（给 AI / 工具链）
+# -----------------------------
+[generator_hints]
+# 推荐：从运行中的 Gateway 拉取 schema，然后生成字段级枚举（包含所有插件/渠道/skills）
+pipeline = [
+  "gateway_call: config.schema",
+  "jsonschema_normalize: resolve $refs + flatten",
+  "emit: openclaw.configref.toml (one [[field]] per path)",
+  "emit: openclaw.spec.toml (module + dynamic extension points)",
+]

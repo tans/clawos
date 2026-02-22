@@ -51,45 +51,19 @@
         </header>
 
         <section class="flex-1 p-6">
-          <div class="grid gap-4 xl:grid-cols-2" data-card-editor>
-            <section class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-4">
-                <h2 class="card-title text-base">飞书</h2>
-
-                <div class="flex items-center justify-between rounded-lg border border-base-200 px-3 py-2">
-                  <span class="text-xs">插件开关</span>
-                  <input class="toggle toggle-sm" type="checkbox" data-feishu-enabled />
-                </div>
-
-                <div class="flex items-center justify-between rounded-lg border border-base-200 px-3 py-2">
-                  <span class="text-xs">dmPolicy（*）</span>
-                  <input class="toggle toggle-sm" type="checkbox" data-feishu-dm-policy />
-                </div>
-              </div>
-            </section>
-
-            <section class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-4">
-                <h2 class="card-title text-base">企业微信</h2>
-
-                <div class="flex items-center justify-between rounded-lg border border-base-200 px-3 py-2">
-                  <span class="text-xs">插件开关</span>
-                  <input class="toggle toggle-sm" type="checkbox" data-wecom-enabled />
-                </div>
-
-                <div class="flex items-center justify-between rounded-lg border border-base-200 px-3 py-2">
-                  <span class="text-xs">dmPolicy（*）</span>
-                  <input class="toggle toggle-sm" type="checkbox" data-wecom-dm-policy />
-                </div>
-
-                <div class="text-[11px] text-base-content/60">企微为自定义渠道，参数请在 JSON 编辑模式维护。</div>
-              </div>
-            </section>
-          </div>
-
-          <section class="hidden card card-compact border border-base-200 bg-base-100" data-json-editor>
+          <section class="card card-compact border border-base-200 bg-base-100" data-card-editor>
             <div class="card-body gap-3">
-              <h2 class="card-title text-base">channels JSON</h2>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="card-title text-base">渠道开关与参数入口</h2>
+                <span class="text-[11px] text-base-content/60">复杂配置请切换 JSON 编辑模式</span>
+              </div>
+              <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
+            </div>
+          </section>
+
+          <section class="mt-4 hidden card card-compact border border-base-200 bg-base-100" data-json-editor>
+            <div class="card-body gap-3">
+              <h2 class="card-title text-base">channels JSON（高级模式）</h2>
               <textarea class="textarea textarea-bordered h-[62vh] w-full font-mono text-xs" data-json-input></textarea>
             </div>
           </section>
@@ -99,26 +73,204 @@
       </main>
     </div>
 
+    <dialog class="modal" data-channel-modal>
+      <div class="modal-box max-w-3xl">
+        <div class="mb-2 flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-base font-semibold" data-modal-title>渠道参数</h3>
+            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅包含常用字段，完整配置请使用 JSON 编辑模式。</div>
+          </div>
+          <button class="btn btn-ghost btn-xs" type="button" data-modal-close>关闭</button>
+        </div>
+
+        <div class="grid gap-3" data-modal-fields></div>
+
+        <div class="modal-action">
+          <button class="btn btn-ghost btn-sm" type="button" data-modal-cancel>取消</button>
+          <button class="btn btn-primary btn-sm" type="button" data-modal-apply>应用参数</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button aria-label="关闭">close</button>
+      </form>
+    </dialog>
+
     <script src="/sidebar-update.js"></script>
 
     <script>
       const SECTION = "channels";
       const WECOM_KEYS = ["wecom", "wxwork", "qywx", "wechatWork", "enterpriseWechat"];
+      const COMMON_POLICY_FIELDS = [
+        { path: "dmPolicy", label: "dmPolicy", type: "select", options: ["", "*", "allowFrom"] },
+        { path: "allowFrom", label: "allowFrom（一行一个）", type: "list" },
+        { path: "groupPolicy", label: "groupPolicy", type: "select", options: ["", "*", "allowFrom"] },
+        { path: "groupAllowFrom", label: "groupAllowFrom（一行一个）", type: "list" },
+      ];
+
+      const CHANNEL_SPECS = [
+        {
+          key: "telegram",
+          title: "Telegram",
+          fields: [
+            { path: "token", label: "token", type: "password" },
+            { path: "defaultId", label: "defaultId", type: "text" },
+            { path: "ids", label: "ids（一行一个）", type: "list" },
+            { path: "parseMode", label: "parseMode", type: "text" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "discord",
+          title: "Discord",
+          fields: [
+            { path: "token", label: "token", type: "password" },
+            { path: "defaultId", label: "defaultId", type: "text" },
+            { path: "ids", label: "ids（一行一个）", type: "list" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "slack",
+          title: "Slack",
+          fields: [
+            { path: "botToken", label: "botToken", type: "password" },
+            { path: "appToken", label: "appToken", type: "password" },
+            { path: "signingSecret", label: "signingSecret", type: "password" },
+            { path: "socketMode", label: "socketMode", type: "boolean" },
+            { path: "defaultId", label: "defaultId", type: "text" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "googleChat",
+          title: "Google Chat",
+          fields: [
+            { path: "webhookUrl", label: "webhookUrl", type: "text" },
+            { path: "defaultId", label: "defaultId", type: "text" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "mattermost",
+          title: "Mattermost",
+          fields: [
+            { path: "apiBaseUrl", label: "apiBaseUrl", type: "text" },
+            { path: "token", label: "token", type: "password" },
+            { path: "defaultId", label: "defaultId", type: "text" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "signal",
+          title: "Signal",
+          fields: [
+            { path: "cliPath", label: "cliPath", type: "text" },
+            { path: "defaultAccount", label: "defaultAccount", type: "text" },
+            { path: "accounts", label: "accounts（一行一个）", type: "list" },
+            { path: "timeoutMs", label: "timeoutMs", type: "number", min: 1, max: 120000 },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "imessage",
+          title: "iMessage",
+          fields: [
+            { path: "socketPath", label: "socketPath", type: "text" },
+            { path: "defaultAccount", label: "defaultAccount", type: "text" },
+            { path: "accounts", label: "accounts（一行一个）", type: "list" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "whatsapp",
+          title: "WhatsApp",
+          fields: [
+            { path: "apiBaseUrl", label: "apiBaseUrl", type: "text" },
+            { path: "token", label: "token", type: "password" },
+            { path: "phoneNumberId", label: "phoneNumberId", type: "text" },
+            { path: "defaultId", label: "defaultId", type: "text" },
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+        {
+          key: "feishu",
+          title: "Feishu",
+          fields: [
+            { path: "domain", label: "domain", type: "select", options: ["", "feishu.cn", "larksuite.com"] },
+            { path: "appId", label: "appId", type: "text" },
+            { path: "appSecret", label: "appSecret", type: "password" },
+            { path: "connectionMode", label: "connectionMode", type: "select", options: ["", "auto", "websocket", "webhook"] },
+            { path: "verificationToken", label: "verificationToken", type: "password" },
+            { path: "webhookPath", label: "webhookPath", type: "text" },
+            { path: "webhookHost", label: "webhookHost", type: "text" },
+            { path: "webhookPort", label: "webhookPort", type: "number", min: 1, max: 65535 },
+            { path: "dmPolicy", label: "dmPolicy", type: "select", options: ["", "*", "allowFrom"] },
+            { path: "allowFrom", label: "allowFrom（一行一个 open_id）", type: "list" },
+            { path: "groupPolicy", label: "groupPolicy", type: "select", options: ["", "*", "allowFrom"] },
+            { path: "groupAllowFrom", label: "groupAllowFrom（一行一个 chat_id）", type: "list" },
+            { path: "streaming", label: "streaming", type: "boolean" },
+            { path: "blockStreaming", label: "blockStreaming", type: "boolean" },
+            { path: "textChunkLimit", label: "textChunkLimit", type: "number", min: 1, max: 50000 },
+            { path: "mediaMaxMb", label: "mediaMaxMb", type: "number", min: 0.1, max: 1024, integer: false },
+            { path: "accounts", label: "accounts（JSON 对象）", type: "json" },
+          ],
+          validate: (draft) => {
+            const mode = typeof draft.connectionMode === "string" ? draft.connectionMode.trim() : "";
+            const token = typeof draft.verificationToken === "string" ? draft.verificationToken.trim() : "";
+            if (mode === "webhook" && !token) {
+              throw new Error("feishu.connectionMode = webhook 时，verificationToken 不能为空");
+            }
+
+            const webhookPath = typeof draft.webhookPath === "string" ? draft.webhookPath.trim() : "";
+            if (webhookPath && !webhookPath.startsWith("/")) {
+              throw new Error("feishu.webhookPath 必须以 / 开头");
+            }
+
+            const dmPolicy = typeof draft.dmPolicy === "string" ? draft.dmPolicy : "";
+            const allowFrom = Array.isArray(draft.allowFrom) ? draft.allowFrom : [];
+            if (dmPolicy === "allowFrom" && allowFrom.length === 0) {
+              throw new Error("feishu.dmPolicy = allowFrom 时，allowFrom 不能为空");
+            }
+
+            const groupPolicy = typeof draft.groupPolicy === "string" ? draft.groupPolicy : "";
+            const groupAllowFrom = Array.isArray(draft.groupAllowFrom) ? draft.groupAllowFrom : [];
+            if (groupPolicy === "allowFrom" && groupAllowFrom.length === 0) {
+              throw new Error("feishu.groupPolicy = allowFrom 时，groupAllowFrom 不能为空");
+            }
+          },
+        },
+        {
+          key: "wecom",
+          title: "WeCom",
+          fields: [
+            ...COMMON_POLICY_FIELDS,
+          ],
+        },
+      ];
+
+      const specByKey = new Map(CHANNEL_SPECS.map((spec) => [spec.key, spec]));
 
       const metaEl = document.querySelector("[data-meta]");
       const modeToggle = document.querySelector("[data-mode-toggle]");
       const cardEditorEl = document.querySelector("[data-card-editor]");
       const jsonEditorEl = document.querySelector("[data-json-editor]");
       const jsonInputEl = document.querySelector("[data-json-input]");
+      const channelListEl = document.querySelector("[data-channel-list]");
 
-      const feishuEnabledEl = document.querySelector("[data-feishu-enabled]");
-      const feishuDmPolicyEl = document.querySelector("[data-feishu-dm-policy]");
-      const wecomEnabledEl = document.querySelector("[data-wecom-enabled]");
-      const wecomDmPolicyEl = document.querySelector("[data-wecom-dm-policy]");
+      const modalEl = document.querySelector("[data-channel-modal]");
+      const modalTitleEl = document.querySelector("[data-modal-title]");
+      const modalSubtitleEl = document.querySelector("[data-modal-subtitle]");
+      const modalFieldsEl = document.querySelector("[data-modal-fields]");
+      const modalCloseEl = document.querySelector("[data-modal-close]");
+      const modalCancelEl = document.querySelector("[data-modal-cancel]");
+      const modalApplyEl = document.querySelector("[data-modal-apply]");
 
       let channelsConfig = {};
-      let wecomKey = "wecom";
       let mode = "card";
+      let currentWecomKey = "wecom";
+      let activeSpec = null;
+      let activeResolvedKey = "";
+      let activeDraft = {};
 
       function pretty(value) {
         return JSON.stringify(value || {}, null, 2);
@@ -133,6 +285,19 @@
           throw new Error(`${field} 必须是 JSON 对象`);
         }
         return value;
+      }
+
+      function cloneObject(value) {
+        return JSON.parse(JSON.stringify(value || {}));
+      }
+
+      function escapeHtml(raw) {
+        return String(raw)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
       }
 
       function parseJsonObject(text, field) {
@@ -151,67 +316,275 @@
         return ensureObject(parsed, field);
       }
 
+      function getPath(source, path) {
+        const parts = path.split(".");
+        let current = source;
+        for (const part of parts) {
+          if (!isObject(current) || !Object.prototype.hasOwnProperty.call(current, part)) {
+            return undefined;
+          }
+          current = current[part];
+        }
+        return current;
+      }
+
+      function setPath(target, path, value) {
+        const parts = path.split(".");
+        let current = target;
+
+        for (let i = 0; i < parts.length - 1; i += 1) {
+          const key = parts[i];
+          if (!isObject(current[key])) {
+            current[key] = {};
+          }
+          current = current[key];
+        }
+
+        current[parts[parts.length - 1]] = value;
+      }
+
+      function deletePath(target, path) {
+        const parts = path.split(".");
+        const parents = [];
+        let current = target;
+
+        for (let i = 0; i < parts.length - 1; i += 1) {
+          const key = parts[i];
+          if (!isObject(current[key])) {
+            return;
+          }
+          parents.push({ obj: current, key });
+          current = current[key];
+        }
+
+        delete current[parts[parts.length - 1]];
+
+        for (let i = parents.length - 1; i >= 0; i -= 1) {
+          const { obj, key } = parents[i];
+          if (isObject(obj[key]) && Object.keys(obj[key]).length === 0) {
+            delete obj[key];
+          }
+        }
+      }
+
+      function parseList(rawText) {
+        return String(rawText || "")
+          .split("\n")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function joinList(value) {
+        if (!Array.isArray(value)) {
+          return "";
+        }
+
+        return value
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+          .join("\n");
+      }
+
+      function parseNumberValue(rawText, fieldLabel, field) {
+        const text = String(rawText || "").trim();
+        if (!text) {
+          return undefined;
+        }
+
+        const value = Number(text);
+        if (!Number.isFinite(value)) {
+          throw new Error(`${fieldLabel} 必须是数字`);
+        }
+
+        const integer = field.integer !== false;
+        if (integer && !Number.isInteger(value)) {
+          throw new Error(`${fieldLabel} 必须是整数`);
+        }
+
+        if (typeof field.min === "number" && value < field.min) {
+          throw new Error(`${fieldLabel} 不能小于 ${field.min}`);
+        }
+
+        if (typeof field.max === "number" && value > field.max) {
+          throw new Error(`${fieldLabel} 不能大于 ${field.max}`);
+        }
+
+        return value;
+      }
+
+      function parseObjectArea(rawText, fieldLabel) {
+        const text = String(rawText || "").trim();
+        if (!text) {
+          return undefined;
+        }
+
+        return parseJsonObject(text, fieldLabel);
+      }
+
+      function validatePolicySelections(spec, draft) {
+        const dmPolicy = typeof draft.dmPolicy === "string" ? draft.dmPolicy : "";
+        const allowFrom = Array.isArray(draft.allowFrom) ? draft.allowFrom : [];
+        if (dmPolicy === "allowFrom" && allowFrom.length === 0) {
+          throw new Error(`${spec.title}.dmPolicy = allowFrom 时，allowFrom 不能为空`);
+        }
+
+        const groupPolicy = typeof draft.groupPolicy === "string" ? draft.groupPolicy : "";
+        const groupAllowFrom = Array.isArray(draft.groupAllowFrom) ? draft.groupAllowFrom : [];
+        if (groupPolicy === "allowFrom" && groupAllowFrom.length === 0) {
+          throw new Error(`${spec.title}.groupPolicy = allowFrom 时，groupAllowFrom 不能为空`);
+        }
+      }
+
       function getWecomEntry(config) {
         for (const key of WECOM_KEYS) {
           if (isObject(config[key])) {
             return { key, value: config[key] };
           }
         }
-        return { key: "wecom", value: {} };
+
+        return { key: currentWecomKey || "wecom", value: {} };
       }
 
-      function isDmPolicyEnabled(value) {
-        if (value === "*") {
-          return true;
+      function getChannelEntry(config, specKey) {
+        if (specKey === "wecom") {
+          const entry = getWecomEntry(config);
+          return {
+            key: entry.key,
+            value: isObject(entry.value) ? entry.value : {},
+          };
         }
+
+        const value = isObject(config[specKey]) ? config[specKey] : {};
+        return { key: specKey, value };
+      }
+
+      function setChannelEntry(config, specKey, channel, resolvedKey = "") {
+        const channelObj = isObject(channel) ? channel : {};
+
+        if (specKey === "wecom") {
+          const key = resolvedKey || currentWecomKey || "wecom";
+          currentWecomKey = key;
+
+          for (const candidate of WECOM_KEYS) {
+            if (candidate !== key) {
+              delete config[candidate];
+            }
+          }
+
+          if (Object.keys(channelObj).length > 0) {
+            config[key] = channelObj;
+          } else {
+            delete config[key];
+          }
+          return;
+        }
+
+        if (Object.keys(channelObj).length > 0) {
+          config[specKey] = channelObj;
+        } else {
+          delete config[specKey];
+        }
+      }
+
+      function isFilledValue(value) {
+        if (typeof value === "string") {
+          return value.trim().length > 0;
+        }
+
+        if (typeof value === "number") {
+          return Number.isFinite(value);
+        }
+
+        if (typeof value === "boolean") {
+          return value === true;
+        }
+
         if (Array.isArray(value)) {
-          return value.includes("*");
+          return value.length > 0;
         }
+
+        if (isObject(value)) {
+          return Object.keys(value).length > 0;
+        }
+
         return false;
       }
 
-      function applyDmPolicy(entry, enabled) {
-        if (enabled) {
-          entry.dmPolicy = "*";
+      function countConfiguredBySpec(channel, spec) {
+        if (!isObject(channel)) {
+          return 0;
+        }
+
+        let count = 0;
+        for (const field of spec.fields) {
+          const value = getPath(channel, field.path);
+          if (isFilledValue(value)) {
+            count += 1;
+          }
+        }
+        return count;
+      }
+
+      function renderChannelCards() {
+        channelListEl.innerHTML = CHANNEL_SPECS.map((spec) => {
+          return `
+            <section class="rounded-lg border border-base-200 p-3" data-channel-card data-channel-key="${spec.key}">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="text-sm font-medium">${spec.title}</div>
+                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参数</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
+                    <span class="text-xs">开启</span>
+                    <input class="toggle toggle-sm" type="checkbox" data-channel-enabled data-channel-key="${spec.key}" />
+                  </label>
+                  <button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>
+                </div>
+              </div>
+            </section>
+          `;
+        }).join("");
+      }
+
+      function getChannelCardElements(specKey) {
+        const card = channelListEl.querySelector(`[data-channel-card][data-channel-key="${specKey}"]`);
+        if (!card) {
+          return null;
+        }
+
+        return {
+          card,
+          enabled: card.querySelector("[data-channel-enabled]"),
+          summary: card.querySelector("[data-channel-summary]"),
+        };
+      }
+
+      function updateCardState(spec, config) {
+        const cardEls = getChannelCardElements(spec.key);
+        if (!cardEls) {
+          return;
+        }
+
+        const entry = getChannelEntry(config, spec.key);
+        const channel = entry.value;
+        const configured = countConfiguredBySpec(channel, spec);
+
+        cardEls.enabled.checked = channel.enabled === true;
+
+        if (configured > 0) {
+          const keyText = spec.key === "wecom" ? `，键名：${entry.key}` : "";
+          cardEls.summary.textContent = `已配置 ${configured} 项参数${keyText}`;
         } else {
-          delete entry.dmPolicy;
+          const keyText = spec.key === "wecom" ? `（键名：${entry.key}）` : "";
+          cardEls.summary.textContent = `未配置参数${keyText}`;
         }
       }
 
       function fillCardForm(config) {
-        const feishu = isObject(config.feishu) ? config.feishu : {};
-        const wecomEntry = getWecomEntry(config);
-
-        wecomKey = wecomEntry.key;
-
-        feishuEnabledEl.checked = Boolean(feishu.enabled);
-        feishuDmPolicyEl.checked = isDmPolicyEnabled(feishu.dmPolicy);
-
-        const wecom = wecomEntry.value;
-        wecomEnabledEl.checked = Boolean(wecom.enabled);
-        wecomDmPolicyEl.checked = isDmPolicyEnabled(wecom.dmPolicy);
-      }
-
-      function buildCardConfig(baseConfig) {
-        const next = isObject(baseConfig) ? JSON.parse(JSON.stringify(baseConfig)) : {};
-
-        const feishu = isObject(next.feishu) ? next.feishu : {};
-        feishu.enabled = Boolean(feishuEnabledEl.checked);
-        applyDmPolicy(feishu, Boolean(feishuDmPolicyEl.checked));
-        next.feishu = feishu;
-
-        const wecom = isObject(next[wecomKey]) ? next[wecomKey] : {};
-        wecom.enabled = Boolean(wecomEnabledEl.checked);
-        applyDmPolicy(wecom, Boolean(wecomDmPolicyEl.checked));
-
-        for (const key of WECOM_KEYS) {
-          if (key !== wecomKey) {
-            delete next[key];
-          }
+        for (const spec of CHANNEL_SPECS) {
+          updateCardState(spec, config);
         }
-        next[wecomKey] = wecom;
-
-        return next;
       }
 
       function renderMode() {
@@ -219,6 +592,233 @@
         cardEditorEl.classList.toggle("hidden", jsonMode);
         jsonEditorEl.classList.toggle("hidden", !jsonMode);
         modeToggle.checked = jsonMode;
+      }
+
+      function findSpec(specKey) {
+        const spec = specByKey.get(specKey);
+        if (!spec) {
+          throw new Error(`未知渠道：${specKey}`);
+        }
+        return spec;
+      }
+
+      function closeModal() {
+        if (typeof modalEl.close === "function") {
+          modalEl.close();
+        } else {
+          modalEl.removeAttribute("open");
+        }
+      }
+
+      function showModal() {
+        if (typeof modalEl.showModal === "function") {
+          modalEl.showModal();
+        } else {
+          modalEl.setAttribute("open", "open");
+        }
+      }
+
+      function renderModalField(specKey, field, draft) {
+        const value = getPath(draft, field.path);
+        const attrSpec = `data-modal-spec="${escapeHtml(specKey)}"`;
+        const attrPath = `data-modal-field="${escapeHtml(field.path)}"`;
+        const rowClass = "grid grid-cols-[170px_minmax(0,1fr)] items-start gap-3 rounded-lg border border-base-200 px-3 py-2";
+        const labelClass = "pt-2 text-xs text-base-content/80";
+
+        if (field.type === "boolean") {
+          const checked = value === true ? "checked" : "";
+          return `
+            <div class="${rowClass}">
+              <div class="${labelClass}">${escapeHtml(field.label)}</div>
+              <label class="flex h-9 items-center">
+                <input class="toggle toggle-sm" type="checkbox" ${attrSpec} ${attrPath} ${checked} />
+              </label>
+            </div>
+          `;
+        }
+
+        if (field.type === "list") {
+          const text = joinList(value);
+          return `
+            <div class="${rowClass}">
+              <div class="${labelClass}">${escapeHtml(field.label)}</div>
+              <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" ${attrSpec} ${attrPath}>${escapeHtml(text)}</textarea>
+            </div>
+          `;
+        }
+
+        if (field.type === "json") {
+          const text = isObject(value) ? pretty(value) : "";
+          return `
+            <div class="${rowClass}">
+              <div class="${labelClass}">${escapeHtml(field.label)}</div>
+              <textarea class="textarea textarea-bordered h-32 w-full font-mono text-xs" ${attrSpec} ${attrPath}>${escapeHtml(text)}</textarea>
+            </div>
+          `;
+        }
+
+        if (field.type === "select") {
+          const current = typeof value === "string" ? value : "";
+          const options = (field.options || []).map((option) => {
+            const selected = option === current ? "selected" : "";
+            const text = option || "默认";
+            return `<option value="${escapeHtml(option)}" ${selected}>${escapeHtml(text)}</option>`;
+          }).join("");
+
+          return `
+            <div class="${rowClass}">
+              <div class="${labelClass}">${escapeHtml(field.label)}</div>
+              <select class="select select-bordered select-sm w-full" ${attrSpec} ${attrPath}>${options}</select>
+            </div>
+          `;
+        }
+
+        if (field.type === "number") {
+          const min = typeof field.min === "number" ? `min="${field.min}"` : "";
+          const max = typeof field.max === "number" ? `max="${field.max}"` : "";
+          const step = field.integer === false ? 'step="0.1"' : 'step="1"';
+          const text = Number.isFinite(value) ? String(value) : "";
+
+          return `
+            <div class="${rowClass}">
+              <div class="${labelClass}">${escapeHtml(field.label)}</div>
+              <input class="input input-bordered input-sm w-full" type="number" ${min} ${max} ${step} value="${escapeHtml(text)}" ${attrSpec} ${attrPath} />
+            </div>
+          `;
+        }
+
+        const type = field.type === "password" ? "password" : "text";
+        const text = typeof value === "string" ? value : "";
+        return `
+          <div class="${rowClass}">
+            <div class="${labelClass}">${escapeHtml(field.label)}</div>
+            <input class="input input-bordered input-sm w-full" type="${type}" value="${escapeHtml(text)}" ${attrSpec} ${attrPath} />
+          </div>
+        `;
+      }
+
+      function openChannelConfig(specKey) {
+        if (mode !== "card") {
+          throw new Error("请先退出 JSON 编辑模式再配置参数");
+        }
+
+        const spec = findSpec(specKey);
+        const entry = getChannelEntry(channelsConfig, spec.key);
+
+        activeSpec = spec;
+        activeResolvedKey = entry.key;
+        activeDraft = cloneObject(entry.value);
+
+        modalTitleEl.textContent = `${spec.title} 参数配置`;
+        modalSubtitleEl.textContent = "统一表单样式，仅展示常用字段；其余字段请在 JSON 模式中编辑。";
+        modalFieldsEl.innerHTML = spec.fields.map((field) => renderModalField(spec.key, field, activeDraft)).join("");
+
+        showModal();
+      }
+
+      function readModalField(field, inputEl, draft, specTitle) {
+        let value;
+
+        if (field.type === "boolean") {
+          value = inputEl.checked;
+        } else if (field.type === "list") {
+          value = parseList(inputEl.value);
+        } else if (field.type === "json") {
+          value = parseObjectArea(inputEl.value, `${specTitle}.${field.path}`);
+        } else if (field.type === "number") {
+          value = parseNumberValue(inputEl.value, `${specTitle}.${field.path}`, field);
+        } else {
+          value = String(inputEl.value || "").trim();
+        }
+
+        const shouldDelete =
+          value === undefined ||
+          value === "" ||
+          (Array.isArray(value) && value.length === 0) ||
+          (isObject(value) && Object.keys(value).length === 0);
+
+        if (shouldDelete) {
+          deletePath(draft, field.path);
+        } else {
+          setPath(draft, field.path, value);
+        }
+      }
+
+      function applyActiveModal() {
+        if (!activeSpec) {
+          return;
+        }
+
+        const nextDraft = cloneObject(activeDraft);
+
+        for (const field of activeSpec.fields) {
+          const fieldEl = modalFieldsEl.querySelector(`[data-modal-field="${field.path}"]`);
+          if (!fieldEl) {
+            continue;
+          }
+
+          readModalField(field, fieldEl, nextDraft, activeSpec.title);
+        }
+
+        validatePolicySelections(activeSpec, nextDraft);
+        if (typeof activeSpec.validate === "function") {
+          activeSpec.validate(nextDraft);
+        }
+
+        setChannelEntry(channelsConfig, activeSpec.key, nextDraft, activeResolvedKey);
+        fillCardForm(channelsConfig);
+      }
+
+      function setEnabledFromCard(specKey, enabled) {
+        const entry = getChannelEntry(channelsConfig, specKey);
+        const draft = cloneObject(entry.value);
+
+        if (enabled) {
+          draft.enabled = true;
+        } else {
+          if (Object.keys(draft).length === 0) {
+            updateCardState(findSpec(specKey), channelsConfig);
+            return;
+          }
+
+          if (Object.keys(draft).length === 1 && Object.prototype.hasOwnProperty.call(draft, "enabled")) {
+            delete draft.enabled;
+          } else {
+            draft.enabled = false;
+          }
+        }
+
+        setChannelEntry(channelsConfig, specKey, draft, entry.key);
+        updateCardState(findSpec(specKey), channelsConfig);
+      }
+
+      function buildCardConfig(baseConfig) {
+        const next = isObject(baseConfig) ? cloneObject(baseConfig) : {};
+
+        for (const spec of CHANNEL_SPECS) {
+          const cardEls = getChannelCardElements(spec.key);
+          if (!cardEls) {
+            continue;
+          }
+
+          const enabled = Boolean(cardEls.enabled.checked);
+          const entry = getChannelEntry(next, spec.key);
+          const channel = cloneObject(entry.value);
+
+          if (enabled) {
+            channel.enabled = true;
+          } else if (Object.keys(channel).length > 0) {
+            if (Object.keys(channel).length === 1 && Object.prototype.hasOwnProperty.call(channel, "enabled")) {
+              delete channel.enabled;
+            } else {
+              channel.enabled = false;
+            }
+          }
+
+          setChannelEntry(next, spec.key, channel, entry.key);
+        }
+
+        return next;
       }
 
       async function api(path, options = {}) {
@@ -236,10 +836,11 @@
 
       async function loadSection() {
         const data = await api(`/api/config/${SECTION}`);
-        channelsConfig = ensureObject(data.data || {}, "channels");
+        channelsConfig = ensureObject(data.data || {}, SECTION);
+        currentWecomKey = getWecomEntry(channelsConfig).key;
         fillCardForm(channelsConfig);
         jsonInputEl.value = pretty(channelsConfig);
-        metaEl.textContent = "channels 已加载";
+        metaEl.textContent = `${SECTION} 已加载`;
       }
 
       function enterJsonMode() {
@@ -251,15 +852,16 @@
       }
 
       function leaveJsonMode() {
-        const parsed = parseJsonObject(jsonInputEl.value, "channels");
+        const parsed = parseJsonObject(jsonInputEl.value, SECTION);
         channelsConfig = parsed;
+        currentWecomKey = getWecomEntry(parsed).key;
         fillCardForm(parsed);
         mode = "card";
         renderMode();
       }
 
       async function saveSection() {
-        const payload = mode === "json" ? parseJsonObject(jsonInputEl.value, "channels") : buildCardConfig(channelsConfig);
+        const payload = mode === "json" ? parseJsonObject(jsonInputEl.value, SECTION) : buildCardConfig(channelsConfig);
 
         await api(`/api/config/${SECTION}`, {
           method: "PUT",
@@ -267,9 +869,10 @@
         });
 
         channelsConfig = payload;
+        currentWecomKey = getWecomEntry(payload).key;
         fillCardForm(payload);
         jsonInputEl.value = pretty(payload);
-        metaEl.textContent = "channels 配置已保存";
+        metaEl.textContent = `${SECTION} 配置已保存`;
       }
 
       modeToggle.addEventListener("change", (event) => {
@@ -280,12 +883,67 @@
           } else {
             leaveJsonMode();
           }
-          metaEl.textContent = enabled ? "已切换到 JSON 编辑" : "已切换到卡片编辑";
+          metaEl.textContent = enabled ? "已切换到 JSON 编辑" : "已切换到表单编辑";
         } catch (error) {
           modeToggle.checked = mode === "json";
           metaEl.textContent = `切换失败: ${error.message}`;
         }
       });
+
+      channelListEl.addEventListener("click", (event) => {
+        const btn = event.target.closest("[data-action='open-config']");
+        if (!btn) {
+          return;
+        }
+
+        const specKey = btn.getAttribute("data-channel-key");
+        if (!specKey) {
+          return;
+        }
+
+        try {
+          openChannelConfig(specKey);
+        } catch (error) {
+          metaEl.textContent = `打开配置失败: ${error.message}`;
+        }
+      });
+
+      channelListEl.addEventListener("change", (event) => {
+        const input = event.target.closest("[data-channel-enabled]");
+        if (!input) {
+          return;
+        }
+
+        const specKey = input.getAttribute("data-channel-key");
+        if (!specKey) {
+          return;
+        }
+
+        try {
+          setEnabledFromCard(specKey, Boolean(input.checked));
+          jsonInputEl.value = pretty(channelsConfig);
+        } catch (error) {
+          metaEl.textContent = `更新开关失败: ${error.message}`;
+        }
+      });
+
+      modalApplyEl.addEventListener("click", () => {
+        try {
+          applyActiveModal();
+          jsonInputEl.value = pretty(channelsConfig);
+          metaEl.textContent = `${activeSpec ? activeSpec.title : "渠道"} 参数已应用（未保存）`;
+          closeModal();
+        } catch (error) {
+          metaEl.textContent = `应用参数失败: ${error.message}`;
+        }
+      });
+
+      const closeModalHandlers = [modalCloseEl, modalCancelEl];
+      for (const el of closeModalHandlers) {
+        el.addEventListener("click", () => {
+          closeModal();
+        });
+      }
 
       document.querySelector('[data-action="reload"]').addEventListener("click", async (event) => {
         event.currentTarget.disabled = true;
@@ -313,6 +971,7 @@
 
       (async function init() {
         try {
+          renderChannelCards();
           renderMode();
           await loadSection();
         } catch (error) {
