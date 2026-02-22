@@ -6,7 +6,7 @@ module.exports = {
       script: "bun",
       args: "run src/index.ts",
       interpreter: "none",
-      autorestart: true,
+      autorestart: false,
       env: {
         NODE_ENV: "production",
         PORT: "26222",
