@@ -2,8 +2,11 @@ module.exports = {
   apps: [
     {
       name: "clawos",
-      script: "src/index.ts",
-      interpreter: "bun",
+      cwd: __dirname,
+      script: "bun",
+      args: "run src/index.ts",
+      interpreter: "none",
+      autorestart: true,
       env: {
         NODE_ENV: "production",
         PORT: "26222",
