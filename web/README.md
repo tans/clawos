@@ -1,0 +1,144 @@
+# clawos Web（Hono 官网）说明
+
+本目录用于实现 `clawos` 的官网服务（基于 Hono），主要面向中文用户，提供介绍、下载与发布管理能力。
+
+## 目标
+
+1. 介绍 `clawos` 产品能力和使用场景。
+2. 提供 `clawos_xiake.json` 下载。
+3. 提供最新安装包下载（Windows 可执行文件）。
+4. 提供上传接口，支持脚本直接上传安装包和 `clawos_xiake.json`。
+
+## 功能范围
+
+### 1) 官网页面
+
+- 首页：介绍 `clawos`、核心能力、Windows + WSL 使用定位。
+- 下载页：
+  - `clawos_xiake.json` 下载入口
+  - 最新安装包下载入口（如 `clawos-setup-latest.exe`）
+- 可选：版本信息展示（版本号、发布时间、更新说明）。
+
+### 2) 下载接口
+
+- `GET /downloads/clawos_xiake.json`
+  - 返回最新 `clawos_xiake.json` 文件
+- `GET /downloads/latest`
+  - 返回最新安装包（建议重定向到真实文件 URL，或直接流式返回）
+- `GET /api/releases/latest`
+  - 返回最新版本元数据（JSON）
+
+示例返回：
+
+```json
+{
+  "version": "0.1.0",
+  "publishedAt": "2026-02-22T08:00:00Z",
+  "installer": {
+    "name": "clawos-setup-0.1.0.exe",
+    "size": 12345678,
+    "sha256": "..."
+  },
+  "xiakeConfig": {
+    "name": "clawos_xiake.json",
+    "size": 91,
+    "sha256": "..."
+  }
+}
+```
+
+### 3) 上传接口（脚本可直接调用）
+
+上传接口用于发布流程，不给普通访客开放。必须鉴权。
+
+- `POST /api/upload/installer`
+  - 上传安装包（`multipart/form-data`）
+  - 字段：`file`
+- `POST /api/upload/xiake-config`
+  - 上传 `clawos_xiake.json`（`multipart/form-data`）
+  - 字段：`file`
+
+统一要求：
+
+- Header 使用 `Authorization: Bearer <UPLOAD_TOKEN>`
+- 服务端校验：
+  - 文件名和扩展名
+  - 文件大小上限
+  - 可选：sha256 校验
+- 上传成功后更新“latest”元数据，使下载入口自动指向新文件
+- 返回结构：
+
+```json
+{
+  "ok": true,
+  "fileName": "clawos-setup-0.1.0.exe",
+  "size": 12345678,
+  "sha256": "...",
+  "url": "/downloads/latest"
+}
+```
+
+## 推荐目录结构
+
+```txt
+web/
+  README.md
+  src/
+    index.ts              # Hono 入口
+    routes/
+      page.ts             # 官网页面路由
+      download.ts         # 下载路由
+      upload.ts           # 上传路由
+      release.ts          # 版本元数据路由
+    lib/
+      auth.ts             # 上传鉴权
+      storage.ts          # 文件存储与元数据读写
+      hash.ts             # sha256
+  storage/
+    releases/
+      latest.json         # 当前最新版本元数据
+    assets/
+      installer/          # 安装包文件
+      config/             # clawos_xiake.json
+```
+
+## 环境变量建议
+
+- `PORT`：服务端口（默认 `8787` 或按部署环境设置）
+- `UPLOAD_TOKEN`：上传接口鉴权 Token（必填）
+- `MAX_INSTALLER_SIZE_MB`：安装包大小上限
+- `MAX_CONFIG_SIZE_MB`：配置文件大小上限
+- `STORAGE_DIR`：文件存储根目录（默认 `web/storage`）
+
+## 上传脚本示例
+
+上传安装包：
+
+```bash
+curl -X POST "http://127.0.0.1:8787/api/upload/installer" \
+  -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
+  -F "file=@./dist/clawos.exe"
+```
+
+上传 `clawos_xiake.json`：
+
+```bash
+curl -X POST "http://127.0.0.1:8787/api/upload/xiake-config" \
+  -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
+  -F "file=@./clawos_xiake.json"
+```
+
+## 安全与发布约束
+
+- 上传接口必须开启鉴权，且只用于内部发布流程。
+- 不允许目录穿越，保存文件时使用服务端生成的安全路径。
+- 建议上传后生成并落盘 sha256，下载页展示摘要值，便于用户校验。
+- 建议保留版本化文件（如 `clawos-setup-0.1.0.exe`），`latest` 仅做软指针。
+
+## 里程碑建议
+
+1. 完成 Hono 基础服务和首页静态内容。
+2. 完成下载路由与 `latest.json` 元数据读取。
+3. 完成上传接口与 Token 鉴权。
+4. 完成上传后自动更新 latest 元数据。
+5. 增加基础测试（鉴权、文件校验、latest 更新逻辑）。
