@@ -2,7 +2,6 @@ module.exports = {
   apps: [
     {
       name: "clawos",
-      cwd: ".",
       script: "src/index.ts",
       interpreter: "bun",
       env: {
