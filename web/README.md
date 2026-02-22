@@ -2,6 +2,10 @@
 
 本目录用于实现 `clawos` 的官网服务（基于 Hono），主要面向中文用户，提供介绍、下载与发布管理能力。
 
+## 正式域名
+
+- 官网域名：`https://clawos.minapp.xin`
+
 ## 目标
 
 1. 介绍 `clawos` 产品能力和使用场景。
@@ -104,7 +108,7 @@ web/
 
 ## 环境变量建议
 
-- `PORT`：服务端口（默认 `8787` 或按部署环境设置）
+- `PORT`：服务端口（默认 `26222` 或按部署环境设置）
 - `UPLOAD_TOKEN`：上传接口鉴权 Token（必填）
 - `MAX_INSTALLER_SIZE_MB`：安装包大小上限
 - `MAX_CONFIG_SIZE_MB`：配置文件大小上限
@@ -115,7 +119,7 @@ web/
 上传安装包：
 
 ```bash
-curl -X POST "http://127.0.0.1:8787/api/upload/installer" \
+curl -X POST "https://clawos.minapp.xin/api/upload/installer" \
   -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
   -F "file=@./dist/clawos.exe"
 ```
@@ -123,7 +127,7 @@ curl -X POST "http://127.0.0.1:8787/api/upload/installer" \
 上传 `clawos_xiake.json`：
 
 ```bash
-curl -X POST "http://127.0.0.1:8787/api/upload/xiake-config" \
+curl -X POST "https://clawos.minapp.xin/api/upload/xiake-config" \
   -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
   -F "file=@./clawos_xiake.json"
 ```

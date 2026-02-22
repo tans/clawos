@@ -32,7 +32,7 @@ export function getEnv(): AppEnv {
     return cachedEnv;
   }
 
-  const port = readInt(process.env.PORT, 8787);
+  const port = readInt(process.env.PORT, 26222);
   const maxInstallerSizeMb = readInt(process.env.MAX_INSTALLER_SIZE_MB, 300);
   const maxConfigSizeMb = readInt(process.env.MAX_CONFIG_SIZE_MB, 2);
 
