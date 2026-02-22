@@ -8,8 +8,8 @@ const OPENCLAW_SOURCE_DIR = "/data/openclaw";
 function buildGitRepairScript(): string {
   return [
     "set -euo pipefail",
-    'if command -v git >/dev/null 2>&1; then',
-    '  echo "git 已存在：$(command -v git)"',
+    'if type -P git >/dev/null 2>&1; then',
+    '  echo "git 已存在：$(type -P git)"',
     "  exit 0",
     "fi",
     'echo "检测到缺少 git，开始安装..."',
@@ -23,48 +23,48 @@ function buildGitRepairScript(): string {
 function buildNodeToolsRepairScript(): string {
   return [
     "set -euo pipefail",
-    'if ! command -v npm >/dev/null 2>&1; then',
+    'if ! type -P npm >/dev/null 2>&1; then',
     '  echo "缺少 npm，开始安装 nodejs npm..."',
     "  export DEBIAN_FRONTEND=noninteractive",
     "  apt-get update",
     "  apt-get install -y nodejs npm",
     "fi",
-    'if ! command -v pnpm >/dev/null 2>&1; then',
+    'if ! type -P pnpm >/dev/null 2>&1; then',
     '  echo "检测到缺少 pnpm，开始安装..."',
-    "  if command -v corepack >/dev/null 2>&1; then",
+    "  if type -P corepack >/dev/null 2>&1; then",
     "    corepack enable",
     "    corepack prepare pnpm@latest --activate",
     "  else",
     "    npm install -g pnpm",
     "  fi",
     "fi",
-    'if ! command -v nrm >/dev/null 2>&1; then',
+    'if ! type -P nrm >/dev/null 2>&1; then',
     '  echo "检测到缺少 nrm，开始安装..."',
     "  npm install -g nrm",
     "fi",
-    'echo "pnpm 路径：$(command -v pnpm 2>/dev/null || echo not-found)"',
-    'echo "nrm 路径：$(command -v nrm 2>/dev/null || echo not-found)"',
+    'echo "pnpm 路径：$(type -P pnpm 2>/dev/null || echo not-found)"',
+    'echo "nrm 路径：$(type -P nrm 2>/dev/null || echo not-found)"',
   ].join("\n");
 }
 
 function buildOpenclawRepairScript(): string {
   return [
     "set -euo pipefail",
-    'if command -v openclaw >/dev/null 2>&1; then',
-    '  echo "openclaw 已存在：$(command -v openclaw)"',
+    'if type -P openclaw >/dev/null 2>&1; then',
+    '  echo "openclaw 已存在：$(type -P openclaw)"',
     "  exit 0",
     "fi",
     `if [ ! -d "${OPENCLAW_SOURCE_DIR}" ]; then`,
     `  echo "目录不存在：${OPENCLAW_SOURCE_DIR}。请先在 WSL 安装 openclaw 源码。" >&2`,
     "  exit 1",
     "fi",
-    'if ! command -v pnpm >/dev/null 2>&1; then',
+    'if ! type -P pnpm >/dev/null 2>&1; then',
     '  echo "缺少 pnpm，无法修复 openclaw。请先执行 pnpm 修复步骤。" >&2',
     "  exit 1",
     "fi",
     `cd "${OPENCLAW_SOURCE_DIR}"`,
     "pnpm install",
-    'if ! command -v openclaw >/dev/null 2>&1; then',
+    'if ! type -P openclaw >/dev/null 2>&1; then',
     '  echo "openclaw 仍缺失，尝试创建命令封装到 /usr/local/bin/openclaw"',
     "  mkdir -p /usr/local/bin",
     "  cat > /usr/local/bin/openclaw <<'EOF'",
@@ -75,7 +75,7 @@ function buildOpenclawRepairScript(): string {
     "EOF",
     "  chmod +x /usr/local/bin/openclaw",
     "fi",
-    'if ! command -v openclaw >/dev/null 2>&1; then',
+    'if ! type -P openclaw >/dev/null 2>&1; then',
     '  echo "openclaw 命令仍不可用，请手工检查 /data/openclaw 与 pnpm 依赖。" >&2',
     "  exit 1",
     "fi",
@@ -132,6 +132,18 @@ export function buildWslRepairSteps(missing: string[]): Step[] {
   return steps;
 }
 
+function isBenignShellNoise(line: string): boolean {
+  const normalized = line.trim().toLowerCase();
+  return normalized === "logout";
+}
+
+function logProbeOutput(task: Task, title: string, output: string, forceError = false): void {
+  for (const line of normalizeOutput(output)) {
+    const level = forceError && !isBenignShellNoise(line) ? "error" : "info";
+    appendTaskLog(task, `${title}${line}`, level);
+  }
+}
+
 async function runWslStep(task: Task, step: number, totalSteps: number, current: Step): Promise<void> {
   task.step = step;
   appendTaskLog(task, `步骤 ${step}/${totalSteps}：${current.name}`);
@@ -171,16 +183,23 @@ export function startWslRepairTask(): { task: Task; reused: boolean } {
       appendTaskLog(task, "步骤 1/1：检测 WSL 缺少命令");
       const initial = await checkWslCommandRequirements();
 
+      if (initial.stdout.trim().length > 0) {
+        logProbeOutput(task, "检测输出(stdout)：", initial.stdout);
+      }
       if (initial.stderr.trim().length > 0) {
-        appendTaskLog(task, `检测输出：${initial.stderr.trim()}`, initial.ok ? "info" : "error");
+        logProbeOutput(task, "检测输出(stderr)：", initial.stderr, !initial.ok);
       }
 
-      if (initial.ok || initial.missing.length === 0) {
+      if (initial.ok) {
         appendTaskLog(task, "未检测到缺失命令，无需修复。");
         task.status = "success";
         task.endedAt = new Date().toISOString();
         appendTaskLog(task, "任务完成");
         return;
+      }
+
+      if (initial.missing.length === 0) {
+        throw new Error("WSL 命令探测失败：输出异常，未识别到有效探测结果。请先检查 WSL shell 初始化脚本。");
       }
 
       appendTaskLog(task, `检测到缺失命令：${initial.missing.join(", ")}`, "error");
@@ -199,8 +218,14 @@ export function startWslRepairTask(): { task: Task; reused: boolean } {
       task.step = task.totalSteps;
       appendTaskLog(task, `步骤 ${task.totalSteps}/${task.totalSteps}：复检命令`);
       const finalCheck = await checkWslCommandRequirements();
+      if (finalCheck.stdout.trim().length > 0) {
+        logProbeOutput(task, "复检输出(stdout)：", finalCheck.stdout);
+      }
       if (finalCheck.stderr.trim().length > 0) {
-        appendTaskLog(task, `复检输出：${finalCheck.stderr.trim()}`, finalCheck.ok ? "info" : "error");
+        logProbeOutput(task, "复检输出(stderr)：", finalCheck.stderr, !finalCheck.ok);
+      }
+      if (!finalCheck.ok && finalCheck.missing.length === 0) {
+        throw new Error("修复后复检失败：命令探测输出异常，未识别到有效探测结果。");
       }
       if (!finalCheck.ok && finalCheck.missing.length > 0) {
         throw new Error(`修复后仍缺少命令：${finalCheck.missing.join(", ")}`);

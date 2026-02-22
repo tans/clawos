@@ -16,6 +16,7 @@ export type WslCommandCheckResult = {
   commands: WslCommandStatus[];
   missing: string[];
   code: number;
+  stdout: string;
   stderr: string;
   command: string;
 };
@@ -32,15 +33,41 @@ export function buildWslCommandProbeScript(commands = Array.from(REQUIRED_WSL_CO
   return [
     "set +e",
     `for cmd in ${commandList}; do`,
-    '  path="$(command -v "$cmd" 2>/dev/null | head -n 1)"',
+    '  path="$(type -P "$cmd" 2>/dev/null | head -n 1)"',
     '  if [ -n "$path" ]; then',
-    `    echo "${OK_PREFIX}:$cmd:$path"`,
+    `    printf "${OK_PREFIX}:%s:%s\\n" "$cmd" "$path"`,
     "  else",
-    `    echo "${MISSING_PREFIX}:$cmd"`,
+    `    printf "${MISSING_PREFIX}:%s\\n" "$cmd"`,
     "  fi",
     "done",
     "exit 0",
   ].join("\n");
+}
+
+function sanitizeProbeLine(rawLine: string): string {
+  return rawLine
+    .replace(/\u0000/g, "")
+    .replace(/\u001b\[[0-9;?]*[ -/]*[@-~]/g, "")
+    .trim();
+}
+
+function findProbeMarkerIndex(line: string, marker: string): number {
+  const idx = line.indexOf(marker);
+  return idx >= 0 ? idx : -1;
+}
+
+function countProbeSignals(stdout: string): number {
+  let count = 0;
+  for (const rawLine of stdout.split(/\r?\n/g)) {
+    const line = sanitizeProbeLine(rawLine);
+    if (!line) {
+      continue;
+    }
+    if (findProbeMarkerIndex(line, `${OK_PREFIX}:`) >= 0 || findProbeMarkerIndex(line, `${MISSING_PREFIX}:`) >= 0) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 export function parseWslCommandProbeOutput(
@@ -53,13 +80,15 @@ export function parseWslCommandProbeOutput(
   );
 
   for (const rawLine of stdout.split(/\r?\n/g)) {
-    const line = rawLine.trim();
+    const line = sanitizeProbeLine(rawLine);
     if (!line) {
       continue;
     }
 
-    if (line.startsWith(`${OK_PREFIX}:`)) {
-      const body = line.slice(`${OK_PREFIX}:`.length);
+    const okMarker = `${OK_PREFIX}:`;
+    const okIndex = findProbeMarkerIndex(line, okMarker);
+    if (okIndex >= 0) {
+      const body = line.slice(okIndex + okMarker.length);
       const [command, ...pathParts] = body.split(":");
       if (!command || !map.has(command)) {
         continue;
@@ -69,8 +98,10 @@ export function parseWslCommandProbeOutput(
       continue;
     }
 
-    if (line.startsWith(`${MISSING_PREFIX}:`)) {
-      const command = line.slice(`${MISSING_PREFIX}:`.length).trim();
+    const missingMarker = `${MISSING_PREFIX}:`;
+    const missingIndex = findProbeMarkerIndex(line, missingMarker);
+    if (missingIndex >= 0) {
+      const command = line.slice(missingIndex + missingMarker.length).trim();
       if (!command || !map.has(command)) {
         continue;
       }
@@ -85,17 +116,30 @@ export async function checkWslCommandRequirements(
   commands = Array.from(REQUIRED_WSL_COMMANDS),
   runner: WslRunner = runWslScript
 ): Promise<WslCommandCheckResult> {
-  const script = buildWslCommandProbeScript(commands);
+  const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
+  const script = buildWslCommandProbeScript(normalized);
   const result = await runner(script);
-  const commandStatuses = parseWslCommandProbeOutput(result.stdout, commands);
-  const missing = commandStatuses.filter((item) => !item.exists).map((item) => item.command);
+  const signalCount = countProbeSignals(result.stdout);
+  const hasProbeSignals = signalCount > 0;
+  const commandStatuses = parseWslCommandProbeOutput(result.stdout, normalized);
+  const missing = hasProbeSignals
+    ? commandStatuses.filter((item) => !item.exists).map((item) => item.command)
+    : result.ok
+      ? []
+      : normalized;
+  const probeOutputIssue = result.ok && !hasProbeSignals;
+  const extraProbeError = "WSL 命令探测输出异常：未收到探测标记行。";
+  const stderr = probeOutputIssue
+    ? [result.stderr.trim(), extraProbeError].filter((item) => item.length > 0).join("\n")
+    : result.stderr;
 
   return {
-    ok: result.ok && missing.length === 0,
+    ok: result.ok && hasProbeSignals && missing.length === 0,
     commands: commandStatuses,
     missing,
     code: result.code,
-    stderr: result.stderr,
+    stdout: result.stdout,
+    stderr,
     command: result.command,
   };
 }

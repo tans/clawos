@@ -25,4 +25,13 @@ describe("openclaw source update steps", () => {
       expect(script).toContain(`cd ${OPENCLAW_SOURCE_DIR}`);
     }
   });
+
+  it("ignores local pnpm-lock.yaml changes before git pull", () => {
+    const steps = buildOpenclawSourceUpdateSteps();
+    const gitPullStep = steps[1];
+
+    expect(gitPullStep?.script).toContain("pnpm-lock.yaml");
+    expect(gitPullStep?.script).toContain("git diff --cached --quiet -- pnpm-lock.yaml");
+    expect(gitPullStep?.script).toContain("git pull -X theirs");
+  });
 });

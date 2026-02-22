@@ -25,8 +25,8 @@ describe("wsl command requirements", () => {
   it("builds probe script with all required commands", () => {
     const script = buildWslCommandProbeScript();
     expect(script).toContain("for cmd in 'openclaw' 'git' 'pnpm' 'nrm'; do");
-    expect(script).toContain('path="$(command -v "$cmd" 2>/dev/null | head -n 1)"');
-    expect(script).toContain("command -v \"$cmd\"");
+    expect(script).toContain('path="$(type -P "$cmd" 2>/dev/null | head -n 1)"');
+    expect(script).toContain(`printf "__CLAWOS_WSL_CMD_OK__:%s:%s\\n" "$cmd" "$path"`);
   });
 
   it("parses probe output for existing and missing commands", () => {
@@ -43,6 +43,22 @@ describe("wsl command requirements", () => {
       { command: "openclaw", exists: true, path: "/usr/local/bin/openclaw" },
       { command: "git", exists: true, path: "/usr/bin/git" },
       { command: "pnpm", exists: false },
+      { command: "nrm", exists: false },
+    ]);
+  });
+
+  it("parses probe output with shell noise and ansi prefix", () => {
+    const statuses = parseWslCommandProbeOutput(
+      [
+        "logout",
+        "\u001b[0m__CLAWOS_WSL_CMD_OK__:git:/usr/bin/git",
+        "__CLAWOS_WSL_CMD_MISSING__:nrm",
+      ].join("\n"),
+      ["git", "nrm"]
+    );
+
+    expect(statuses).toEqual([
+      { command: "git", exists: true, path: "/usr/bin/git" },
       { command: "nrm", exists: false },
     ]);
   });
@@ -64,6 +80,7 @@ describe("wsl command requirements", () => {
 
     expect(result.ok).toBe(false);
     expect(result.missing).toEqual(["nrm"]);
+    expect(result.stdout).toContain("__CLAWOS_WSL_CMD_OK__:pnpm:/usr/local/bin/pnpm");
     expect(result.commands.find((item) => item.command === "pnpm")).toEqual({
       command: "pnpm",
       exists: true,
@@ -87,5 +104,18 @@ describe("wsl command requirements", () => {
     expect(result.code).toBe(127);
     expect(result.missing).toEqual(["openclaw", "git"]);
     expect(result.stderr).toBe("wsl.exe not found");
+  });
+
+  it("flags probe output anomaly when no marker lines are present", async () => {
+    const result = await checkWslCommandRequirements(["git"], async () =>
+      runnerResult({
+        ok: true,
+        stdout: "logout",
+      })
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.missing).toEqual([]);
+    expect(result.stderr).toContain("未收到探测标记行");
   });
 });

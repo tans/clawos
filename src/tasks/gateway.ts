@@ -92,6 +92,23 @@ function buildOpenclawStepScript(command: string): string {
   return `set -euo pipefail\ncd ${OPENCLAW_SOURCE_DIR}\n${command}`;
 }
 
+function buildGitPullWithLockOverrideScript(): string {
+  return [
+    "set -euo pipefail",
+    `cd ${OPENCLAW_SOURCE_DIR}`,
+    "if [ -e pnpm-lock.yaml ]; then",
+    "  if ! git diff --quiet -- pnpm-lock.yaml || ! git diff --cached --quiet -- pnpm-lock.yaml; then",
+    '    echo "检测到 pnpm-lock.yaml 本地变动，已忽略该文件后继续拉取..."',
+    "    if ! git restore --source=HEAD --staged --worktree pnpm-lock.yaml 2>/dev/null; then",
+    "      git reset -q HEAD -- pnpm-lock.yaml",
+    "      git checkout -- pnpm-lock.yaml",
+    "    fi",
+    "  fi",
+    "fi",
+    "git pull -X theirs",
+  ].join("\n");
+}
+
 export function buildOpenclawSourceUpdateSteps(): Step[] {
   return [
     {
@@ -102,7 +119,7 @@ export function buildOpenclawSourceUpdateSteps(): Step[] {
     {
       name: "拉取最新源码（git pull -X theirs）",
       command: `cd ${OPENCLAW_SOURCE_DIR} && git pull -X theirs`,
-      script: buildOpenclawStepScript("git pull -X theirs"),
+      script: buildGitPullWithLockOverrideScript(),
     },
     {
       name: "切换 npm 源（nrm use tencent）",
