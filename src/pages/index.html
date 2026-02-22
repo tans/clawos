@@ -248,6 +248,15 @@
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <span
+                                                class="h-2.5 w-2.5 rounded-full bg-base-300/50"
+                                                aria-hidden="true"
+                                            ></span>
+                                            <span data-status="openclaw-version"
+                                                >openclaw 版本: 未知</span
+                                            >
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span
                                                 class="h-2.5 w-2.5 rounded-full bg-base-300"
                                                 data-status-light="gateway"
                                                 aria-hidden="true"
@@ -306,6 +315,9 @@
         <script>
             const statusBadges = {
                 execution: document.querySelector('[data-status="execution"]'),
+                openclawVersion: document.querySelector(
+                    '[data-status="openclaw-version"]',
+                ),
                 wslLabel: document.querySelector('[data-status-label="wsl"]'),
                 openclawLabel: document.querySelector(
                     '[data-status-label="openclaw"]',
@@ -522,6 +534,14 @@
                     "openclaw",
                     Boolean(info.openclawReady),
                 );
+                if (statusBadges.openclawVersion) {
+                    const openclawVersion =
+                        typeof info.openclawVersion === "string" &&
+                        info.openclawVersion.trim()
+                            ? info.openclawVersion.trim()
+                            : "未知";
+                    statusBadges.openclawVersion.textContent = `openclaw 版本: ${openclawVersion}`;
+                }
                 setLight(
                     statusBadges.gatewayLabel,
                     statusBadges.gatewayLight,
