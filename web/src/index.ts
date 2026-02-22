@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getEnv } from "./lib/env";
+import { getEnv, validateStartupEnv } from "./lib/env";
 import { pageRoutes } from "./routes/page";
 import { releaseRoutes } from "./routes/release";
 import { downloadRoutes } from "./routes/download";
@@ -28,12 +28,24 @@ app.onError((error, c) => {
 });
 
 if (import.meta.main) {
-  const { port } = getEnv();
+  const env = getEnv();
+  const checks = validateStartupEnv(env);
+
+  if (checks.length === 0) {
+    console.log("[clawos-web] 环境变量检查通过。");
+  } else {
+    for (const check of checks) {
+      const prefix = check.level === "error" ? "[ERROR]" : "[WARN]";
+      console.log(`[clawos-web] ${prefix} ${check.message}`);
+    }
+  }
+
   Bun.serve({
-    port,
+    port: env.port,
     fetch: app.fetch,
   });
-  console.log(`[clawos-web] running on http://127.0.0.1:${port}`);
+  console.log(`[clawos-web] running on http://127.0.0.1:${env.port}`);
+  console.log(`[clawos-web] storage dir: ${env.storageDir}`);
 }
 
 export default app;

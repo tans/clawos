@@ -8,6 +8,11 @@ export interface AppEnv {
   storageDir: string;
 }
 
+export interface StartupEnvCheck {
+  level: "warn" | "error";
+  message: string;
+}
+
 let cachedEnv: AppEnv | null = null;
 
 function readInt(value: string | undefined, fallback: number): number {
@@ -49,4 +54,24 @@ export function getEnv(): AppEnv {
 
 export function resetEnvCacheForTests(): void {
   cachedEnv = null;
+}
+
+export function validateStartupEnv(env: AppEnv): StartupEnvCheck[] {
+  const checks: StartupEnvCheck[] = [];
+
+  if (!env.uploadToken) {
+    checks.push({
+      level: "warn",
+      message: "未配置 UPLOAD_TOKEN，上传接口将不可用（会返回 503）。",
+    });
+  }
+
+  if (env.port < 1 || env.port > 65535) {
+    checks.push({
+      level: "error",
+      message: `PORT 不合法：${env.port}，必须在 1-65535 之间。`,
+    });
+  }
+
+  return checks;
 }
