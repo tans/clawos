@@ -204,6 +204,12 @@
                                         检查环境
                                     </button>
                                     <button
+                                        class="btn btn-warning btn-sm"
+                                        data-action="repair-env"
+                                    >
+                                        环境修复
+                                    </button>
+                                    <button
                                         class="btn btn-outline btn-sm"
                                         data-action="check-browser-connectivity"
                                     >
@@ -549,6 +555,9 @@
                 switch (action) {
                     case "check-env":
                         await checkEnvironment();
+                        return;
+                    case "repair-env":
+                        await startTask("/api/system/repair");
                         return;
                     case "check-browser-connectivity":
                         await checkBrowserConnectivity();

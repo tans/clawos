@@ -357,7 +357,7 @@ pageRoutes.get("/", async (c) => {
           <span>ClawOS</span>
         </div>
         <nav class="nav">
-          <a class="btn btn-ghost" href="/downloads"><span class="btn-icon">${icon("download")}</span>下载中心</a>
+          <a class="btn btn-ghost" href="/downloads"><span class="btn-icon">${icon("download")}</span>下载</a>
         </nav>
       </header>
 
@@ -371,19 +371,17 @@ pageRoutes.get("/", async (c) => {
           <p>用可视化界面管理 Openclaw：升级、重启、配置一步完成。</p>
           <div class="actions">
             <a class="btn btn-primary" href="${downloadHref}"><span class="btn-icon">${icon("download")}</span>下载安装</a>
-            <a class="btn btn-ghost" href="/downloads/clawos_xiake.json"><span class="btn-icon">${icon("config")}</span>下载配置文件</a>
           </div>
         </div>
         <aside class="visual">
           ${heroVisual()}
-          <div class="visual-caption">ClawOS 控制台 · 下载中心 · 自动化发布</div>
+          <div class="visual-caption">ClawOS 控制台 · 自动化发布</div>
         </aside>
       </section>
 
       <section class="card section">
         <div class="section-head">
           <h2>核心能力</h2>
-          <span>少文字，直接上手</span>
         </div>
         <div class="grid">
           <article class="icon-card"><span class="icon-wrap">${icon("panel")}</span><h3>控制面板</h3><p>升级 / 重启 / 状态</p></article>
@@ -420,7 +418,7 @@ pageRoutes.get("/downloads", async (c) => {
         `<header class="topbar">
           <div class="brand">
             <span class="brand-dot" aria-hidden="true"></span>
-            <span>ClawOS 下载中心</span>
+            <span>ClawOS 下载</span>
           </div>
           <nav class="nav">
             <a class="btn btn-ghost" href="/">返回首页</a>
@@ -460,7 +458,7 @@ pageRoutes.get("/downloads", async (c) => {
       `<header class="topbar">
         <div class="brand">
           <span class="brand-dot" aria-hidden="true"></span>
-          <span>ClawOS 下载中心</span>
+          <span>ClawOS 下载</span>
         </div>
         <nav class="nav">
           <a class="btn btn-ghost" href="/">返回首页</a>
@@ -477,7 +475,6 @@ pageRoutes.get("/downloads", async (c) => {
           <p>安装包与配置文件已就绪。</p>
           <div class="actions">
             <a class="btn btn-primary" href="/downloads/latest"><span class="btn-icon">${icon("download")}</span>下载安装包</a>
-            <a class="btn btn-ghost" href="/downloads/clawos_xiake.json"><span class="btn-icon">${icon("config")}</span>下载配置文件</a>
           </div>
         </div>
         <aside class="visual">

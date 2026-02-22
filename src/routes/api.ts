@@ -19,6 +19,7 @@ import {
   startGatewayUpdateTask,
   startQwGatewayRestartTask,
 } from "../tasks/gateway";
+import { startWslRepairTask } from "../tasks/system";
 import { startSelfUpdateTask } from "../tasks/self-update";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 
@@ -152,6 +153,11 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   if (path === "/api/system/browser/check" && req.method === "GET") {
     const info = await checkBrowserConnectivity();
     return jsonResponse({ ok: true, info });
+  }
+
+  if (path === "/api/system/repair" && req.method === "POST") {
+    const { task, reused } = startWslRepairTask();
+    return jsonResponse({ ok: true, taskId: task.id, task, reused });
   }
 
   if (path === "/api/system/autostart/clawos" && req.method === "GET") {
