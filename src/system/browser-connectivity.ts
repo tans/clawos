@@ -136,14 +136,6 @@ function dedupe(items: string[]): string[] {
   return Array.from(new Set(items));
 }
 
-function supportsGatewayMethod(hello: GatewayHelloPayload | undefined, method: string): boolean {
-  const methods = Array.isArray(hello?.features?.methods) ? hello.features?.methods : null;
-  if (!methods) {
-    return true;
-  }
-  return methods.includes(method);
-}
-
 function escapeBashSingleQuoted(raw: string): string {
   return raw.replaceAll("'", "'\"'\"'");
 }
@@ -261,8 +253,9 @@ async function probeWslHttpUrl(url: string): Promise<WslProbe> {
   const script = [
     "set -euo pipefail",
     `URL='${escapedUrl}'`,
+    'URL="$(printf \'%s\' "$URL" | tr -d \'\\r\\n\')"',
     'if command -v curl >/dev/null 2>&1; then',
-    '  curl -fsS --max-time 4 "$URL" >/dev/null',
+    '  curl -fsS --globoff --max-time 4 "$URL" >/dev/null',
     'elif command -v wget >/dev/null 2>&1; then',
     '  wget -q -T 4 -O - "$URL" >/dev/null',
     "else",
@@ -311,19 +304,6 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
   const portProxyCommand = cdpEndpoint ? buildPortProxyCommand(cdpEndpoint.port) : null;
   const recommendPortProxy = shouldProbe && cdpClassification.recommendPortProxy;
 
-  const supportsBrowserRequest = configProbe.ok ? supportsGatewayMethod(configProbe.hello, "browser.request") : false;
-  const browserProbe = shouldProbe && supportsBrowserRequest
-    ? await safeGatewayProbe(
-        "browser.request",
-        {
-          method: "GET",
-          path: "/json/version",
-          timeoutMs: 3000,
-        },
-        6000
-      )
-    : null;
-
   const warnings: string[] = [];
   if (!configProbe.ok) {
     warnings.push(`config.get 调用失败：${configProbe.error}`);
@@ -348,11 +328,6 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
     warnings.push("检测到 127.0.0.1 直连可用，但 WSL 无法访问 cdpUrl，建议配置端口转发：");
     warnings.push(portProxyCommand);
   }
-  if (browserProbe && !browserProbe.ok) {
-    warnings.push(`browser.request 调用失败：${browserProbe.error}`);
-    warnings.push(...browserProbe.tips);
-  }
-
   let status: BrowserConnectivityStatus = "probe-error";
   if (!configProbe.ok) {
     status = "gateway-error";
@@ -395,6 +370,6 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
     portProxyCommand,
     warnings: dedupe(warnings),
     configPayload: configProbe.ok ? configProbe.payload : null,
-    probePayload: browserProbe?.ok ? browserProbe.payload : null,
+    probePayload: null,
   };
 }
