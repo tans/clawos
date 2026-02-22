@@ -109,7 +109,7 @@ web/
 ## 环境变量建议
 
 - `PORT`：服务端口（默认 `26222` 或按部署环境设置）
-- `UPLOAD_TOKEN`：上传接口鉴权 Token（必填）
+- `UPLOAD_TOKEN`：上传接口鉴权 Token（默认 `clawos`，生产环境建议覆盖）
 - `MAX_INSTALLER_SIZE_MB`：安装包大小上限
 - `MAX_CONFIG_SIZE_MB`：配置文件大小上限
 - `STORAGE_DIR`：文件存储根目录（默认 `web/storage`）

@@ -43,7 +43,7 @@ export function getEnv(): AppEnv {
 
   cachedEnv = {
     port,
-    uploadToken: process.env.UPLOAD_TOKEN?.trim() || null,
+    uploadToken: process.env.UPLOAD_TOKEN?.trim() || "clawos",
     maxInstallerSizeBytes: mbToBytes(maxInstallerSizeMb),
     maxConfigSizeBytes: mbToBytes(maxConfigSizeMb),
     storageDir: resolve(process.env.STORAGE_DIR || resolve(process.cwd(), "storage")),
@@ -63,6 +63,13 @@ export function validateStartupEnv(env: AppEnv): StartupEnvCheck[] {
     checks.push({
       level: "warn",
       message: "未配置 UPLOAD_TOKEN，上传接口将不可用（会返回 503）。",
+    });
+  }
+
+  if (env.uploadToken === "clawos") {
+    checks.push({
+      level: "warn",
+      message: "当前使用默认 UPLOAD_TOKEN=clawos，建议在生产环境改为自定义高强度 Token。",
     });
   }
 
