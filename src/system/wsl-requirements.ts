@@ -31,13 +31,9 @@ type ProbeEvaluation = {
   stderr: string;
 };
 
-function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, `'\\''`)}'`;
-}
-
 export function buildWslCommandProbeScript(commands = Array.from(REQUIRED_WSL_COMMANDS)): string {
   const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
-  const commandLines = normalized.map((item) => shellQuote(item)).join("\n");
+  const commandLines = normalized.join("\n");
   return [
     "set +e",
     "while IFS= read -r cmd; do",
@@ -53,6 +49,18 @@ export function buildWslCommandProbeScript(commands = Array.from(REQUIRED_WSL_CO
     "__CLAWOS_WSL_CMD_LIST__",
     "exit 0",
   ].join("\n");
+}
+
+function outputPreview(text: string, maxLines = 3): string {
+  const lines = text
+    .split(/\r?\n/g)
+    .map((line) => sanitizeProbeLine(line))
+    .filter((line) => line.length > 0);
+  if (lines.length === 0) {
+    return "空";
+  }
+  const preview = lines.slice(0, maxLines).join(" | ");
+  return lines.length > maxLines ? `${preview} | ...` : preview;
 }
 
 function sanitizeProbeLine(rawLine: string): string {
@@ -173,7 +181,7 @@ function evaluateProbeResult(result: CommandResult, commands: string[]): ProbeEv
         : commands;
   const extraProbeError =
     !hasProbeSignals
-      ? "WSL 命令探测输出异常：未收到探测标记行。"
+      ? `WSL 命令探测输出异常：未收到探测标记行（stdout预览：${outputPreview(result.stdout)}）。`
       : `WSL 命令探测输出异常：探测标记不完整或命令名缺失（期望 ${commands.length} 行，识别到 ${recognizedSignalCount} 行）。`;
   const stderr = probeOutputIssue
     ? [result.stderr.trim(), extraProbeError].filter((item) => item.length > 0).join("\n")
@@ -200,27 +208,44 @@ export async function checkWslCommandRequirements(
   let selectedResult = primaryResult;
   let evaluation = evaluateProbeResult(primaryResult, normalized);
 
-  let fallback: WslRunner | undefined = fallbackRunner;
-  if (!fallback && runner === runWslScript) {
-    fallback = (nextScript: string) => runWslScript(nextScript, { loginShell: false });
-  }
+  if (evaluation.probeOutputIssue) {
+    const fallbackPlans: Array<{ name: string; runner: WslRunner }> = [];
+    if (fallbackRunner) {
+      fallbackPlans.push({ name: "回退(-lc)", runner: fallbackRunner });
+    } else if (runner === runWslScript) {
+      fallbackPlans.push({
+        name: "回退(-lc)",
+        runner: (nextScript: string) => runWslScript(nextScript, { shellMode: "non-login" }),
+      });
+      fallbackPlans.push({
+        name: "回退(--noprofile --norc)",
+        runner: (nextScript: string) => runWslScript(nextScript, { shellMode: "clean" }),
+      });
+    }
 
-  if (evaluation.probeOutputIssue && fallback) {
-    const fallbackResult = await fallback(script);
-    const fallbackEvaluation = evaluateProbeResult(fallbackResult, normalized);
-    if (fallbackEvaluation.hasProbeSignals && !fallbackEvaluation.probeOutputIssue) {
-      selectedResult = fallbackResult;
-      evaluation = fallbackEvaluation;
-    } else {
-      const fallbackSummary = [
-        `WSL 命令探测回退(-lc)仍异常。`,
-        fallbackEvaluation.stderr.trim(),
-      ]
-        .filter((item) => item.length > 0)
-        .join("\n");
+    const fallbackErrors: string[] = [];
+
+    for (const fallback of fallbackPlans) {
+      const fallbackResult = await fallback.runner(script);
+      const fallbackEvaluation = evaluateProbeResult(fallbackResult, normalized);
+      if (fallbackEvaluation.hasProbeSignals && !fallbackEvaluation.probeOutputIssue) {
+        selectedResult = fallbackResult;
+        evaluation = fallbackEvaluation;
+        fallbackErrors.length = 0;
+        break;
+      }
+
+      fallbackErrors.push(
+        [`${fallback.name}仍异常。`, fallbackEvaluation.stderr.trim()]
+          .filter((item) => item.length > 0)
+          .join("\n")
+      );
+    }
+
+    if (evaluation.probeOutputIssue && fallbackErrors.length > 0) {
       evaluation = {
         ...evaluation,
-        stderr: [evaluation.stderr.trim(), fallbackSummary]
+        stderr: [evaluation.stderr.trim(), ...fallbackErrors]
           .filter((item) => item.length > 0)
           .join("\n"),
       };

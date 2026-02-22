@@ -27,6 +27,27 @@ describe("runWslScript shell mode", () => {
     expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-lc", "openclaw --version"]);
   });
 
+  it("uses clean bash in windows path when shellMode is clean", () => {
+    const args = buildWslProcessArgs("openclaw --version", {
+      isWindows: true,
+      distro: "Ubuntu",
+      wslBin: "wsl.exe",
+      shellMode: "clean",
+    });
+
+    expect(args).toEqual([
+      "wsl.exe",
+      "-d",
+      "Ubuntu",
+      "--",
+      "bash",
+      "--noprofile",
+      "--norc",
+      "-c",
+      "openclaw --version",
+    ]);
+  });
+
   it("uses non-interactive bash in non-windows path", () => {
     const args = buildWslProcessArgs("openclaw --version", {
       isWindows: false,
@@ -35,6 +56,15 @@ describe("runWslScript shell mode", () => {
     });
 
     expect(args).toEqual(["bash", "-lc", "openclaw --version"]);
+  });
+
+  it("uses clean bash in non-windows path when shellMode is clean", () => {
+    const args = buildWslProcessArgs("openclaw --version", {
+      isWindows: false,
+      shellMode: "clean",
+    });
+
+    expect(args).toEqual(["bash", "--noprofile", "--norc", "-c", "openclaw --version"]);
   });
 
   it("parses wsl distro list output", () => {

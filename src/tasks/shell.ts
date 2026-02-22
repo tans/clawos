@@ -12,6 +12,8 @@ export type CommandResult = {
   command: string;
 };
 
+export type WslShellMode = "login" | "non-login" | "clean";
+
 function formatProcessCommand(args: string[]): string {
   return args
     .map((arg) => {
@@ -28,15 +30,30 @@ function formatProcessCommand(args: string[]): string {
 
 export function buildWslProcessArgs(
   script: string,
-  options: { isWindows: boolean; distro?: string; wslBin?: string; loginShell?: boolean }
+  options: {
+    isWindows: boolean;
+    distro?: string;
+    wslBin?: string;
+    loginShell?: boolean;
+    shellMode?: WslShellMode;
+  }
 ): string[] {
+  const shellMode = options.shellMode || (options.loginShell === false ? "non-login" : "login");
+
   if (!options.isWindows) {
+    if (shellMode === "clean") {
+      return ["bash", "--noprofile", "--norc", "-c", script];
+    }
     return ["bash", "-lc", script];
   }
 
   const wslBin = options.wslBin?.trim() || "wsl.exe";
   const distro = options.distro?.trim();
-  const shellFlag = options.loginShell === false ? "-lc" : "-lic";
+  if (shellMode === "clean") {
+    return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "--noprofile", "--norc", "-c", script];
+  }
+
+  const shellFlag = shellMode === "non-login" ? "-lc" : "-lic";
   return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", shellFlag, script];
 }
 
@@ -112,7 +129,10 @@ export async function runProcess(args: string[]): Promise<CommandResult> {
   };
 }
 
-export async function runWslScript(script: string, options: { loginShell?: boolean } = {}): Promise<CommandResult> {
+export async function runWslScript(
+  script: string,
+  options: { loginShell?: boolean; shellMode?: WslShellMode } = {}
+): Promise<CommandResult> {
   const localConfig = readLocalClawosConfig();
   const wslConfig = asObject(localConfig?.wsl);
 
@@ -127,6 +147,7 @@ export async function runWslScript(script: string, options: { loginShell?: boole
     distro,
     wslBin,
     loginShell: options.loginShell,
+    shellMode: options.shellMode,
   });
 
   try {

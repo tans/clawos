@@ -26,10 +26,10 @@ describe("wsl command requirements", () => {
     const script = buildWslCommandProbeScript();
     expect(script).toContain("while IFS= read -r cmd; do");
     expect(script).toContain("__CLAWOS_WSL_CMD_LIST__");
-    expect(script).toContain("'openclaw'");
-    expect(script).toContain("'git'");
-    expect(script).toContain("'pnpm'");
-    expect(script).toContain("'nrm'");
+    expect(script).toContain("\nopenclaw\n");
+    expect(script).toContain("\ngit\n");
+    expect(script).toContain("\npnpm\n");
+    expect(script).toContain("\nnrm\n");
     expect(script).toContain('path="$(type -P "$cmd" 2>/dev/null | head -n 1)"');
     expect(script).toContain(`printf "__CLAWOS_WSL_CMD_OK__:%s:%s\\n" "$cmd" "$path"`);
   });
