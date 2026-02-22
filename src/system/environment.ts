@@ -3,6 +3,7 @@ import { resolveGatewayConnectionSettings } from "../gateway/settings";
 import { callGatewayMethod } from "../gateway/sock";
 import { runWslScript, troubleshootingTips } from "../tasks/shell";
 import { gatewayTroubleshootingTips } from "../gateway/sock";
+import { checkBrowserConnectivity } from "./browser-connectivity";
 import { checkWslCommandRequirements } from "./wsl-requirements";
 import type { GatewayHelloPayload } from "../gateway/schema";
 
@@ -36,14 +37,6 @@ async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 100
       tips: gatewayTroubleshootingTips(message),
     };
   }
-}
-
-function supportsGatewayMethod(hello: GatewayHelloPayload | undefined, method: string): boolean {
-  const methods = Array.isArray(hello?.features?.methods) ? hello.features?.methods : null;
-  if (!methods) {
-    return true;
-  }
-  return methods.includes(method);
 }
 
 type BrowserMode = "cdp" | "local";
@@ -142,24 +135,15 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const browserMode = resolveBrowserMode(browserConfig);
   const browserCdpUrl = readNonEmptyString(browserConfig?.cdpUrl) || null;
 
-  const shouldProbeBrowser = gatewayReady && browserEnabled && browserConfigured;
-  const supportsBrowserRequest = statusProbe.ok
-    ? supportsGatewayMethod(statusProbe.hello, "browser.request")
-    : healthProbe.ok
-      ? supportsGatewayMethod(healthProbe.hello, "browser.request")
-      : false;
-  const browserProbe = shouldProbeBrowser && supportsBrowserRequest
-    ? await safeGatewayProbe(
-        "browser.request",
-        {
-          method: "GET",
-          path: "/json/version",
-          timeoutMs: 3000,
-        },
-        6000
-      )
-    : null;
-  const browserReady = shouldProbeBrowser && browserProbe?.ok === true;
+  const shouldProbeBrowserConnectivity =
+    gatewayReady && browserEnabled && browserConfigured && browserMode === "cdp";
+  const browserConnectivity = shouldProbeBrowserConnectivity ? await checkBrowserConnectivity() : null;
+  const browserConnectivityWarnings = Array.isArray(browserConnectivity?.warnings)
+    ? browserConnectivity.warnings.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const browserReady = shouldProbeBrowserConnectivity
+    ? browserConnectivity?.ready === true
+    : gatewayReady && browserEnabled && browserConfigured;
 
   const openclawVersion = statusProbe.ok
     ? readNonEmptyString(statusProbe.hello.server?.version) || null
@@ -180,8 +164,8 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   if (configProbe.ok) {
     statusDetailBlocks.push(`config.get:\n${JSON.stringify(configProbe.payload, null, 2)}`);
   }
-  if (browserProbe?.ok) {
-    statusDetailBlocks.push(`browser.request:/json/version:\n${JSON.stringify(browserProbe.payload, null, 2)}`);
+  if (browserConnectivity) {
+    statusDetailBlocks.push(`browser.connectivity:\n${JSON.stringify(browserConnectivity, null, 2)}`);
   }
 
   const warnings: string[] = [];
@@ -221,10 +205,7 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   if (browserMode === "cdp" && browserEnabled && browserConfigured && !browserCdpUrl) {
     warnings.push("当前为 CDP 模式，但 browser.cdpUrl 为空。");
   }
-  if (browserProbe && !browserProbe.ok) {
-    warnings.push(`browser.request 调用失败：${browserProbe.error}`);
-    warnings.push(...browserProbe.tips);
-  }
+  warnings.push(...browserConnectivityWarnings);
 
   return {
     os: process.platform,
