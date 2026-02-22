@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun run src/index.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "pm2:start": "pm2 start ecosystem.config.cjs --only clawos",
+    "pm2:restart": "pm2 restart clawos",
+    "pm2:logs": "pm2 logs clawos"
   },
   "dependencies": {
     "hono": "^4.10.3"

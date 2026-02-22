@@ -132,6 +132,22 @@ curl -X POST "https://clawos.minapp.xin/api/upload/xiake-config" \
   -F "file=@./clawos_xiake.json"
 ```
 
+## PM2 启动
+
+说明：本项目使用 ESM（`type: module`），请使用 `ecosystem.config.cjs`，不要使用默认的 `ecosystem.config.js`。
+
+```bash
+cd /Users/ke/code/clawos/web
+pm2 start ecosystem.config.cjs --only clawos
+```
+
+也可使用 package 脚本：
+
+```bash
+cd /Users/ke/code/clawos/web
+bun run pm2:start
+```
+
 ## 安全与发布约束
 
 - 上传接口必须开启鉴权，且只用于内部发布流程。
