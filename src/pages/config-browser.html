@@ -45,7 +45,6 @@
               <span class="text-xs">JSON 编辑</span>
               <input class="toggle toggle-xs" type="checkbox" data-mode-toggle />
             </label>
-            <button class="btn btn-outline btn-xs" data-action="check-connectivity">连通性检测</button>
             <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
             <button class="btn btn-primary btn-xs" data-action="save">保存配置</button>
           </div>
@@ -95,14 +94,6 @@
             <div class="card-body gap-3">
               <h2 class="card-title text-base">browser JSON（高级模式）</h2>
               <textarea class="textarea textarea-bordered h-[62vh] w-full font-mono text-xs" data-json-input></textarea>
-            </div>
-          </section>
-
-          <section class="mt-4 card card-compact border border-base-200 bg-base-100">
-            <div class="card-body gap-2">
-              <h2 class="card-title text-base">浏览器连通性</h2>
-              <div class="text-xs text-base-content/70" data-connectivity-meta>尚未检测</div>
-              <pre class="max-h-48 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-connectivity-output>等待检测...</pre>
             </div>
           </section>
 
@@ -229,8 +220,6 @@
         local: document.querySelector("[data-fields-local]"),
       };
       const browserModeEls = Array.from(document.querySelectorAll("[data-browser-mode]"));
-      const connectivityMetaEl = document.querySelector("[data-connectivity-meta]");
-      const connectivityOutputEl = document.querySelector("[data-connectivity-output]");
 
       let browserSchema = FALLBACK_BROWSER_SCHEMA;
       let browserConfig = {};
@@ -645,61 +634,6 @@
         return data;
       }
 
-      function renderConnectivity(info) {
-        const modeText = info.mode === "local" ? "本地" : "CDP";
-        const checkedAt = typeof info.checkedAt === "string" ? info.checkedAt : "";
-
-        let summary = `模式：${modeText}，状态未知`;
-        switch (info.status) {
-          case "ok":
-            summary = `模式：${modeText}，连通正常`;
-            break;
-          case "disabled":
-            summary = `模式：${modeText}，浏览器已禁用`;
-            break;
-          case "not-configured":
-            summary = `模式：${modeText}，浏览器未配置`;
-            break;
-          case "gateway-error":
-            summary = "网关不可用，无法检测浏览器连通性";
-            break;
-          case "probe-error":
-            summary = `模式：${modeText}，连通失败`;
-            break;
-          default:
-            break;
-        }
-
-        const lines = [];
-        lines.push(summary);
-        if (checkedAt) {
-          lines.push(`检测时间：${checkedAt}`);
-        }
-
-        if (Array.isArray(info.warnings) && info.warnings.length > 0) {
-          lines.push("");
-          lines.push("告警：");
-          for (const warning of info.warnings) {
-            lines.push(`- ${warning}`);
-          }
-        }
-
-        if (info.probePayload && typeof info.probePayload === "object") {
-          lines.push("");
-          lines.push("browser.request 返回：");
-          lines.push(JSON.stringify(info.probePayload, null, 2));
-        }
-
-        connectivityMetaEl.textContent = summary;
-        connectivityOutputEl.textContent = lines.join("\n");
-        connectivityOutputEl.scrollTop = connectivityOutputEl.scrollHeight;
-      }
-
-      async function checkConnectivity() {
-        const data = await api("/api/system/browser/check");
-        renderConnectivity(data.info || {});
-      }
-
       async function loadSchema() {
         try {
           const data = await api(`/api/config/schema/${SECTION}`);
@@ -749,7 +683,6 @@
         fillCardForm(payload);
         jsonInputEl.value = pretty(payload);
         metaEl.textContent = `${SECTION} 配置已保存`;
-        await checkConnectivity();
       }
 
       modeToggle.addEventListener("change", (event) => {
@@ -803,26 +736,12 @@
         }
       });
 
-      document.querySelector('[data-action="check-connectivity"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
-        connectivityMetaEl.textContent = "正在检测浏览器连通性...";
-        try {
-          await checkConnectivity();
-        } catch (error) {
-          connectivityMetaEl.textContent = `检测失败: ${error.message}`;
-          connectivityOutputEl.textContent = `检测失败: ${error.message}`;
-        } finally {
-          event.currentTarget.disabled = false;
-        }
-      });
-
       (async function init() {
         try {
           renderMode();
           renderBrowserMode();
           await loadSchema();
           await loadSection();
-          await checkConnectivity();
         } catch (error) {
           metaEl.textContent = `初始化失败: ${error.message}`;
         }

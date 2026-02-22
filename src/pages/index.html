@@ -203,6 +203,12 @@
                                     >
                                         检查环境
                                     </button>
+                                    <button
+                                        class="btn btn-outline btn-sm"
+                                        data-action="check-browser-connectivity"
+                                    >
+                                        浏览器连通性
+                                    </button>
                                 </div>
                                 <div
                                     class="rounded-lg border border-base-200 bg-base-200/20 p-3"
@@ -365,6 +371,64 @@
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
 
+            function renderBrowserConnectivity(info) {
+                const mode = info.mode === "local" ? "本地" : "CDP";
+                const browserState =
+                    info.enabled === false ? null : Boolean(info.ready);
+                setLight(
+                    statusBadges.browserLabel,
+                    statusBadges.browserLight,
+                    `浏览器(${mode})`,
+                    browserState,
+                );
+
+                let statusText = "未知";
+                switch (info.status) {
+                    case "ok":
+                        statusText = "正常";
+                        break;
+                    case "disabled":
+                        statusText = "已禁用";
+                        break;
+                    case "not-configured":
+                        statusText = "未配置";
+                        break;
+                    case "gateway-error":
+                        statusText = "网关异常";
+                        break;
+                    case "probe-error":
+                        statusText = "连通失败";
+                        break;
+                    default:
+                        break;
+                }
+
+                taskProgress.classList.add("hidden");
+                taskMeta.textContent = `浏览器连通性检测: ${statusText}`;
+
+                const lines = [`状态: ${statusText}`, `模式: ${mode}`];
+                if (typeof info.checkedAt === "string" && info.checkedAt) {
+                    lines.push(`检测时间: ${info.checkedAt}`);
+                }
+
+                if (Array.isArray(info.warnings) && info.warnings.length > 0) {
+                    lines.push("");
+                    lines.push("告警:");
+                    for (const item of info.warnings) {
+                        lines.push(`[WARN] ${item}`);
+                    }
+                }
+
+                if (info.probePayload && typeof info.probePayload === "object") {
+                    lines.push("");
+                    lines.push("browser.request 返回:");
+                    lines.push(JSON.stringify(info.probePayload, null, 2));
+                }
+
+                taskOutput.textContent = lines.join("\n");
+                taskOutput.scrollTop = taskOutput.scrollHeight;
+            }
+
             function renderTask(task) {
                 const percent =
                     task.totalSteps > 0
@@ -475,10 +539,19 @@
                 renderEnvironmentWarnings(info.warnings);
             }
 
+            async function checkBrowserConnectivity() {
+                const data = await api("/api/system/browser/check");
+                const info = data.info || {};
+                renderBrowserConnectivity(info);
+            }
+
             async function runAction(action) {
                 switch (action) {
                     case "check-env":
                         await checkEnvironment();
+                        return;
+                    case "check-browser-connectivity":
+                        await checkBrowserConnectivity();
                         return;
                     case "update-openclaw":
                         await startTask("/api/gateway/update");
