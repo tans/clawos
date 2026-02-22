@@ -4,3 +4,5 @@ bun.lockb
 bun.lock
 clawos.json
 dist
+web/storage/assets
+web/storage/releases/latest.json
