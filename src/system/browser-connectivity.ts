@@ -24,7 +24,8 @@ type BrowserConnectivityStatus =
   | "not-configured"
   | "gateway-error"
   | "probe-error"
-  | "local-only";
+  | "local-only"
+  | "cdp-only";
 
 type HttpProbe =
   | {
@@ -51,6 +52,12 @@ type WslProbe =
       command: string;
       error: string;
     };
+
+type CdpProbeClassification = {
+  status: BrowserConnectivityStatus;
+  ready: boolean;
+  recommendPortProxy: boolean;
+};
 
 async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 10000): Promise<GatewayProbe> {
   try {
@@ -178,6 +185,35 @@ export function buildPortProxyCommand(connectPort: number): string {
   return `netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=${listenPort} connectaddress=127.0.0.1 connectport=${connectPort}`;
 }
 
+export function classifyCdpProbeConnectivity(direct127Ok: boolean, wslCdpOk: boolean): CdpProbeClassification {
+  if (direct127Ok && wslCdpOk) {
+    return {
+      status: "ok",
+      ready: true,
+      recommendPortProxy: false,
+    };
+  }
+  if (direct127Ok && !wslCdpOk) {
+    return {
+      status: "local-only",
+      ready: false,
+      recommendPortProxy: true,
+    };
+  }
+  if (!direct127Ok && wslCdpOk) {
+    return {
+      status: "cdp-only",
+      ready: true,
+      recommendPortProxy: false,
+    };
+  }
+  return {
+    status: "probe-error",
+    ready: false,
+    recommendPortProxy: false,
+  };
+}
+
 async function probeHttpUrl(url: string, timeoutMs = 4000): Promise<HttpProbe> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -270,9 +306,10 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
 
   const direct127Ok = direct127Probe?.ok === true;
   const wslCdpOk = wslCdpProbe?.ok === true;
-  const browserReady = shouldProbe && direct127Ok && wslCdpOk;
+  const cdpClassification = classifyCdpProbeConnectivity(direct127Ok, wslCdpOk);
+  let browserReady = shouldProbe ? cdpClassification.ready : false;
   const portProxyCommand = cdpEndpoint ? buildPortProxyCommand(cdpEndpoint.port) : null;
-  const recommendPortProxy = shouldProbe && direct127Ok && !wslCdpOk;
+  const recommendPortProxy = shouldProbe && cdpClassification.recommendPortProxy;
 
   const supportsBrowserRequest = configProbe.ok ? supportsGatewayMethod(configProbe.hello, "browser.request") : false;
   const browserProbe = shouldProbe && supportsBrowserRequest
@@ -301,7 +338,7 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
   if (browserMode === "cdp" && browserEnabled && browserConfigured && browserCdpUrl && !cdpEndpoint) {
     warnings.push("browser.cdpUrl 解析失败，请检查地址格式。");
   }
-  if (direct127Probe && !direct127Probe.ok) {
+  if (direct127Probe && !direct127Probe.ok && !wslCdpOk) {
     warnings.push(`127.0.0.1 端口测试失败：${direct127Probe.error}`);
   }
   if (wslCdpProbe && !wslCdpProbe.ok) {
@@ -325,10 +362,10 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
     status = "not-configured";
   } else if (browserMode !== "cdp") {
     status = browserProbe?.ok ? "ok" : "probe-error";
-  } else if (direct127Ok && !wslCdpOk) {
-    status = "local-only";
-  } else if (browserReady) {
-    status = "ok";
+    browserReady = status === "ok";
+  } else {
+    status = cdpClassification.status;
+    browserReady = cdpClassification.ready;
   }
 
   return {
