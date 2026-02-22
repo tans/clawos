@@ -4,12 +4,14 @@ import {
   updateLocalGatewayConnectionConfig,
   type LocalGatewayConnectionConfig,
 } from "../config/local";
+import { readConfigSectionSchema } from "../config/schema";
 import { ALLOWED_CONFIG_SECTIONS, applyOpenclawConfig, readOpenclawConfig } from "../gateway/config";
 import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
 import { getSelfUpdateStatus } from "../system/self-update";
+import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
 import {
   startGatewayControlTask,
@@ -147,6 +149,11 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     return jsonResponse({ ok: true, info });
   }
 
+  if (path === "/api/system/browser/check" && req.method === "GET") {
+    const info = await checkBrowserConnectivity();
+    return jsonResponse({ ok: true, info });
+  }
+
   if (path === "/api/system/autostart/clawos" && req.method === "GET") {
     const state = await getClawosAutoStartState();
     return jsonResponse({ ok: true, state });
@@ -191,6 +198,13 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
   if (path === "/api/config/section" && req.method === "PUT") {
     return await handleConfigSectionSave(req);
+  }
+
+  const schemaMatch = path.match(/^\/api\/config\/schema\/([a-zA-Z0-9_.-]{1,64})\/?$/);
+  if (schemaMatch && req.method === "GET") {
+    const section = assertAllowedSection(schemaMatch[1]);
+    const schema = readConfigSectionSchema(section);
+    return jsonResponse({ ok: true, section, schema });
   }
 
   const sectionMatch = path.match(/^\/api\/config\/([a-zA-Z0-9_.-]{1,64})\/?$/);

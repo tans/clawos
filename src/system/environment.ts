@@ -1,4 +1,4 @@
-import { readNonEmptyString } from "../lib/value";
+import { asObject, readNonEmptyString } from "../lib/value";
 import { resolveGatewayConnectionSettings } from "../gateway/settings";
 import { callGatewayMethod } from "../gateway/sock";
 import { runWslScript, troubleshootingTips } from "../tasks/shell";
@@ -38,6 +38,62 @@ async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 100
   }
 }
 
+type BrowserMode = "cdp" | "local";
+
+function readBrowserConfigFromConfigProbe(probe: GatewayProbe): Record<string, unknown> | null {
+  if (!probe.ok) {
+    return null;
+  }
+  const payloadObj = asObject(probe.payload);
+  const configObj = asObject(payloadObj?.config);
+  return asObject(configObj?.browser);
+}
+
+function hasAnyBrowserProfile(config: Record<string, unknown> | null): boolean {
+  if (!config) {
+    return false;
+  }
+  const profiles = asObject(config.profiles);
+  return Boolean(profiles && Object.keys(profiles).length > 0);
+}
+
+function resolveBrowserMode(config: Record<string, unknown> | null): BrowserMode {
+  if (!config) {
+    return "cdp";
+  }
+  const cdpUrl = readNonEmptyString(config.cdpUrl);
+  if (cdpUrl) {
+    return "cdp";
+  }
+  const executablePath = readNonEmptyString(config.executablePath);
+  if (executablePath) {
+    return "local";
+  }
+  if (config.attachOnly === true) {
+    return "cdp";
+  }
+  return "cdp";
+}
+
+function isBrowserEnabled(config: Record<string, unknown> | null): boolean {
+  if (!config) {
+    return false;
+  }
+  if (typeof config.enabled === "boolean") {
+    return config.enabled;
+  }
+  return true;
+}
+
+function isBrowserConfigured(config: Record<string, unknown> | null): boolean {
+  if (!config) {
+    return false;
+  }
+  const cdpUrl = readNonEmptyString(config.cdpUrl);
+  const executablePath = readNonEmptyString(config.executablePath);
+  return Boolean(cdpUrl || executablePath || hasAnyBrowserProfile(config));
+}
+
 function simplifyWslCommandForDisplay(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) {
@@ -59,11 +115,12 @@ function simplifyWslCommandForDisplay(raw: string): string {
 export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const connection = await resolveGatewayConnectionSettings();
 
-  const [wslProbe, statusProbe, healthProbe, channelsProbe] = await Promise.all([
+  const [wslProbe, statusProbe, healthProbe, channelsProbe, configProbe] = await Promise.all([
     runWslScript("set -euo pipefail\necho WSL_OK"),
     safeGatewayProbe("status", {}, 10000),
     safeGatewayProbe("health", { probe: false }, 10000),
     safeGatewayProbe("channels.status", { probe: false, timeoutMs: 3000 }, 12000),
+    safeGatewayProbe("config.get", {}, 10000),
   ]);
 
   const wslCommandProbe = wslProbe.ok ? await checkWslCommandRequirements() : null;
@@ -71,6 +128,25 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const gatewayReady = statusProbe.ok && healthProbe.ok;
   const openclawReady = statusProbe.ok;
   const wslReady = wslProbe.ok && (!wslCommandProbe || wslCommandProbe.ok);
+  const browserConfig = readBrowserConfigFromConfigProbe(configProbe);
+  const browserEnabled = isBrowserEnabled(browserConfig);
+  const browserConfigured = isBrowserConfigured(browserConfig);
+  const browserMode = resolveBrowserMode(browserConfig);
+  const browserCdpUrl = readNonEmptyString(browserConfig?.cdpUrl) || null;
+
+  const shouldProbeBrowser = gatewayReady && browserEnabled && browserConfigured;
+  const browserProbe = shouldProbeBrowser
+    ? await safeGatewayProbe(
+        "browser.request",
+        {
+          method: "GET",
+          path: "/json/version",
+          timeoutMs: 3000,
+        },
+        6000
+      )
+    : null;
+  const browserReady = shouldProbeBrowser && browserProbe?.ok === true;
 
   const openclawVersion = statusProbe.ok
     ? readNonEmptyString(statusProbe.hello.server?.version) || null
@@ -87,6 +163,12 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   }
   if (channelsProbe.ok) {
     statusDetailBlocks.push(`channels.status:\n${JSON.stringify(channelsProbe.payload, null, 2)}`);
+  }
+  if (configProbe.ok) {
+    statusDetailBlocks.push(`config.get:\n${JSON.stringify(configProbe.payload, null, 2)}`);
+  }
+  if (browserProbe?.ok) {
+    statusDetailBlocks.push(`browser.request:/json/version:\n${JSON.stringify(browserProbe.payload, null, 2)}`);
   }
 
   const warnings: string[] = [];
@@ -116,6 +198,20 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     warnings.push(`channels.status 调用失败：${channelsProbe.error}`);
     warnings.push(...channelsProbe.tips);
   }
+  if (!configProbe.ok && openclawReady) {
+    warnings.push(`config.get 调用失败：${configProbe.error}`);
+    warnings.push(...configProbe.tips);
+  }
+  if (browserEnabled && !browserConfigured) {
+    warnings.push("浏览器已启用但未配置：请至少配置 browser.cdpUrl（推荐）或 browser.executablePath。");
+  }
+  if (browserMode === "cdp" && browserEnabled && browserConfigured && !browserCdpUrl) {
+    warnings.push("当前为 CDP 模式，但 browser.cdpUrl 为空。");
+  }
+  if (browserProbe && !browserProbe.ok) {
+    warnings.push(`browser.request 调用失败：${browserProbe.error}`);
+    warnings.push(...browserProbe.tips);
+  }
 
   return {
     os: process.platform,
@@ -124,6 +220,11 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     wslCommands: wslCommandProbe?.commands || [],
     openclawReady,
     gatewayReady,
+    browserReady,
+    browserEnabled,
+    browserConfigured,
+    browserMode,
+    browserCdpUrl,
     openclawVersion,
     gatewayStatus: statusDetailBlocks.join("\n\n") || null,
     warnings: Array.from(new Set(warnings)),

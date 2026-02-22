@@ -244,6 +244,16 @@
                                                 >gateway: 未知</span
                                             >
                                         </div>
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="h-2.5 w-2.5 rounded-full bg-base-300"
+                                                data-status-light="browser"
+                                                aria-hidden="true"
+                                            ></span>
+                                            <span data-status-label="browser"
+                                                >浏览器: 未知</span
+                                            >
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -291,12 +301,18 @@
                 gatewayLabel: document.querySelector(
                     '[data-status-label="gateway"]',
                 ),
+                browserLabel: document.querySelector(
+                    '[data-status-label="browser"]',
+                ),
                 wslLight: document.querySelector('[data-status-light="wsl"]'),
                 openclawLight: document.querySelector(
                     '[data-status-light="openclaw"]',
                 ),
                 gatewayLight: document.querySelector(
                     '[data-status-light="gateway"]',
+                ),
+                browserLight: document.querySelector(
+                    '[data-status-light="browser"]',
                 ),
             };
 
@@ -319,9 +335,11 @@
                 return data;
             }
 
-            function setLight(labelEl, lightEl, label, ok) {
+            function setLight(labelEl, lightEl, label, state) {
+                const disabled = state === null;
+                const ok = state === true;
                 if (labelEl) {
-                    labelEl.textContent = `${label}: ${ok ? "正常" : "异常"}`;
+                    labelEl.textContent = `${label}: ${disabled ? "已禁用" : ok ? "正常" : "异常"}`;
                 }
                 if (!lightEl) return;
                 lightEl.classList.remove(
@@ -329,6 +347,10 @@
                     "bg-success",
                     "bg-error",
                 );
+                if (disabled) {
+                    lightEl.classList.add("bg-base-300");
+                    return;
+                }
                 lightEl.classList.add(ok ? "bg-success" : "bg-error");
             }
 
@@ -435,6 +457,19 @@
                     statusBadges.gatewayLight,
                     "gateway",
                     Boolean(info.gatewayReady),
+                );
+
+                const browserMode =
+                    info.browserMode === "local" ? "本地" : "CDP";
+                const browserState =
+                    info.browserEnabled === false
+                        ? null
+                        : Boolean(info.browserReady);
+                setLight(
+                    statusBadges.browserLabel,
+                    statusBadges.browserLight,
+                    `浏览器(${browserMode})`,
+                    browserState,
                 );
 
                 renderEnvironmentWarnings(info.warnings);
