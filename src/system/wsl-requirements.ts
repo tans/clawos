@@ -29,17 +29,20 @@ function shellQuote(value: string): string {
 
 export function buildWslCommandProbeScript(commands = Array.from(REQUIRED_WSL_COMMANDS)): string {
   const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
-  const commandList = normalized.map((item) => shellQuote(item)).join(" ");
+  const commandLines = normalized.map((item) => shellQuote(item)).join("\n");
   return [
     "set +e",
-    `for cmd in ${commandList}; do`,
+    "while IFS= read -r cmd; do",
+    '  [ -z "$cmd" ] && continue',
     '  path="$(type -P "$cmd" 2>/dev/null | head -n 1)"',
     '  if [ -n "$path" ]; then',
     `    printf "${OK_PREFIX}:%s:%s\\n" "$cmd" "$path"`,
     "  else",
     `    printf "${MISSING_PREFIX}:%s\\n" "$cmd"`,
     "  fi",
-    "done",
+    "done <<'__CLAWOS_WSL_CMD_LIST__'",
+    commandLines,
+    "__CLAWOS_WSL_CMD_LIST__",
     "exit 0",
   ].join("\n");
 }
@@ -67,6 +70,40 @@ function countProbeSignals(stdout: string): number {
       count += 1;
     }
   }
+  return count;
+}
+
+function countRecognizedProbeSignals(stdout: string, commands: string[]): number {
+  const known = new Set(commands);
+  let count = 0;
+
+  for (const rawLine of stdout.split(/\r?\n/g)) {
+    const line = sanitizeProbeLine(rawLine);
+    if (!line) {
+      continue;
+    }
+
+    const okMarker = `${OK_PREFIX}:`;
+    const okIndex = findProbeMarkerIndex(line, okMarker);
+    if (okIndex >= 0) {
+      const body = line.slice(okIndex + okMarker.length);
+      const [command] = body.split(":");
+      if (command && known.has(command.trim())) {
+        count += 1;
+      }
+      continue;
+    }
+
+    const missingMarker = `${MISSING_PREFIX}:`;
+    const missingIndex = findProbeMarkerIndex(line, missingMarker);
+    if (missingIndex >= 0) {
+      const command = line.slice(missingIndex + missingMarker.length).trim();
+      if (command && known.has(command)) {
+        count += 1;
+      }
+    }
+  }
+
   return count;
 }
 
@@ -120,21 +157,28 @@ export async function checkWslCommandRequirements(
   const script = buildWslCommandProbeScript(normalized);
   const result = await runner(script);
   const signalCount = countProbeSignals(result.stdout);
+  const recognizedSignalCount = countRecognizedProbeSignals(result.stdout, normalized);
   const hasProbeSignals = signalCount > 0;
   const commandStatuses = parseWslCommandProbeOutput(result.stdout, normalized);
-  const missing = hasProbeSignals
-    ? commandStatuses.filter((item) => !item.exists).map((item) => item.command)
-    : result.ok
-      ? []
-      : normalized;
-  const probeOutputIssue = result.ok && !hasProbeSignals;
-  const extraProbeError = "WSL 命令探测输出异常：未收到探测标记行。";
+  const probeOutputIssue =
+    result.ok && (!hasProbeSignals || recognizedSignalCount !== normalized.length);
+  const missing = probeOutputIssue
+    ? []
+    : hasProbeSignals
+      ? commandStatuses.filter((item) => !item.exists).map((item) => item.command)
+      : result.ok
+        ? []
+        : normalized;
+  const extraProbeError =
+    !hasProbeSignals
+      ? "WSL 命令探测输出异常：未收到探测标记行。"
+      : `WSL 命令探测输出异常：探测标记不完整或命令名缺失（期望 ${normalized.length} 行，识别到 ${recognizedSignalCount} 行）。`;
   const stderr = probeOutputIssue
     ? [result.stderr.trim(), extraProbeError].filter((item) => item.length > 0).join("\n")
     : result.stderr;
 
   return {
-    ok: result.ok && hasProbeSignals && missing.length === 0,
+    ok: result.ok && hasProbeSignals && !probeOutputIssue && missing.length === 0,
     commands: commandStatuses,
     missing,
     code: result.code,

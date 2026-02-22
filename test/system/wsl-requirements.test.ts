@@ -24,7 +24,12 @@ describe("wsl command requirements", () => {
 
   it("builds probe script with all required commands", () => {
     const script = buildWslCommandProbeScript();
-    expect(script).toContain("for cmd in 'openclaw' 'git' 'pnpm' 'nrm'; do");
+    expect(script).toContain("while IFS= read -r cmd; do");
+    expect(script).toContain("__CLAWOS_WSL_CMD_LIST__");
+    expect(script).toContain("'openclaw'");
+    expect(script).toContain("'git'");
+    expect(script).toContain("'pnpm'");
+    expect(script).toContain("'nrm'");
     expect(script).toContain('path="$(type -P "$cmd" 2>/dev/null | head -n 1)"');
     expect(script).toContain(`printf "__CLAWOS_WSL_CMD_OK__:%s:%s\\n" "$cmd" "$path"`);
   });
@@ -117,5 +122,25 @@ describe("wsl command requirements", () => {
     expect(result.ok).toBe(false);
     expect(result.missing).toEqual([]);
     expect(result.stderr).toContain("未收到探测标记行");
+  });
+
+  it("flags probe output anomaly when marker lines have empty command names", async () => {
+    const result = await checkWslCommandRequirements(
+      ["openclaw", "git", "pnpm", "nrm"],
+      async () =>
+        runnerResult({
+          ok: true,
+          stdout: [
+            "__CLAWOS_WSL_CMD_MISSING__:",
+            "__CLAWOS_WSL_CMD_MISSING__:",
+            "__CLAWOS_WSL_CMD_MISSING__:",
+            "__CLAWOS_WSL_CMD_MISSING__:",
+          ].join("\n"),
+        })
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.missing).toEqual([]);
+    expect(result.stderr).toContain("探测标记不完整或命令名缺失");
   });
 });
