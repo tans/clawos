@@ -357,13 +357,73 @@
                 lightEl.classList.add(ok ? "bg-success" : "bg-error");
             }
 
-            function renderEnvironmentWarnings(warnings) {
-                taskProgress.classList.add("hidden");
-                if (!Array.isArray(warnings) || warnings.length === 0) {
-                    return;
+            function stopTaskPolling() {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
                 }
-                taskMeta.textContent = `环境检查告警 ${warnings.length} 条`;
-                const lines = warnings.map((item) => `[WARN] ${item}`);
+            }
+
+            function formatHealthState(value) {
+                return value ? "正常" : "异常";
+            }
+
+            function renderEnvironmentReport(info) {
+                taskProgress.classList.add("hidden");
+                const warnings = Array.isArray(info?.warnings)
+                    ? info.warnings.filter((item) => typeof item === "string")
+                    : [];
+                taskMeta.textContent =
+                    warnings.length > 0
+                        ? `环境检查完成（告警 ${warnings.length} 条）`
+                        : "环境检查完成（无告警）";
+
+                const openclawVersion =
+                    typeof info?.openclawVersion === "string" &&
+                    info.openclawVersion.trim()
+                        ? info.openclawVersion.trim()
+                        : "未知";
+                const openclawVersionSource =
+                    typeof info?.openclawVersionSource === "string" &&
+                    info.openclawVersionSource.trim()
+                        ? info.openclawVersionSource.trim()
+                        : "";
+                const gatewayReportedVersion =
+                    typeof info?.gatewayReportedVersion === "string" &&
+                    info.gatewayReportedVersion.trim()
+                        ? info.gatewayReportedVersion.trim()
+                        : "";
+
+                const browserMode = info?.browserMode === "local" ? "本地" : "CDP";
+                const browserState =
+                    info?.browserEnabled === false
+                        ? "已禁用"
+                        : formatHealthState(Boolean(info?.browserReady));
+
+                const lines = [
+                    `执行模式: ${info?.execution || "未知"}`,
+                    `WSL: ${formatHealthState(Boolean(info?.wslReady))}`,
+                    `openclaw: ${formatHealthState(Boolean(info?.openclawReady))}`,
+                    `openclaw 版本: ${openclawVersion}`,
+                    `gateway: ${formatHealthState(Boolean(info?.gatewayReady))}`,
+                    `浏览器(${browserMode}): ${browserState}`,
+                ];
+
+                if (openclawVersionSource) {
+                    lines.push(`版本来源: ${openclawVersionSource}`);
+                }
+                if (gatewayReportedVersion) {
+                    lines.push(`gateway 上报版本: ${gatewayReportedVersion}`);
+                }
+
+                if (warnings.length > 0) {
+                    lines.push("");
+                    lines.push("告警:");
+                    for (const item of warnings) {
+                        lines.push(`[WARN] ${item}`);
+                    }
+                }
+
                 taskOutput.textContent = lines.join("\n");
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
@@ -515,6 +575,7 @@
             }
 
             async function checkEnvironment() {
+                stopTaskPolling();
                 const data = await api("/api/system/check");
                 const info = data.info || {};
 
@@ -562,7 +623,7 @@
                     browserState,
                 );
 
-                renderEnvironmentWarnings(info.warnings);
+                renderEnvironmentReport(info);
             }
 
             async function checkBrowserConnectivity() {
