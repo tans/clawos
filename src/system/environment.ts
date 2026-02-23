@@ -138,6 +138,22 @@ function sanitizeVersionProbeLine(raw: string): string {
 }
 
 function extractOpenclawVersionFromText(text: string): string | null {
+  const cleaned = text.replace(/\u0000/g, "").replace(/\u001b\[[0-9;?]*[ -/]*[@-~]/g, "");
+  const jsonStart = cleaned.indexOf("{");
+  const jsonEnd = cleaned.lastIndexOf("}");
+  if (jsonStart >= 0 && jsonEnd > jsonStart) {
+    const jsonText = cleaned.slice(jsonStart, jsonEnd + 1);
+    try {
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+      const version = readNonEmptyString(parsed.version);
+      if (version) {
+        return version;
+      }
+    } catch {
+      // keep fallback parsing below
+    }
+  }
+
   const lines = text
     .split(/\r?\n/g)
     .map((line) => sanitizeVersionProbeLine(line))
@@ -176,10 +192,7 @@ async function probeOpenclawVersionFromPackageJson(): Promise<OpenclawVersionPro
     `if [ ! -f ${OPENCLAW_SOURCE_PACKAGE_JSON} ]; then`,
     "  exit 0",
     "fi",
-    `line="$(grep -m1 -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' ${OPENCLAW_SOURCE_PACKAGE_JSON} 2>/dev/null)"`,
-    'if [ -n "$line" ]; then',
-    `  printf "%s\\n" "$line" | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\\1/'`,
-    "fi",
+    `cat ${OPENCLAW_SOURCE_PACKAGE_JSON}`,
     "exit 0",
   ].join("\n");
 
