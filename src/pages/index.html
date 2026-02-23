@@ -140,6 +140,12 @@
                         >
                             <div class="card-body gap-3">
                                 <h2 class="card-title text-base">openclaw</h2>
+                                <div
+                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
+                                    data-openclaw-version
+                                >
+                                    版本: 未知
+                                </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         class="btn btn-primary btn-sm"
@@ -248,15 +254,6 @@
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <span
-                                                class="h-2.5 w-2.5 rounded-full bg-base-300/50"
-                                                aria-hidden="true"
-                                            ></span>
-                                            <span data-status="openclaw-version"
-                                                >openclaw 版本: 未知</span
-                                            >
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
                                                 class="h-2.5 w-2.5 rounded-full bg-base-300"
                                                 data-status-light="gateway"
                                                 aria-hidden="true"
@@ -316,7 +313,7 @@
             const statusBadges = {
                 execution: document.querySelector('[data-status="execution"]'),
                 openclawVersion: document.querySelector(
-                    '[data-status="openclaw-version"]',
+                    "[data-openclaw-version]",
                 ),
                 wslLabel: document.querySelector('[data-status-label="wsl"]'),
                 openclawLabel: document.querySelector(
@@ -561,7 +558,7 @@
                         info.openclawVersion.trim()
                             ? info.openclawVersion.trim()
                             : "未知";
-                    statusBadges.openclawVersion.textContent = `openclaw 版本: ${openclawVersion}`;
+                    statusBadges.openclawVersion.textContent = `版本: ${openclawVersion}`;
                 }
                 setLight(
                     statusBadges.gatewayLabel,

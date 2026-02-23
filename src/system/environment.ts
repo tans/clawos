@@ -40,6 +40,13 @@ async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 100
 }
 
 type BrowserMode = "cdp" | "local";
+type OpenclawVersionProbeResult = {
+  version: string | null;
+  command: string;
+  stderr: string;
+};
+
+const OPENCLAW_SOURCE_PACKAGE_JSON = "/data/openclaw/package.json";
 
 function readBrowserConfigFromConfigProbe(probe: GatewayProbe): Record<string, unknown> | null {
   if (!probe.ok) {
@@ -117,18 +124,83 @@ function simplifyWslCommandForDisplay(raw: string): string {
   if (trimmed.includes("echo WSL_OK")) {
     return `wsl.exe -d ${distro} -- bash -lic "<基础探测脚本: echo WSL_OK>"`;
   }
+  if (trimmed.includes(OPENCLAW_SOURCE_PACKAGE_JSON)) {
+    return `wsl.exe -d ${distro} -- bash --noprofile --norc -c "<读取 /data/openclaw/package.json 版本>"`;
+  }
   return trimmed;
+}
+
+function sanitizeVersionProbeLine(raw: string): string {
+  return raw
+    .replace(/\u0000/g, "")
+    .replace(/\u001b\[[0-9;?]*[ -/]*[@-~]/g, "")
+    .trim();
+}
+
+function extractOpenclawVersionFromText(text: string): string | null {
+  const lines = text
+    .split(/\r?\n/g)
+    .map((line) => sanitizeVersionProbeLine(line))
+    .filter((line) => line.length > 0 && line.toLowerCase() !== "logout");
+
+  for (const line of lines) {
+    if (/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(line)) {
+      return line;
+    }
+
+    const prefixed = line.match(/^v(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)$/i);
+    if (prefixed) {
+      return prefixed[1];
+    }
+
+    const jsonMatch = line.match(/"version"\s*:\s*"([^"]+)"/);
+    if (jsonMatch && jsonMatch[1]) {
+      return jsonMatch[1].trim();
+    }
+  }
+
+  return null;
+}
+
+function sanitizeVersionProbeStderr(stderr: string): string {
+  return stderr
+    .split(/\r?\n/g)
+    .map((line) => sanitizeVersionProbeLine(line))
+    .filter((line) => line.length > 0 && line.toLowerCase() !== "logout")
+    .join("\n");
+}
+
+async function probeOpenclawVersionFromPackageJson(): Promise<OpenclawVersionProbeResult> {
+  const script = [
+    "set +e",
+    `if [ ! -f ${OPENCLAW_SOURCE_PACKAGE_JSON} ]; then`,
+    "  exit 0",
+    "fi",
+    `line="$(grep -m1 -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' ${OPENCLAW_SOURCE_PACKAGE_JSON} 2>/dev/null)"`,
+    'if [ -n "$line" ]; then',
+    `  printf "%s\\n" "$line" | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\\1/'`,
+    "fi",
+    "exit 0",
+  ].join("\n");
+
+  const result = await runWslScript(script, { shellMode: "clean" });
+  return {
+    version: extractOpenclawVersionFromText(result.stdout),
+    command: result.command,
+    stderr: sanitizeVersionProbeStderr(result.stderr),
+  };
 }
 
 export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const connection = await resolveGatewayConnectionSettings();
 
-  const [wslProbe, statusProbe, healthProbe, channelsProbe, configProbe] = await Promise.all([
+  const [wslProbe, statusProbe, healthProbe, channelsProbe, configProbe, packageVersionProbe] = await Promise.all([
     runWslScript("set -euo pipefail\necho WSL_OK"),
     safeGatewayProbe("status", {}, 10000),
     safeGatewayProbe("health", { probe: false }, 10000),
     safeGatewayProbe("channels.status", { probe: false, timeoutMs: 3000 }, 12000),
     safeGatewayProbe("config.get", {}, 10000),
+    probeOpenclawVersionFromPackageJson(),
   ]);
 
   const wslCommandProbe = wslProbe.ok ? await checkWslCommandRequirements() : null;
@@ -152,11 +224,13 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     ? browserConnectivity?.ready === true
     : gatewayReady && browserEnabled && browserConfigured;
 
-  const openclawVersion = statusProbe.ok
+  const gatewayReportedVersion = statusProbe.ok
     ? readNonEmptyString(statusProbe.hello.server?.version) || null
     : healthProbe.ok
       ? readNonEmptyString(healthProbe.hello.server?.version) || null
       : null;
+  const openclawVersion = packageVersionProbe.version || gatewayReportedVersion;
+  const openclawVersionSource = packageVersionProbe.version ? "package.json" : "gateway.hello.server.version";
 
   const statusDetailBlocks: string[] = [];
   if (statusProbe.ok) {
@@ -199,6 +273,10 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
       }
     }
   }
+  if (wslProbe.ok && !packageVersionProbe.version && packageVersionProbe.stderr.trim().length > 0) {
+    warnings.push(`openclaw 版本读取异常：${packageVersionProbe.stderr.trim()}`);
+    warnings.push(`openclaw 版本读取命令：${simplifyWslCommandForDisplay(packageVersionProbe.command)}`);
+  }
   if (!statusProbe.ok) {
     warnings.push(`status 调用失败：${statusProbe.error}`);
     warnings.push(...statusProbe.tips);
@@ -236,6 +314,8 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     browserMode,
     browserCdpUrl,
     openclawVersion,
+    openclawVersionSource,
+    gatewayReportedVersion,
     gatewayStatus: statusDetailBlocks.join("\n\n") || null,
     warnings: Array.from(new Set(warnings)),
   };
