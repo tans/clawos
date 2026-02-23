@@ -19,7 +19,7 @@ export type WslCommandCheckResult = {
   stdout: string;
   stderr: string;
   command: string;
-  probeMethod: "marker" | "exit-code-fallback";
+  probeMethod: "simple-command-v" | "marker" | "exit-code-fallback";
   diagnostics: string[];
 };
 
@@ -82,6 +82,11 @@ function buildSingleCommandExitCodeProbeScript(command: string): string {
     "fi",
     "exit 1",
   ].join("\n");
+}
+
+function buildSingleCommandVScript(command: string): string {
+  const quoted = shellQuote(command);
+  return `command -v ${quoted}`;
 }
 
 function outputPreview(text: string, maxLines = 3): string {
@@ -173,6 +178,99 @@ async function probeCommandsByExitCode(commands: string[], runner: WslRunner): P
     statuses,
     diagnostics,
     command: sampleCommand,
+  };
+}
+
+type SimpleCommandVResult = {
+  ok: boolean;
+  commands: WslCommandStatus[];
+  missing: string[];
+  code: number;
+  stdout: string;
+  stderr: string;
+  command: string;
+  diagnostics: string[];
+  unresolved: string[];
+};
+
+async function probeCommandsByCommandV(commands: string[]): Promise<SimpleCommandVResult> {
+  const plans: Array<{ name: string; shellMode: "interactive" | "non-login" | "clean" }> = [
+    { name: "-i -c", shellMode: "interactive" },
+    { name: "-lc", shellMode: "non-login" },
+    { name: "--noprofile --norc", shellMode: "clean" },
+  ];
+
+  const statuses: WslCommandStatus[] = [];
+  const diagnostics: string[] = [];
+  const unresolved: string[] = [];
+  const stderrLines: string[] = [];
+  let commandLine = "";
+  let lastCode = 0;
+
+  for (const command of commands) {
+    const script = buildSingleCommandVScript(command);
+    let resolved = false;
+
+    for (const plan of plans) {
+      const result = await runWslScript(script, { shellMode: plan.shellMode });
+      if (!commandLine) {
+        commandLine = result.command;
+      }
+      lastCode = result.code;
+
+      const stdoutLines = sanitizeProbeStdoutLines(result.stdout);
+      const stderrText = sanitizeProbeStderr(result.stderr);
+      const path = stdoutLines[0];
+
+      if (result.code === 0) {
+        statuses.push({
+          command,
+          exists: true,
+          path: path || undefined,
+        });
+        diagnostics.push(`${command}: 已就绪${path ? ` (${path})` : ""} [${plan.name}]`);
+        resolved = true;
+        break;
+      }
+
+      if (result.code === 1) {
+        statuses.push({
+          command,
+          exists: false,
+        });
+        diagnostics.push(`${command}: 缺失 [${plan.name}]`);
+        resolved = true;
+        break;
+      }
+
+      const attemptError =
+        `${command}: ${plan.name} 执行异常（exit=${result.code}` +
+        `${stderrText ? `, stderr=${stderrText}` : ""}` +
+        ")";
+      diagnostics.push(attemptError);
+      stderrLines.push(attemptError);
+    }
+
+    if (!resolved) {
+      unresolved.push(command);
+    }
+  }
+
+  const missing = statuses.filter((item) => !item.exists).map((item) => item.command);
+  if (unresolved.length > 0) {
+    diagnostics.push(`以下命令仍无法判定：${unresolved.join(", ")}`);
+  }
+
+  return {
+    ok: unresolved.length === 0,
+    commands: statuses,
+    missing,
+    code: unresolved.length === 0 ? 0 : lastCode || 1,
+    stdout: "",
+    stderr: stderrLines.join("\n"),
+    command: commandLine,
+    diagnostics,
+    unresolved,
   };
 }
 
@@ -312,6 +410,21 @@ export async function checkWslCommandRequirements(
   fallbackRunner?: WslRunner
 ): Promise<WslCommandCheckResult> {
   const normalized = commands.map((item) => item.trim()).filter((item) => item.length > 0);
+  if (runner === runWslScript && !fallbackRunner) {
+    const simple = await probeCommandsByCommandV(normalized);
+    return {
+      ok: simple.ok && simple.missing.length === 0,
+      commands: simple.commands,
+      missing: simple.missing,
+      code: simple.code,
+      stdout: simple.stdout,
+      stderr: simple.stderr,
+      command: simple.command,
+      probeMethod: "simple-command-v",
+      diagnostics: simple.diagnostics,
+    };
+  }
+
   const script = buildWslCommandProbeScript(normalized);
   const primaryResult = await runner(script);
   let selectedResult = primaryResult;

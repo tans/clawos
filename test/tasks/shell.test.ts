@@ -27,6 +27,17 @@ describe("runWslScript shell mode", () => {
     expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-lc", "openclaw --version"]);
   });
 
+  it("uses interactive bash in windows path when shellMode is interactive", () => {
+    const args = buildWslProcessArgs("command -v git", {
+      isWindows: true,
+      distro: "Ubuntu",
+      wslBin: "wsl.exe",
+      shellMode: "interactive",
+    });
+
+    expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-ic", "command -v git"]);
+  });
+
   it("uses clean bash in windows path when shellMode is clean", () => {
     const args = buildWslProcessArgs("openclaw --version", {
       isWindows: true,
@@ -65,6 +76,15 @@ describe("runWslScript shell mode", () => {
     });
 
     expect(args).toEqual(["bash", "--noprofile", "--norc", "-c", "openclaw --version"]);
+  });
+
+  it("uses interactive bash in non-windows path when shellMode is interactive", () => {
+    const args = buildWslProcessArgs("command -v git", {
+      isWindows: false,
+      shellMode: "interactive",
+    });
+
+    expect(args).toEqual(["bash", "-ic", "command -v git"]);
   });
 
   it("parses wsl distro list output", () => {

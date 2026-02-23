@@ -12,7 +12,7 @@ export type CommandResult = {
   command: string;
 };
 
-export type WslShellMode = "login" | "non-login" | "clean";
+export type WslShellMode = "login" | "interactive" | "non-login" | "clean";
 
 function formatProcessCommand(args: string[]): string {
   return args
@@ -41,6 +41,9 @@ export function buildWslProcessArgs(
   const shellMode = options.shellMode || (options.loginShell === false ? "non-login" : "login");
 
   if (!options.isWindows) {
+    if (shellMode === "interactive") {
+      return ["bash", "-ic", script];
+    }
     if (shellMode === "clean") {
       return ["bash", "--noprofile", "--norc", "-c", script];
     }
@@ -49,6 +52,9 @@ export function buildWslProcessArgs(
 
   const wslBin = options.wslBin?.trim() || "wsl.exe";
   const distro = options.distro?.trim();
+  if (shellMode === "interactive") {
+    return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-ic", script];
+  }
   if (shellMode === "clean") {
     return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "--noprofile", "--norc", "-c", script];
   }

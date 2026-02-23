@@ -159,6 +159,16 @@ function logCommandStatuses(task: Task, title: string, commands: Array<{ command
   }
 }
 
+function probeMethodLabel(method: "simple-command-v" | "marker" | "exit-code-fallback"): string {
+  if (method === "simple-command-v") {
+    return "command -v 检测（-i -c 优先）";
+  }
+  if (method === "marker") {
+    return "标记探测";
+  }
+  return "逐命令退出码回退";
+}
+
 async function runWslStep(task: Task, step: number, totalSteps: number, current: Step): Promise<void> {
   task.step = step;
   appendTaskLog(task, `步骤 ${step}/${totalSteps}：${current.name}`);
@@ -197,7 +207,7 @@ export function startWslRepairTask(): { task: Task; reused: boolean } {
       task.step = 1;
       appendTaskLog(task, "步骤 1/1：检测 WSL 缺少命令");
       const initial = await checkWslCommandRequirements();
-      appendTaskLog(task, `探测模式：${initial.probeMethod === "marker" ? "标记探测" : "逐命令退出码回退"}`);
+      appendTaskLog(task, `探测模式：${probeMethodLabel(initial.probeMethod)}`);
       for (const line of initial.diagnostics) {
         appendTaskLog(task, `探测详情：${line}`);
       }
@@ -238,7 +248,7 @@ export function startWslRepairTask(): { task: Task; reused: boolean } {
       task.step = task.totalSteps;
       appendTaskLog(task, `步骤 ${task.totalSteps}/${task.totalSteps}：复检命令`);
       const finalCheck = await checkWslCommandRequirements();
-      appendTaskLog(task, `复检模式：${finalCheck.probeMethod === "marker" ? "标记探测" : "逐命令退出码回退"}`);
+      appendTaskLog(task, `复检模式：${probeMethodLabel(finalCheck.probeMethod)}`);
       for (const line of finalCheck.diagnostics) {
         appendTaskLog(task, `复检详情：${line}`);
       }

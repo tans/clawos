@@ -107,6 +107,10 @@ function simplifyWslCommandForDisplay(raw: string): string {
   if (trimmed.includes("set +e") && trimmed.includes("__CLAWOS_WSL_CMD_OK__")) {
     return `wsl.exe -d ${distro} -- bash -lic "<命令检测脚本: openclaw git pnpm nrm>"`;
   }
+  const commandVMatch = trimmed.match(/\bcommand -v\s+['"]?([a-zA-Z0-9_.-]+)['"]?/);
+  if (commandVMatch) {
+    return `wsl.exe -d ${distro} -- bash -i -c "command -v ${commandVMatch[1]}"`;
+  }
   if (trimmed.includes("set +e") && trimmed.includes("type -P") && trimmed.includes("command -v")) {
     return `wsl.exe -d ${distro} -- bash --noprofile --norc -c "<逐命令检测脚本>"`;
   }
