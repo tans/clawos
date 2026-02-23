@@ -107,6 +107,9 @@ function simplifyWslCommandForDisplay(raw: string): string {
   if (trimmed.includes("set +e") && trimmed.includes("__CLAWOS_WSL_CMD_OK__")) {
     return `wsl.exe -d ${distro} -- bash -lic "<命令检测脚本: openclaw git pnpm nrm>"`;
   }
+  if (trimmed.includes("set +e") && trimmed.includes("type -P") && trimmed.includes("command -v")) {
+    return `wsl.exe -d ${distro} -- bash --noprofile --norc -c "<逐命令检测脚本>"`;
+  }
   if (trimmed.includes("echo WSL_OK")) {
     return `wsl.exe -d ${distro} -- bash -lic "<基础探测脚本: echo WSL_OK>"`;
   }
@@ -178,9 +181,18 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     if (wslCommandProbe.missing.length > 0) {
       warnings.push(`WSL 缺少命令：${wslCommandProbe.missing.join(", ")}`);
     }
+    if (wslCommandProbe.probeMethod === "exit-code-fallback") {
+      warnings.push("WSL 标记探测异常，已回退到逐命令检测。");
+    }
     warnings.push(`WSL 命令探测执行：${simplifyWslCommandForDisplay(wslCommandProbe.command)}`);
     if (wslCommandProbe.stderr.trim().length > 0) {
       warnings.push(`WSL 命令检测异常：${wslCommandProbe.stderr.trim()}`);
+    }
+    if (wslCommandProbe.missing.length > 0) {
+      for (const item of wslCommandProbe.commands) {
+        const suffix = item.path ? ` (${item.path})` : "";
+        warnings.push(`WSL 命令状态：${item.command}=${item.exists ? "已就绪" : "缺失"}${suffix}`);
+      }
     }
   }
   if (!statusProbe.ok) {

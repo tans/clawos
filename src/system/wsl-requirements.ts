@@ -19,9 +19,22 @@ export type WslCommandCheckResult = {
   stdout: string;
   stderr: string;
   command: string;
+  probeMethod: "marker" | "exit-code-fallback";
+  diagnostics: string[];
 };
 
 type WslRunner = (script: string) => Promise<CommandResult>;
+type ExitCodeProbeResult =
+  | {
+      ok: true;
+      statuses: WslCommandStatus[];
+      diagnostics: string[];
+      command: string;
+    }
+  | {
+      ok: false;
+      diagnostics: string[];
+    };
 type ProbeEvaluation = {
   hasProbeSignals: boolean;
   recognizedSignalCount: number;
@@ -51,6 +64,26 @@ export function buildWslCommandProbeScript(commands = Array.from(REQUIRED_WSL_CO
   ].join("\n");
 }
 
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function buildSingleCommandExitCodeProbeScript(command: string): string {
+  const quoted = shellQuote(command);
+  return [
+    "set +e",
+    `path="$(type -P ${quoted} 2>/dev/null | head -n 1)"`,
+    'if [ -z "$path" ]; then',
+    `  path="$(command -v ${quoted} 2>/dev/null | head -n 1)"`,
+    "fi",
+    'if [ -n "$path" ]; then',
+    '  printf "%s\\n" "$path"',
+    "  exit 0",
+    "fi",
+    "exit 1",
+  ].join("\n");
+}
+
 function outputPreview(text: string, maxLines = 3): string {
   const lines = text
     .split(/\r?\n/g)
@@ -76,6 +109,13 @@ function sanitizeProbeStderr(stderr: string): string {
   return lines.join("\n");
 }
 
+function sanitizeProbeStdoutLines(stdout: string): string[] {
+  return stdout
+    .split(/\r?\n/g)
+    .map((line) => sanitizeProbeLine(line))
+    .filter((line) => line.length > 0 && !isBenignShellNoise(line));
+}
+
 function sanitizeProbeLine(rawLine: string): string {
   return rawLine
     .replace(/\u0000/g, "")
@@ -86,6 +126,54 @@ function sanitizeProbeLine(rawLine: string): string {
 function findProbeMarkerIndex(line: string, marker: string): number {
   const idx = line.indexOf(marker);
   return idx >= 0 ? idx : -1;
+}
+
+async function probeCommandsByExitCode(commands: string[], runner: WslRunner): Promise<ExitCodeProbeResult> {
+  const statuses: WslCommandStatus[] = [];
+  const diagnostics: string[] = [];
+  let sampleCommand = "";
+
+  for (const command of commands) {
+    const result = await runner(buildSingleCommandExitCodeProbeScript(command));
+    if (!sampleCommand) {
+      sampleCommand = result.command;
+    }
+
+    const stdoutLines = sanitizeProbeStdoutLines(result.stdout);
+    const stderrText = sanitizeProbeStderr(result.stderr);
+    const path = stdoutLines[0];
+
+    if (result.code === 0 || result.code === 1) {
+      const exists = result.code === 0;
+      statuses.push({
+        command,
+        exists,
+        path: exists ? path || undefined : undefined,
+      });
+      diagnostics.push(
+        `${command}: ${exists ? "存在" : "缺失"}${exists && path ? ` (${path})` : ""} [exit=${result.code}]`
+      );
+      if (stderrText.length > 0) {
+        diagnostics.push(`${command}: stderr=${stderrText}`);
+      }
+      continue;
+    }
+
+    diagnostics.push(
+      `${command}: 逐命令检测执行异常（exit=${result.code}${stderrText ? `, stderr=${stderrText}` : ""}）。`
+    );
+    return {
+      ok: false,
+      diagnostics,
+    };
+  }
+
+  return {
+    ok: true,
+    statuses,
+    diagnostics,
+    command: sampleCommand,
+  };
 }
 
 function countProbeSignals(stdout: string): number {
@@ -182,9 +270,16 @@ function evaluateProbeResult(result: CommandResult, commands: string[]): ProbeEv
   const signalCount = countProbeSignals(result.stdout);
   const recognizedSignalCount = countRecognizedProbeSignals(result.stdout, commands);
   const hasProbeSignals = signalCount > 0;
-  const commandStatuses = parseWslCommandProbeOutput(result.stdout, commands);
   const probeOutputIssue =
     result.ok && (!hasProbeSignals || recognizedSignalCount !== commands.length);
+  const parsedCommandStatuses = parseWslCommandProbeOutput(result.stdout, commands);
+  const commandStatuses = probeOutputIssue
+    ? []
+    : hasProbeSignals
+      ? parsedCommandStatuses
+      : result.ok
+        ? []
+        : commands.map((command) => ({ command, exists: false } as WslCommandStatus));
   const missing = probeOutputIssue
     ? []
     : hasProbeSignals
@@ -221,6 +316,8 @@ export async function checkWslCommandRequirements(
   const primaryResult = await runner(script);
   let selectedResult = primaryResult;
   let evaluation = evaluateProbeResult(primaryResult, normalized);
+  let probeMethod: WslCommandCheckResult["probeMethod"] = "marker";
+  const diagnostics: string[] = [];
 
   if (evaluation.probeOutputIssue) {
     const fallbackPlans: Array<{ name: string; runner: WslRunner }> = [];
@@ -266,6 +363,34 @@ export async function checkWslCommandRequirements(
     }
   }
 
+  if (evaluation.probeOutputIssue && runner === runWslScript) {
+    const exitCodeProbe = await probeCommandsByExitCode(
+      normalized,
+      (nextScript: string) => runWslScript(nextScript, { shellMode: "clean" })
+    );
+    if (exitCodeProbe.ok) {
+      evaluation = {
+        hasProbeSignals: true,
+        recognizedSignalCount: normalized.length,
+        commandStatuses: exitCodeProbe.statuses,
+        missing: exitCodeProbe.statuses.filter((item) => !item.exists).map((item) => item.command),
+        probeOutputIssue: false,
+        stderr: "",
+      };
+      selectedResult = {
+        ...selectedResult,
+        ok: true,
+        code: 0,
+        command: exitCodeProbe.command || selectedResult.command,
+      };
+      probeMethod = "exit-code-fallback";
+      diagnostics.push("标记探测异常，已回退到逐命令退出码检测。");
+      diagnostics.push(...exitCodeProbe.diagnostics);
+    } else {
+      diagnostics.push(...exitCodeProbe.diagnostics);
+    }
+  }
+
   return {
     ok:
       selectedResult.ok &&
@@ -278,5 +403,7 @@ export async function checkWslCommandRequirements(
     stdout: selectedResult.stdout,
     stderr: evaluation.stderr,
     command: selectedResult.command,
+    probeMethod,
+    diagnostics,
   };
 }
