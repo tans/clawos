@@ -1,4 +1,4 @@
-import { access, mkdir, stat } from "node:fs/promises";
+import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { dirname, resolve } from "node:path";
 
@@ -6,10 +6,14 @@ interface BuildOptions {
   outfile: string;
   skipCss: boolean;
   target: string;
+  bumpPatch: boolean;
+  fixedVersion: string | null;
 }
 
 function printUsage(): void {
-  console.log(`ClawOS 打包脚本\n\n用法:\n  bun run scripts/build-clawos.ts [options]\n\n选项:\n  --outfile <path>   输出路径，默认 ./dist/clawos.exe\n  --skip-css         跳过 Tailwind CSS 构建\n  --target <target>  编译目标，默认 bun-windows-x64-modern\n  -h, --help         显示帮助\n`);
+  console.log(
+    `ClawOS 打包脚本\n\n用法:\n  bun run scripts/build-clawos.ts [options]\n\n选项:\n  --outfile <path>     输出路径，默认 ./dist/clawos.exe\n  --skip-css           跳过 Tailwind CSS 构建\n  --target <target>    编译目标，默认 bun-windows-x64-modern\n  --no-bump-patch      不自动递增 patch 版本号\n  --version <version>  指定构建版本（会覆盖自动递增）\n  -h, --help           显示帮助\n`
+  );
 }
 
 function parseArgs(argv: string[]): BuildOptions {
@@ -17,6 +21,8 @@ function parseArgs(argv: string[]): BuildOptions {
     outfile: resolve(process.cwd(), "dist/clawos.exe"),
     skipCss: false,
     target: "bun-windows-x64-modern",
+    bumpPatch: true,
+    fixedVersion: null,
   };
 
   const args = [...argv];
@@ -36,6 +42,11 @@ function parseArgs(argv: string[]): BuildOptions {
       continue;
     }
 
+    if (arg === "--no-bump-patch") {
+      options.bumpPatch = false;
+      continue;
+    }
+
     if (arg === "--outfile") {
       const value = args.shift();
       if (!value) {
@@ -51,6 +62,15 @@ function parseArgs(argv: string[]): BuildOptions {
         throw new Error("--target 缺少参数");
       }
       options.target = value.trim();
+      continue;
+    }
+
+    if (arg === "--version") {
+      const value = args.shift();
+      if (!value) {
+        throw new Error("--version 缺少参数");
+      }
+      options.fixedVersion = value.trim();
       continue;
     }
 
@@ -92,12 +112,87 @@ function formatBytes(size: number): string {
   return `${mb.toFixed(2)} MB`;
 }
 
+const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
+const XIAKE_CONFIG_PATH = resolve(process.cwd(), "clawos_xiake.json");
+const APP_CONSTANTS_PATH = resolve(process.cwd(), "src/app.constants.ts");
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
+
+function normalizeSemver(value: string): string {
+  const normalized = value.trim().replace(/^v/i, "");
+  if (!SEMVER_PATTERN.test(normalized)) {
+    throw new Error(`版本号格式不合法：${value}（期望 x.y.z）`);
+  }
+  return normalized;
+}
+
+function bumpPatchVersion(version: string): string {
+  const normalized = normalizeSemver(version);
+  const [majorRaw, minorRaw, patchRaw] = normalized.split(".");
+  const major = Number.parseInt(majorRaw, 10);
+  const minor = Number.parseInt(minorRaw, 10);
+  const patch = Number.parseInt(patchRaw, 10);
+  return `${major}.${minor}.${patch + 1}`;
+}
+
+async function writeJsonFile(path: string, value: unknown): Promise<void> {
+  await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
+}
+
+function replaceAppConstantsVersion(source: string, version: string): string {
+  const next = source.replace(
+    /export const VERSION = "([^"]+)";/,
+    `export const VERSION = "${version}";`
+  );
+
+  if (next === source) {
+    throw new Error("未找到 src/app.constants.ts 中的 VERSION 常量。");
+  }
+  return next;
+}
+
+async function syncBuildVersion(options: BuildOptions): Promise<string> {
+  const packageRaw = await readFile(PACKAGE_JSON_PATH, "utf-8");
+  const packageJson = JSON.parse(packageRaw) as Record<string, unknown>;
+  const currentPackageVersion =
+    typeof packageJson.version === "string" && packageJson.version.trim()
+      ? packageJson.version.trim()
+      : "";
+  if (!currentPackageVersion) {
+    throw new Error("package.json 缺少 version 字段。");
+  }
+
+  const targetVersion = options.fixedVersion
+    ? normalizeSemver(options.fixedVersion)
+    : options.bumpPatch
+      ? bumpPatchVersion(currentPackageVersion)
+      : normalizeSemver(currentPackageVersion);
+
+  const xiakeRaw = await readFile(XIAKE_CONFIG_PATH, "utf-8");
+  const xiakeJson = JSON.parse(xiakeRaw) as Record<string, unknown>;
+  const appConstantsRaw = await readFile(APP_CONSTANTS_PATH, "utf-8");
+
+  packageJson.version = targetVersion;
+  xiakeJson.version = targetVersion;
+  const nextAppConstants = replaceAppConstantsVersion(appConstantsRaw, targetVersion);
+
+  await Promise.all([
+    writeJsonFile(PACKAGE_JSON_PATH, packageJson),
+    writeJsonFile(XIAKE_CONFIG_PATH, xiakeJson),
+    writeFile(APP_CONSTANTS_PATH, nextAppConstants, "utf-8"),
+  ]);
+
+  console.log(`[build] 版本同步: ${currentPackageVersion} -> ${targetVersion}`);
+  return targetVersion;
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   await mkdir(dirname(options.outfile), { recursive: true });
+  const syncedVersion = await syncBuildVersion(options);
 
   console.log(`[build] 输出文件: ${options.outfile}`);
   console.log(`[build] 编译目标: ${options.target}`);
+  console.log(`[build] 当前构建版本: ${syncedVersion}`);
 
   if (!options.skipCss) {
     await runStep("构建 UI 样式", ["bun", "run", "tailwind:build"]);
