@@ -88,6 +88,10 @@
     }
 
     if (!status.hasUpdate) {
+      if (!status.remoteVersion) {
+        metaEl.textContent = "暂未发布更新";
+        return;
+      }
       metaEl.textContent = "已是最新版本";
       return;
     }

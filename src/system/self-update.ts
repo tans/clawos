@@ -5,7 +5,7 @@ import path from "node:path";
 import { VERSION } from "../app.constants";
 
 const IS_WINDOWS = process.platform === "win32";
-const DEFAULT_MANIFEST_URL = "https://minapp.xin/clawos_xiake.json";
+const DEFAULT_MANIFEST_URL = "https://clawos.minapp.xin/downloads/clawos_xiake.json";
 const MANIFEST_TIMEOUT_MS = 10_000;
 const MANIFEST_CACHE_TTL_MS = 60_000;
 
@@ -14,6 +14,8 @@ type UpdateManifest = {
   force: boolean;
   url: string;
 };
+
+class UpdateManifestNotFoundError extends Error {}
 
 export type SelfUpdateStatus = {
   supported: boolean;
@@ -79,34 +81,52 @@ function isVersionDifferent(a: string, b: string): boolean {
   return false;
 }
 
-function validateManifest(raw: unknown): UpdateManifest {
+function resolveManifestDownloadUrl(raw: string, manifestUrl: string): string {
+  try {
+    return new URL(raw, manifestUrl).toString();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`更新清单中的 url 不合法：${message}`);
+  }
+}
+
+function validateManifest(raw: unknown, manifestUrl: string): UpdateManifest {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new Error("更新清单格式错误：必须是对象。");
   }
 
   const obj = raw as Record<string, unknown>;
-  const version = typeof obj.version === "string" ? obj.version.trim() : "";
   const force = typeof obj.force === "boolean" ? obj.force : false;
-  const url = typeof obj.url === "string" ? obj.url.trim() : "";
 
-  if (!version) {
-    throw new Error("更新清单缺少 version。");
-  }
-  if (!url) {
-    throw new Error("更新清单缺少 url。");
-  }
-
-  try {
-    const parsed = new URL(url);
+  const legacyVersion = typeof obj.version === "string" ? obj.version.trim() : "";
+  const legacyUrl = typeof obj.url === "string" ? obj.url.trim() : "";
+  if (legacyVersion && legacyUrl) {
+    const resolved = resolveManifestDownloadUrl(legacyUrl, manifestUrl);
+    const parsed = new URL(resolved);
     if (!["http:", "https:"].includes(parsed.protocol)) {
       throw new Error("更新地址仅支持 http/https。");
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`更新清单中的 url 不合法：${message}`);
+    return { version: legacyVersion, force, url: resolved };
   }
 
-  return { version, force, url };
+  const release = obj.release && typeof obj.release === "object" && !Array.isArray(obj.release)
+    ? (obj.release as Record<string, unknown>)
+    : null;
+  const links = obj.links && typeof obj.links === "object" && !Array.isArray(obj.links)
+    ? (obj.links as Record<string, unknown>)
+    : null;
+  const releaseVersion = typeof release?.version === "string" ? release.version.trim() : "";
+  const installerLatest = typeof links?.installerLatest === "string" ? links.installerLatest.trim() : "";
+  if (releaseVersion && installerLatest) {
+    const resolved = resolveManifestDownloadUrl(installerLatest, manifestUrl);
+    const parsed = new URL(resolved);
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      throw new Error("更新地址仅支持 http/https。");
+    }
+    return { version: releaseVersion, force, url: resolved };
+  }
+
+  throw new Error("更新清单缺少 version/url（或 release.version + links.installerLatest）。");
 }
 
 function resolveSelfExecutablePath(): { path: string | null; reason: string | null } {
@@ -141,14 +161,31 @@ async function fetchManifest(): Promise<UpdateManifest> {
     });
 
     if (!response.ok) {
-      throw new Error(`拉取更新清单失败（HTTP ${response.status}）。`);
+      if (response.status === 404) {
+        throw new UpdateManifestNotFoundError("暂无发布版本。");
+      }
+
+      let bodyMessage = "";
+      try {
+        const body = await response.json();
+        if (body && typeof body === "object" && !Array.isArray(body)) {
+          const errorText = (body as Record<string, unknown>).error;
+          if (typeof errorText === "string" && errorText.trim()) {
+            bodyMessage = `：${errorText.trim()}`;
+          }
+        }
+      } catch {
+        // ignore non-json body
+      }
+
+      throw new Error(`拉取更新清单失败（HTTP ${response.status}）${bodyMessage}`);
     }
 
     const payload = await response.json().catch(() => {
       throw new Error("更新清单不是合法 JSON。");
     });
 
-    return validateManifest(payload);
+    return validateManifest(payload, manifestUrl);
   } finally {
     clearTimeout(timeout);
   }
@@ -203,6 +240,16 @@ export async function getSelfUpdateStatus(refresh = false): Promise<SelfUpdateSt
     cachedStatus = { expiresAt: now + MANIFEST_CACHE_TTL_MS, value: status };
     return status;
   } catch (error) {
+    if (error instanceof UpdateManifestNotFoundError) {
+      const status: SelfUpdateStatus = {
+        ...base,
+        checkedAt: new Date().toISOString(),
+        error: null,
+      };
+      cachedStatus = { expiresAt: now + 30_000, value: status };
+      return status;
+    }
+
     const message = error instanceof Error ? error.message : String(error);
     const status: SelfUpdateStatus = {
       ...base,
