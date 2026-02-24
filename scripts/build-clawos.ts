@@ -115,6 +115,7 @@ function formatBytes(size: number): string {
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const XIAKE_CONFIG_PATH = resolve(process.cwd(), "clawos_xiake.json");
 const APP_CONSTANTS_PATH = resolve(process.cwd(), "src/app.constants.ts");
+const DEFAULT_WINDOWS_ICON_PATH = resolve(process.cwd(), "web/public/logo.png");
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
 function normalizeSemver(value: string): string {
@@ -200,7 +201,7 @@ async function main(): Promise<void> {
     console.log("[build] 跳过 UI 样式构建 (--skip-css)");
   }
 
-  await runStep("编译 ClawOS 可执行文件", [
+  const compileCmd = [
     "bun",
     "build",
     "src/server.ts",
@@ -209,7 +210,19 @@ async function main(): Promise<void> {
     options.target,
     "--outfile",
     options.outfile,
-  ]);
+  ];
+
+  if (options.target.toLowerCase().includes("windows")) {
+    try {
+      await access(DEFAULT_WINDOWS_ICON_PATH, fsConstants.R_OK);
+      compileCmd.push("--windows-icon", DEFAULT_WINDOWS_ICON_PATH);
+      console.log(`[build] 程序图标: ${DEFAULT_WINDOWS_ICON_PATH}`);
+    } catch {
+      console.warn(`[build] 未找到图标文件，跳过 --windows-icon: ${DEFAULT_WINDOWS_ICON_PATH}`);
+    }
+  }
+
+  await runStep("编译 ClawOS 可执行文件", compileCmd);
 
   const size = await assertOutputFile(options.outfile);
   console.log(`[build] 打包完成: ${options.outfile}`);

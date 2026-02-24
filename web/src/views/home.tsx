@@ -118,12 +118,16 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>ClawOS 官网</title>
+        <link rel="icon" type="image/png" href="/public/logo.png" />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="min-h-screen bg-base-200/40 text-base-content">
         <main class="mx-auto w-full max-w-7xl px-4 py-8 sm:px-8 sm:py-12">
           <header class="navbar rounded-box border border-base-content/10 bg-base-100/80 px-4 backdrop-blur md:px-6">
-            <div class="flex-1 text-lg font-semibold">ClawOS</div>
+            <div class="flex flex-1 items-center gap-2 text-lg font-semibold">
+              <img src="/public/logo.png" alt="ClawOS Logo" class="size-8 rounded-md object-contain" />
+              <span>ClawOS</span>
+            </div>
             <nav class="flex flex-wrap justify-end gap-2" aria-label="页面导航">
               <a class="btn btn-ghost btn-sm" href="#features">
                 特色
