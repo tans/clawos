@@ -17,6 +17,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",
     "daisyui": "^5.5.18",
+    "png-to-ico": "^3.0.1",
     "tailwindcss": "^4.1.16"
   }
 }

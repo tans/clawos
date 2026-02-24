@@ -115,7 +115,9 @@ function formatBytes(size: number): string {
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const XIAKE_CONFIG_PATH = resolve(process.cwd(), "clawos_xiake.json");
 const APP_CONSTANTS_PATH = resolve(process.cwd(), "src/app.constants.ts");
-const DEFAULT_WINDOWS_ICON_PATH = resolve(process.cwd(), "web/public/logo.png");
+const DEFAULT_WINDOWS_ICON_PNG_PATH = resolve(process.cwd(), "web/public/logo.png");
+const DEFAULT_WINDOWS_ICON_ICO_PATH = resolve(process.cwd(), "web/public/logo.ico");
+const GENERATED_WINDOWS_ICON_PATH = resolve(process.cwd(), "dist/clawos.icon.ico");
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
 function normalizeSemver(value: string): string {
@@ -160,16 +162,73 @@ async function writeJsonFile(path: string, value: unknown): Promise<void> {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
-function replaceAppConstantsVersion(source: string, version: string): string {
-  const next = source.replace(
-    /export const VERSION = "([^"]+)";/,
-    `export const VERSION = "${version}";`
-  );
+async function isReadableFile(path: string): Promise<boolean> {
+  try {
+    await access(path, fsConstants.R_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
-  if (next === source) {
+async function isValidIcoFile(path: string): Promise<boolean> {
+  try {
+    const content = await readFile(path);
+    if (content.length < 4) {
+      return false;
+    }
+    const reserved = content.readUInt16LE(0);
+    const imageType = content.readUInt16LE(2);
+    return reserved === 0 && imageType === 1;
+  } catch {
+    return false;
+  }
+}
+
+async function convertPngToIco(pngPath: string, icoPath: string): Promise<void> {
+  const pngToIcoModule = await import("png-to-ico");
+  const pngToIco = pngToIcoModule.default;
+  const iconBuffer = await pngToIco(pngPath);
+  await mkdir(dirname(icoPath), { recursive: true });
+  await writeFile(icoPath, iconBuffer);
+}
+
+async function resolveWindowsIconPath(): Promise<string | null> {
+  if (await isReadableFile(DEFAULT_WINDOWS_ICON_ICO_PATH)) {
+    if (await isValidIcoFile(DEFAULT_WINDOWS_ICON_ICO_PATH)) {
+      return DEFAULT_WINDOWS_ICON_ICO_PATH;
+    }
+    console.warn(`[build] 图标文件无效（非 ICO）：${DEFAULT_WINDOWS_ICON_ICO_PATH}`);
+  }
+
+  if (!(await isReadableFile(DEFAULT_WINDOWS_ICON_PNG_PATH))) {
+    console.warn(
+      `[build] 未找到图标文件，跳过 --windows-icon: ${DEFAULT_WINDOWS_ICON_PNG_PATH}`
+    );
+    return null;
+  }
+
+  try {
+    await convertPngToIco(DEFAULT_WINDOWS_ICON_PNG_PATH, GENERATED_WINDOWS_ICON_PATH);
+    if (await isValidIcoFile(GENERATED_WINDOWS_ICON_PATH)) {
+      console.log(`[build] 已将 PNG 图标转换为 ICO：${GENERATED_WINDOWS_ICON_PATH}`);
+      return GENERATED_WINDOWS_ICON_PATH;
+    }
+    console.warn(`[build] 生成的 ICO 文件无效，跳过图标注入：${GENERATED_WINDOWS_ICON_PATH}`);
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[build] PNG 转 ICO 失败，跳过图标注入：${message}`);
+    return null;
+  }
+}
+
+function replaceAppConstantsVersion(source: string, version: string): string {
+  const pattern = /export const VERSION = "([^"]+)";/;
+  if (!pattern.test(source)) {
     throw new Error("未找到 src/app.constants.ts 中的 VERSION 常量。");
   }
-  return next;
+  return source.replace(pattern, `export const VERSION = "${version}";`);
 }
 
 function readAppConstantsVersion(source: string): string {
@@ -253,17 +312,27 @@ async function main(): Promise<void> {
     options.outfile,
   ];
 
-  if (options.target.toLowerCase().includes("windows")) {
-    try {
-      await access(DEFAULT_WINDOWS_ICON_PATH, fsConstants.R_OK);
-      compileCmd.push("--windows-icon", DEFAULT_WINDOWS_ICON_PATH);
-      console.log(`[build] 程序图标: ${DEFAULT_WINDOWS_ICON_PATH}`);
-    } catch {
-      console.warn(`[build] 未找到图标文件，跳过 --windows-icon: ${DEFAULT_WINDOWS_ICON_PATH}`);
-    }
-  }
+  const compileTitle = "编译 ClawOS 可执行文件";
+  const compileCmdWithoutIcon = [...compileCmd];
 
-  await runStep("编译 ClawOS 可执行文件", compileCmd);
+  if (options.target.toLowerCase().includes("windows")) {
+    const windowsIconPath = await resolveWindowsIconPath();
+    if (windowsIconPath) {
+      const compileCmdWithIcon = [...compileCmd, "--windows-icon", windowsIconPath];
+      console.log(`[build] 程序图标: ${windowsIconPath}`);
+      try {
+        await runStep(`${compileTitle}（含图标）`, compileCmdWithIcon);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`[build] 图标注入失败，自动重试无图标构建：${message}`);
+        await runStep(`${compileTitle}（无图标重试）`, compileCmdWithoutIcon);
+      }
+    } else {
+      await runStep(compileTitle, compileCmdWithoutIcon);
+    }
+  } else {
+    await runStep(compileTitle, compileCmdWithoutIcon);
+  }
 
   const size = await assertOutputFile(options.outfile);
   console.log(`[build] 打包完成: ${options.outfile}`);
