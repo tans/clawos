@@ -10,6 +10,7 @@ import { uploadRoutes } from "./routes/upload";
 
 export const app = new Hono();
 const cssFilePath = resolve(process.cwd(), "dist", "output.css");
+const publicDirPath = resolve(process.cwd(), "public");
 
 app.get("/health", (c) => {
   return c.json({
@@ -33,6 +34,35 @@ app.get("/styles.css", async (c) => {
     headers: {
       "content-type": "text/css; charset=utf-8",
       "cache-control": "public, max-age=600",
+    },
+  });
+});
+
+
+app.get("/public/*", async (c) => {
+  const rawPath = c.req.path.slice("/public/".length);
+  const normalized = rawPath.replaceAll("\\", "/").replace(/^\/+/, "");
+
+  if (!normalized || normalized.includes("..")) {
+    return c.text("Not Found", 404);
+  }
+
+  const filePath = resolve(publicDirPath, normalized);
+  if (!filePath.startsWith(publicDirPath + "/")) {
+    return c.text("Not Found", 404);
+  }
+
+  try {
+    await access(filePath, fsConstants.R_OK);
+  } catch {
+    return c.text("Not Found", 404);
+  }
+
+  const file = Bun.file(filePath);
+  return new Response(file, {
+    headers: {
+      "content-type": file.type || "application/octet-stream",
+      "cache-control": "public, max-age=3600",
     },
   });
 });

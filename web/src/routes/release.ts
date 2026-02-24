@@ -15,7 +15,6 @@ releaseRoutes.get("/api/releases/latest", async (c) => {
     links: {
       installerLatest: "/downloads/latest",
       xiakeConfig: "/downloads/clawos_xiake.json",
-      downloadPage: "/downloads",
     },
   });
 });
