@@ -141,13 +141,13 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
             <div class="hero-content w-full max-w-6xl flex-col gap-10 px-6 py-10 text-center sm:px-12 sm:py-14">
               <div class="space-y-5">
                 <div class="flex flex-wrap justify-center gap-2">
-                  <span class="badge badge-primary badge-outline">Windows + WSL</span>
-                  <span class="badge badge-info badge-outline">Gateway</span>
-                  <span class="badge badge-accent badge-outline">OEM</span>
+                  <span class="badge badge-primary badge-outline">Windows 即装即用</span>
+                  <span class="badge badge-info badge-outline">可视化管理</span>
+                  <span class="badge badge-accent badge-outline">行业定制</span>
                 </div>
                 <h1 class="text-4xl font-black tracking-tight sm:text-5xl">可定制的openclaw</h1>
                 <p class="mx-auto max-w-3xl text-base text-base-content/70 sm:text-lg">
-                  一键升级 openclaw，简化 Agent 模型配置，内置精选技能市场。
+                  像用普通软件一样使用 openclaw：一键更新，常用能力开箱即用。
                 </p>
                 <div class="flex justify-center">
                   {hasInstaller ? (
@@ -178,30 +178,29 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
 
           <section id="functions" class="mt-8 space-y-6 rounded-[1.75rem] border border-base-content/10 bg-base-100/70 p-6 sm:p-8">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <h2 class="text-2xl font-semibold">核心能力</h2>
-              <span class="text-sm text-base-content/60">产品化交付</span>
+              <h2 class="text-2xl font-semibold">你能直接用的功能</h2>
+              <span class="text-sm text-base-content/60">少配置，快上手</span>
             </div>
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <FeatureCard icon="panel" title="一键升级 openclaw" desc="升级、重启、状态检查一体化。" />
-              <FeatureCard icon="agent" title="简化Agent模型配置" desc="减少手工改配置，降低上线门槛。" />
-              <FeatureCard icon="skill" title="内置精选技能市场" desc="内置常用技能模板，开箱即用。" />
-              <FeatureCard icon="chat" title="通讯渠道接入" desc="常见渠道统一接入与管理。" />
-              <FeatureCard icon="browser" title="浏览器自动化" desc="浏览器与工作流配置统一管理。" />
-              <FeatureCard icon="wsl" title="WSL 诊断" desc="端口、权限、环境问题可视排查。" />
+              <FeatureCard icon="panel" title="一键更新 openclaw" desc="点一下就能更新、重启并查看运行状态。" />
+              <FeatureCard icon="agent" title="模型配置更简单" desc="常用配置可视化，少填参数也能用。" />
+              <FeatureCard icon="skill" title="内置功能模板" desc="常见场景一键启用，不用从零配置。" />
+              <FeatureCard icon="chat" title="消息渠道接入" desc="常见沟通渠道统一管理。" />
+              <FeatureCard icon="browser" title="网页操作自动化" desc="把重复网页操作做成流程。" />
+              <FeatureCard icon="wsl" title="环境问题自检" desc="端口、权限等常见问题一眼定位。" />
             </div>
           </section>
 
           <section id="oem" class="mt-8 space-y-6 rounded-[1.75rem] border border-base-content/10 bg-base-100/70 p-6 sm:p-8">
             <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <h2 class="text-2xl font-semibold">openclaw OEM</h2>
-              <span class="text-sm text-base-content/60">定制行业解决方案</span>
+              <h2 class="text-2xl font-semibold">openclaw OEM 定制</h2>
+              <span class="text-sm text-base-content/60">面向行业客户</span>
             </div>
 
             <div class="space-y-2 text-base-content/80">
-              <p>定制行业解决方案，打通现有业务体系。</p>
+              <p>我们提供行业定制方案，帮助你在现有业务上快速落地。</p>
               <p>
-                无论是传统的 SaaS 软件还是咨询行业，通过 openclaw OEM
-                提供专属的软硬件一体方案，更好的服务，友好的交付，简单的销售模式。
+                从品牌、功能到交付方式都可按需组合，降低实施难度，缩短上线周期。
               </p>
             </div>
 
@@ -215,9 +214,9 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
             </div>
 
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <FeatureCard icon="edu" title="教育行业" desc="教务、招生与校内协作场景。" />
-              <FeatureCard icon="med" title="医疗行业" desc="流程规范、合规与数据协作。" />
-              <FeatureCard icon="biz" title="SaaS / 咨询" desc="专属方案，标准交付，快速复制。" />
+              <FeatureCard icon="edu" title="教育行业" desc="教学、招生、校内服务场景快速落地。" />
+              <FeatureCard icon="med" title="医疗行业" desc="围绕流程规范与协作效率进行定制。" />
+              <FeatureCard icon="biz" title="SaaS / 咨询" desc="做成可复用方案，交付更稳、销售更轻。" />
             </div>
           </section>
 
