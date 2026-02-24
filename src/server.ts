@@ -4,6 +4,7 @@ import { HttpError, jsonResponse } from "./lib/http";
 import { handleApiRequest } from "./routes/api";
 import { handlePageRequest } from "./routes/pages";
 import { openBrowser } from "./system/browser";
+import { startQwGatewayRestartTaskOnStartup } from "./tasks/gateway";
 
 let server: ReturnType<typeof Bun.serve>;
 
@@ -33,7 +34,10 @@ try {
         });
       } catch (error) {
         if (error instanceof HttpError) {
-          return jsonResponse({ ok: false, error: error.message }, error.status);
+          return jsonResponse(
+            { ok: false, error: error.message },
+            error.status,
+          );
         }
 
         const message = error instanceof Error ? error.message : String(error);
@@ -49,5 +53,18 @@ try {
 }
 
 const serverUrl = `http://localhost:${server.port}`;
-console.log(`ClawOS listening on ${serverUrl}`);
+const startupBanner = `
+
+  ██████╗██╗      █████╗ ██╗    ██╗ ██████╗ ███████╗
+ ██╔════╝██║     ██╔══██╗██║    ██║██╔═══██╗██╔════╝
+ ██║     ██║     ███████║██║ █╗ ██║██║   ██║███████╗
+ ██║     ██║     ██╔══██║██║███╗██║██║   ██║╚════██║
+ ╚██████╗███████╗██║  ██║╚███╔███╔╝╚██████╔╝███████║
+  ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝  ╚═════╝ ╚══════╝
+`;
+console.log(startupBanner);
+console.log("ClawOS 已启动");
+console.log(`访问地址: ${serverUrl}`);
+console.log("官网: https://clawos.cc");
+startQwGatewayRestartTaskOnStartup();
 openBrowser(serverUrl);

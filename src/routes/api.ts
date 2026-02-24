@@ -14,6 +14,7 @@ import { getSelfUpdateStatus } from "../system/self-update";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
 import {
+  getQwGatewayStartupStatus,
   startGatewayControlTask,
   startGatewayStatusTask,
   startGatewayUpdateTask,
@@ -158,6 +159,10 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   if (path === "/api/system/repair" && req.method === "POST") {
     const { task, reused } = startWslRepairTask();
     return jsonResponse({ ok: true, taskId: task.id, task, reused });
+  }
+
+  if (path === "/api/qw-gateway/status" && req.method === "GET") {
+    return jsonResponse({ ok: true, status: getQwGatewayStartupStatus() });
   }
 
   if (path === "/api/system/autostart/clawos" && req.method === "GET") {

@@ -108,7 +108,13 @@
                     data-app-update-widget
                 >
                     <div class="text-xs text-base-content/70">
-                        版本：<span data-app-version>v-</span>
+                        <a
+                            href="https://clawos.cc"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            >clawos.cc</a
+                        >
+                        · 版本：<span data-app-version>v-</span>
                     </div>
                     <button
                         class="btn btn-primary btn-xs mt-2 hidden w-full"
@@ -168,6 +174,18 @@
                         >
                             <div class="card-body gap-3">
                                 <h2 class="card-title text-base">企微</h2>
+                                <div
+                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
+                                    data-qw-gateway-status
+                                >
+                                    启动状态: 未检测
+                                </div>
+                                <div
+                                    class="text-[11px] text-base-content/60"
+                                    data-qw-gateway-status-detail
+                                >
+                                    等待状态更新...
+                                </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         class="btn btn-primary btn-sm"
@@ -317,6 +335,12 @@
                 browserLight: document.querySelector(
                     '[data-status-light="browser"]',
                 ),
+                qwGatewayStatus: document.querySelector(
+                    "[data-qw-gateway-status]",
+                ),
+                qwGatewayStatusDetail: document.querySelector(
+                    "[data-qw-gateway-status-detail]",
+                ),
             };
 
             const taskMeta = document.querySelector("[data-task-meta]");
@@ -324,6 +348,7 @@
             const taskOutput = document.querySelector("[data-task-output]");
 
             let pollTimer = null;
+            let qwGatewayStatusTimer = null;
 
             async function api(path, options = {}) {
                 const res = await fetch(path, {
@@ -355,6 +380,108 @@
                     return;
                 }
                 lightEl.classList.add(ok ? "bg-success" : "bg-error");
+            }
+
+            function setQwGatewayStatusTone(state) {
+                const statusEl = statusBadges.qwGatewayStatus;
+                if (!statusEl) return;
+                statusEl.classList.remove(
+                    "border-base-200",
+                    "border-info/30",
+                    "border-success/30",
+                    "border-error/30",
+                    "bg-base-200/20",
+                    "bg-info/10",
+                    "bg-success/10",
+                    "bg-error/10",
+                );
+                if (state === "running") {
+                    statusEl.classList.add("border-info/30", "bg-info/10");
+                    return;
+                }
+                if (state === "success") {
+                    statusEl.classList.add("border-success/30", "bg-success/10");
+                    return;
+                }
+                if (state === "failed") {
+                    statusEl.classList.add("border-error/30", "bg-error/10");
+                    return;
+                }
+                statusEl.classList.add("border-base-200", "bg-base-200/20");
+            }
+
+            function stopQwGatewayStatusPolling() {
+                if (qwGatewayStatusTimer) {
+                    clearTimeout(qwGatewayStatusTimer);
+                    qwGatewayStatusTimer = null;
+                }
+            }
+
+            function renderQwGatewayStatus(status) {
+                const state =
+                    typeof status?.state === "string" ? status.state : "idle";
+                const message =
+                    typeof status?.message === "string" &&
+                    status.message.trim()
+                        ? status.message.trim()
+                        : "状态未知";
+                const sourceText =
+                    status?.source === "startup"
+                        ? "启动自动任务"
+                        : status?.source === "manual"
+                          ? "手动任务"
+                          : "未知";
+                const updatedAt =
+                    typeof status?.updatedAt === "string" &&
+                    status.updatedAt.trim()
+                        ? status.updatedAt.trim()
+                        : "";
+
+                let stateText = "未执行";
+                if (state === "running") stateText = "启动中";
+                if (state === "success") stateText = "启动成功";
+                if (state === "failed") stateText = "启动失败";
+                if (state === "unsupported") stateText = "系统不支持";
+
+                if (statusBadges.qwGatewayStatus) {
+                    statusBadges.qwGatewayStatus.textContent = `启动状态: ${stateText}`;
+                    setQwGatewayStatusTone(state);
+                }
+                if (statusBadges.qwGatewayStatusDetail) {
+                    const parts = [message];
+                    if (state !== "idle") {
+                        parts.push(`来源: ${sourceText}`);
+                    }
+                    if (updatedAt) {
+                        parts.push(`更新时间: ${updatedAt}`);
+                    }
+                    statusBadges.qwGatewayStatusDetail.textContent =
+                        parts.join(" | ");
+                }
+            }
+
+            async function refreshQwGatewayStatus() {
+                const data = await api("/api/qw-gateway/status");
+                const status = data.status || {};
+                renderQwGatewayStatus(status);
+                return status;
+            }
+
+            async function pollQwGatewayStatus() {
+                stopQwGatewayStatusPolling();
+                try {
+                    const status = await refreshQwGatewayStatus();
+                    if (status?.state === "running") {
+                        qwGatewayStatusTimer = setTimeout(
+                            pollQwGatewayStatus,
+                            2000,
+                        );
+                    }
+                } catch (error) {
+                    if (statusBadges.qwGatewayStatusDetail) {
+                        statusBadges.qwGatewayStatusDetail.textContent = `状态获取失败: ${error.message}`;
+                    }
+                }
             }
 
             function stopTaskPolling() {
@@ -655,6 +782,7 @@
                         await startTask("/api/gateway/action", {
                             action: "restart-qw-gateway",
                         });
+                        await pollQwGatewayStatus();
                         return;
                     case "gateway-status":
                         await startTask("/api/gateway/action", {
@@ -699,6 +827,7 @@
                     taskProgress.classList.add("hidden");
                     taskMeta.textContent = `初始化失败: ${error.message}`;
                 }
+                await pollQwGatewayStatus();
             })();
         </script>
     </body>

@@ -35,7 +35,7 @@ describe("qw gateway restart command", () => {
     const args = buildQwGatewayStartArgs(exePath, workingDirectory);
 
     expect(command).toBe(
-      "Start-Process -FilePath 'C:\\Program Files\\QW\\cli''svc.exe' -WorkingDirectory 'C:\\Program Files\\QW'"
+      "Start-Process -FilePath 'C:\\Program Files\\QW\\cli''svc.exe' -WorkingDirectory 'C:\\Program Files\\QW' -WindowStyle Hidden"
     );
     expect(args).toEqual([
       "powershell.exe",
@@ -44,7 +44,7 @@ describe("qw gateway restart command", () => {
       "-ExecutionPolicy",
       "Bypass",
       "-Command",
-      "Start-Process -FilePath 'C:\\Program Files\\QW\\cli''svc.exe' -WorkingDirectory 'C:\\Program Files\\QW'",
+      "Start-Process -FilePath 'C:\\Program Files\\QW\\cli''svc.exe' -WorkingDirectory 'C:\\Program Files\\QW' -WindowStyle Hidden",
     ]);
   });
 });

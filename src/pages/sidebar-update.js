@@ -69,6 +69,31 @@
   let latestStatus = null;
   let running = false;
 
+  function taskContainsMessage(task, text) {
+    if (!task || !Array.isArray(task.logs)) {
+      return false;
+    }
+    return task.logs.some((item) => typeof item?.message === "string" && item.message.includes(text));
+  }
+
+  async function waitTaskCompletion(taskId, timeoutMs = 10_000) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const data = await api(`/api/tasks/${taskId}`);
+      const task = data.task || null;
+      if (!task) {
+        return null;
+      }
+      if (task.status === "success" || task.status === "failed") {
+        return task;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+
+    return null;
+  }
+
   function renderStatus(status) {
     latestStatus = status;
     const current = status.currentVersion || "unknown";
@@ -118,10 +143,33 @@
     metaEl.textContent = force ? "正在执行强制更新..." : "正在启动更新...";
 
     try {
-      await api("/api/app/update/run", {
+      const runData = await api("/api/app/update/run", {
         method: "POST",
         body: JSON.stringify({ force: Boolean(force) }),
       });
+      const taskId = runData.taskId;
+      if (typeof taskId === "string" && taskId.length > 0) {
+        const task = await waitTaskCompletion(taskId, 8_000);
+        if (task) {
+          if (task.status === "failed") {
+            const message = task.error || "更新任务执行失败";
+            metaEl.textContent = `更新启动失败：${message}`;
+            buttonEl.disabled = false;
+            running = false;
+            return;
+          }
+
+          if (taskContainsMessage(task, "版本一致，无需更新。")) {
+            metaEl.textContent = "已是最新版本";
+            buttonEl.classList.add("hidden");
+            buttonEl.disabled = false;
+            running = false;
+            await check();
+            return;
+          }
+        }
+      }
+
       metaEl.textContent = "更新任务已启动，ClawOS 将自动退出并重启。";
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -152,10 +200,17 @@
   }
 
   buttonEl.addEventListener("click", async () => {
-    if (!latestStatus || !latestStatus.hasUpdate) {
-      return;
+    try {
+      const data = await api("/api/app/update/status");
+      renderStatus(data.status || {});
+      if (!latestStatus || !latestStatus.hasUpdate) {
+        return;
+      }
+      await startUpdate(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      metaEl.textContent = `更新检查失败：${message}`;
     }
-    await startUpdate(false);
   });
 
   void check();

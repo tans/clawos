@@ -135,6 +135,27 @@ function bumpPatchVersion(version: string): string {
   return `${major}.${minor}.${patch + 1}`;
 }
 
+function compareSemver(a: string, b: string): number {
+  const aParts = normalizeSemver(a).split(".").map((part) => Number.parseInt(part, 10));
+  const bParts = normalizeSemver(b).split(".").map((part) => Number.parseInt(part, 10));
+  for (let i = 0; i < 3; i += 1) {
+    if (aParts[i] > bParts[i]) {
+      return 1;
+    }
+    if (aParts[i] < bParts[i]) {
+      return -1;
+    }
+  }
+  return 0;
+}
+
+function maxSemver(versions: string[]): string {
+  if (versions.length === 0) {
+    throw new Error("未提供可比较的版本号。");
+  }
+  return versions.reduce((max, current) => (compareSemver(current, max) > 0 ? current : max));
+}
+
 async function writeJsonFile(path: string, value: unknown): Promise<void> {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
@@ -151,26 +172,43 @@ function replaceAppConstantsVersion(source: string, version: string): string {
   return next;
 }
 
+function readAppConstantsVersion(source: string): string {
+  const match = source.match(/export const VERSION = "([^"]+)";/);
+  if (!match) {
+    throw new Error("未找到 src/app.constants.ts 中的 VERSION 常量。");
+  }
+  return normalizeSemver(match[1]);
+}
+
 async function syncBuildVersion(options: BuildOptions): Promise<string> {
   const packageRaw = await readFile(PACKAGE_JSON_PATH, "utf-8");
   const packageJson = JSON.parse(packageRaw) as Record<string, unknown>;
-  const currentPackageVersion =
+  const packageVersion =
     typeof packageJson.version === "string" && packageJson.version.trim()
-      ? packageJson.version.trim()
+      ? normalizeSemver(packageJson.version.trim())
       : "";
-  if (!currentPackageVersion) {
+  if (!packageVersion) {
     throw new Error("package.json 缺少 version 字段。");
   }
-
-  const targetVersion = options.fixedVersion
-    ? normalizeSemver(options.fixedVersion)
-    : options.bumpPatch
-      ? bumpPatchVersion(currentPackageVersion)
-      : normalizeSemver(currentPackageVersion);
 
   const xiakeRaw = await readFile(XIAKE_CONFIG_PATH, "utf-8");
   const xiakeJson = JSON.parse(xiakeRaw) as Record<string, unknown>;
   const appConstantsRaw = await readFile(APP_CONSTANTS_PATH, "utf-8");
+  const xiakeVersion =
+    typeof xiakeJson.version === "string" && xiakeJson.version.trim()
+      ? normalizeSemver(xiakeJson.version.trim())
+      : "";
+  if (!xiakeVersion) {
+    throw new Error("clawos_xiake.json 缺少 version 字段。");
+  }
+  const appConstantsVersion = readAppConstantsVersion(appConstantsRaw);
+  const baseVersion = maxSemver([packageVersion, xiakeVersion, appConstantsVersion]);
+
+  const targetVersion = options.fixedVersion
+    ? normalizeSemver(options.fixedVersion)
+    : options.bumpPatch
+      ? bumpPatchVersion(baseVersion)
+      : baseVersion;
 
   packageJson.version = targetVersion;
   xiakeJson.version = targetVersion;
@@ -182,7 +220,10 @@ async function syncBuildVersion(options: BuildOptions): Promise<string> {
     writeFile(APP_CONSTANTS_PATH, nextAppConstants, "utf-8"),
   ]);
 
-  console.log(`[build] 版本同步: ${currentPackageVersion} -> ${targetVersion}`);
+  console.log(
+    `[build] 版本基准: package.json=${packageVersion}, clawos_xiake.json=${xiakeVersion}, app.constants=${appConstantsVersion}`
+  );
+  console.log(`[build] 版本同步: ${baseVersion} -> ${targetVersion}`);
   return targetVersion;
 }
 
