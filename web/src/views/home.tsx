@@ -221,9 +221,9 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
             </div>
           </section>
 
-          <footer class="footer footer-center mt-8 rounded-box border border-base-content/10 bg-base-100/80 p-6 text-sm text-base-content/70">
-            <p>@clawos.cc</p>
-            <p>客服联系 tianshe00</p>
+          <footer class="mt-8 rounded-box border border-base-content/10 bg-base-100/80 p-6 text-center text-sm text-base-content/70">
+            <p class="text-center">@clawos.cc</p>
+            <p class="mt-1 text-center">客服联系 tianshe00</p>
           </footer>
         </main>
       </body>
