@@ -4,9 +4,9 @@ module.exports = {
       name: "clawos",
       cwd: __dirname,
       script: "bun",
-      args: "run src/index.ts",
+      args: "run start",
       interpreter: "none",
-      autorestart: false,
+      autorestart: true,
       env: {
         NODE_ENV: "production",
         PORT: "26222",

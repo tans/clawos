@@ -10,10 +10,10 @@ const ICONS: Record<string, string> = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v10H8l-4 4z"/><path d="M8 9h8"/><path d="M8 12h5"/></svg>',
   agent:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.6-3.4 4.3-5 8-5s6.4 1.6 8 5"/></svg>',
+  skill:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.8-5.4 2.8 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
   browser:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 10h18"/><path d="M12 3c2.5 2.3 4 5.5 4 9s-1.5 6.7-4 9c-2.5-2.3-4-5.5-4-9s1.5-6.7 4-9z"/></svg>',
-  start:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/></svg>',
   wsl:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10l2 2-2 2"/><path d="M11 14h4"/></svg>',
   edu:
@@ -24,299 +24,12 @@ const ICONS: Record<string, string> = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5h8v2"/><path d="M3 12h18"/></svg>',
   download:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="M8 10l4 4 4-4"/><rect x="4" y="17" width="16" height="3" rx="1"/></svg>',
-  config:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 9h8"/><path d="M8 13h8"/></svg>',
+  cube:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5"/><path d="M12 12v9"/><path d="M12 12L4 7.5"/></svg>',
 };
 
 function icon(name: string): string {
   return ICONS[name] || "";
-}
-
-function layout(title: string, content: string): string {
-  return `<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${title}</title>
-    <style>
-      :root {
-        --base-100: #f5f8fb;
-        --base-content: #142334;
-        --primary: #126d62;
-        --line: rgba(20, 35, 52, 0.12);
-      }
-
-      * { box-sizing: border-box; }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-        color: var(--base-content);
-        background:
-          radial-gradient(900px 620px at -20% -14%, rgba(18, 109, 98, 0.2), transparent 70%),
-          radial-gradient(760px 580px at 115% -10%, rgba(11, 78, 136, 0.16), transparent 70%),
-          linear-gradient(150deg, #eef5fb 0%, var(--base-100) 45%, #f7fbff 100%);
-      }
-
-      .wrap {
-        width: min(1100px, 100% - 36px);
-        margin: 0 auto;
-        padding: 22px 0 36px;
-      }
-
-      .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 14px;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        font-weight: 700;
-      }
-
-      .brand-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 999px;
-        background: var(--primary);
-        box-shadow: 0 0 0 5px rgba(18, 109, 98, 0.18);
-      }
-
-      .nav {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-
-      .card {
-        background: rgba(255, 255, 255, 0.74);
-        border: 1px solid var(--line);
-        border-radius: 18px;
-        box-shadow: 0 12px 30px rgba(9, 25, 40, 0.08);
-        backdrop-filter: blur(12px) saturate(120%);
-        -webkit-backdrop-filter: blur(12px) saturate(120%);
-      }
-
-      .hero {
-        padding: 24px;
-        display: grid;
-        grid-template-columns: 1.25fr 1fr;
-        gap: 16px;
-        align-items: stretch;
-      }
-
-      .badge-row {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 10px;
-      }
-
-      .badge {
-        font-size: 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(18, 109, 98, 0.35);
-        color: var(--primary);
-        background: rgba(18, 109, 98, 0.08);
-        padding: 4px 10px;
-        font-weight: 600;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(1.7rem, 4vw, 2.4rem);
-        line-height: 1.18;
-      }
-
-      p {
-        margin: 10px 0 0;
-        color: rgba(20, 35, 52, 0.75);
-      }
-
-      .actions {
-        display: flex;
-        gap: 10px;
-        margin-top: 18px;
-        flex-wrap: wrap;
-      }
-
-      .btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border-radius: 12px;
-        border: 1px solid transparent;
-        padding: 10px 14px;
-        font-size: 14px;
-        font-weight: 600;
-        text-decoration: none;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-      }
-
-      .btn:hover { transform: translateY(-1px); }
-
-      .btn-primary {
-        background: var(--primary);
-        border-color: var(--primary);
-        color: #f3fffd;
-        box-shadow: 0 10px 24px rgba(18, 109, 98, 0.22);
-      }
-
-      .btn-ghost {
-        background: rgba(255, 255, 255, 0.74);
-        border-color: var(--line);
-        color: var(--base-content);
-      }
-
-      .btn-icon {
-        width: 15px;
-        height: 15px;
-        display: inline-flex;
-      }
-
-      .btn-icon svg {
-        width: 100%;
-        height: 100%;
-      }
-
-      .visual {
-        border-radius: 14px;
-        border: 1px solid var(--line);
-        background: linear-gradient(165deg, rgba(11, 78, 136, 0.1), rgba(18, 109, 98, 0.12));
-        padding: 14px;
-        display: grid;
-        grid-template-rows: 1fr auto;
-      }
-
-      .visual svg {
-        width: 100%;
-        height: 180px;
-      }
-
-      .visual-caption {
-        font-size: 12px;
-        color: rgba(20, 35, 52, 0.65);
-      }
-
-      .section {
-        margin-top: 16px;
-        padding: 20px;
-      }
-
-      .section-head {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-
-      .section-head h2 {
-        margin: 0;
-        font-size: 21px;
-      }
-
-      .section-head span {
-        font-size: 13px;
-        color: rgba(20, 35, 52, 0.62);
-      }
-
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
-      }
-
-      .icon-card {
-        border-radius: 14px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.62);
-        padding: 14px;
-      }
-
-      .icon-wrap {
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        color: var(--primary);
-        background: rgba(18, 109, 98, 0.12);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .icon-wrap svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      .icon-card h3 {
-        margin: 10px 0 0;
-        font-size: 15px;
-      }
-
-      .icon-card p {
-        margin: 6px 0 0;
-        font-size: 13px;
-      }
-
-      code {
-        border-radius: 8px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.9);
-        padding: 2px 8px;
-        font-size: 13px;
-      }
-
-      @media (max-width: 1024px) {
-        .hero,
-        .grid {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-
-      @media (max-width: 760px) {
-        .wrap {
-          width: min(1100px, 100% - 22px);
-          padding-top: 14px;
-        }
-
-        .topbar {
-          flex-direction: column;
-          align-items: flex-start;
-        }
-
-        .hero,
-        .grid {
-          grid-template-columns: 1fr;
-        }
-
-        .hero,
-        .section {
-          padding: 16px;
-        }
-
-        .actions,
-        .btn {
-          width: 100%;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="wrap">
-      ${content}
-    </main>
-  </body>
-</html>`;
 }
 
 function heroVisual(): string {
@@ -343,6 +56,200 @@ function heroVisual(): string {
   </svg>`;
 }
 
+function layout(title: string, content: string): string {
+  return `<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>${title}</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background:
+          radial-gradient(1000px 740px at -18% -22%, color-mix(in oklab, var(--color-primary) 16%, transparent), transparent 72%),
+          radial-gradient(920px 660px at 114% -14%, color-mix(in oklab, var(--color-info) 14%, transparent), transparent 70%),
+          linear-gradient(150deg, color-mix(in oklab, var(--color-base-100) 90%, var(--color-base-200)), var(--color-base-100));
+      }
+      .shell {
+        width: min(1120px, calc(100% - 28px));
+        margin: 0 auto;
+        padding: 18px 0 40px;
+      }
+      .glass {
+        background-color: color-mix(in oklab, var(--color-base-100) 72%, transparent);
+        border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+        box-shadow: 0 12px 30px color-mix(in oklab, var(--color-base-content) 10%, transparent);
+        backdrop-filter: blur(16px) saturate(120%);
+        -webkit-backdrop-filter: blur(16px) saturate(120%);
+      }
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 16px;
+      }
+      .hero {
+        margin-top: 14px;
+        border-radius: 18px;
+        padding: 18px;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1fr;
+        gap: 14px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 4vw, 2.3rem);
+        line-height: 1.15;
+      }
+      .hero p {
+        margin: 10px 0 0;
+        color: color-mix(in oklab, var(--color-base-content) 74%, transparent);
+      }
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .icon-sm {
+        width: 16px;
+        height: 16px;
+        display: inline-flex;
+      }
+      .icon-sm svg {
+        width: 100%;
+        height: 100%;
+      }
+      .hero-visual {
+        border-radius: 14px;
+        padding: 12px;
+        border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+        background: linear-gradient(
+          160deg,
+          color-mix(in oklab, var(--color-info) 14%, var(--color-base-100)),
+          color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100))
+        );
+      }
+      .hero-visual svg {
+        width: 100%;
+        height: 180px;
+      }
+      .hero-note {
+        margin-top: 6px;
+        font-size: 12px;
+        color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+      }
+      .section {
+        margin-top: 14px;
+        border-radius: 18px;
+        padding: 16px;
+      }
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .section-head h2 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+      .section-head span {
+        font-size: 13px;
+        color: color-mix(in oklab, var(--color-base-content) 62%, transparent);
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .soft-card {
+        border-radius: 14px;
+        border: 1px solid color-mix(in oklab, var(--color-base-content) 10%, transparent);
+        background: color-mix(in oklab, var(--color-base-100) 80%, transparent);
+        padding: 12px;
+      }
+      .soft-card h3 {
+        margin: 8px 0 0;
+        font-size: 15px;
+      }
+      .soft-card p {
+        margin: 6px 0 0;
+        font-size: 13px;
+        color: color-mix(in oklab, var(--color-base-content) 70%, transparent);
+      }
+      .icon-wrap {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-primary);
+        background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+      }
+      .icon-wrap svg {
+        width: 20px;
+        height: 20px;
+      }
+      .oem-copy {
+        margin: 0 0 8px;
+        font-size: 14px;
+        color: color-mix(in oklab, var(--color-base-content) 74%, transparent);
+      }
+      @media (max-width: 980px) {
+        .hero-grid,
+        .cards {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 720px) {
+        .shell {
+          width: min(1120px, calc(100% - 18px));
+          padding-top: 12px;
+        }
+        .topbar,
+        .hero,
+        .section {
+          padding: 14px;
+        }
+        .topbar,
+        .section-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .hero-grid,
+        .cards {
+          grid-template-columns: 1fr;
+        }
+        .cta-row .btn {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">${content}</main>
+  </body>
+</html>`;
+}
+
 pageRoutes.get("/", async (c) => {
   const latest = await readLatestRelease();
   const hasInstaller = Boolean(latest?.installer);
@@ -351,57 +258,59 @@ pageRoutes.get("/", async (c) => {
   return c.html(
     layout(
       "ClawOS 官网",
-      `<header class="topbar">
-        <div class="brand">
-          <span class="brand-dot" aria-hidden="true"></span>
-          <span>ClawOS</span>
-        </div>
-        <nav class="nav">
-          <a class="btn btn-ghost" href="/downloads"><span class="btn-icon">${icon("download")}</span>下载</a>
-        </nav>
+      `<header class="topbar glass">
+        <div class="text-lg font-semibold">ClawOS</div>
+        <a class="btn btn-sm btn-outline" href="/downloads"><span class="icon-sm">${icon("download")}</span>下载</a>
       </header>
 
-      <section class="card hero">
-        <div>
-          <div class="badge-row">
-            <span class="badge">Windows + WSL</span>
-            <span class="badge">Gateway 管理</span>
+      <section class="hero glass">
+        <div class="hero-grid">
+          <div>
+            <div class="badge-row">
+              <span class="badge badge-primary badge-outline">Windows + WSL</span>
+              <span class="badge badge-info badge-outline">Gateway</span>
+              <span class="badge badge-accent badge-outline">OEM</span>
+            </div>
+            <h1>openclaw OEM · 更友好的交付与销售</h1>
+            <p>一键升级 openclaw，简化 Agent 模型配置，内置精选技能市场。</p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="${downloadHref}"><span class="icon-sm">${icon("download")}</span>下载安装包</a>
+              <a class="btn btn-outline" href="#oem"><span class="icon-sm">${icon("cube")}</span>查看 OEM 方案</a>
+            </div>
           </div>
-          <h1>更快部署，更少命令</h1>
-          <p>用可视化界面管理 Openclaw：升级、重启、配置一步完成。</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="${downloadHref}"><span class="btn-icon">${icon("download")}</span>下载安装</a>
-          </div>
+          <aside class="hero-visual">
+            ${heroVisual()}
+            <div class="hero-note">Silk Theme · DaisyUI 版面</div>
+          </aside>
         </div>
-        <aside class="visual">
-          ${heroVisual()}
-          <div class="visual-caption">ClawOS 控制台 · 自动化发布</div>
-        </aside>
       </section>
 
-      <section class="card section">
+      <section class="section glass">
         <div class="section-head">
           <h2>核心能力</h2>
+          <span>产品化交付</span>
         </div>
-        <div class="grid">
-          <article class="icon-card"><span class="icon-wrap">${icon("panel")}</span><h3>控制面板</h3><p>升级 / 重启 / 状态</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("chat")}</span><h3>Channels</h3><p>渠道配置可视化</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("agent")}</span><h3>Agents</h3><p>模型策略集中管理</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("browser")}</span><h3>Browser</h3><p>自动化浏览器配置</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("start")}</span><h3>自启动</h3><p>开机策略一键设置</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("wsl")}</span><h3>WSL 诊断</h3><p>常见问题快速定位</p></article>
+        <div class="cards">
+          <article class="soft-card"><span class="icon-wrap">${icon("panel")}</span><h3>一键升级 openclaw</h3><p>升级、重启、状态检查一体化。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("agent")}</span><h3>简化Agent模型配置</h3><p>减少手工改配置，降低上线门槛。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("skill")}</span><h3>内置精选技能市场</h3><p>内置常用技能模板，开箱即用。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("chat")}</span><h3>通讯渠道接入</h3><p>常见渠道统一接入与管理。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("browser")}</span><h3>浏览器自动化</h3><p>浏览器与工作流配置统一管理。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("wsl")}</span><h3>WSL 诊断</h3><p>端口、权限、环境问题可视排查。</p></article>
         </div>
       </section>
 
-      <section class="card section">
+      <section id="oem" class="section glass">
         <div class="section-head">
-          <h2>行业定制</h2>
-          <span>按业务分支交付</span>
+          <h2>openclaw OEM</h2>
+          <span>定制行业解决方案</span>
         </div>
-        <div class="grid">
-          <article class="icon-card"><span class="icon-wrap">${icon("edu")}</span><h3>教育</h3><p>教务与校内协作</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("med")}</span><h3>医疗</h3><p>流程规范与合规协作</p></article>
-          <article class="icon-card"><span class="icon-wrap">${icon("biz")}</span><h3>企业服务</h3><p>客服、运营、内容团队</p></article>
+        <p class="oem-copy">定制行业解决方案，打通现有业务体系。</p>
+        <p class="oem-copy">无论是传统的 SaaS 软件还是咨询行业，通过 openclaw OEM 提供专属的软硬件一体方案，更好的服务，友好的交付，简单的销售模式。</p>
+        <div class="cards">
+          <article class="soft-card"><span class="icon-wrap">${icon("edu")}</span><h3>教育行业</h3><p>教务、招生与校内协作场景。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("med")}</span><h3>医疗行业</h3><p>流程规范、合规与数据协作。</p></article>
+          <article class="soft-card"><span class="icon-wrap">${icon("biz")}</span><h3>SaaS / 咨询</h3><p>专属方案，标准交付，快速复制。</p></article>
         </div>
       </section>`,
     ),
@@ -415,37 +324,20 @@ pageRoutes.get("/downloads", async (c) => {
     return c.html(
       layout(
         "下载 - ClawOS",
-        `<header class="topbar">
-          <div class="brand">
-            <span class="brand-dot" aria-hidden="true"></span>
-            <span>ClawOS 下载</span>
-          </div>
-          <nav class="nav">
-            <a class="btn btn-ghost" href="/">返回首页</a>
-          </nav>
+        `<header class="topbar glass">
+          <div class="text-lg font-semibold">ClawOS 下载</div>
+          <a class="btn btn-sm btn-outline" href="/">返回首页</a>
         </header>
 
-        <section class="card section">
+        <section class="section glass">
           <div class="section-head">
             <h2>暂无安装包</h2>
             <span>等待发布</span>
           </div>
-          <div class="grid">
-            <article class="icon-card">
-              <span class="icon-wrap">${icon("download")}</span>
-              <h3>安装包</h3>
-              <p>发布后可直接下载。</p>
-            </article>
-            <article class="icon-card">
-              <span class="icon-wrap">${icon("config")}</span>
-              <h3>配置文件</h3>
-              <p>接口：<code>POST /api/upload/xiake-config</code></p>
-            </article>
-            <article class="icon-card">
-              <span class="icon-wrap">${icon("panel")}</span>
-              <h3>发布接口</h3>
-              <p><code>POST /api/upload/installer</code></p>
-            </article>
+          <div class="cards">
+            <article class="soft-card"><span class="icon-wrap">${icon("download")}</span><h3>安装包</h3><p>发布后可直接下载。</p></article>
+            <article class="soft-card"><span class="icon-wrap">${icon("cube")}</span><h3>OEM 发布</h3><p>支持行业分支打包与交付。</p></article>
+            <article class="soft-card"><span class="icon-wrap">${icon("panel")}</span><h3>上传接口</h3><p><code>POST /api/upload/installer</code></p></article>
           </div>
         </section>`,
       ),
@@ -455,32 +347,29 @@ pageRoutes.get("/downloads", async (c) => {
   return c.html(
     layout(
       "下载 - ClawOS",
-      `<header class="topbar">
-        <div class="brand">
-          <span class="brand-dot" aria-hidden="true"></span>
-          <span>ClawOS 下载</span>
-        </div>
-        <nav class="nav">
-          <a class="btn btn-ghost" href="/">返回首页</a>
-        </nav>
+      `<header class="topbar glass">
+        <div class="text-lg font-semibold">ClawOS 下载</div>
+        <a class="btn btn-sm btn-outline" href="/">返回首页</a>
       </header>
 
-      <section class="card hero">
-        <div>
-          <div class="badge-row">
-            <span class="badge">稳定发布</span>
-            <span class="badge">Windows</span>
+      <section class="hero glass">
+        <div class="hero-grid">
+          <div>
+            <div class="badge-row">
+              <span class="badge badge-success badge-outline">稳定发布</span>
+              <span class="badge badge-primary badge-outline">Windows x64</span>
+            </div>
+            <h1>下载 ClawOS 安装包</h1>
+            <p>建议使用最新安装包进行部署。</p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="/downloads/latest"><span class="icon-sm">${icon("download")}</span>下载安装包</a>
+            </div>
           </div>
-          <h1>下载 ClawOS</h1>
-          <p>安装包与配置文件已就绪。</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="/downloads/latest"><span class="btn-icon">${icon("download")}</span>下载安装包</a>
-          </div>
+          <aside class="hero-visual">
+            ${heroVisual()}
+            <div class="hero-note">下载失败请重试，或联系管理员。</div>
+          </aside>
         </div>
-        <aside class="visual">
-          ${heroVisual()}
-          <div class="visual-caption">如果下载失败，请重试或联系管理员。</div>
-        </aside>
       </section>`,
     ),
   );

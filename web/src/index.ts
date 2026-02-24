@@ -1,4 +1,7 @@
 import { Hono } from "hono";
+import { access } from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
+import { resolve } from "node:path";
 import { getEnv, validateStartupEnv } from "./lib/env";
 import { pageRoutes } from "./routes/page";
 import { releaseRoutes } from "./routes/release";
@@ -6,12 +9,31 @@ import { downloadRoutes } from "./routes/download";
 import { uploadRoutes } from "./routes/upload";
 
 export const app = new Hono();
+const cssFilePath = resolve(process.cwd(), "dist", "output.css");
 
 app.get("/health", (c) => {
   return c.json({
     ok: true,
     service: "clawos-web",
     now: new Date().toISOString(),
+  });
+});
+
+app.get("/styles.css", async (c) => {
+  try {
+    await access(cssFilePath, fsConstants.R_OK);
+  } catch {
+    return c.text(
+      "styles.css not found. Run `bun run tailwind:build` in web directory.",
+      503,
+    );
+  }
+
+  return new Response(Bun.file(cssFilePath), {
+    headers: {
+      "content-type": "text/css; charset=utf-8",
+      "cache-control": "public, max-age=600",
+    },
   });
 });
 

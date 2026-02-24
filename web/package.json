@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index.ts",
-    "start": "bun run src/index.ts",
+    "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
+    "dev": "bun run tailwind:build && bun --watch src/index.ts",
+    "start": "bun run tailwind:build && bun run src/index.ts",
     "test": "bun test",
     "pm2:start": "pm2 start ecosystem.config.cjs --only clawos",
     "pm2:restart": "pm2 restart clawos",
@@ -12,5 +13,10 @@
   },
   "dependencies": {
     "hono": "^4.10.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "daisyui": "^5.5.18",
+    "tailwindcss": "^4.1.18"
   }
 }

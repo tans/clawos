@@ -111,6 +111,7 @@
         {
           key: "telegram",
           title: "Telegram",
+          icon: "fa-brands fa-telegram",
           fields: [
             { path: "token", label: "token", type: "password" },
             { path: "defaultId", label: "defaultId", type: "text" },
@@ -122,6 +123,7 @@
         {
           key: "discord",
           title: "Discord",
+          icon: "fa-brands fa-discord",
           fields: [
             { path: "token", label: "token", type: "password" },
             { path: "defaultId", label: "defaultId", type: "text" },
@@ -132,6 +134,7 @@
         {
           key: "slack",
           title: "Slack",
+          icon: "fa-brands fa-slack",
           fields: [
             { path: "botToken", label: "botToken", type: "password" },
             { path: "appToken", label: "appToken", type: "password" },
@@ -144,6 +147,7 @@
         {
           key: "googleChat",
           title: "Google Chat",
+          icon: "fa-brands fa-google",
           fields: [
             { path: "webhookUrl", label: "webhookUrl", type: "text" },
             { path: "defaultId", label: "defaultId", type: "text" },
@@ -153,6 +157,7 @@
         {
           key: "mattermost",
           title: "Mattermost",
+          icon: "fa-solid fa-comments",
           fields: [
             { path: "apiBaseUrl", label: "apiBaseUrl", type: "text" },
             { path: "token", label: "token", type: "password" },
@@ -163,6 +168,7 @@
         {
           key: "signal",
           title: "Signal",
+          icon: "fa-solid fa-signal",
           fields: [
             { path: "cliPath", label: "cliPath", type: "text" },
             { path: "defaultAccount", label: "defaultAccount", type: "text" },
@@ -174,6 +180,7 @@
         {
           key: "imessage",
           title: "iMessage",
+          icon: "fa-solid fa-message",
           fields: [
             { path: "socketPath", label: "socketPath", type: "text" },
             { path: "defaultAccount", label: "defaultAccount", type: "text" },
@@ -184,6 +191,7 @@
         {
           key: "whatsapp",
           title: "WhatsApp",
+          icon: "fa-brands fa-whatsapp",
           fields: [
             { path: "apiBaseUrl", label: "apiBaseUrl", type: "text" },
             { path: "token", label: "token", type: "password" },
@@ -194,7 +202,8 @@
         },
         {
           key: "feishu",
-          title: "Feishu",
+          title: "飞书",
+          icon: "fa-solid fa-feather-pointed",
           fields: [
             { path: "domain", label: "domain", type: "select", options: ["", "feishu.cn", "larksuite.com"] },
             { path: "appId", label: "appId", type: "text" },
@@ -241,7 +250,8 @@
         },
         {
           key: "wecom",
-          title: "WeCom",
+          title: "企业微信",
+          icon: "fa-brands fa-weixin",
           fields: [
             ...COMMON_POLICY_FIELDS,
           ],
@@ -527,11 +537,15 @@
 
       function renderChannelCards() {
         channelListEl.innerHTML = CHANNEL_SPECS.map((spec) => {
+          const iconClass = typeof spec.icon === "string" && spec.icon.trim() ? spec.icon : "fa-solid fa-comment-dots";
           return `
             <section class="rounded-lg border border-base-200 p-3" data-channel-card data-channel-key="${spec.key}">
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                  <div class="text-sm font-medium">${spec.title}</div>
+                  <div class="flex items-center gap-2 text-sm font-medium">
+                    <i class="${iconClass} w-4 text-center text-base-content/70" aria-hidden="true"></i>
+                    <span>${spec.title}</span>
+                  </div>
                   <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参数</div>
                 </div>
                 <div class="flex items-center gap-2">
