@@ -6,6 +6,7 @@
     "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
     "dev": "bun run tailwind:build && bun --watch src/server.ts",
     "build": "bun run build:exe",
+    "publish": "bun run publish:clawos",
     "start": "bun run src/server.ts",
     "test": "bun test",
     "publish:clawos": "bun run scripts/publish-clawos.ts",
