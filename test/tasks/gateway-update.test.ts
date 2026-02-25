@@ -2,13 +2,14 @@ import { describe, expect, it } from "bun:test";
 import { OPENCLAW_SOURCE_DIR, buildOpenclawSourceUpdateSteps } from "../../src/tasks/gateway";
 
 describe("openclaw source update steps", () => {
-  it("follows the required 7-step source update flow", () => {
+  it("follows the required 8-step source update flow", () => {
     const steps = buildOpenclawSourceUpdateSteps();
 
-    expect(steps).toHaveLength(7);
+    expect(steps).toHaveLength(8);
     expect(steps.map((item) => item.command)).toEqual([
       `cd ${OPENCLAW_SOURCE_DIR}`,
       `cd ${OPENCLAW_SOURCE_DIR} && git pull -X theirs`,
+      `cd ${OPENCLAW_SOURCE_DIR} && npm i -g nrm`,
       `cd ${OPENCLAW_SOURCE_DIR} && nrm use tencent`,
       `cd ${OPENCLAW_SOURCE_DIR} && pnpm install`,
       `cd ${OPENCLAW_SOURCE_DIR} && pnpm run build`,

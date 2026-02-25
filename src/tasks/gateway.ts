@@ -174,6 +174,11 @@ export function buildOpenclawSourceUpdateSteps(): Step[] {
       script: buildGitPullWithLockOverrideScript(),
     },
     {
+      name: "安装 nrm（npm i -g nrm）",
+      command: `cd ${OPENCLAW_SOURCE_DIR} && npm i -g nrm`,
+      script: buildOpenclawStepScript("npm i -g nrm"),
+    },
+    {
       name: "切换 npm 源（nrm use tencent）",
       command: `cd ${OPENCLAW_SOURCE_DIR} && nrm use tencent`,
       script: buildOpenclawStepScript("nrm use tencent"),
