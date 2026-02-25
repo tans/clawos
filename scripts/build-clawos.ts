@@ -117,6 +117,7 @@ const XIAKE_CONFIG_PATH = resolve(process.cwd(), "clawos_xiake.json");
 const APP_CONSTANTS_PATH = resolve(process.cwd(), "src/app.constants.ts");
 const DEFAULT_WINDOWS_ICON_PNG_PATH = resolve(process.cwd(), "web/public/logo.png");
 const DEFAULT_WINDOWS_ICON_ICO_PATH = resolve(process.cwd(), "web/public/logo.ico");
+const DEFAULT_WINDOWS_ICON_HINT = `${DEFAULT_WINDOWS_ICON_ICO_PATH} (首选) / ${DEFAULT_WINDOWS_ICON_PNG_PATH} (回退)`;
 const GENERATED_WINDOWS_ICON_PATH = resolve(process.cwd(), "dist/clawos.icon.ico");
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
@@ -196,15 +197,14 @@ async function convertPngToIco(pngPath: string, icoPath: string): Promise<void> 
 async function resolveWindowsIconPath(): Promise<string | null> {
   if (await isReadableFile(DEFAULT_WINDOWS_ICON_ICO_PATH)) {
     if (await isValidIcoFile(DEFAULT_WINDOWS_ICON_ICO_PATH)) {
+      console.log(`[build] 使用 ICO 图标：${DEFAULT_WINDOWS_ICON_ICO_PATH}`);
       return DEFAULT_WINDOWS_ICON_ICO_PATH;
     }
-    console.warn(`[build] 图标文件无效（非 ICO）：${DEFAULT_WINDOWS_ICON_ICO_PATH}`);
+    console.warn(`[build] 图标文件无效（非 ICO），将尝试 PNG 回退：${DEFAULT_WINDOWS_ICON_ICO_PATH}`);
   }
 
   if (!(await isReadableFile(DEFAULT_WINDOWS_ICON_PNG_PATH))) {
-    console.warn(
-      `[build] 未找到图标文件，跳过 --windows-icon: ${DEFAULT_WINDOWS_ICON_PNG_PATH}`
-    );
+    console.warn(`[build] 未找到可用图标，跳过 --windows-icon。期望路径：${DEFAULT_WINDOWS_ICON_HINT}`);
     return null;
   }
 
