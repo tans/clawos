@@ -166,8 +166,10 @@ describe("gateway socket", () => {
     const connectReq = socket.sent.find((item) => item.method === "connect");
     const connectParams = (connectReq?.params || {}) as Record<string, unknown>;
     const client = (connectParams.client || {}) as Record<string, unknown>;
+    const scopes = Array.isArray(connectParams.scopes) ? connectParams.scopes : [];
     expect(client.id).toBe("cli");
     expect(client.mode).toBe("cli");
+    expect(scopes).toContain("operator.read");
   });
 
   it("fails when socket emits error before connect", async () => {

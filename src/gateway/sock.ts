@@ -66,7 +66,7 @@ function buildConnectParams(settings: GatewayConnectionSettings): Record<string,
       instanceId: `ClawOS-${Date.now().toString(36)}`,
     },
     role: "operator",
-    scopes: ["operator.admin", "operator.approvals", "operator.pairing"],
+    scopes: ["operator.read", "operator.admin", "operator.approvals", "operator.pairing"],
     locale: "zh-CN",
     userAgent: `ClawOS/${VERSION}`,
   };
