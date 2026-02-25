@@ -69,6 +69,18 @@
   let latestStatus = null;
   let running = false;
 
+  function pendingRestartKey(version) {
+    return `clawos-update-pending-restart-${version || "unknown"}`;
+  }
+
+  function hasPendingRestart(version) {
+    return window.sessionStorage.getItem(pendingRestartKey(version)) === "1";
+  }
+
+  function markPendingRestart(version) {
+    window.sessionStorage.setItem(pendingRestartKey(version), "1");
+  }
+
   function taskContainsMessage(task, text) {
     if (!task || !Array.isArray(task.logs)) {
       return false;
@@ -122,8 +134,13 @@
     }
 
     const remote = status.remoteVersion || "unknown";
+    if (hasPendingRestart(remote)) {
+      metaEl.textContent = `已下载 v${remote}，请手动重启后生效`;
+      return;
+    }
+
     if (status.force) {
-      metaEl.textContent = `检测到强制更新 v${remote}，正在自动更新...`;
+      metaEl.textContent = `检测到强制更新 v${remote}，正在执行更新（完成后请手动重启）...`;
       autoRunForceUpdate(status);
       return;
     }
@@ -167,10 +184,29 @@
             await check();
             return;
           }
+
+          if (task.status === "success") {
+            const remoteVersion =
+              typeof latestStatus?.remoteVersion === "string" && latestStatus.remoteVersion.trim()
+                ? latestStatus.remoteVersion.trim()
+                : "";
+            if (remoteVersion) {
+              markPendingRestart(remoteVersion);
+            }
+            metaEl.textContent = remoteVersion
+              ? `已下载 v${remoteVersion}，请手动重启后生效`
+              : "更新任务已执行，请关闭并重新打开 ClawOS 使更新生效。";
+            buttonEl.classList.add("hidden");
+            buttonEl.disabled = false;
+            running = false;
+            return;
+          }
         }
       }
 
-      metaEl.textContent = "更新任务已启动，ClawOS 将自动退出并重启。";
+      metaEl.textContent = "更新任务已执行，请关闭并重新打开 ClawOS 使更新生效。";
+      buttonEl.disabled = false;
+      running = false;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       metaEl.textContent = `更新启动失败：${message}`;

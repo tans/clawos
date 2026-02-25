@@ -55,17 +55,14 @@ export function startSelfUpdateTask(trigger: "manual" | "force" = "manual"): { t
       const replacementPlan = scheduleWindowsExecutableReplacement(downloaded.filePath, targetExecutablePath, process.pid);
       appendTaskLog(task, `目标文件：${replacementPlan.targetPath}`);
       appendTaskLog(task, `备份文件：${replacementPlan.backupPath}`);
-      appendTaskLog(task, "更新脚本已启动，将在进程退出后执行替换并自动重启。");
+      appendTaskLog(task, "更新脚本已启动：将在当前进程退出后执行替换。");
 
       task.step = 4;
-      appendTaskLog(task, "步骤 4/4：准备退出当前进程");
+      appendTaskLog(task, "步骤 4/4：等待手动重启");
+      appendTaskLog(task, "请关闭并重新打开 ClawOS，更新将在退出后完成替换并在下次启动生效。");
       task.status = "success";
       task.endedAt = new Date().toISOString();
       clearSelfUpdateStatusCache();
-
-      setTimeout(() => {
-        process.exit(0);
-      }, 500);
     } catch (error) {
       task.status = "failed";
       task.endedAt = new Date().toISOString();
