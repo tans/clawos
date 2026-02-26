@@ -1,9 +1,20 @@
 (function initClawosSidebar() {
   const DEFAULT_OPENCLAW_CONSOLE_URL = "http://127.0.0.1:18789";
+  const FIXED_OPENCLAW_TOKEN = "xiake";
+
+  function withFixedOpenclawToken(rawUrl) {
+    try {
+      const parsed = new URL(rawUrl);
+      parsed.searchParams.set("token", FIXED_OPENCLAW_TOKEN);
+      return parsed.toString();
+    } catch {
+      return `${DEFAULT_OPENCLAW_CONSOLE_URL}?token=${encodeURIComponent(FIXED_OPENCLAW_TOKEN)}`;
+    }
+  }
 
   function normalizeOpenclawConsoleUrl(rawUrl) {
     if (typeof rawUrl !== "string" || rawUrl.trim().length === 0) {
-      return DEFAULT_OPENCLAW_CONSOLE_URL;
+      return withFixedOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL);
     }
 
     const trimmed = rawUrl.trim();
@@ -14,9 +25,9 @@
       } else if (parsed.protocol === "wss:") {
         parsed.protocol = "https:";
       }
-      return parsed.toString();
+      return withFixedOpenclawToken(parsed.toString());
     } catch {
-      return DEFAULT_OPENCLAW_CONSOLE_URL;
+      return withFixedOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL);
     }
   }
 
@@ -39,7 +50,7 @@
       const gateway = data.gateway || {};
       return normalizeOpenclawConsoleUrl(gateway.url);
     } catch {
-      return DEFAULT_OPENCLAW_CONSOLE_URL;
+      return withFixedOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL);
     }
   }
 

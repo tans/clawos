@@ -35,18 +35,12 @@
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <h1 class="text-lg font-semibold">技能学习</h1>
-          <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
-            <button class="btn btn-primary btn-xs" data-action="save">保存配置</button>
-          </div>
         </header>
 
-        <section class="flex-1 p-6">
+        <section class="flex flex-1 items-center justify-center p-6">
           <div class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body gap-3">
-              <div class="text-xs text-base-content/70">用于管理技能开关、安装项与密钥环境配置。</div>
-              <textarea class="textarea textarea-bordered h-[60vh] w-full font-mono text-xs" data-config-input></textarea>
-              <div class="text-xs text-base-content/70" data-meta>尚未加载</div>
+            <div class="card-body items-center gap-4 text-center">
+              <div class="text-sm text-base-content/80">开发中，请跳转到openclaw后台设置。</div>
             </div>
           </div>
         </section>
@@ -54,80 +48,5 @@
     </div>
 
     <script src="/sidebar-update.js"></script>
-
-    <script>
-      const SECTION = "skills";
-      const metaEl = document.querySelector("[data-meta]");
-      const inputEl = document.querySelector("[data-config-input]");
-
-      function pretty(value) {
-        return JSON.stringify(value || {}, null, 2);
-      }
-
-      async function api(path, options = {}) {
-        const res = await fetch(path, {
-          headers: { "content-type": "application/json" },
-          ...options,
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
-        }
-        return data;
-      }
-
-      async function loadSection() {
-        const data = await api(`/api/config/${SECTION}`);
-        inputEl.value = pretty(data.data);
-        metaEl.textContent = `${SECTION} 已加载`;
-      }
-
-      async function saveSection() {
-        let parsed;
-        try {
-          parsed = JSON.parse(inputEl.value || "{}");
-        } catch (error) {
-          throw new Error(`JSON 格式错误: ${error.message}`);
-        }
-
-        await api(`/api/config/${SECTION}`, {
-          method: "PUT",
-          body: JSON.stringify({ data: parsed }),
-        });
-
-        metaEl.textContent = `${SECTION} 配置已保存`;
-      }
-
-      document.querySelector('[data-action="reload"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
-        try {
-          await loadSection();
-        } catch (error) {
-          metaEl.textContent = `加载失败: ${error.message}`;
-        } finally {
-          event.currentTarget.disabled = false;
-        }
-      });
-
-      document.querySelector('[data-action="save"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
-        try {
-          await saveSection();
-        } catch (error) {
-          metaEl.textContent = `保存失败: ${error.message}`;
-        } finally {
-          event.currentTarget.disabled = false;
-        }
-      });
-
-      (async function init() {
-        try {
-          await loadSection();
-        } catch (error) {
-          metaEl.textContent = `初始化失败: ${error.message}`;
-        }
-      })();
-    </script>
   </body>
 </html>
