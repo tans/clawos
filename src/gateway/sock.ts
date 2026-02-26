@@ -1,4 +1,11 @@
 import { VERSION } from "../app.constants";
+import {
+  createHash,
+  createPrivateKey,
+  createPublicKey,
+  generateKeyPairSync,
+  sign as signWithKey,
+} from "node:crypto";
 import { asObject, readNonEmptyString } from "../lib/value";
 import { resolveGatewayConnectionSettings } from "./settings";
 import {
@@ -9,6 +16,85 @@ import {
   type GatewayHelloPayload,
   type GatewayResponseFrame,
 } from "./schema";
+
+const GATEWAY_OPERATOR_SCOPES = [
+  "operator.admin",
+  "operator.read",
+  "operator.write",
+  "operator.approvals",
+  "operator.pairing",
+] as const;
+const ED25519_SPKI_PREFIX = Buffer.from("302a300506032b6570032100", "hex");
+
+type GatewayDeviceIdentity = {
+  deviceId: string;
+  privateKeyPem: string;
+  publicKeyRawBase64Url: string;
+};
+
+let gatewayDeviceIdentity: GatewayDeviceIdentity | null = null;
+
+function base64UrlEncode(value: Buffer): string {
+  return value.toString("base64").replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/g, "");
+}
+
+function derivePublicKeyRaw(publicKeyPem: string): Buffer {
+  const key = createPublicKey(publicKeyPem);
+  const spki = key.export({ type: "spki", format: "der" }) as Buffer;
+  if (
+    spki.length === ED25519_SPKI_PREFIX.length + 32 &&
+    spki.subarray(0, ED25519_SPKI_PREFIX.length).equals(ED25519_SPKI_PREFIX)
+  ) {
+    return spki.subarray(ED25519_SPKI_PREFIX.length);
+  }
+  return spki;
+}
+
+function deriveDeviceIdFromPublicKeyRaw(publicKeyRaw: Buffer): string {
+  return createHash("sha256").update(publicKeyRaw).digest("hex");
+}
+
+function loadOrCreateGatewayDeviceIdentity(): GatewayDeviceIdentity {
+  if (gatewayDeviceIdentity) {
+    return gatewayDeviceIdentity;
+  }
+
+  const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+  const publicKeyPem = publicKey.export({ type: "spki", format: "pem" }).toString();
+  const privateKeyPem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
+  const publicKeyRaw = derivePublicKeyRaw(publicKeyPem);
+
+  gatewayDeviceIdentity = {
+    deviceId: deriveDeviceIdFromPublicKeyRaw(publicKeyRaw),
+    privateKeyPem,
+    publicKeyRawBase64Url: base64UrlEncode(publicKeyRaw),
+  };
+
+  return gatewayDeviceIdentity;
+}
+
+function buildDeviceAuthPayload(params: {
+  deviceId: string;
+  clientId: string;
+  clientMode: string;
+  role: string;
+  scopes: string[];
+  signedAtMs: number;
+  token?: string | null;
+  nonce: string;
+}): string {
+  return [
+    "v2",
+    params.deviceId,
+    params.clientId,
+    params.clientMode,
+    params.role,
+    params.scopes.join(","),
+    String(params.signedAtMs),
+    params.token ?? "",
+    params.nonce,
+  ].join("|");
+}
 
 function formatGatewayError(error: unknown): string {
   const err = asObject(error);
@@ -45,7 +131,7 @@ async function eventDataToText(data: unknown): Promise<string> {
   return String(data);
 }
 
-function buildConnectParams(settings: GatewayConnectionSettings): Record<string, unknown> {
+function buildConnectParams(settings: GatewayConnectionSettings, challengeNonce?: string): Record<string, unknown> {
   const auth: Record<string, string> = {};
   if (settings.token) {
     auth.token = settings.token;
@@ -66,10 +152,34 @@ function buildConnectParams(settings: GatewayConnectionSettings): Record<string,
       instanceId: `ClawOS-${Date.now().toString(36)}`,
     },
     role: "operator",
-    scopes: ["operator.read", "operator.admin", "operator.approvals", "operator.pairing"],
+    scopes: [...GATEWAY_OPERATOR_SCOPES],
     locale: "zh-CN",
     userAgent: `ClawOS/${VERSION}`,
   };
+
+  if (challengeNonce) {
+    const identity = loadOrCreateGatewayDeviceIdentity();
+    const signedAtMs = Date.now();
+    const payload = buildDeviceAuthPayload({
+      deviceId: identity.deviceId,
+      clientId: "cli",
+      clientMode: "cli",
+      role: "operator",
+      scopes: [...GATEWAY_OPERATOR_SCOPES],
+      signedAtMs,
+      token: settings.token ?? null,
+      nonce: challengeNonce,
+    });
+    const signature = signWithKey(null, Buffer.from(payload, "utf8"), createPrivateKey(identity.privateKeyPem));
+
+    params.device = {
+      id: identity.deviceId,
+      publicKey: identity.publicKeyRawBase64Url,
+      signature: base64UrlEncode(signature),
+      signedAt: signedAtMs,
+      nonce: challengeNonce,
+    };
+  }
 
   if (Object.keys(auth).length > 0) {
     params.auth = auth;
@@ -115,6 +225,7 @@ async function callGatewayMethodWithSettings<T>(
     let connectSent = false;
     let methodSent = false;
     let hello: GatewayHelloPayload | null = null;
+    let connectChallengeNonce: string | undefined;
     const events: GatewayEventFrame[] = [];
 
     const timeoutHandle = setTimeout(() => {
@@ -189,13 +300,13 @@ async function callGatewayMethodWithSettings<T>(
         return;
       }
       connectSent = true;
-      sendRequest(connectRequestId, "connect", buildConnectParams(settings));
+      sendRequest(connectRequestId, "connect", buildConnectParams(settings, connectChallengeNonce));
     };
 
     ws.onopen = () => {
       connectDelayHandle = setTimeout(() => {
         sendConnect();
-      }, 600);
+      }, 1200);
     };
 
     ws.onerror = () => {
@@ -240,6 +351,11 @@ async function callGatewayMethodWithSettings<T>(
             events.push(eventFrame);
 
             if (eventName === "connect.challenge" && !connectSent) {
+              const payloadObj = asObject(frameObj.payload);
+              const nonce = readNonEmptyString(payloadObj?.nonce);
+              if (nonce) {
+                connectChallengeNonce = nonce;
+              }
               sendConnect();
             }
             return;
@@ -364,6 +480,10 @@ export function gatewayTroubleshootingTips(rawMessage: string): string[] {
   }
   if (text.includes("invalid request") || text.includes("not supported") || text.includes("not found")) {
     tips.push("方法调用失败：请确认当前 openclaw 版本支持该 Gateway Protocol 方法。");
+  }
+  if (text.includes("missing scope")) {
+    tips.push("网关权限不足：请使用支持 connect.challenge + device 签名握手的最新 ClawOS。");
+    tips.push("若仍提示缺少 scope，请重新生成或轮换网关 token，并确认包含 operator.read / operator.write。");
   }
 
   return tips;

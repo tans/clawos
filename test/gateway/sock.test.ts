@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { callGatewayMethod, gatewayTroubleshootingTips } from "../../src/gateway/sock";
 import { invalidateGatewayConnectionSettingsCache } from "../../src/gateway/settings";
+import { asObject, readNonEmptyString } from "../../src/lib/value";
 
 type RequestFrame = {
   type: "req";
@@ -125,7 +126,11 @@ describe("gateway socket", () => {
       onCreate(ws) {
         queueMicrotask(() => {
           ws.emitOpen();
-          ws.emitFrame({ type: "event", event: "connect.challenge" });
+          ws.emitFrame({
+            type: "event",
+            event: "connect.challenge",
+            payload: { nonce: "nonce-1" },
+          });
         });
       },
       onSend(ws, frame) {
@@ -167,9 +172,15 @@ describe("gateway socket", () => {
     const connectParams = (connectReq?.params || {}) as Record<string, unknown>;
     const client = (connectParams.client || {}) as Record<string, unknown>;
     const scopes = Array.isArray(connectParams.scopes) ? connectParams.scopes : [];
+    const device = asObject(connectParams.device);
     expect(client.id).toBe("cli");
     expect(client.mode).toBe("cli");
     expect(scopes).toContain("operator.read");
+    expect(scopes).toContain("operator.write");
+    expect(readNonEmptyString(device?.id)).toBeTruthy();
+    expect(readNonEmptyString(device?.publicKey)).toBeTruthy();
+    expect(readNonEmptyString(device?.signature)).toBeTruthy();
+    expect(device?.nonce).toBe("nonce-1");
   });
 
   it("fails when socket emits error before connect", async () => {
@@ -204,7 +215,11 @@ describe("gateway socket", () => {
       onCreate(ws) {
         queueMicrotask(() => {
           ws.emitOpen();
-          ws.emitFrame({ type: "event", event: "connect.challenge" });
+          ws.emitFrame({
+            type: "event",
+            event: "connect.challenge",
+            payload: { nonce: "nonce-2" },
+          });
         });
       },
       onSend(ws, frame) {
@@ -229,7 +244,11 @@ describe("gateway socket", () => {
       onCreate(ws) {
         queueMicrotask(() => {
           ws.emitOpen();
-          ws.emitFrame({ type: "event", event: "connect.challenge" });
+          ws.emitFrame({
+            type: "event",
+            event: "connect.challenge",
+            payload: { nonce: "nonce-3" },
+          });
         });
       },
       onSend(ws, frame) {
@@ -258,7 +277,11 @@ describe("gateway socket", () => {
       onCreate(ws) {
         queueMicrotask(() => {
           ws.emitOpen();
-          ws.emitFrame({ type: "event", event: "connect.challenge" });
+          ws.emitFrame({
+            type: "event",
+            event: "connect.challenge",
+            payload: { nonce: "nonce-4" },
+          });
         });
       },
       onSend(ws, frame) {
@@ -304,7 +327,11 @@ describe("gateway socket", () => {
       onCreate(ws) {
         queueMicrotask(() => {
           ws.emitOpen();
-          ws.emitFrame({ type: "event", event: "connect.challenge" });
+          ws.emitFrame({
+            type: "event",
+            event: "connect.challenge",
+            payload: { nonce: "nonce-5" },
+          });
         });
       },
       onSend(ws, frame) {
