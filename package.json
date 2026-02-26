@@ -1,6 +1,6 @@
 {
   "name": "clawos",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "type": "module",
   "scripts": {
     "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
