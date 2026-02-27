@@ -1,6 +1,13 @@
 import JSON5 from "json5";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import {
+  deobfuscateSecret,
+  obfuscateSecret,
+  WALLET_OBFUSCATION_ALGORITHM,
+} from "../lib/secret-obfuscation";
+import { DEFAULT_OPENCLAW_TOKEN, DEFAULT_PORT } from "../app.constants";
 import { asObject } from "../lib/value";
 
 const IS_WINDOWS = process.platform === "win32";
@@ -10,7 +17,21 @@ const OPENCLAW_CONFIG_DIR =
 const OPENCLAW_CONFIG_PATH = `${OPENCLAW_CONFIG_DIR}/openclaw.json`;
 const CLAWOS_LOCAL_CONFIG_PATH = path.join(process.cwd(), "clawos.json");
 
+export type LocalWalletConfig = {
+  address?: string;
+  privateKeyObfuscated?: string;
+  algorithm?: string;
+  createdAt?: string;
+};
+
+export type LocalAppConfig = {
+  port?: number;
+  openclawToken?: string;
+  autoOpenBrowser?: boolean;
+};
+
 export type LocalClawosConfig = {
+  app?: LocalAppConfig;
   gateway?: {
     url?: string;
     token?: string;
@@ -24,6 +45,7 @@ export type LocalClawosConfig = {
   openclaw?: {
     configPath?: string;
   };
+  wallet?: LocalWalletConfig;
 };
 
 export type LocalGatewayConnectionConfig = {
@@ -31,6 +53,26 @@ export type LocalGatewayConnectionConfig = {
   token: string;
   password: string;
   origin: string;
+};
+
+export type LocalWalletSummary = {
+  exists: boolean;
+  address: string;
+  privateKeyObfuscatedPreview: string;
+  algorithm: string;
+  createdAt: string;
+};
+
+export type GeneratedLocalWallet = {
+  address: string;
+  privateKey: string;
+  wallet: LocalWalletSummary;
+};
+
+export type LocalAppSettings = {
+  port: number;
+  openclawToken: string;
+  autoOpenBrowser: boolean;
 };
 
 export function getDefaultOpenclawConfigPath(): string {
@@ -43,6 +85,11 @@ export function getLocalConfigPath(): string {
 
 export function localConfigTemplate(): LocalClawosConfig {
   return {
+    app: {
+      port: DEFAULT_PORT,
+      openclawToken: DEFAULT_OPENCLAW_TOKEN,
+      autoOpenBrowser: true,
+    },
     gateway: {
       url: "ws://127.0.0.1:18789",
       token: "",
@@ -55,6 +102,12 @@ export function localConfigTemplate(): LocalClawosConfig {
     },
     openclaw: {
       configPath: OPENCLAW_CONFIG_PATH,
+    },
+    wallet: {
+      address: "",
+      privateKeyObfuscated: "",
+      algorithm: WALLET_OBFUSCATION_ALGORITHM,
+      createdAt: "",
     },
   };
 }
@@ -83,19 +136,63 @@ function parseLocalConfig(raw: string): LocalClawosConfig | null {
   }
 }
 
+function pickString(value: unknown, fallback: string): string {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
+
+function pickPort(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const parsed = Math.floor(value);
+    if (parsed >= 1 && parsed <= 65535) {
+      return parsed;
+    }
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    if (Number.isFinite(parsed)) {
+      const intValue = Math.floor(parsed);
+      if (intValue >= 1 && intValue <= 65535) {
+        return intValue;
+      }
+    }
+  }
+
+  return fallback;
+}
+
+function pickBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return fallback;
+}
+
 function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): LocalClawosConfig {
   const defaults = localConfigTemplate();
   const cfg = input || {};
 
-  const pickString = (value: unknown, fallback: string): string => {
-    if (typeof value !== "string") {
-      return fallback;
-    }
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : fallback;
-  };
-
   return {
+    app: {
+      port: pickPort(cfg.app?.port, defaults.app?.port || DEFAULT_PORT),
+      openclawToken: pickString(cfg.app?.openclawToken, defaults.app?.openclawToken || DEFAULT_OPENCLAW_TOKEN),
+      autoOpenBrowser: pickBoolean(cfg.app?.autoOpenBrowser, defaults.app?.autoOpenBrowser ?? true),
+    },
     gateway: {
       url: pickString(cfg.gateway?.url, defaults.gateway?.url || ""),
       token: pickString(cfg.gateway?.token, defaults.gateway?.token || ""),
@@ -108,6 +205,12 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
     },
     openclaw: {
       configPath: pickString(cfg.openclaw?.configPath, defaults.openclaw?.configPath || OPENCLAW_CONFIG_PATH),
+    },
+    wallet: {
+      address: pickString(cfg.wallet?.address, defaults.wallet?.address || ""),
+      privateKeyObfuscated: pickString(cfg.wallet?.privateKeyObfuscated, defaults.wallet?.privateKeyObfuscated || ""),
+      algorithm: pickString(cfg.wallet?.algorithm, defaults.wallet?.algorithm || WALLET_OBFUSCATION_ALGORITHM),
+      createdAt: pickString(cfg.wallet?.createdAt, defaults.wallet?.createdAt || ""),
     },
   };
 }
@@ -132,6 +235,35 @@ function readConfigFileOrNull(filePath: string): LocalClawosConfig | null {
   } catch {
     return null;
   }
+}
+
+function readNormalizedLocalConfig(): LocalClawosConfig {
+  return normalizeLocalConfig(readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH));
+}
+
+function hasWallet(wallet: LocalWalletConfig | null | undefined): boolean {
+  const address = typeof wallet?.address === "string" ? wallet.address.trim() : "";
+  const privateKeyObfuscated =
+    typeof wallet?.privateKeyObfuscated === "string" ? wallet.privateKeyObfuscated.trim() : "";
+  return address.length > 0 && privateKeyObfuscated.length > 0;
+}
+
+function maskSecret(value: string): string {
+  if (value.length <= 16) {
+    return value;
+  }
+  return `${value.slice(0, 10)}...${value.slice(-10)}`;
+}
+
+function toWalletSummary(wallet: LocalWalletConfig | null | undefined): LocalWalletSummary {
+  const exists = hasWallet(wallet);
+  return {
+    exists,
+    address: exists ? (wallet?.address || "") : "",
+    privateKeyObfuscatedPreview: exists ? maskSecret(wallet?.privateKeyObfuscated || "") : "",
+    algorithm: exists ? (wallet?.algorithm || WALLET_OBFUSCATION_ALGORITHM) : "",
+    createdAt: exists ? (wallet?.createdAt || "") : "",
+  };
 }
 
 export function ensureLocalConfigTemplateFile(): void {
@@ -161,7 +293,7 @@ export function readLocalClawosConfig(): LocalClawosConfig | null {
 }
 
 export function readLocalGatewayConnectionConfig(): LocalGatewayConnectionConfig {
-  const localConfig = normalizeLocalConfig(readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH));
+  const localConfig = readNormalizedLocalConfig();
   return {
     url: localConfig.gateway?.url || "",
     token: localConfig.gateway?.token || "",
@@ -170,8 +302,52 @@ export function readLocalGatewayConnectionConfig(): LocalGatewayConnectionConfig
   };
 }
 
+export function readLocalAppSettings(): LocalAppSettings {
+  const localConfig = readNormalizedLocalConfig();
+  return {
+    port: pickPort(localConfig.app?.port, DEFAULT_PORT),
+    openclawToken: pickString(localConfig.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
+    autoOpenBrowser: pickBoolean(localConfig.app?.autoOpenBrowser, true),
+  };
+}
+
+export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalAppSettings {
+  const current = readNormalizedLocalConfig();
+  const currentSettings = readLocalAppSettings();
+
+  const nextApp: LocalAppConfig = {
+    port: typeof patch.port === "number" ? pickPort(patch.port, currentSettings.port) : currentSettings.port,
+    openclawToken:
+      typeof patch.openclawToken === "string"
+        ? pickString(patch.openclawToken, currentSettings.openclawToken)
+        : currentSettings.openclawToken,
+    autoOpenBrowser:
+      typeof patch.autoOpenBrowser === "boolean"
+        ? patch.autoOpenBrowser
+        : currentSettings.autoOpenBrowser,
+  };
+
+  const next = normalizeLocalConfig({
+    ...current,
+    app: {
+      ...current.app,
+      ...nextApp,
+    },
+  });
+
+  if (!writeLocalConfig(CLAWOS_LOCAL_CONFIG_PATH, next)) {
+    throw new Error(`保存本地设置失败：${CLAWOS_LOCAL_CONFIG_PATH}`);
+  }
+
+  return {
+    port: pickPort(next.app?.port, DEFAULT_PORT),
+    openclawToken: pickString(next.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
+    autoOpenBrowser: pickBoolean(next.app?.autoOpenBrowser, true),
+  };
+}
+
 export function updateLocalGatewayConnectionConfig(patch: Partial<LocalGatewayConnectionConfig>): LocalGatewayConnectionConfig {
-  const current = normalizeLocalConfig(readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH));
+  const current = readNormalizedLocalConfig();
   const normalizedPatch = {
     url: typeof patch.url === "string" ? patch.url.trim() : current.gateway?.url || "",
     token: typeof patch.token === "string" ? patch.token.trim() : current.gateway?.token || "",
@@ -196,6 +372,45 @@ export function updateLocalGatewayConnectionConfig(patch: Partial<LocalGatewayCo
     token: next.gateway?.token || "",
     password: next.gateway?.password || "",
     origin: next.gateway?.origin || "",
+  };
+}
+
+export function readLocalWalletSummary(): LocalWalletSummary {
+  const localConfig = readNormalizedLocalConfig();
+  return toWalletSummary(localConfig.wallet);
+}
+
+export function generateAndSaveLocalWallet(): GeneratedLocalWallet {
+  const current = readNormalizedLocalConfig();
+  const privateKey = generatePrivateKey();
+  const account = privateKeyToAccount(privateKey);
+  const privateKeyObfuscated = obfuscateSecret(privateKey);
+
+  if (deobfuscateSecret(privateKeyObfuscated) !== privateKey) {
+    throw new Error("钱包私钥混淆校验失败，请重试。");
+  }
+
+  const createdAt = new Date().toISOString();
+  const nextWallet: LocalWalletConfig = {
+    address: account.address,
+    privateKeyObfuscated,
+    algorithm: WALLET_OBFUSCATION_ALGORITHM,
+    createdAt,
+  };
+
+  const next = normalizeLocalConfig({
+    ...current,
+    wallet: nextWallet,
+  });
+
+  if (!writeLocalConfig(CLAWOS_LOCAL_CONFIG_PATH, next)) {
+    throw new Error(`保存钱包失败：${CLAWOS_LOCAL_CONFIG_PATH}`);
+  }
+
+  return {
+    address: account.address,
+    privateKey,
+    wallet: toWalletSummary(next.wallet),
   };
 }
 

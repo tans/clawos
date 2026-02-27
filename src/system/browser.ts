@@ -1,6 +1,10 @@
 import { spawn } from "node:child_process";
 
-function shouldAutoOpenBrowser(): boolean {
+function shouldAutoOpenBrowser(localEnabled = true): boolean {
+  if (!localEnabled) {
+    return false;
+  }
+
   const value = process.env.CLAWOS_AUTO_OPEN_BROWSER?.trim().toLowerCase();
   if (!value) {
     return true;
@@ -29,8 +33,9 @@ function browserOpenCommand(url: string): { command: string; args: string[] } {
   };
 }
 
-export function openBrowser(url: string): void {
-  if (!shouldAutoOpenBrowser()) {
+export function openBrowser(url: string, options?: { enabled?: boolean }): void {
+  const enabled = options?.enabled ?? true;
+  if (!shouldAutoOpenBrowser(enabled)) {
     return;
   }
 

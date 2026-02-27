@@ -1,5 +1,4 @@
-import { PORT } from "./app.constants";
-import { ensureLocalConfigTemplateFile } from "./config/local";
+import { ensureLocalConfigTemplateFile, readLocalAppSettings } from "./config/local";
 import { HttpError, jsonResponse } from "./lib/http";
 import { handleApiRequest } from "./routes/api";
 import { handlePageRequest } from "./routes/pages";
@@ -10,9 +9,10 @@ let server: ReturnType<typeof Bun.serve>;
 
 try {
   ensureLocalConfigTemplateFile();
+  const appSettings = readLocalAppSettings();
 
   server = Bun.serve({
-    port: PORT,
+    port: appSettings.port,
     async fetch(req) {
       const url = new URL(req.url);
       const path = url.pathname;
@@ -48,7 +48,7 @@ try {
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`ClawOS 启动失败：${message}`);
-  console.error("请检查 8080 端口是否被占用，或使用管理员权限重试。");
+  console.error("请检查当前配置端口是否被占用，或使用管理员权限重试。");
   process.exit(1);
 }
 
@@ -67,4 +67,4 @@ console.log("ClawOS 已启动");
 console.log(`访问地址: ${serverUrl}`);
 console.log("官网: https://clawos.cc");
 startQwGatewayRestartTaskOnStartup();
-openBrowser(serverUrl);
+openBrowser(serverUrl, { enabled: appSettings.autoOpenBrowser });

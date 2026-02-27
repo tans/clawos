@@ -8,7 +8,7 @@ describe("openclaw source update steps", () => {
     expect(steps).toHaveLength(8);
     expect(steps.map((item) => item.command)).toEqual([
       `cd ${OPENCLAW_SOURCE_DIR}`,
-      `cd ${OPENCLAW_SOURCE_DIR} && git pull -X theirs`,
+      `cd ${OPENCLAW_SOURCE_DIR} && git pull --no-rebase -X theirs --no-edit`,
       `cd ${OPENCLAW_SOURCE_DIR} && npm i -g nrm`,
       `cd ${OPENCLAW_SOURCE_DIR} && nrm use tencent`,
       `cd ${OPENCLAW_SOURCE_DIR} && pnpm install`,
@@ -27,12 +27,10 @@ describe("openclaw source update steps", () => {
     }
   });
 
-  it("ignores local pnpm-lock.yaml changes before git pull", () => {
+  it("uses non-rebase git pull with theirs strategy", () => {
     const steps = buildOpenclawSourceUpdateSteps();
     const gitPullStep = steps[1];
 
-    expect(gitPullStep?.script).toContain("pnpm-lock.yaml");
-    expect(gitPullStep?.script).toContain("git diff --cached --quiet -- pnpm-lock.yaml");
-    expect(gitPullStep?.script).toContain("git pull -X theirs");
+    expect(gitPullStep?.script).toContain("git pull --no-rebase -X theirs --no-edit");
   });
 });

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClawOS 设置</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
+  </head>
+  <body class="bg-base-100 text-base-content overflow-x-auto">
+    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
+      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+        <div class="text-sm text-base-content/60">loading...</div>
+      </aside>
+
+      <main class="flex min-h-screen flex-col">
+        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
+          <h1 class="text-lg font-semibold">设置</h1>
+          <div class="flex items-center gap-2">
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+            <button class="btn btn-primary btn-xs" type="button" data-action="save">保存设置</button>
+          </div>
+        </header>
+
+        <section class="flex-1 p-6">
+          <div class="grid gap-4 xl:grid-cols-2">
+            <section class="card card-compact border border-base-200 bg-base-100">
+              <div class="card-body gap-4">
+                <h2 class="card-title text-base">开机自启动</h2>
+                <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
+                  <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
+                  <span class="label-text">开机后自动启动 ClawOS</span>
+                </label>
+                <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
+                <div class="text-xs text-base-content/60">
+                  说明：会写入当前用户注册表 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>。
+                </div>
+              </div>
+            </section>
+
+            <section class="card card-compact border border-base-200 bg-base-100">
+              <div class="card-body gap-4">
+                <h2 class="card-title text-base">服务参数</h2>
+
+                <label class="form-control w-full gap-2">
+                  <div class="label py-0">
+                    <span class="label-text text-xs">默认端口</span>
+                  </div>
+                  <input
+                    class="input input-bordered input-sm"
+                    type="number"
+                    min="1"
+                    max="65535"
+                    step="1"
+                    data-field="port"
+                    placeholder="8080"
+                  />
+                  <div class="text-xs text-base-content/60">默认值 8080，修改后需重启 ClawOS 生效。</div>
+                </label>
+
+                <label class="form-control w-full gap-2">
+                  <div class="label py-0">
+                    <span class="label-text text-xs">openclaw Token</span>
+                  </div>
+                  <input
+                    class="input input-bordered input-sm font-mono"
+                    type="text"
+                    data-field="openclaw-token"
+                    placeholder="xiake"
+                  />
+                  <div class="text-xs text-base-content/60">默认值 xiake，用于“打开 openclaw”时拼接访问链接。</div>
+                </label>
+
+                <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
+                  <input id="auto-open-browser" type="checkbox" class="toggle toggle-primary" />
+                  <span class="label-text">启动时自动打开浏览器</span>
+                </label>
+                <div class="text-xs text-base-content/60">关闭后，重启 ClawOS 不会自动弹出浏览器（适合开发调试）。</div>
+              </div>
+            </section>
+          </div>
+
+          <div class="mt-4 rounded-lg border border-base-200 bg-base-100 px-4 py-3 text-xs text-base-content/70" data-meta>
+            正在读取设置...
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/sidebar-update.js"></script>
+
+    <script>
+      const metaEl = document.querySelector("[data-meta]");
+      const reloadBtn = document.querySelector('[data-action="reload"]');
+      const saveBtn = document.querySelector('[data-action="save"]');
+      const portInput = document.querySelector('[data-field="port"]');
+      const tokenInput = document.querySelector('[data-field="openclaw-token"]');
+      const autoOpenBrowserCheckbox = document.querySelector("#auto-open-browser");
+      const autoStartCheckbox = document.querySelector("#clawos-autostart");
+      const autoStartStatusEl = document.querySelector("[data-autostart-status]");
+
+      function setMeta(text) {
+        if (metaEl) {
+          metaEl.textContent = text;
+        }
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      function setSaving(saving) {
+        if (saveBtn) {
+          saveBtn.disabled = saving;
+          saveBtn.textContent = saving ? "保存中..." : "保存设置";
+        }
+      }
+
+      async function loadSettings() {
+        const [settingsData, autoStartData] = await Promise.all([
+          api("/api/local/settings"),
+          api("/api/system/autostart/clawos"),
+        ]);
+
+        const settings = settingsData.settings || {};
+        if (portInput) {
+          portInput.value = Number.isFinite(settings.port) ? String(settings.port) : "8080";
+        }
+        if (tokenInput) {
+          tokenInput.value = typeof settings.openclawToken === "string" ? settings.openclawToken : "xiake";
+        }
+        if (autoOpenBrowserCheckbox) {
+          autoOpenBrowserCheckbox.checked = settings.autoOpenBrowser !== false;
+        }
+
+        const state = autoStartData.state || {};
+        if (autoStartCheckbox) {
+          if (!state.supported) {
+            autoStartCheckbox.checked = false;
+            autoStartCheckbox.disabled = true;
+            autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
+          } else {
+            autoStartCheckbox.disabled = false;
+            autoStartCheckbox.checked = Boolean(state.enabled);
+            autoStartStatusEl.textContent = state.enabled
+              ? "已启用：开机后会自动启动 ClawOS。"
+              : "未启用：开机后不会自动启动 ClawOS。";
+          }
+        }
+      }
+
+      async function saveSettings() {
+        if (!portInput || !tokenInput) {
+          return;
+        }
+
+        const rawPort = Number(portInput.value);
+        if (!Number.isFinite(rawPort) || rawPort < 1 || rawPort > 65535) {
+          throw new Error("端口必须在 1-65535 之间。");
+        }
+
+        const openclawToken = tokenInput.value.trim();
+        if (!openclawToken) {
+          throw new Error("openclaw Token 不能为空。");
+        }
+
+        await api("/api/local/settings", {
+          method: "PUT",
+          body: JSON.stringify({
+            port: Math.floor(rawPort),
+            openclawToken,
+            autoOpenBrowser: autoOpenBrowserCheckbox ? autoOpenBrowserCheckbox.checked : true,
+          }),
+        });
+      }
+
+      async function saveAutoStart(enabled) {
+        const data = await api("/api/system/autostart/clawos", {
+          method: "PUT",
+          body: JSON.stringify({ enabled: Boolean(enabled) }),
+        });
+        const state = data.state || {};
+        autoStartStatusEl.textContent = state.enabled
+          ? "已启用：开机后会自动启动 ClawOS。"
+          : "未启用：开机后不会自动启动 ClawOS。";
+      }
+
+      if (reloadBtn) {
+        reloadBtn.addEventListener("click", async () => {
+          try {
+            setMeta("正在读取设置...");
+            await loadSettings();
+            setMeta("设置已刷新。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`读取失败: ${message}`);
+          }
+        });
+      }
+
+      if (saveBtn) {
+        saveBtn.addEventListener("click", async () => {
+          try {
+            setSaving(true);
+            setMeta("正在保存设置...");
+            await saveSettings();
+            setMeta("设置已保存。端口与自动打开浏览器开关在重启 ClawOS 后生效。openclaw Token 会立即用于新打开链接。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`保存失败: ${message}`);
+          } finally {
+            setSaving(false);
+          }
+        });
+      }
+
+      if (autoStartCheckbox) {
+        autoStartCheckbox.addEventListener("change", async () => {
+          const next = autoStartCheckbox.checked;
+          autoStartCheckbox.disabled = true;
+          autoStartStatusEl.textContent = "正在保存开机自启动状态...";
+          try {
+            await saveAutoStart(next);
+            setMeta("开机自启动状态已更新。");
+          } catch (error) {
+            autoStartCheckbox.checked = !next;
+            const message = error instanceof Error ? error.message : String(error);
+            autoStartStatusEl.textContent = `保存失败: ${message}`;
+          } finally {
+            autoStartCheckbox.disabled = false;
+          }
+        });
+      }
+
+      (async function init() {
+        try {
+          await loadSettings();
+          setMeta("设置已加载。可以修改后点击“保存设置”。");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          setMeta(`初始化失败: ${message}`);
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,20 +1,24 @@
 (function initClawosSidebar() {
   const DEFAULT_OPENCLAW_CONSOLE_URL = "http://127.0.0.1:18789";
-  const FIXED_OPENCLAW_TOKEN = "xiake";
+  const DEFAULT_OPENCLAW_TOKEN = "xiake";
 
-  function withFixedOpenclawToken(rawUrl) {
+  function withOpenclawToken(rawUrl, token) {
+    const finalToken =
+      typeof token === "string" && token.trim().length > 0
+        ? token.trim()
+        : DEFAULT_OPENCLAW_TOKEN;
     try {
       const parsed = new URL(rawUrl);
-      parsed.searchParams.set("token", FIXED_OPENCLAW_TOKEN);
+      parsed.searchParams.set("token", finalToken);
       return parsed.toString();
     } catch {
-      return `${DEFAULT_OPENCLAW_CONSOLE_URL}?token=${encodeURIComponent(FIXED_OPENCLAW_TOKEN)}`;
+      return `${DEFAULT_OPENCLAW_CONSOLE_URL}?token=${encodeURIComponent(finalToken)}`;
     }
   }
 
-  function normalizeOpenclawConsoleUrl(rawUrl) {
+  function normalizeOpenclawConsoleUrl(rawUrl, token) {
     if (typeof rawUrl !== "string" || rawUrl.trim().length === 0) {
-      return withFixedOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL);
+      return withOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL, token);
     }
 
     const trimmed = rawUrl.trim();
@@ -25,9 +29,9 @@
       } else if (parsed.protocol === "wss:") {
         parsed.protocol = "https:";
       }
-      return withFixedOpenclawToken(parsed.toString());
+      return withOpenclawToken(parsed.toString(), token);
     } catch {
-      return withFixedOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL);
+      return withOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL, token);
     }
   }
 
@@ -45,12 +49,24 @@
   }
 
   async function loadOpenclawConsoleUrl() {
+    let token = DEFAULT_OPENCLAW_TOKEN;
+
+    try {
+      const data = await api("/api/local/settings");
+      const settings = data.settings || {};
+      if (typeof settings.openclawToken === "string" && settings.openclawToken.trim().length > 0) {
+        token = settings.openclawToken.trim();
+      }
+    } catch {
+      token = DEFAULT_OPENCLAW_TOKEN;
+    }
+
     try {
       const data = await api("/api/local/gateway");
       const gateway = data.gateway || {};
-      return normalizeOpenclawConsoleUrl(gateway.url);
+      return normalizeOpenclawConsoleUrl(gateway.url, token);
     } catch {
-      return withFixedOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL);
+      return withOpenclawToken(DEFAULT_OPENCLAW_CONSOLE_URL, token);
     }
   }
 

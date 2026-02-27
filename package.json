@@ -14,7 +14,8 @@
     "build:exe": "bun run scripts/build-clawos.ts"
   },
   "dependencies": {
-    "json5": "^2.2.3"
+    "json5": "^2.2.3",
+    "viem": "^2.46.3"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",

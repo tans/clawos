@@ -1,7 +1,12 @@
 import { VERSION } from "../app.constants";
 import {
+  generateAndSaveLocalWallet,
+  readLocalAppSettings,
   readLocalGatewayConnectionConfig,
+  readLocalWalletSummary,
+  updateLocalAppSettings,
   updateLocalGatewayConnectionConfig,
+  type LocalAppSettings,
   type LocalGatewayConnectionConfig,
 } from "../config/local";
 import { readConfigSectionSchema } from "../config/schema";
@@ -85,6 +90,44 @@ function parseLocalGatewayBody(body: Record<string, unknown>): Partial<LocalGate
       throw new HttpError(400, `${field} 必须是字符串。`);
     }
     patch[field] = raw.trim();
+  }
+
+  return patch;
+}
+
+function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalAppSettings> {
+  const patch: Partial<LocalAppSettings> = {};
+
+  if (Object.prototype.hasOwnProperty.call(body, "port")) {
+    const rawPort = body.port;
+    if (typeof rawPort !== "number" || !Number.isFinite(rawPort)) {
+      throw new HttpError(400, "port 必须是数字。");
+    }
+    const parsed = Math.floor(rawPort);
+    if (parsed < 1 || parsed > 65535) {
+      throw new HttpError(400, "port 必须在 1-65535 之间。");
+    }
+    patch.port = parsed;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "openclawToken")) {
+    const rawToken = body.openclawToken;
+    if (typeof rawToken !== "string") {
+      throw new HttpError(400, "openclawToken 必须是字符串。");
+    }
+    const trimmed = rawToken.trim();
+    if (!trimmed) {
+      throw new HttpError(400, "openclawToken 不能为空。");
+    }
+    patch.openclawToken = trimmed;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "autoOpenBrowser")) {
+    const raw = body.autoOpenBrowser;
+    if (typeof raw !== "boolean") {
+      throw new HttpError(400, "autoOpenBrowser 必须是 boolean。");
+    }
+    patch.autoOpenBrowser = raw;
   }
 
   return patch;
@@ -205,6 +248,33 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     const gateway = updateLocalGatewayConnectionConfig(patch);
     invalidateGatewayConnectionSettingsCache();
     return jsonResponse({ ok: true, gateway });
+  }
+
+  if (path === "/api/local/settings" && req.method === "GET") {
+    const settings = readLocalAppSettings();
+    return jsonResponse({ ok: true, settings });
+  }
+
+  if (path === "/api/local/settings" && req.method === "PUT") {
+    const body = await parseJsonBody(req);
+    const patch = parseLocalSettingsBody(body);
+    const settings = updateLocalAppSettings(patch);
+    return jsonResponse({ ok: true, settings });
+  }
+
+  if (path === "/api/local/wallet" && req.method === "GET") {
+    const wallet = readLocalWalletSummary();
+    return jsonResponse({ ok: true, wallet });
+  }
+
+  if (path === "/api/local/wallet/generate" && req.method === "POST") {
+    const generated = generateAndSaveLocalWallet();
+    return jsonResponse({
+      ok: true,
+      address: generated.address,
+      privateKey: generated.privateKey,
+      wallet: generated.wallet,
+    });
   }
 
   if (path === "/api/config/section" && req.method === "PUT") {
