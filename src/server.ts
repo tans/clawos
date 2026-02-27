@@ -6,10 +6,11 @@ import { openBrowser } from "./system/browser";
 import { startQwGatewayRestartTaskOnStartup } from "./tasks/gateway";
 
 let server: ReturnType<typeof Bun.serve>;
+let appSettings: ReturnType<typeof readLocalAppSettings> | null = null;
 
 try {
   ensureLocalConfigTemplateFile();
-  const appSettings = readLocalAppSettings();
+  appSettings = readLocalAppSettings();
 
   server = Bun.serve({
     port: appSettings.port,
@@ -67,4 +68,4 @@ console.log("ClawOS 已启动");
 console.log(`访问地址: ${serverUrl}`);
 console.log("官网: https://clawos.cc");
 startQwGatewayRestartTaskOnStartup();
-openBrowser(serverUrl, { enabled: appSettings.autoOpenBrowser });
+openBrowser(serverUrl, { enabled: appSettings?.autoOpenBrowser !== false });
