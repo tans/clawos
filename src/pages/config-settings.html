@@ -23,62 +23,70 @@
         </header>
 
         <section class="flex-1 p-6">
-          <div class="grid gap-4 xl:grid-cols-2">
-            <section class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-4">
-                <h2 class="card-title text-base">开机自启动</h2>
-                <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
-                  <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
-                  <span class="label-text">开机后自动启动 ClawOS</span>
-                </label>
-                <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
-                <div class="text-xs text-base-content/60">
-                  说明：会写入当前用户注册表 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>。
+          <section class="card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-4">
+              <h2 class="card-title text-base">服务参数</h2>
+
+              <label class="form-control w-full gap-2">
+                <div class="label py-0">
+                  <span class="label-text text-xs">默认端口</span>
                 </div>
+                <input
+                  class="input input-bordered input-sm"
+                  type="number"
+                  min="1"
+                  max="65535"
+                  step="1"
+                  data-field="port"
+                  placeholder="8080"
+                />
+                <div class="text-xs text-base-content/60">默认值 8080，修改后需重启 ClawOS 生效。</div>
+              </label>
+
+              <label class="form-control w-full gap-2">
+                <div class="label py-0">
+                  <span class="label-text text-xs">openclaw Token</span>
+                </div>
+                <input
+                  class="input input-bordered input-sm font-mono"
+                  type="text"
+                  data-field="openclaw-token"
+                  placeholder="xiake"
+                />
+                <div class="text-xs text-base-content/60">默认值 xiake，用于“打开 openclaw”时拼接访问链接。</div>
+              </label>
+
+              <label class="form-control w-full gap-2">
+                <div class="label py-0">
+                  <span class="label-text text-xs">授权控制地址</span>
+                </div>
+                <input
+                  class="input input-bordered input-sm font-mono"
+                  type="text"
+                  data-field="controller-address"
+                  placeholder="0x..."
+                />
+                <div class="text-xs text-base-content/60">
+                  可为空。填写后会写入 <code>clawos.json</code> 的 <code>controllerAddress</code> 字段。
+                </div>
+              </label>
+
+              <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
+                <input id="auto-open-browser" type="checkbox" class="toggle toggle-primary" />
+                <span class="label-text">启动时自动打开浏览器</span>
+              </label>
+              <div class="text-xs text-base-content/60">关闭后，重启 ClawOS 不会自动弹出浏览器（适合开发调试）。</div>
+
+              <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
+                <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
+                <span class="label-text">开机后自动启动 ClawOS</span>
+              </label>
+              <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
+              <div class="text-xs text-base-content/60">
+                说明：会写入当前用户注册表 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>。
               </div>
-            </section>
-
-            <section class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-4">
-                <h2 class="card-title text-base">服务参数</h2>
-
-                <label class="form-control w-full gap-2">
-                  <div class="label py-0">
-                    <span class="label-text text-xs">默认端口</span>
-                  </div>
-                  <input
-                    class="input input-bordered input-sm"
-                    type="number"
-                    min="1"
-                    max="65535"
-                    step="1"
-                    data-field="port"
-                    placeholder="8080"
-                  />
-                  <div class="text-xs text-base-content/60">默认值 8080，修改后需重启 ClawOS 生效。</div>
-                </label>
-
-                <label class="form-control w-full gap-2">
-                  <div class="label py-0">
-                    <span class="label-text text-xs">openclaw Token</span>
-                  </div>
-                  <input
-                    class="input input-bordered input-sm font-mono"
-                    type="text"
-                    data-field="openclaw-token"
-                    placeholder="xiake"
-                  />
-                  <div class="text-xs text-base-content/60">默认值 xiake，用于“打开 openclaw”时拼接访问链接。</div>
-                </label>
-
-                <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
-                  <input id="auto-open-browser" type="checkbox" class="toggle toggle-primary" />
-                  <span class="label-text">启动时自动打开浏览器</span>
-                </label>
-                <div class="text-xs text-base-content/60">关闭后，重启 ClawOS 不会自动弹出浏览器（适合开发调试）。</div>
-              </div>
-            </section>
-          </div>
+            </div>
+          </section>
 
           <div class="mt-4 rounded-lg border border-base-200 bg-base-100 px-4 py-3 text-xs text-base-content/70" data-meta>
             正在读取设置...
@@ -95,6 +103,7 @@
       const saveBtn = document.querySelector('[data-action="save"]');
       const portInput = document.querySelector('[data-field="port"]');
       const tokenInput = document.querySelector('[data-field="openclaw-token"]');
+      const controllerAddressInput = document.querySelector('[data-field="controller-address"]');
       const autoOpenBrowserCheckbox = document.querySelector("#auto-open-browser");
       const autoStartCheckbox = document.querySelector("#clawos-autostart");
       const autoStartStatusEl = document.querySelector("[data-autostart-status]");
@@ -137,6 +146,10 @@
         if (tokenInput) {
           tokenInput.value = typeof settings.openclawToken === "string" ? settings.openclawToken : "xiake";
         }
+        if (controllerAddressInput) {
+          controllerAddressInput.value =
+            typeof settings.controllerAddress === "string" ? settings.controllerAddress : "";
+        }
         if (autoOpenBrowserCheckbox) {
           autoOpenBrowserCheckbox.checked = settings.autoOpenBrowser !== false;
         }
@@ -146,19 +159,23 @@
           if (!state.supported) {
             autoStartCheckbox.checked = false;
             autoStartCheckbox.disabled = true;
-            autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
+            if (autoStartStatusEl) {
+              autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
+            }
           } else {
             autoStartCheckbox.disabled = false;
             autoStartCheckbox.checked = Boolean(state.enabled);
-            autoStartStatusEl.textContent = state.enabled
-              ? "已启用：开机后会自动启动 ClawOS。"
-              : "未启用：开机后不会自动启动 ClawOS。";
+            if (autoStartStatusEl) {
+              autoStartStatusEl.textContent = state.enabled
+                ? "已启用：开机后会自动启动 ClawOS。"
+                : "未启用：开机后不会自动启动 ClawOS。";
+            }
           }
         }
       }
 
       async function saveSettings() {
-        if (!portInput || !tokenInput) {
+        if (!portInput || !tokenInput || !controllerAddressInput) {
           return;
         }
 
@@ -172,12 +189,18 @@
           throw new Error("openclaw Token 不能为空。");
         }
 
+        const controllerAddress = controllerAddressInput.value.trim();
+        if (controllerAddress && !/^0x[a-fA-F0-9]{40}$/.test(controllerAddress)) {
+          throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
+        }
+
         await api("/api/local/settings", {
           method: "PUT",
           body: JSON.stringify({
             port: Math.floor(rawPort),
             openclawToken,
             autoOpenBrowser: autoOpenBrowserCheckbox ? autoOpenBrowserCheckbox.checked : true,
+            controllerAddress,
           }),
         });
       }
@@ -188,9 +211,11 @@
           body: JSON.stringify({ enabled: Boolean(enabled) }),
         });
         const state = data.state || {};
-        autoStartStatusEl.textContent = state.enabled
-          ? "已启用：开机后会自动启动 ClawOS。"
-          : "未启用：开机后不会自动启动 ClawOS。";
+        if (autoStartStatusEl) {
+          autoStartStatusEl.textContent = state.enabled
+            ? "已启用：开机后会自动启动 ClawOS。"
+            : "未启用：开机后不会自动启动 ClawOS。";
+        }
       }
 
       if (reloadBtn) {
@@ -212,7 +237,7 @@
             setSaving(true);
             setMeta("正在保存设置...");
             await saveSettings();
-            setMeta("设置已保存。端口与自动打开浏览器开关在重启 ClawOS 后生效。openclaw Token 会立即用于新打开链接。");
+            setMeta("设置已保存。端口与自动打开浏览器开关在重启 ClawOS 后生效。openclaw Token 与授权控制地址会立即用于后续连接。");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             setMeta(`保存失败: ${message}`);
@@ -226,14 +251,18 @@
         autoStartCheckbox.addEventListener("change", async () => {
           const next = autoStartCheckbox.checked;
           autoStartCheckbox.disabled = true;
-          autoStartStatusEl.textContent = "正在保存开机自启动状态...";
+          if (autoStartStatusEl) {
+            autoStartStatusEl.textContent = "正在保存开机自启动状态...";
+          }
           try {
             await saveAutoStart(next);
             setMeta("开机自启动状态已更新。");
           } catch (error) {
             autoStartCheckbox.checked = !next;
             const message = error instanceof Error ? error.message : String(error);
-            autoStartStatusEl.textContent = `保存失败: ${message}`;
+            if (autoStartStatusEl) {
+              autoStartStatusEl.textContent = `保存失败: ${message}`;
+            }
           } finally {
             autoStartCheckbox.disabled = false;
           }

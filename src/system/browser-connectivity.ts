@@ -354,8 +354,8 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
   } else if (!browserConfigured) {
     status = "not-configured";
   } else if (browserMode !== "cdp") {
-    status = browserProbe?.ok ? "ok" : "probe-error";
-    browserReady = status === "ok";
+    status = "ok";
+    browserReady = true;
   } else {
     status = cdpClassification.status;
     browserReady = cdpClassification.ready;

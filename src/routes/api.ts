@@ -18,6 +18,8 @@ import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/au
 import { getSelfUpdateStatus } from "../system/self-update";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
+import { readWalletBalances } from "../system/wallet-balance";
+import { startBrowserConfigResetTask, startBrowserRestartTask } from "../tasks/browser";
 import {
   getQwGatewayStartupStatus,
   startGatewayControlTask,
@@ -130,6 +132,18 @@ function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalApp
     patch.autoOpenBrowser = raw;
   }
 
+  if (Object.prototype.hasOwnProperty.call(body, "controllerAddress")) {
+    const rawControllerAddress = body.controllerAddress;
+    if (typeof rawControllerAddress !== "string") {
+      throw new HttpError(400, "controllerAddress 必须是字符串。");
+    }
+    const trimmed = rawControllerAddress.trim();
+    if (trimmed && !/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
+      throw new HttpError(400, "controllerAddress 格式不合法，必须是 0x 开头的 40 位十六进制地址。");
+    }
+    patch.controllerAddress = trimmed;
+  }
+
   return patch;
 }
 
@@ -182,6 +196,29 @@ async function handleGatewayAction(req: Request): Promise<Response> {
 
   const task = startGatewayControlTask(action);
   return jsonResponse({ ok: true, taskId: task.id, task });
+}
+
+async function handleBrowserAction(req: Request): Promise<Response> {
+  const body = await req.json().catch(() => {
+    throw new HttpError(400, "请求体必须是 JSON。");
+  });
+
+  const action = sanitizeIdentifier((body as Record<string, unknown>).action, "action") as
+    | "restart-browser"
+    | "restart-cdp"
+    | "reset-config";
+
+  if (!["restart-browser", "restart-cdp", "reset-config"].includes(action)) {
+    throw new HttpError(400, `不支持的 action：${action}`);
+  }
+
+  if (action === "restart-browser" || action === "restart-cdp") {
+    const { task, reused } = startBrowserRestartTask();
+    return jsonResponse({ ok: true, taskId: task.id, task, reused });
+  }
+
+  const { task, reused } = startBrowserConfigResetTask();
+  return jsonResponse({ ok: true, taskId: task.id, task, reused });
 }
 
 export async function handleApiRequest(req: Request, path: string): Promise<Response | null> {
@@ -268,6 +305,11 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   }
 
   if (path === "/api/local/wallet/generate" && req.method === "POST") {
+    const currentWallet = readLocalWalletSummary();
+    if (currentWallet.exists) {
+      throw new HttpError(409, "已存在钱包，无需重复生成。");
+    }
+
     const generated = generateAndSaveLocalWallet();
     return jsonResponse({
       ok: true,
@@ -275,6 +317,16 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
       privateKey: generated.privateKey,
       wallet: generated.wallet,
     });
+  }
+
+  if (path === "/api/local/wallet/balances" && req.method === "GET") {
+    const wallet = readLocalWalletSummary();
+    if (!wallet.exists || !wallet.address) {
+      return jsonResponse({ ok: true, wallet, balances: null });
+    }
+
+    const balances = await readWalletBalances(wallet.address);
+    return jsonResponse({ ok: true, wallet, balances });
   }
 
   if (path === "/api/config/section" && req.method === "PUT") {
@@ -351,6 +403,10 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
   if (path === "/api/gateway/action" && req.method === "POST") {
     return await handleGatewayAction(req);
+  }
+
+  if (path === "/api/browser/action" && req.method === "POST") {
+    return await handleBrowserAction(req);
   }
 
   if (path.startsWith("/api/tasks/") && req.method === "GET") {
