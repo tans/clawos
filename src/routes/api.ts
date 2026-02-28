@@ -18,6 +18,7 @@ import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/au
 import { getSelfUpdateStatus } from "../system/self-update";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
+import { readWalletBalances } from "../system/wallet-balance";
 import {
   getQwGatewayStartupStatus,
   startGatewayControlTask,
@@ -275,6 +276,16 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
       privateKey: generated.privateKey,
       wallet: generated.wallet,
     });
+  }
+
+  if (path === "/api/local/wallet/balances" && req.method === "GET") {
+    const wallet = readLocalWalletSummary();
+    if (!wallet.exists || !wallet.address) {
+      return jsonResponse({ ok: true, wallet, balances: null });
+    }
+
+    const balances = await readWalletBalances(wallet.address);
+    return jsonResponse({ ok: true, wallet, balances });
   }
 
   if (path === "/api/config/section" && req.method === "PUT") {
