@@ -31,6 +31,7 @@ export type LocalAppConfig = {
 };
 
 export type LocalClawosConfig = {
+  controllerAddress?: string;
   app?: LocalAppConfig;
   gateway?: {
     url?: string;
@@ -73,6 +74,7 @@ export type LocalAppSettings = {
   port: number;
   openclawToken: string;
   autoOpenBrowser: boolean;
+  controllerAddress: string;
 };
 
 export function getDefaultOpenclawConfigPath(): string {
@@ -85,6 +87,7 @@ export function getLocalConfigPath(): string {
 
 export function localConfigTemplate(): LocalClawosConfig {
   return {
+    controllerAddress: "",
     app: {
       port: DEFAULT_PORT,
       openclawToken: DEFAULT_OPENCLAW_TOKEN,
@@ -188,6 +191,7 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
   const cfg = input || {};
 
   return {
+    controllerAddress: pickString(cfg.controllerAddress, defaults.controllerAddress || ""),
     app: {
       port: pickPort(cfg.app?.port, defaults.app?.port || DEFAULT_PORT),
       openclawToken: pickString(cfg.app?.openclawToken, defaults.app?.openclawToken || DEFAULT_OPENCLAW_TOKEN),
@@ -308,6 +312,7 @@ export function readLocalAppSettings(): LocalAppSettings {
     port: pickPort(localConfig.app?.port, DEFAULT_PORT),
     openclawToken: pickString(localConfig.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
     autoOpenBrowser: pickBoolean(localConfig.app?.autoOpenBrowser, true),
+    controllerAddress: pickString(localConfig.controllerAddress, ""),
   };
 }
 
@@ -329,6 +334,10 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
 
   const next = normalizeLocalConfig({
     ...current,
+    controllerAddress:
+      typeof patch.controllerAddress === "string"
+        ? patch.controllerAddress.trim()
+        : currentSettings.controllerAddress,
     app: {
       ...current.app,
       ...nextApp,
@@ -343,6 +352,7 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
     port: pickPort(next.app?.port, DEFAULT_PORT),
     openclawToken: pickString(next.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
     autoOpenBrowser: pickBoolean(next.app?.autoOpenBrowser, true),
+    controllerAddress: pickString(next.controllerAddress, ""),
   };
 }
 
@@ -382,6 +392,10 @@ export function readLocalWalletSummary(): LocalWalletSummary {
 
 export function generateAndSaveLocalWallet(): GeneratedLocalWallet {
   const current = readNormalizedLocalConfig();
+  if (hasWallet(current.wallet)) {
+    throw new Error("已存在钱包，无需重复生成。");
+  }
+
   const privateKey = generatePrivateKey();
   const account = privateKeyToAccount(privateKey);
   const privateKeyObfuscated = obfuscateSecret(privateKey);

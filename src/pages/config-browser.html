@@ -15,65 +15,29 @@
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">浏览器</h1>
-          <div class="flex flex-wrap items-center gap-2">
-            <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-3 py-1">
-              <span class="text-xs">JSON 编辑</span>
-              <input class="toggle toggle-xs" type="checkbox" data-mode-toggle />
-            </label>
-            <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
-            <button class="btn btn-primary btn-xs" data-action="save">保存配置</button>
-          </div>
+          <h1 class="text-lg font-semibold">浏览器修复</h1>
         </header>
 
         <section class="flex-1 p-6">
-          <section class="grid gap-4 xl:grid-cols-2" data-card-editor>
-            <div class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-4">
-                <h2 class="card-title text-base">浏览器模式</h2>
-                <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
-                  <input class="radio radio-sm" type="radio" name="browser-mode" value="cdp" data-browser-mode />
-                  <span class="text-xs">CDP（默认）</span>
-                </label>
-                <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
-                  <input class="radio radio-sm" type="radio" name="browser-mode" value="local" data-browser-mode />
-                  <span class="text-xs">本地启动</span>
-                </label>
-                <div class="text-[11px] text-base-content/60">推荐优先使用 CDP 模式（browser.cdpUrl + attachOnly=true），减少 Windows/WSL 本地浏览器差异问题。</div>
+          <section class="card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-4">
+              <h2 class="card-title text-base">常用操作</h2>
+              <div class="text-xs text-base-content/70">遇到浏览器问题时，先点“重启浏览器”，仍不行再点“重置浏览器设置”。</div>
+
+              <div class="flex flex-wrap gap-2">
+                <button class="btn btn-primary btn-sm" data-browser-action="restart-browser">重启浏览器</button>
+                <button class="btn btn-outline btn-sm" data-browser-action="reset-config">重置浏览器设置</button>
               </div>
-            </div>
 
-            <div class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-3">
-                <h2 class="card-title text-base">基础开关</h2>
-                <div class="grid gap-2" data-fields-general></div>
+              <div class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2" data-browser-op-status>
+                等待执行...
               </div>
-            </div>
 
-            <div class="card card-compact border border-base-200 bg-base-100" data-cdp-card>
-              <div class="card-body gap-3">
-                <h2 class="card-title text-base">CDP 连接</h2>
-                <div class="grid gap-2" data-fields-cdp></div>
-              </div>
-            </div>
-
-            <div class="card card-compact border border-base-200 bg-base-100" data-local-card>
-              <div class="card-body gap-3">
-                <h2 class="card-title text-base">本地启动参数</h2>
-                <div class="grid gap-2" data-fields-local></div>
-              </div>
-            </div>
-
-          </section>
-
-          <section class="hidden card card-compact border border-base-200 bg-base-100" data-json-editor>
-            <div class="card-body gap-3">
-              <h2 class="card-title text-base">browser JSON（高级模式）</h2>
-              <textarea class="textarea textarea-bordered h-[62vh] w-full font-mono text-xs" data-json-input></textarea>
+              <div class="text-xs text-base-content/70" data-browser-task-meta>当前无任务</div>
+              <progress class="progress progress-neutral w-full hidden" value="0" max="100" data-browser-task-progress></progress>
+              <pre class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-task-output>操作记录会显示在这里...</pre>
             </div>
           </section>
-
-          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
         </section>
       </main>
     </div>
@@ -81,521 +45,11 @@
     <script src="/sidebar-update.js"></script>
 
     <script>
-      const SECTION = "browser";
-      const DEFAULT_BROWSER_MODE = "cdp";
-      const CDP_URL_PREFIXES = ["ws://", "wss://", "http://", "https://"];
-
-      const FALLBACK_BROWSER_SCHEMA = {
-        type: "object",
-        properties: {
-          enabled: { type: "boolean" },
-          evaluateEnabled: { type: "boolean" },
-          cdpUrl: { type: "string" },
-          remoteCdpTimeoutMs: { type: "integer", minimum: 0, maximum: 9007199254740991 },
-          remoteCdpHandshakeTimeoutMs: { type: "integer", minimum: 0, maximum: 9007199254740991 },
-          color: { type: "string" },
-          executablePath: { type: "string" },
-          headless: { type: "boolean" },
-          noSandbox: { type: "boolean" },
-          attachOnly: { type: "boolean" },
-          defaultProfile: { type: "string" },
-          snapshotDefaults: {
-            type: "object",
-            properties: {
-              mode: { type: "string", const: "efficient" },
-            },
-            additionalProperties: false,
-          },
-          profiles: {
-            type: "object",
-            propertyNames: {
-              type: "string",
-              pattern: "^[a-z0-9-]+$",
-            },
-            additionalProperties: {
-              type: "object",
-              properties: {
-                cdpPort: { type: "integer", minimum: 1, maximum: 65535 },
-                cdpUrl: { type: "string" },
-                driver: {
-                  anyOf: [{ type: "string", const: "clawd" }, { type: "string", const: "extension" }],
-                },
-                color: { type: "string", pattern: "^#?[0-9a-fA-F]{6}$" },
-              },
-              required: ["color"],
-              additionalProperties: false,
-            },
-          },
-        },
-        additionalProperties: false,
-      };
-
-      const FIELD_META = {
-        enabled: {
-          label: "browser.enabled",
-          help: "浏览器能力总开关。",
-        },
-        evaluateEnabled: {
-          label: "browser.evaluateEnabled",
-          help: "允许评估类浏览器操作。",
-        },
-        cdpUrl: {
-          label: "browser.cdpUrl",
-          placeholder: "ws://127.0.0.1:9222/devtools/browser/<id>",
-          help: "CDP 模式连接地址，推荐优先配置。",
-        },
-        remoteCdpTimeoutMs: {
-          label: "browser.remoteCdpTimeoutMs",
-          placeholder: "5000",
-        },
-        remoteCdpHandshakeTimeoutMs: {
-          label: "browser.remoteCdpHandshakeTimeoutMs",
-          placeholder: "5000",
-        },
-        color: {
-          label: "browser.color",
-          placeholder: "#2d9cdb",
-        },
-        executablePath: {
-          label: "browser.executablePath",
-          placeholder: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-        },
-        headless: {
-          label: "browser.headless",
-        },
-        noSandbox: {
-          label: "browser.noSandbox",
-        },
-        attachOnly: {
-          label: "browser.attachOnly",
-          help: "CDP 模式建议保持 true。",
-        },
-        defaultProfile: {
-          label: "browser.defaultProfile",
-          placeholder: "default",
-        },
-      };
-
-      const SCALAR_GROUPS = {
-        general: ["enabled", "evaluateEnabled"],
-        cdp: ["cdpUrl", "remoteCdpTimeoutMs", "remoteCdpHandshakeTimeoutMs", "attachOnly"],
-        local: ["executablePath", "headless", "noSandbox", "defaultProfile", "color"],
-      };
-
-      const metaEl = document.querySelector("[data-meta]");
-      const modeToggle = document.querySelector("[data-mode-toggle]");
-      const cardEditorEl = document.querySelector("[data-card-editor]");
-      const jsonEditorEl = document.querySelector("[data-json-editor]");
-      const jsonInputEl = document.querySelector("[data-json-input]");
-      const cdpCardEl = document.querySelector("[data-cdp-card]");
-      const localCardEl = document.querySelector("[data-local-card]");
-
-      const scalarGroupEls = {
-        general: document.querySelector("[data-fields-general]"),
-        cdp: document.querySelector("[data-fields-cdp]"),
-        local: document.querySelector("[data-fields-local]"),
-      };
-      const browserModeEls = Array.from(document.querySelectorAll("[data-browser-mode]"));
-
-      let browserSchema = FALLBACK_BROWSER_SCHEMA;
-      let browserConfig = {};
-      let mode = "card";
-      let browserMode = DEFAULT_BROWSER_MODE;
-      let scalarSpecs = [];
-      let fieldInputs = new Map();
-
-      function pretty(value) {
-        return JSON.stringify(value || {}, null, 2);
-      }
-
-      function escapeHtml(text) {
-        return String(text)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
-      }
-
-      function isObject(value) {
-        return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-      }
-
-      function ensureObject(value, field) {
-        if (!isObject(value)) {
-          throw new Error(`${field} 必须是 JSON 对象`);
-        }
-        return value;
-      }
-
-      function readNonEmptyString(value) {
-        if (typeof value !== "string") {
-          return "";
-        }
-        const trimmed = value.trim();
-        return trimmed.length > 0 ? trimmed : "";
-      }
-
-      function parseJsonObject(text, field) {
-        const raw = String(text || "").trim();
-        if (!raw) {
-          return {};
-        }
-
-        let parsed;
-        try {
-          parsed = JSON.parse(raw);
-        } catch (error) {
-          throw new Error(`${field} JSON 格式错误: ${error.message}`);
-        }
-        return ensureObject(parsed, field);
-      }
-
-      function cloneObject(value) {
-        return JSON.parse(JSON.stringify(value || {}));
-      }
-
-      function enumOptionsFromSchema(schemaObj) {
-        if (!isObject(schemaObj)) {
-          return [];
-        }
-
-        const options = [];
-        if (typeof schemaObj.const === "string") {
-          options.push(schemaObj.const);
-        }
-
-        if (Array.isArray(schemaObj.anyOf)) {
-          for (const candidate of schemaObj.anyOf) {
-            if (isObject(candidate) && typeof candidate.const === "string") {
-              options.push(candidate.const);
-            }
-          }
-        }
-
-        return Array.from(new Set(options));
-      }
-
-      function normalizeFieldSpec(name, schemaObj) {
-        const enumOptions = enumOptionsFromSchema(schemaObj);
-        let kind = "string";
-
-        if (enumOptions.length > 0) {
-          kind = "enum";
-        } else if (schemaObj.type === "boolean") {
-          kind = "boolean";
-        } else if (schemaObj.type === "integer") {
-          kind = "integer";
-        } else if (schemaObj.type === "number") {
-          kind = "number";
-        } else if (schemaObj.type === "object") {
-          kind = "object";
-        }
-
-        return {
-          name,
-          kind,
-          enumOptions,
-          minimum: Number.isFinite(schemaObj.minimum) ? Number(schemaObj.minimum) : undefined,
-          maximum: Number.isFinite(schemaObj.maximum) ? Number(schemaObj.maximum) : undefined,
-          pattern: typeof schemaObj.pattern === "string" ? schemaObj.pattern : "",
-          schema: schemaObj,
-        };
-      }
-
-      function resolveGroup(name, kind) {
-        if (kind === "object") {
-          return "object";
-        }
-        if (SCALAR_GROUPS.general.includes(name)) {
-          return "general";
-        }
-        if (SCALAR_GROUPS.cdp.includes(name)) {
-          return "cdp";
-        }
-        if (SCALAR_GROUPS.local.includes(name)) {
-          return "local";
-        }
-        return "general";
-      }
-
-      function scalarSortWeight(name) {
-        const order = [...SCALAR_GROUPS.general, ...SCALAR_GROUPS.cdp, ...SCALAR_GROUPS.local];
-        const index = order.indexOf(name);
-        return index >= 0 ? index : order.length + 100;
-      }
-
-      function renderScalarField(spec) {
-        const key = escapeHtml(spec.name);
-        const meta = FIELD_META[spec.name] || {};
-        const label = escapeHtml(meta.label || `${SECTION}.${spec.name}`);
-        const help = meta.help ? `<div class="text-[11px] text-base-content/60">${escapeHtml(meta.help)}</div>` : "";
-
-        if (spec.kind === "boolean") {
-          return `
-            <label class="flex items-center justify-between rounded-lg border border-base-200 px-3 py-2" data-field-wrap="${key}">
-              <div class="flex flex-col gap-1 pr-3">
-                <span class="text-xs">${label}</span>
-                ${help}
-              </div>
-              <input class="toggle toggle-sm" type="checkbox" data-field-key="${key}" />
-            </label>
-          `;
-        }
-
-        if (spec.kind === "enum") {
-          const options = spec.enumOptions
-            .map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`)
-            .join("");
-          return `
-            <label class="form-control gap-1" data-field-wrap="${key}">
-              <span class="label-text text-xs">${label}</span>
-              <select class="select select-bordered select-sm" data-field-key="${key}">
-                <option value="">请选择</option>
-                ${options}
-              </select>
-              ${help}
-            </label>
-          `;
-        }
-
-        const type = spec.kind === "integer" || spec.kind === "number" ? "number" : "text";
-        const minimum = Number.isFinite(spec.minimum) ? ` min="${escapeHtml(String(spec.minimum))}"` : "";
-        const maximum = Number.isFinite(spec.maximum) ? ` max="${escapeHtml(String(spec.maximum))}"` : "";
-        const step = spec.kind === "integer" ? " step=\"1\"" : spec.kind === "number" ? " step=\"any\"" : "";
-        const placeholder = FIELD_META[spec.name]?.placeholder ? ` placeholder="${escapeHtml(FIELD_META[spec.name].placeholder)}"` : "";
-
-        return `
-          <label class="form-control gap-1" data-field-wrap="${key}">
-            <span class="label-text text-xs">${label}</span>
-            <input class="input input-bordered input-sm" type="${type}"${placeholder}${minimum}${maximum}${step} data-field-key="${key}" />
-            ${help}
-          </label>
-        `;
-      }
-
-      function loadSchemaSpecs(schemaObj) {
-        const root = ensureObject(schemaObj, `${SECTION} schema`);
-        const properties = ensureObject(root.properties || {}, `${SECTION}.properties`);
-        const specs = Object.entries(properties)
-          .map(([name, rawSchema]) => {
-            if (!isObject(rawSchema)) {
-              return null;
-            }
-            return normalizeFieldSpec(name, rawSchema);
-          })
-          .filter(Boolean);
-
-        scalarSpecs = specs
-          .filter((spec) => spec.kind !== "object")
-          .sort((a, b) => scalarSortWeight(a.name) - scalarSortWeight(b.name) || a.name.localeCompare(b.name));
-      }
-
-      function renderCardFields() {
-        const grouped = {
-          general: [],
-          cdp: [],
-          local: [],
-        };
-
-        for (const spec of scalarSpecs) {
-          const group = resolveGroup(spec.name, spec.kind);
-          if (grouped[group]) {
-            grouped[group].push(spec);
-          } else {
-            grouped.general.push(spec);
-          }
-        }
-
-        scalarGroupEls.general.innerHTML = grouped.general.map((spec) => renderScalarField(spec)).join("");
-        scalarGroupEls.cdp.innerHTML = grouped.cdp.map((spec) => renderScalarField(spec)).join("");
-        scalarGroupEls.local.innerHTML = grouped.local.map((spec) => renderScalarField(spec)).join("");
-
-        fieldInputs = new Map();
-        for (const spec of scalarSpecs) {
-          const input = cardEditorEl.querySelector(`[data-field-key=\"${spec.name}\"]`);
-          if (input) {
-            fieldInputs.set(spec.name, input);
-          }
-        }
-      }
-
-      function detectBrowserMode(config) {
-        if (readNonEmptyString(config.cdpUrl)) {
-          return "cdp";
-        }
-        if (config.attachOnly === true) {
-          return "cdp";
-        }
-        if (readNonEmptyString(config.executablePath)) {
-          return "local";
-        }
-        return DEFAULT_BROWSER_MODE;
-      }
-
-      function isEmptyObject(value) {
-        if (!isObject(value)) {
-          return true;
-        }
-        return Object.keys(value).length === 0;
-      }
-
-      function renderBrowserMode() {
-        for (const input of browserModeEls) {
-          input.checked = input.value === browserMode;
-        }
-        cdpCardEl.classList.toggle("hidden", browserMode !== "cdp");
-        localCardEl.classList.toggle("hidden", browserMode !== "local");
-      }
-
-      function fillCardForm(config) {
-        browserMode = detectBrowserMode(config);
-
-        for (const spec of scalarSpecs) {
-          const input = fieldInputs.get(spec.name);
-          if (!input) {
-            continue;
-          }
-
-          const value = config[spec.name];
-          if (spec.kind === "boolean") {
-            input.checked = value === true;
-            continue;
-          }
-          if (spec.kind === "integer" || spec.kind === "number") {
-            input.value = Number.isFinite(value) ? String(value) : "";
-            continue;
-          }
-          if (spec.kind === "enum") {
-            input.value = typeof value === "string" ? value : "";
-            continue;
-          }
-          input.value = typeof value === "string" ? value : "";
-        }
-
-        if (isEmptyObject(config)) {
-          const enabledInput = fieldInputs.get("enabled");
-          if (enabledInput && enabledInput.type === "checkbox") {
-            enabledInput.checked = true;
-          }
-          const evaluateEnabledInput = fieldInputs.get("evaluateEnabled");
-          if (evaluateEnabledInput && evaluateEnabledInput.type === "checkbox") {
-            evaluateEnabledInput.checked = true;
-          }
-          const attachOnlyInput = fieldInputs.get("attachOnly");
-          if (attachOnlyInput && attachOnlyInput.type === "checkbox") {
-            attachOnlyInput.checked = true;
-          }
-        }
-
-        renderBrowserMode();
-      }
-
-      function parseNumber(raw, spec, fieldPath) {
-        const value = Number(raw);
-        if (!Number.isFinite(value)) {
-          throw new Error(`${fieldPath} 必须是数字`);
-        }
-        if (spec.kind === "integer" && !Number.isInteger(value)) {
-          throw new Error(`${fieldPath} 必须是整数`);
-        }
-        if (Number.isFinite(spec.minimum) && value < spec.minimum) {
-          throw new Error(`${fieldPath} 不能小于 ${spec.minimum}`);
-        }
-        if (Number.isFinite(spec.maximum) && value > spec.maximum) {
-          throw new Error(`${fieldPath} 不能大于 ${spec.maximum}`);
-        }
-        return value;
-      }
-
-      function validateByPattern(value, spec, fieldPath) {
-        if (!spec.pattern) {
-          return;
-        }
-
-        let regex;
-        try {
-          regex = new RegExp(spec.pattern);
-        } catch {
-          return;
-        }
-        if (!regex.test(value)) {
-          throw new Error(`${fieldPath} 不符合规则: ${spec.pattern}`);
-        }
-      }
-
-      function readScalarFieldValue(spec, input) {
-        const fieldPath = `${SECTION}.${spec.name}`;
-
-        if (spec.kind === "boolean") {
-          return Boolean(input.checked);
-        }
-
-        const raw = String(input.value || "").trim();
-        if (!raw) {
-          return undefined;
-        }
-
-        if (spec.kind === "integer" || spec.kind === "number") {
-          return parseNumber(raw, spec, fieldPath);
-        }
-
-        if (spec.kind === "enum") {
-          if (!spec.enumOptions.includes(raw)) {
-            throw new Error(`${fieldPath} 取值无效，可选: ${spec.enumOptions.join(", ")}`);
-          }
-          return raw;
-        }
-
-        if (spec.name === "cdpUrl") {
-          const schemeOk = CDP_URL_PREFIXES.some((prefix) => raw.startsWith(prefix));
-          if (!schemeOk) {
-            throw new Error("browser.cdpUrl 必须以 ws://、wss://、http:// 或 https:// 开头");
-          }
-        }
-
-        validateByPattern(raw, spec, fieldPath);
-        return raw;
-      }
-
-      function buildCardConfig(baseConfig) {
-        const next = isObject(baseConfig) ? cloneObject(baseConfig) : {};
-
-        for (const spec of scalarSpecs) {
-          const input = fieldInputs.get(spec.name);
-          if (!input) {
-            continue;
-          }
-          const value = readScalarFieldValue(spec, input);
-          if (value === undefined) {
-            delete next[spec.name];
-          } else {
-            next[spec.name] = value;
-          }
-        }
-
-        if (browserMode === "cdp") {
-          next.attachOnly = true;
-          delete next.executablePath;
-          delete next.headless;
-          delete next.noSandbox;
-          delete next.defaultProfile;
-        } else {
-          delete next.cdpUrl;
-          delete next.remoteCdpTimeoutMs;
-          delete next.remoteCdpHandshakeTimeoutMs;
-          next.attachOnly = false;
-        }
-
-        return next;
-      }
-
-      function renderMode() {
-        const jsonMode = mode === "json";
-        cardEditorEl.classList.toggle("hidden", jsonMode);
-        jsonEditorEl.classList.toggle("hidden", !jsonMode);
-        modeToggle.checked = jsonMode;
-      }
+      const browserOpStatusEl = document.querySelector("[data-browser-op-status]");
+      const browserTaskMetaEl = document.querySelector("[data-browser-task-meta]");
+      const browserTaskProgressEl = document.querySelector("[data-browser-task-progress]");
+      const browserTaskOutputEl = document.querySelector("[data-browser-task-output]");
+      let taskPollTimer = null;
 
       async function api(path, options = {}) {
         const res = await fetch(path, {
@@ -610,118 +64,111 @@
         return data;
       }
 
-      async function loadSchema() {
-        try {
-          const data = await api(`/api/config/schema/${SECTION}`);
-          browserSchema = ensureObject(data.schema || {}, `${SECTION} schema`);
-        } catch (error) {
-          browserSchema = FALLBACK_BROWSER_SCHEMA;
-          metaEl.textContent = `schema 加载失败，已使用内置字段：${error.message}`;
+      function stopTaskPolling() {
+        if (taskPollTimer) {
+          clearInterval(taskPollTimer);
+          taskPollTimer = null;
         }
-
-        loadSchemaSpecs(browserSchema);
-        renderCardFields();
       }
 
-      async function loadSection() {
-        const data = await api(`/api/config/${SECTION}`);
-        browserConfig = ensureObject(data.data || {}, SECTION);
-        fillCardForm(browserConfig);
-        jsonInputEl.value = pretty(browserConfig);
-        metaEl.textContent = `${SECTION} 已加载（默认模式：CDP）`;
+      function renderTask(task) {
+        const logs = Array.isArray(task?.logs) ? task.logs : [];
+        const step = Number.isFinite(task?.step) ? task.step : 0;
+        const totalSteps = Number.isFinite(task?.totalSteps) ? task.totalSteps : 0;
+        const percent = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
+        const status = typeof task?.status === "string" ? task.status : "unknown";
+        const title = typeof task?.title === "string" ? task.title : "未知任务";
+        const running = status === "running" || status === "pending";
+        const statusText =
+          status === "running" || status === "pending"
+            ? "执行中"
+            : status === "success"
+              ? "已完成"
+              : status === "failed"
+                ? "失败"
+                : "未知";
+
+        browserTaskProgressEl.value = percent;
+        browserTaskProgressEl.classList.toggle("hidden", !running);
+        browserTaskMetaEl.textContent = `${title}（${statusText}）`;
+
+        const lines = logs.map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
+        browserTaskOutputEl.textContent = lines.join("\n") || "暂无日志";
+        browserTaskOutputEl.scrollTop = browserTaskOutputEl.scrollHeight;
       }
 
-      function enterJsonMode() {
-        const draft = buildCardConfig(browserConfig);
-        browserConfig = draft;
-        jsonInputEl.value = pretty(draft);
-        mode = "json";
-        renderMode();
+      async function pollTask(taskId) {
+        stopTaskPolling();
+
+        const tick = async () => {
+          try {
+            const data = await api(`/api/tasks/${taskId}`);
+            const task = data.task || {};
+            renderTask(task);
+
+            if (task.status === "success" || task.status === "failed") {
+              stopTaskPolling();
+              if (task.status === "success") {
+                browserOpStatusEl.textContent = "操作完成。";
+              } else {
+                browserOpStatusEl.textContent = `操作失败: ${task.error || "未知错误"}`;
+              }
+            }
+          } catch (error) {
+            stopTaskPolling();
+            browserTaskProgressEl.classList.add("hidden");
+            browserTaskMetaEl.textContent = `任务轮询失败: ${error.message}`;
+            browserOpStatusEl.textContent = `操作失败: ${error.message}`;
+          }
+        };
+
+        await tick();
+        taskPollTimer = setInterval(tick, 1000);
       }
 
-      function leaveJsonMode() {
-        const parsed = parseJsonObject(jsonInputEl.value, SECTION);
-        browserConfig = parsed;
-        fillCardForm(parsed);
-        mode = "card";
-        renderMode();
-      }
+      async function runBrowserAction(action) {
+        const label = action === "restart-browser" ? "重启浏览器" : "重置浏览器设置";
+        browserOpStatusEl.textContent = `正在执行：${label}`;
+        browserTaskOutputEl.textContent = "任务启动中...";
+        browserTaskMetaEl.textContent = "任务启动中...";
+        browserTaskProgressEl.classList.remove("hidden");
+        browserTaskProgressEl.value = 0;
 
-      async function saveSection() {
-        const payload = mode === "json" ? parseJsonObject(jsonInputEl.value, SECTION) : buildCardConfig(browserConfig);
-
-        await api(`/api/config/${SECTION}`, {
-          method: "PUT",
-          body: JSON.stringify({ data: payload }),
+        const data = await api("/api/browser/action", {
+          method: "POST",
+          body: JSON.stringify({ action }),
         });
 
-        browserConfig = payload;
-        fillCardForm(payload);
-        jsonInputEl.value = pretty(payload);
-        metaEl.textContent = `${SECTION} 配置已保存`;
+        if (!data.taskId) {
+          throw new Error("服务端未返回任务 ID");
+        }
+
+        if (data.reused) {
+          browserOpStatusEl.textContent = `检测到同类任务在执行，已切换日志：${label}`;
+        }
+
+        await pollTask(data.taskId);
       }
 
-      modeToggle.addEventListener("change", (event) => {
-        const enabled = Boolean(event.currentTarget.checked);
-        try {
-          if (enabled) {
-            enterJsonMode();
-          } else {
-            leaveJsonMode();
-          }
-          metaEl.textContent = enabled ? "已切换到 JSON 编辑" : "已切换到表单编辑";
-        } catch (error) {
-          modeToggle.checked = mode === "json";
-          metaEl.textContent = `切换失败: ${error.message}`;
-        }
-      });
-
-      for (const input of browserModeEls) {
-        input.addEventListener("change", (event) => {
-          if (!event.currentTarget.checked) {
+      document.querySelectorAll("[data-browser-action]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const action = button.getAttribute("data-browser-action");
+          if (!action) {
             return;
           }
-          browserMode = event.currentTarget.value === "local" ? "local" : "cdp";
-          renderBrowserMode();
-          metaEl.textContent = browserMode === "cdp" ? "已切换到 CDP 模式" : "已切换到本地启动模式";
+
+          button.disabled = true;
+          try {
+            await runBrowserAction(action);
+          } catch (error) {
+            browserTaskProgressEl.classList.add("hidden");
+            browserTaskMetaEl.textContent = `操作失败: ${error.message}`;
+            browserOpStatusEl.textContent = `操作失败: ${error.message}`;
+          } finally {
+            button.disabled = false;
+          }
         });
-      }
-
-      document.querySelector('[data-action="reload"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
-        try {
-          await loadSchema();
-          await loadSection();
-          mode = "card";
-          renderMode();
-        } catch (error) {
-          metaEl.textContent = `加载失败: ${error.message}`;
-        } finally {
-          event.currentTarget.disabled = false;
-        }
       });
-
-      document.querySelector('[data-action="save"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
-        try {
-          await saveSection();
-        } catch (error) {
-          metaEl.textContent = `保存失败: ${error.message}`;
-        } finally {
-          event.currentTarget.disabled = false;
-        }
-      });
-
-      (async function init() {
-        try {
-          renderMode();
-          renderBrowserMode();
-          await loadSchema();
-          await loadSection();
-        } catch (error) {
-          metaEl.textContent = `初始化失败: ${error.message}`;
-        }
-      })();
     </script>
   </body>
 </html>

@@ -94,6 +94,7 @@
       const privateKeyEl = document.querySelector("[data-wallet-privatekey]");
       const generateBtn = document.querySelector('[data-action="generate-wallet"]');
       const reloadBtn = document.querySelector('[data-action="reload-wallet"]');
+      let walletExists = false;
 
       const balanceEls = {
         eth: {
@@ -174,14 +175,24 @@
 
       function renderWallet(wallet) {
         const exists = Boolean(wallet && wallet.exists);
+        walletExists = exists;
         addressEl.textContent = exists ? wallet.address || "-" : "未生成";
         createdEl.textContent = exists ? formatCreatedAt(wallet.createdAt) : "-";
+        if (generateBtn) {
+          generateBtn.disabled = exists;
+          generateBtn.textContent = exists ? "已生成" : "生成钱包";
+        }
       }
 
       function setRunning(running) {
         if (generateBtn) {
-          generateBtn.disabled = running;
-          generateBtn.textContent = running ? "生成中..." : "生成钱包";
+          if (walletExists) {
+            generateBtn.disabled = true;
+            generateBtn.textContent = "已生成";
+          } else {
+            generateBtn.disabled = running;
+            generateBtn.textContent = running ? "生成中..." : "生成钱包";
+          }
         }
         if (reloadBtn) {
           reloadBtn.disabled = running;
@@ -201,7 +212,7 @@
 
         if (wallet.exists) {
           await loadBalances();
-          metaEl.textContent = "已读取钱包与余额信息。";
+          metaEl.textContent = "已存在钱包，已读取余额信息。";
         } else {
           resetBalances("未生成");
           metaEl.textContent = "当前尚未生成钱包，点击“生成钱包”创建。";
@@ -225,10 +236,15 @@
           }
 
           await loadBalances();
-          metaEl.textContent = "钱包已生成并保存，余额已更新。若再次生成会覆盖上一次钱包。";
+          metaEl.textContent = "钱包已生成并保存，余额已更新。";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          metaEl.textContent = `生成失败: ${message}`;
+          if (message.includes("已存在钱包")) {
+            await loadWallet();
+            metaEl.textContent = "已存在钱包，无需重复生成。";
+          } else {
+            metaEl.textContent = `生成失败: ${message}`;
+          }
         } finally {
           setRunning(false);
         }
