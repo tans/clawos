@@ -1,0 +1,56 @@
+name: Release Build And Publish
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build executable
+        run: bun run build:exe
+
+      - name: Resolve built version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          built_version="$(node -p "require('./package.json').version")"
+          echo "value=$built_version" >> "$GITHUB_OUTPUT"
+          echo "built_version=$built_version"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clawos-${{ steps.version.outputs.value }}-windows-x64
+          path: dist/clawos.exe
+          if-no-files-found: error
+
+      - name: Publish installer and config
+        env:
+          PUBLISH_BASE_URL: ${{ vars.PUBLISH_BASE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then
+            bun run publish -- --base-url "${PUBLISH_BASE_URL}"
+          else
+            bun run publish
+          fi
