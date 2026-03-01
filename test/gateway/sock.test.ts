@@ -454,7 +454,7 @@ describe("gatewayTroubleshootingTips", () => {
     const tips = gatewayTroubleshootingTips("gateway connect failed: NOT_PAIRED: pairing required");
 
     expect(tips.length).toBeGreaterThanOrEqual(2);
-    expect(tips.join("\n")).toContain("openclaw devices list");
-    expect(tips.join("\n")).toContain("openclaw devices approve");
+    expect(tips.join("\n")).toContain("自动尝试执行设备批准");
+    expect(tips.join("\n")).toContain("openclaw 命令可用");
   });
 });

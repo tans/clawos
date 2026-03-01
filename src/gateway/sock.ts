@@ -13,6 +13,7 @@ import {
   persistGatewayDeviceToken,
   readPersistedGatewayDeviceIdentity,
 } from "./device-state";
+import { tryAutoPairWhenNotPaired } from "./auto-pair";
 import {
   PROTOCOL_VERSION,
   type GatewayCallResult,
@@ -479,13 +480,35 @@ export async function callGatewayMethod<T = unknown>(
   try {
     return await callGatewayMethodWithSettings<T>(firstSettings, method, params, options);
   } catch (firstError) {
+    const firstMessage = firstError instanceof Error ? firstError.message : String(firstError);
+    const autoPairResult = await tryAutoPairWhenNotPaired(firstMessage, firstSettings);
     const refreshedSettings = await resolveGatewayConnectionSettings(true);
     const changed =
       refreshedSettings.url !== firstSettings.url ||
       refreshedSettings.token !== firstSettings.token ||
-      refreshedSettings.password !== firstSettings.password;
+      refreshedSettings.password !== firstSettings.password ||
+      refreshedSettings.deviceToken !== firstSettings.deviceToken;
+
+    if (autoPairResult.ok) {
+      try {
+        return await callGatewayMethodWithSettings<T>(refreshedSettings, method, params, options);
+      } catch (retryError) {
+        const retryMessage = retryError instanceof Error ? retryError.message : String(retryError);
+        throw new Error(`${retryMessage}\n自动配对后重试仍失败。`);
+      }
+    }
 
     if (!changed) {
+      if (!autoPairResult.skipped) {
+        const parts = [firstMessage, autoPairResult.summary];
+        if (autoPairResult.command) {
+          parts.push(`自动配对命令：${autoPairResult.command}`);
+        }
+        if (autoPairResult.stderr && autoPairResult.stderr.trim().length > 0) {
+          parts.push(`自动配对 stderr：${autoPairResult.stderr.trim()}`);
+        }
+        throw new Error(parts.join("\n"));
+      }
       throw firstError;
     }
 
@@ -530,8 +553,8 @@ export function gatewayTroubleshootingTips(rawMessage: string): string[] {
     tips.push("若仍提示缺少 scope，请重新生成或轮换网关 token，并确认包含 operator.read / operator.write。");
   }
   if (text.includes("not_paired") || text.includes("pairing required")) {
-    tips.push("网关要求设备先配对：请在 WSL 执行 `openclaw devices list` 查看待审批请求。");
-    tips.push("执行 `openclaw devices approve <requestId>` 完成一次配对后，再回到 ClawOS 重试。");
+    tips.push("网关要求设备先配对：ClawOS 已自动尝试执行设备批准并重试连接。");
+    tips.push("若仍失败，请检查 WSL 内 openclaw 命令可用，并确认网关与 ClawOS 指向同一实例。");
   }
 
   return tips;
