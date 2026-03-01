@@ -174,6 +174,10 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                     安装文档
                   </a>
                 </div>
+                <p class="text-center text-sm text-base-content/70">
+                  下载后，建议放到以下目录{" "}
+                  <code class="rounded bg-base-200 px-1.5 py-0.5 text-xs sm:text-sm">{"c:\\xiake\\"}</code>
+                </p>
               </div>
 
               <aside class="mx-auto w-full max-w-[640px] overflow-hidden rounded-3xl border border-base-content/10 bg-base-100">

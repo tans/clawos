@@ -27,6 +27,15 @@ describe("openclaw source update steps", () => {
     }
   });
 
+  it("handles pnpm lock file changes before git pull", () => {
+    const steps = buildOpenclawSourceUpdateSteps();
+    const gitPullStep = steps[1];
+
+    expect(gitPullStep?.script).toContain("for lock_file in pnpm-lock.yaml pnpm-lock.json; do");
+    expect(gitPullStep?.script).toContain('git diff --cached --quiet -- "$lock_file"');
+    expect(gitPullStep?.script).toContain('git restore --source=HEAD --staged --worktree -- "$lock_file"');
+  });
+
   it("uses non-rebase git pull and short-circuits when source is unchanged", () => {
     const steps = buildOpenclawSourceUpdateSteps();
     const gitPullStep = steps[1];
