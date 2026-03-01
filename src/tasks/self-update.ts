@@ -47,7 +47,54 @@ export function startSelfUpdateTask(trigger: "manual" | "force" = "manual"): { t
       task.step = 2;
       appendTaskLog(task, "步骤 2/4：下载更新文件");
       const targetExecutablePath = resolveSelfExecutableOrThrow();
-      const downloaded = await downloadUpdateExecutable(status.downloadUrl, targetExecutablePath);
+      const formatBytes = (bytes: number): string => {
+        if (!Number.isFinite(bytes) || bytes <= 0) {
+          return "0 B";
+        }
+        const units = ["B", "KB", "MB", "GB"];
+        let value = bytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+          value /= 1024;
+          unitIndex += 1;
+        }
+        const precision = unitIndex === 0 ? 0 : 1;
+        return `${value.toFixed(precision)} ${units[unitIndex]}`;
+      };
+
+      let lastLoggedPercent = -1;
+      let lastLoggedBytes = 0;
+      let lastLoggedAt = 0;
+      const downloaded = await downloadUpdateExecutable(status.downloadUrl, targetExecutablePath, {
+        onProgress(progress) {
+          const now = Date.now();
+          if (progress.totalBytes && progress.percent !== null) {
+            const currentPercent = Math.max(0, Math.min(100, progress.percent));
+            const shouldLog =
+              currentPercent === 100 ||
+              currentPercent >= lastLoggedPercent + 5 ||
+              now - lastLoggedAt >= 1_500;
+            if (!shouldLog || currentPercent === lastLoggedPercent) {
+              return;
+            }
+            lastLoggedPercent = currentPercent;
+            lastLoggedAt = now;
+            appendTaskLog(
+              task,
+              `下载进度：${currentPercent}%（${formatBytes(progress.receivedBytes)} / ${formatBytes(progress.totalBytes)}）`
+            );
+            return;
+          }
+
+          const shouldLog = progress.receivedBytes - lastLoggedBytes >= 2 * 1024 * 1024 || now - lastLoggedAt >= 1_500;
+          if (!shouldLog) {
+            return;
+          }
+          lastLoggedBytes = progress.receivedBytes;
+          lastLoggedAt = now;
+          appendTaskLog(task, `下载进度：${formatBytes(progress.receivedBytes)}`);
+        },
+      });
       appendTaskLog(task, `下载完成：${downloaded.filePath} (${downloaded.sizeBytes} bytes)`);
 
       task.step = 3;

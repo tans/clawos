@@ -108,6 +108,11 @@ function renderSidebar(active: SidebarNavId | null): string {
             <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> · 版本：<span data-app-version>v-</span>
           </div>
           <button class="btn btn-primary btn-xs mt-2 hidden w-full" type="button" data-app-update-button>更新</button>
+          <button class="btn btn-outline btn-xs mt-2 hidden w-full" type="button" data-app-restart-button>一键重启 ClawOS</button>
+          <div class="mt-2 hidden" data-app-update-progress-wrap>
+            <progress class="progress progress-primary w-full" max="100" value="0" data-app-update-progress></progress>
+            <div class="mt-1 text-[11px] text-base-content/60" data-app-update-progress-text>准备下载...</div>
+          </div>
           <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
         </div>
       </aside>`;

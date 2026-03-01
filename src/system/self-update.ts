@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { once } from "node:events";
+import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { VERSION } from "../app.constants";
@@ -33,6 +34,16 @@ export type SelfUpdateStatus = {
 export type DownloadedUpdate = {
   filePath: string;
   sizeBytes: number;
+};
+
+export type DownloadProgress = {
+  receivedBytes: number;
+  totalBytes: number | null;
+  percent: number | null;
+};
+
+type DownloadUpdateOptions = {
+  onProgress?: (progress: DownloadProgress) => void;
 };
 
 export type ReplacementPlan = {
@@ -282,7 +293,52 @@ function ensureDownloadedFile(filePath: string): number {
   return stat.size;
 }
 
-export async function downloadUpdateExecutable(downloadUrl: string, targetExecutablePath: string): Promise<DownloadedUpdate> {
+function parseContentLength(raw: string | null): number | null {
+  if (!raw) {
+    return null;
+  }
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
+
+function notifyDownloadProgress(options: DownloadUpdateOptions | undefined, progress: DownloadProgress): void {
+  if (!options?.onProgress) {
+    return;
+  }
+
+  try {
+    options.onProgress(progress);
+  } catch {
+    // ignore callback failures to avoid interrupting download
+  }
+}
+
+function buildDownloadProgress(receivedBytes: number, totalBytes: number | null): DownloadProgress {
+  if (!totalBytes || totalBytes <= 0) {
+    return {
+      receivedBytes,
+      totalBytes: null,
+      percent: null,
+    };
+  }
+
+  const ratio = receivedBytes / totalBytes;
+  const percent = Math.max(0, Math.min(100, Math.floor(ratio * 100)));
+  return {
+    receivedBytes,
+    totalBytes,
+    percent,
+  };
+}
+
+export async function downloadUpdateExecutable(
+  downloadUrl: string,
+  targetExecutablePath: string,
+  options?: DownloadUpdateOptions
+): Promise<DownloadedUpdate> {
   const targetDir = path.dirname(targetExecutablePath);
   ensureDirExists(targetDir);
 
@@ -300,13 +356,55 @@ export async function downloadUpdateExecutable(downloadUrl: string, targetExecut
     throw new Error(`下载更新文件失败（HTTP ${response.status}）。`);
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.byteLength === 0) {
+  if (!response.body) {
     throw new Error("下载更新文件失败：返回内容为空。");
   }
 
-  writeFileSync(tempPath, buffer);
+  const totalBytes = parseContentLength(response.headers.get("content-length"));
+  const reader = response.body.getReader();
+  const output = createWriteStream(tempPath, { flags: "w" });
+  let receivedBytes = 0;
+
+  notifyDownloadProgress(options, buildDownloadProgress(0, totalBytes));
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      if (!value || value.byteLength === 0) {
+        continue;
+      }
+
+      receivedBytes += value.byteLength;
+      if (!output.write(Buffer.from(value))) {
+        await once(output, "drain");
+      }
+      notifyDownloadProgress(options, buildDownloadProgress(receivedBytes, totalBytes));
+    }
+
+    output.end();
+    await new Promise<void>((resolve, reject) => {
+      output.once("finish", () => resolve());
+      output.once("error", (err) => reject(err));
+    });
+  } catch (error) {
+    output.destroy();
+    try {
+      unlinkSync(tempPath);
+    } catch {
+      // ignore
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`下载更新文件失败：${message}`);
+  } finally {
+    reader.releaseLock();
+  }
+
   const sizeBytes = ensureDownloadedFile(tempPath);
+  notifyDownloadProgress(options, buildDownloadProgress(sizeBytes, totalBytes ?? sizeBytes));
 
   return {
     filePath: tempPath,
@@ -409,4 +507,23 @@ export function resolveSelfExecutableOrThrow(): string {
 
 export function clearSelfUpdateStatusCache(): void {
   cachedStatus = null;
+}
+
+export function restartClawosProcess(): void {
+  const resolved = resolveSelfExecutablePath();
+  if (!resolved.path) {
+    throw new Error(resolved.reason || "当前环境不支持重启。");
+  }
+
+  try {
+    const child = spawn(resolved.path, process.argv.slice(1), {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`启动新进程失败：${message}`);
+  }
 }
