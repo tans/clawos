@@ -63,6 +63,7 @@ export type GatewayConnectionSettings = {
   url: string;
   token?: string;
   password?: string;
+  deviceToken?: string;
   origin?: string;
   resolvedFrom: string[];
 };

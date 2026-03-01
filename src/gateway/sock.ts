@@ -7,7 +7,12 @@ import {
   sign as signWithKey,
 } from "node:crypto";
 import { asObject, readNonEmptyString } from "../lib/value";
-import { resolveGatewayConnectionSettings } from "./settings";
+import { resolveGatewayConnectionSettings, invalidateGatewayConnectionSettingsCache } from "./settings";
+import {
+  persistGatewayDeviceIdentity,
+  persistGatewayDeviceToken,
+  readPersistedGatewayDeviceIdentity,
+} from "./device-state";
 import {
   PROTOCOL_VERSION,
   type GatewayCallResult,
@@ -59,6 +64,27 @@ function loadOrCreateGatewayDeviceIdentity(): GatewayDeviceIdentity {
     return gatewayDeviceIdentity;
   }
 
+  const persistedIdentity = readPersistedGatewayDeviceIdentity();
+  if (persistedIdentity) {
+    try {
+      const privateKey = createPrivateKey(persistedIdentity.privateKeyPem);
+      const publicKeyPem = createPublicKey(privateKey).export({ type: "spki", format: "pem" }).toString();
+      const publicKeyRaw = derivePublicKeyRaw(publicKeyPem);
+      const derivedDeviceId = deriveDeviceIdFromPublicKeyRaw(publicKeyRaw);
+      const derivedPublicKeyRaw = base64UrlEncode(publicKeyRaw);
+
+      if (
+        derivedDeviceId === persistedIdentity.deviceId &&
+        derivedPublicKeyRaw === persistedIdentity.publicKeyRawBase64Url
+      ) {
+        gatewayDeviceIdentity = persistedIdentity;
+        return gatewayDeviceIdentity;
+      }
+    } catch {
+      // Ignore broken persisted state and regenerate identity.
+    }
+  }
+
   const { publicKey, privateKey } = generateKeyPairSync("ed25519");
   const publicKeyPem = publicKey.export({ type: "spki", format: "pem" }).toString();
   const privateKeyPem = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
@@ -69,6 +95,12 @@ function loadOrCreateGatewayDeviceIdentity(): GatewayDeviceIdentity {
     privateKeyPem,
     publicKeyRawBase64Url: base64UrlEncode(publicKeyRaw),
   };
+
+  try {
+    persistGatewayDeviceIdentity(gatewayDeviceIdentity);
+  } catch {
+    // Ignore persistence failures and keep in-memory identity.
+  }
 
   return gatewayDeviceIdentity;
 }
@@ -138,6 +170,9 @@ function buildConnectParams(settings: GatewayConnectionSettings, challengeNonce?
   }
   if (settings.password) {
     auth.password = settings.password;
+  }
+  if (settings.deviceToken) {
+    auth.deviceToken = settings.deviceToken;
   }
 
   const params: Record<string, unknown> = {
@@ -383,6 +418,15 @@ async function callGatewayMethodWithSettings<T>(
             }
 
             hello = payloadObj as unknown as GatewayHelloPayload;
+            const latestDeviceToken = readNonEmptyString(hello.auth?.deviceToken);
+            if (latestDeviceToken && latestDeviceToken !== settings.deviceToken) {
+              try {
+                persistGatewayDeviceToken(latestDeviceToken);
+                invalidateGatewayConnectionSettingsCache();
+              } catch {
+                // Ignore persistence failures.
+              }
+            }
             const supportedMethods = Array.isArray(hello.features?.methods)
               ? hello.features?.methods
               : [];
@@ -484,6 +528,10 @@ export function gatewayTroubleshootingTips(rawMessage: string): string[] {
   if (text.includes("missing scope")) {
     tips.push("网关权限不足：请使用支持 connect.challenge + device 签名握手的最新 ClawOS。");
     tips.push("若仍提示缺少 scope，请重新生成或轮换网关 token，并确认包含 operator.read / operator.write。");
+  }
+  if (text.includes("not_paired") || text.includes("pairing required")) {
+    tips.push("网关要求设备先配对：请在 WSL 执行 `openclaw devices list` 查看待审批请求。");
+    tips.push("执行 `openclaw devices approve <requestId>` 完成一次配对后，再回到 ClawOS 重试。");
   }
 
   return tips;

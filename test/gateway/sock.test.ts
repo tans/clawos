@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
+import { rmSync } from "node:fs";
 import { callGatewayMethod, gatewayTroubleshootingTips } from "../../src/gateway/sock";
 import { invalidateGatewayConnectionSettingsCache } from "../../src/gateway/settings";
 import { asObject, readNonEmptyString } from "../../src/lib/value";
@@ -85,7 +86,10 @@ const originalEnv = {
   url: process.env.CLAWOS_GATEWAY_URL,
   token: process.env.CLAWOS_GATEWAY_TOKEN,
   origin: process.env.CLAWOS_GATEWAY_ORIGIN,
+  deviceToken: process.env.CLAWOS_GATEWAY_DEVICE_TOKEN,
+  statePath: process.env.CLAWOS_GATEWAY_STATE_PATH,
 };
+let testGatewayStatePath = "";
 
 beforeEach(() => {
   MockWebSocket.reset();
@@ -94,12 +98,20 @@ beforeEach(() => {
   process.env.CLAWOS_GATEWAY_URL = "ws://127.0.0.1:18789";
   process.env.CLAWOS_GATEWAY_TOKEN = "test-token";
   process.env.CLAWOS_GATEWAY_ORIGIN = "http://127.0.0.1:8080";
+  delete process.env.CLAWOS_GATEWAY_DEVICE_TOKEN;
+  testGatewayStatePath = `/tmp/clawos-gateway-state-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}.json`;
+  process.env.CLAWOS_GATEWAY_STATE_PATH = testGatewayStatePath;
 });
 
 afterEach(() => {
   globalThis.WebSocket = originalWebSocket;
   MockWebSocket.reset();
   invalidateGatewayConnectionSettingsCache();
+  if (testGatewayStatePath) {
+    rmSync(testGatewayStatePath, { force: true });
+    rmSync(`${testGatewayStatePath}.tmp`, { force: true });
+    testGatewayStatePath = "";
+  }
 
   if (originalEnv.url === undefined) {
     delete process.env.CLAWOS_GATEWAY_URL;
@@ -117,6 +129,18 @@ afterEach(() => {
     delete process.env.CLAWOS_GATEWAY_ORIGIN;
   } else {
     process.env.CLAWOS_GATEWAY_ORIGIN = originalEnv.origin;
+  }
+
+  if (originalEnv.deviceToken === undefined) {
+    delete process.env.CLAWOS_GATEWAY_DEVICE_TOKEN;
+  } else {
+    process.env.CLAWOS_GATEWAY_DEVICE_TOKEN = originalEnv.deviceToken;
+  }
+
+  if (originalEnv.statePath === undefined) {
+    delete process.env.CLAWOS_GATEWAY_STATE_PATH;
+  } else {
+    process.env.CLAWOS_GATEWAY_STATE_PATH = originalEnv.statePath;
   }
 });
 
@@ -364,6 +388,57 @@ describe("gateway socket", () => {
     const socket = MockWebSocket.instances[0];
     expect(socket.options?.headers?.origin).toBe("http://localhost:8080");
   });
+
+  it("persists deviceToken from hello and reuses it on next connect", async () => {
+    const connectAuths: Array<Record<string, unknown> | null> = [];
+
+    MockWebSocket.setScenario({
+      onCreate(ws) {
+        queueMicrotask(() => {
+          ws.emitOpen();
+          ws.emitFrame({
+            type: "event",
+            event: "connect.challenge",
+            payload: { nonce: "nonce-token" },
+          });
+        });
+      },
+      onSend(ws, frame) {
+        if (frame.method === "connect") {
+          const params = asObject(frame.params);
+          connectAuths.push(asObject(params?.auth));
+          ws.emitFrame({
+            type: "res",
+            id: frame.id,
+            ok: true,
+            payload: {
+              type: "hello-ok",
+              protocol: 3,
+              auth: connectAuths.length === 1 ? { deviceToken: "device-token-1" } : {},
+              features: { methods: ["status"] },
+            },
+          });
+          return;
+        }
+
+        if (frame.method === "status") {
+          ws.emitFrame({
+            type: "res",
+            id: frame.id,
+            ok: true,
+            payload: { ok: true },
+          });
+        }
+      },
+    });
+
+    await callGatewayMethod("status", {}, { timeoutMs: 2000 });
+    await callGatewayMethod("status", {}, { timeoutMs: 2000 });
+
+    expect(connectAuths.length).toBe(2);
+    expect(connectAuths[0]?.deviceToken).toBeUndefined();
+    expect(connectAuths[1]?.deviceToken).toBe("device-token-1");
+  });
 });
 
 describe("gatewayTroubleshootingTips", () => {
@@ -373,5 +448,13 @@ describe("gatewayTroubleshootingTips", () => {
     expect(tips.length).toBeGreaterThanOrEqual(2);
     expect(tips.join("\n")).toContain("allowedOrigins");
     expect(tips.join("\n")).toContain("CLAWOS_GATEWAY_ORIGIN");
+  });
+
+  it("returns pairing hints for NOT_PAIRED errors", () => {
+    const tips = gatewayTroubleshootingTips("gateway connect failed: NOT_PAIRED: pairing required");
+
+    expect(tips.length).toBeGreaterThanOrEqual(2);
+    expect(tips.join("\n")).toContain("openclaw devices list");
+    expect(tips.join("\n")).toContain("openclaw devices approve");
   });
 });

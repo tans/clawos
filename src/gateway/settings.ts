@@ -2,6 +2,7 @@ import { tryReadOpenclawConfigFromWsl } from "../config/openclaw-wsl";
 import { asObject, readNonEmptyString, toFiniteNumber } from "../lib/value";
 import { readLocalClawosConfig } from "../config/local";
 import { DEFAULT_GATEWAY_URL, type GatewayConnectionSettings } from "./schema";
+import { readPersistedGatewayDeviceToken } from "./device-state";
 
 const GATEWAY_SETTINGS_CACHE_TTL_MS = 5000;
 let gatewaySettingsCache: { expiresAt: number; value: GatewayConnectionSettings } | null = null;
@@ -99,6 +100,7 @@ function resolveGatewayUrlFromConfig(config: Record<string, unknown>): string | 
 function resolveGatewayAuthFromConfig(config: Record<string, unknown>): {
   token?: string;
   password?: string;
+  deviceToken?: string;
 } {
   const gateway = asObject(config.gateway);
   const auth = asObject(gateway?.auth);
@@ -114,7 +116,12 @@ function resolveGatewayAuthFromConfig(config: Record<string, unknown>): {
     readNonEmptyString(remote?.password) ||
     readNonEmptyString(config.gatewayPassword);
 
-  return { token, password };
+  const deviceToken =
+    readNonEmptyString(auth?.deviceToken) ||
+    readNonEmptyString(remote?.deviceToken) ||
+    readNonEmptyString(config.gatewayDeviceToken);
+
+  return { token, password, deviceToken };
 }
 
 export async function resolveGatewayConnectionSettings(forceRefresh = false): Promise<GatewayConnectionSettings> {
@@ -139,6 +146,10 @@ export async function resolveGatewayConnectionSettings(forceRefresh = false): Pr
     readNonEmptyString(process.env.OPENCLAW_GATEWAY_PASSWORD) ||
     readNonEmptyString(process.env.CLAWDBOT_GATEWAY_PASSWORD);
 
+  let deviceToken =
+    readNonEmptyString(process.env.CLAWOS_GATEWAY_DEVICE_TOKEN) ||
+    readNonEmptyString(process.env.OPENCLAW_GATEWAY_DEVICE_TOKEN);
+
   let origin =
     readNonEmptyString(process.env.CLAWOS_GATEWAY_ORIGIN) ||
     readNonEmptyString(process.env.OPENCLAW_GATEWAY_ORIGIN);
@@ -152,8 +163,19 @@ export async function resolveGatewayConnectionSettings(forceRefresh = false): Pr
   if (password) {
     resolvedFrom.push("env:password");
   }
+  if (deviceToken) {
+    resolvedFrom.push("env:deviceToken");
+  }
   if (origin) {
     resolvedFrom.push("env:origin");
+  }
+
+  if (!deviceToken) {
+    const persistedDeviceToken = readPersistedGatewayDeviceToken();
+    if (persistedDeviceToken) {
+      deviceToken = persistedDeviceToken;
+      resolvedFrom.push("local-state:deviceToken");
+    }
   }
 
   const localConfig = readLocalClawosConfig();
@@ -188,7 +210,7 @@ export async function resolveGatewayConnectionSettings(forceRefresh = false): Pr
     }
   }
 
-  if (!url || (!token && !password)) {
+  if (!url || (!token && !password) || !deviceToken) {
     const wslConfig = await tryReadOpenclawConfigFromWsl();
     if (wslConfig) {
       if (!url) {
@@ -199,7 +221,7 @@ export async function resolveGatewayConnectionSettings(forceRefresh = false): Pr
         }
       }
 
-      if (!token || !password) {
+      if (!token || !password || !deviceToken) {
         const authFromConfig = resolveGatewayAuthFromConfig(wslConfig);
         if (!token && authFromConfig.token) {
           token = authFromConfig.token;
@@ -208,6 +230,10 @@ export async function resolveGatewayConnectionSettings(forceRefresh = false): Pr
         if (!password && authFromConfig.password) {
           password = authFromConfig.password;
           resolvedFrom.push("wsl-config:password");
+        }
+        if (!deviceToken && authFromConfig.deviceToken) {
+          deviceToken = authFromConfig.deviceToken;
+          resolvedFrom.push("wsl-config:deviceToken");
         }
       }
     }
@@ -224,6 +250,7 @@ export async function resolveGatewayConnectionSettings(forceRefresh = false): Pr
     url: normalizedUrl,
     token,
     password,
+    deviceToken,
     origin: normalizedOrigin,
     resolvedFrom: resolvedFrom.length > 0 ? resolvedFrom : ["default"],
   };
