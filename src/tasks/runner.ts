@@ -7,6 +7,8 @@ export type Step = {
   command: string;
 };
 
+const TASK_EARLY_SUCCESS_MARKER = "__CLAWOS_TASK_EARLY_SUCCESS__";
+
 export function runTask(task: Task, steps: Step[]): void {
   task.status = "running";
 
@@ -19,12 +21,18 @@ export function runTask(task: Task, steps: Step[]): void {
         appendTaskLog(task, `执行命令：${current.command}`);
 
         const result = await runWslScript(current.script);
+        const stdoutLines = normalizeOutput(result.stdout);
+        const stderrLines = normalizeOutput(result.stderr);
+        const hasEarlySuccessMarker = result.ok && stdoutLines.includes(TASK_EARLY_SUCCESS_MARKER);
 
-        for (const line of normalizeOutput(result.stdout)) {
+        for (const line of stdoutLines) {
+          if (line === TASK_EARLY_SUCCESS_MARKER) {
+            continue;
+          }
           appendTaskLog(task, line, "info");
         }
 
-        for (const line of normalizeOutput(result.stderr)) {
+        for (const line of stderrLines) {
           appendTaskLog(task, line, result.ok ? "info" : "error");
         }
 
@@ -33,6 +41,11 @@ export function runTask(task: Task, steps: Step[]): void {
             appendTaskLog(task, `修复建议：${tip}`, "error");
           }
           throw new Error(`${current.name} 执行失败（退出码 ${result.code}）`);
+        }
+
+        if (hasEarlySuccessMarker) {
+          appendTaskLog(task, "检测到源码未更新，已跳过后续步骤。");
+          break;
         }
       }
 

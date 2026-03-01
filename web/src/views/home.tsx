@@ -111,7 +111,9 @@ function FeatureCard({ icon, title, desc }: { icon: IconName; title: string; des
   );
 }
 
-function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
+function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; latestVersion: string | null }) {
+  const versionText = latestVersion?.trim() ? latestVersion.trim() : "dev";
+
   return (
     <html lang="zh-CN" data-theme="silk">
       <head>
@@ -129,6 +131,9 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
               <span>ClawOS</span>
             </div>
             <nav class="flex flex-wrap justify-end gap-2" aria-label="页面导航">
+              <a class="btn btn-ghost btn-sm" href="/install-guide">
+                安装文档
+              </a>
               <a class="btn btn-ghost btn-sm" href="#features">
                 特色
               </a>
@@ -153,11 +158,11 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
                 <p class="mx-auto max-w-3xl text-base text-base-content/70 sm:text-lg">
                   像用普通软件一样使用 openclaw：一键更新，常用能力开箱即用。
                 </p>
-                <div class="flex justify-center">
+                <div class="flex flex-wrap justify-center gap-3">
                   {hasInstaller ? (
                     <a class="btn btn-primary btn-wide" href="/downloads/latest">
                       <Icon name="download" />
-                      下载安装包
+                      {`下载安装包 v${versionText}`}
                     </a>
                   ) : (
                     <button class="btn btn-primary btn-wide" type="button" disabled>
@@ -165,6 +170,9 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
                       安装包暂未发布
                     </button>
                   )}
+                  <a class="btn btn-outline btn-wide" href="/install-guide">
+                    安装文档
+                  </a>
                 </div>
               </div>
 
@@ -234,6 +242,6 @@ function HomePage({ hasInstaller }: { hasInstaller: boolean }) {
   );
 }
 
-export function renderHomePage(hasInstaller: boolean): string {
-  return `<!doctype html>${renderToString(<HomePage hasInstaller={hasInstaller} />)}`;
+export function renderHomePage(hasInstaller: boolean, latestVersion: string | null): string {
+  return `<!doctype html>${renderToString(<HomePage hasInstaller={hasInstaller} latestVersion={latestVersion} />)}`;
 }

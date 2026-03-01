@@ -1,14 +1,16 @@
 import { Hono } from "hono";
 import { readLatestRelease } from "../lib/storage";
 import { renderHomePage } from "../views/home";
+import { renderInstallGuidePage } from "../views/install-guide";
 
 export const pageRoutes = new Hono();
 
 pageRoutes.get("/", async (c) => {
   const latest = await readLatestRelease();
   const hasInstaller = Boolean(latest?.installer);
+  const latestVersion = latest?.version ?? null;
 
-  return c.html(renderHomePage(hasInstaller));
+  return c.html(renderHomePage(hasInstaller, latestVersion));
 });
 
 pageRoutes.get("/downloads", async (c) => {
@@ -18,4 +20,8 @@ pageRoutes.get("/downloads", async (c) => {
   }
 
   return c.redirect("/downloads/latest", 302);
+});
+
+pageRoutes.get("/install-guide", (c) => {
+  return c.html(renderInstallGuidePage());
 });

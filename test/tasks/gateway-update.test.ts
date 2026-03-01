@@ -27,10 +27,13 @@ describe("openclaw source update steps", () => {
     }
   });
 
-  it("uses non-rebase git pull with theirs strategy", () => {
+  it("uses non-rebase git pull and short-circuits when source is unchanged", () => {
     const steps = buildOpenclawSourceUpdateSteps();
     const gitPullStep = steps[1];
 
     expect(gitPullStep?.script).toContain("git pull --no-rebase -X theirs --no-edit");
+    expect(gitPullStep?.script).toContain('before_commit="$(git rev-parse HEAD)"');
+    expect(gitPullStep?.script).toContain('after_commit="$(git rev-parse HEAD)"');
+    expect(gitPullStep?.script).toContain("__CLAWOS_TASK_EARLY_SUCCESS__");
   });
 });

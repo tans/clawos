@@ -144,6 +144,20 @@ function buildOpenclawStepScript(command: string): string {
   return `set -euo pipefail\ncd ${OPENCLAW_SOURCE_DIR}\n${command}`;
 }
 
+function buildGitPullWithNoUpdateShortCircuitScript(): string {
+  return [
+    "set -euo pipefail",
+    `cd ${OPENCLAW_SOURCE_DIR}`,
+    'before_commit="$(git rev-parse HEAD)"',
+    "git pull --no-rebase -X theirs --no-edit",
+    'after_commit="$(git rev-parse HEAD)"',
+    'if [ "$before_commit" = "$after_commit" ]; then',
+    '  echo "源码未更新，后续步骤已自动跳过。"',
+    '  echo "__CLAWOS_TASK_EARLY_SUCCESS__"',
+    "fi",
+  ].join("\n");
+}
+
 export function buildOpenclawSourceUpdateSteps(): Step[] {
   return [
     {
@@ -154,7 +168,7 @@ export function buildOpenclawSourceUpdateSteps(): Step[] {
     {
       name: "拉取最新源码（git pull --no-rebase -X theirs --no-edit）",
       command: `cd ${OPENCLAW_SOURCE_DIR} && git pull --no-rebase -X theirs --no-edit`,
-      script: buildOpenclawStepScript("git pull --no-rebase -X theirs --no-edit"),
+      script: buildGitPullWithNoUpdateShortCircuitScript(),
     },
     {
       name: "安装 nrm（npm i -g nrm）",
