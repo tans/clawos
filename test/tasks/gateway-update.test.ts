@@ -8,7 +8,7 @@ describe("openclaw source update steps", () => {
     expect(steps).toHaveLength(8);
     expect(steps.map((item) => item.command)).toEqual([
       `cd ${OPENCLAW_SOURCE_DIR}`,
-      `cd ${OPENCLAW_SOURCE_DIR} && git pull --no-rebase -X theirs --no-edit`,
+      `cd ${OPENCLAW_SOURCE_DIR} && git fetch --all --prune && git reset --hard origin/main && git clean -fd`,
       `cd ${OPENCLAW_SOURCE_DIR} && npm i -g nrm`,
       `cd ${OPENCLAW_SOURCE_DIR} && nrm use tencent`,
       `cd ${OPENCLAW_SOURCE_DIR} && pnpm install`,
@@ -27,22 +27,21 @@ describe("openclaw source update steps", () => {
     }
   });
 
-  it("handles pnpm lock file changes before git pull", () => {
+  it("force syncs with remote and discards local changes", () => {
     const steps = buildOpenclawSourceUpdateSteps();
-    const gitPullStep = steps[1];
+    const gitSyncStep = steps[1];
 
-    expect(gitPullStep?.script).toContain("for lock_file in pnpm-lock.yaml pnpm-lock.json; do");
-    expect(gitPullStep?.script).toContain('git diff --cached --quiet -- "$lock_file"');
-    expect(gitPullStep?.script).toContain('git restore --source=HEAD --staged --worktree -- "$lock_file"');
+    expect(gitSyncStep?.script).toContain("git fetch --all --prune");
+    expect(gitSyncStep?.script).toContain('git reset --hard "origin/$target_branch"');
+    expect(gitSyncStep?.script).toContain("git clean -fd");
   });
 
-  it("uses non-rebase git pull and short-circuits when source is unchanged", () => {
+  it("short-circuits when source is unchanged", () => {
     const steps = buildOpenclawSourceUpdateSteps();
-    const gitPullStep = steps[1];
+    const gitSyncStep = steps[1];
 
-    expect(gitPullStep?.script).toContain("git pull --no-rebase -X theirs --no-edit");
-    expect(gitPullStep?.script).toContain('before_commit="$(git rev-parse HEAD)"');
-    expect(gitPullStep?.script).toContain('after_commit="$(git rev-parse HEAD)"');
-    expect(gitPullStep?.script).toContain("__CLAWOS_TASK_EARLY_SUCCESS__");
+    expect(gitSyncStep?.script).toContain('before_commit="$(git rev-parse HEAD)"');
+    expect(gitSyncStep?.script).toContain('after_commit="$(git rev-parse HEAD)"');
+    expect(gitSyncStep?.script).toContain("__CLAWOS_TASK_EARLY_SUCCESS__");
   });
 });

@@ -144,24 +144,26 @@ function buildOpenclawStepScript(command: string): string {
   return `set -euo pipefail\ncd ${OPENCLAW_SOURCE_DIR}\n${command}`;
 }
 
-function buildGitPullWithNoUpdateShortCircuitScript(): string {
+function buildGitForceSyncWithNoUpdateShortCircuitScript(): string {
   return [
     "set -euo pipefail",
     `cd ${OPENCLAW_SOURCE_DIR}`,
-    "for lock_file in pnpm-lock.yaml pnpm-lock.json; do",
-    '  if [ ! -e "$lock_file" ]; then',
-    "    continue",
-    "  fi",
-    '  if ! git diff --quiet -- "$lock_file" || ! git diff --cached --quiet -- "$lock_file"; then',
-    '    echo "检测到 $lock_file 本地变动，先重置该文件后继续拉取..."',
-    '    if ! git restore --source=HEAD --staged --worktree -- "$lock_file" 2>/dev/null; then',
-    '      git reset -q HEAD -- "$lock_file" || true',
-    '      git checkout -- "$lock_file" 2>/dev/null || true',
-    "    fi",
-    "  fi",
-    "done",
+    'current_branch="$(git symbolic-ref --quiet --short HEAD || true)"',
+    'if [ -z "$current_branch" ]; then',
+    '  current_branch="main"',
+    "fi",
     'before_commit="$(git rev-parse HEAD)"',
-    "git pull --no-rebase -X theirs --no-edit",
+    "git fetch --all --prune",
+    'target_branch="$current_branch"',
+    'if ! git show-ref --verify --quiet "refs/remotes/origin/$target_branch"; then',
+    '  target_branch="main"',
+    "fi",
+    'if git show-ref --verify --quiet "refs/remotes/origin/$target_branch"; then',
+    '  git reset --hard "origin/$target_branch"',
+    "else",
+    '  echo "未找到可用远端分支 origin/$target_branch，保持当前提交不变。" >&2',
+    "fi",
+    "git clean -fd",
     'after_commit="$(git rev-parse HEAD)"',
     'if [ "$before_commit" = "$after_commit" ]; then',
     '  echo "源码未更新，后续步骤已自动跳过。"',
@@ -178,9 +180,9 @@ export function buildOpenclawSourceUpdateSteps(): Step[] {
       script: `set -euo pipefail\nif [ ! -d ${OPENCLAW_SOURCE_DIR} ]; then\n  echo "目录不存在：${OPENCLAW_SOURCE_DIR}。请先在 WSL 中安装 openclaw 源码。" >&2\n  exit 1\nfi\ncd ${OPENCLAW_SOURCE_DIR}\npwd`,
     },
     {
-      name: "拉取最新源码（git pull --no-rebase -X theirs --no-edit）",
-      command: `cd ${OPENCLAW_SOURCE_DIR} && git pull --no-rebase -X theirs --no-edit`,
-      script: buildGitPullWithNoUpdateShortCircuitScript(),
+      name: "强制同步源码（覆盖本地改动）",
+      command: `cd ${OPENCLAW_SOURCE_DIR} && git fetch --all --prune && git reset --hard origin/main && git clean -fd`,
+      script: buildGitForceSyncWithNoUpdateShortCircuitScript(),
     },
     {
       name: "安装 nrm（npm i -g nrm）",
