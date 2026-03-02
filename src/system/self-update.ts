@@ -51,9 +51,11 @@ export type ReplacementPlan = {
   backupPath: string;
   tempPath: string;
   scriptPath: string;
+  logPath: string;
 };
 
 let cachedStatus: { expiresAt: number; value: SelfUpdateStatus } | null = null;
+let pendingReplacementPlan: ReplacementPlan | null = null;
 
 function resolveManifestUrl(): string {
   const fromEnv = process.env.CLAWOS_UPDATE_MANIFEST_URL?.trim();
@@ -418,31 +420,67 @@ function escapePowerShellLiteral(value: string): string {
 
 function writeReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
   const script = [
-    "$ErrorActionPreference = 'SilentlyContinue'",
+    "$ErrorActionPreference = 'Stop'",
     `$target = '${escapePowerShellLiteral(plan.targetPath)}'`,
     `$backup = '${escapePowerShellLiteral(plan.backupPath)}'`,
     `$incoming = '${escapePowerShellLiteral(plan.tempPath)}'`,
     `$scriptPath = '${escapePowerShellLiteral(plan.scriptPath)}'`,
+    `$logPath = '${escapePowerShellLiteral(plan.logPath)}'`,
     `$ownerPid = ${ownerPid}`,
     "$replaced = $false",
+    "$incomingSize = 0",
+    "if (Test-Path -LiteralPath $incoming) {",
+    "  $incomingSize = (Get-Item -LiteralPath $incoming).Length",
+    "}",
+    "function Write-UpdateLog([string]$message) {",
+    "  try {",
+    "    Add-Content -LiteralPath $logPath -Value (\"[{0}] {1}\" -f (Get-Date -Format o), $message) -Encoding UTF8",
+    "  } catch {",
+    "    # ignore logging failures",
+    "  }",
+    "}",
+    "Write-UpdateLog (\"Self-update script started. incoming={0}; target={1}\" -f $incoming, $target)",
     "for ($i = 0; $i -lt 240; $i++) {",
     "  $owner = Get-Process -Id $ownerPid -ErrorAction SilentlyContinue",
-    "  if (-not $owner) {",
-    "    if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force -ErrorAction SilentlyContinue }",
-    "    if (Test-Path -LiteralPath $target) { Move-Item -LiteralPath $target -Destination $backup -Force -ErrorAction SilentlyContinue }",
-    "    if (Test-Path -LiteralPath $incoming) {",
-    "      Move-Item -LiteralPath $incoming -Destination $target -Force -ErrorAction SilentlyContinue",
-    "      if (Test-Path -LiteralPath $target) {",
-    "        $replaced = $true",
-    "      }",
-    "    }",
-    "    break",
+    "  if ($owner) {",
+    "    Start-Sleep -Milliseconds 500",
+    "    continue",
     "  }",
-    "  Start-Sleep -Milliseconds 500",
+    "  try {",
+    "    if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup -Force -ErrorAction Stop }",
+    "    if (Test-Path -LiteralPath $target) { Move-Item -LiteralPath $target -Destination $backup -Force -ErrorAction Stop }",
+    "    if (-not (Test-Path -LiteralPath $incoming)) {",
+    "      throw 'incoming update file missing before replacement'",
+    "    }",
+    "    Move-Item -LiteralPath $incoming -Destination $target -Force -ErrorAction Stop",
+    "    if (Test-Path -LiteralPath $incoming) {",
+    "      throw 'incoming update file still exists after move'",
+    "    }",
+    "    if (-not (Test-Path -LiteralPath $target)) {",
+    "      throw 'target executable missing after replacement'",
+    "    }",
+    "    $targetSize = (Get-Item -LiteralPath $target).Length",
+    "    if ($incomingSize -gt 0 -and $targetSize -lt $incomingSize) {",
+    "      throw ('target executable size mismatch after replacement: target=' + $targetSize + ', incoming=' + $incomingSize)",
+    "    }",
+    "    $replaced = $true",
+    "    Write-UpdateLog (\"Replacement succeeded on attempt {0}. targetSize={1}\" -f ($i + 1), $targetSize)",
+    "    break",
+    "  } catch {",
+    "    Write-UpdateLog (\"Replacement attempt {0} failed: {1}\" -f ($i + 1), $_.Exception.Message)",
+    "    if (-not (Test-Path -LiteralPath $target) -and (Test-Path -LiteralPath $backup)) {",
+    "      Move-Item -LiteralPath $backup -Destination $target -Force -ErrorAction SilentlyContinue",
+    "    }",
+    "    Start-Sleep -Milliseconds 500",
+    "  }",
     "}",
     "if (-not $replaced -and (Test-Path -LiteralPath $incoming)) {",
-    "  # 下载文件保留在原目录，方便人工处理",
+    "  Write-UpdateLog (\"Replacement did not complete. Incoming file kept: {0}\" -f $incoming)",
     "}",
+    "if (-not $replaced) {",
+    "  Write-UpdateLog 'Self-update replacement failed after timeout.'",
+    "}",
+    "Write-UpdateLog 'Self-update script finished.'",
     "Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue",
     "exit 0",
     "",
@@ -463,16 +501,20 @@ export function scheduleWindowsExecutableReplacement(
   const normalizedTarget = path.resolve(targetExecutablePath);
   const normalizedTemp = path.resolve(tempExecutablePath);
   const backupPath = `${normalizedTarget}.old`;
-  const scriptPath = path.join(tmpdir(), `clawos-self-update-${Date.now()}.ps1`);
+  const stamp = Date.now();
+  const scriptPath = path.join(tmpdir(), `clawos-self-update-${stamp}.ps1`);
+  const logPath = path.join(tmpdir(), `clawos-self-update-${stamp}.log`);
 
   const plan: ReplacementPlan = {
     targetPath: normalizedTarget,
     backupPath,
     tempPath: normalizedTemp,
     scriptPath,
+    logPath,
   };
 
   writeReplacementScript(plan, ownerPid);
+  pendingReplacementPlan = plan;
 
   try {
     const child = spawn(
@@ -495,6 +537,17 @@ export function scheduleWindowsExecutableReplacement(
   }
 
   return plan;
+}
+
+export function getPendingReplacementPlan(): ReplacementPlan | null {
+  if (!pendingReplacementPlan) {
+    return null;
+  }
+  if (!existsSync(pendingReplacementPlan.tempPath)) {
+    pendingReplacementPlan = null;
+    return null;
+  }
+  return pendingReplacementPlan;
 }
 
 export function resolveSelfExecutableOrThrow(): string {

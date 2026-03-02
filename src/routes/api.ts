@@ -15,7 +15,7 @@ import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
-import { getSelfUpdateStatus, restartClawosProcess } from "../system/self-update";
+import { getPendingReplacementPlan, getSelfUpdateStatus, restartClawosProcess } from "../system/self-update";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
 import { readWalletBalances } from "../system/wallet-balance";
@@ -270,9 +270,24 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   }
 
   if (path === "/api/app/restart" && req.method === "POST") {
+    const pendingReplacement = getPendingReplacementPlan();
+    if (pendingReplacement) {
+      setTimeout(() => process.exit(0), 300);
+      return jsonResponse({
+        ok: true,
+        restarting: true,
+        mode: "apply-update",
+        pendingReplacement: {
+          targetPath: pendingReplacement.targetPath,
+          tempPath: pendingReplacement.tempPath,
+          logPath: pendingReplacement.logPath,
+        },
+      });
+    }
+
     restartClawosProcess();
     setTimeout(() => process.exit(0), 300);
-    return jsonResponse({ ok: true, restarting: true });
+    return jsonResponse({ ok: true, restarting: true, mode: "normal" });
   }
 
   if (path === "/api/config" && req.method === "GET") {

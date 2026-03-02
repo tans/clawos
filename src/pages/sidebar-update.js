@@ -394,10 +394,25 @@
     metaEl.textContent = "正在重启 ClawOS，请稍候...";
 
     try {
-      await api("/api/app/restart", {
+      const data = await api("/api/app/restart", {
         method: "POST",
         body: JSON.stringify({}),
       });
+
+      if (data && data.mode === "apply-update") {
+        const logPath =
+          typeof data?.pendingReplacement?.logPath === "string" && data.pendingReplacement.logPath.trim()
+            ? data.pendingReplacement.logPath.trim()
+            : "";
+        metaEl.textContent = logPath
+          ? `已退出以应用更新，请稍候后重新打开 ClawOS（替换日志：${logPath}）。`
+          : "已退出以应用更新，请稍候后重新打开 ClawOS。";
+        restarting = false;
+        buttonEl.disabled = false;
+        restartButtonEl.disabled = false;
+        restartButtonEl.textContent = "一键重启 ClawOS";
+        return;
+      }
 
       const recovered = await waitForServiceRecovery();
       if (recovered) {

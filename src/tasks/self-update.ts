@@ -102,6 +102,7 @@ export function startSelfUpdateTask(trigger: "manual" | "force" = "manual"): { t
       const replacementPlan = scheduleWindowsExecutableReplacement(downloaded.filePath, targetExecutablePath, process.pid);
       appendTaskLog(task, `目标文件：${replacementPlan.targetPath}`);
       appendTaskLog(task, `备份文件：${replacementPlan.backupPath}`);
+      appendTaskLog(task, `替换日志：${replacementPlan.logPath}`);
       appendTaskLog(task, "更新脚本已启动：将在当前进程退出后执行替换。");
 
       task.step = 4;
