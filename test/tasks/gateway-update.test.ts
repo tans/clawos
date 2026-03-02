@@ -31,8 +31,8 @@ describe("openclaw source update steps", () => {
     const steps = buildOpenclawSourceUpdateSteps();
     const gitSyncStep = steps[1];
 
-    expect(gitSyncStep?.script).toContain("git fetch --all --prune");
-    expect(gitSyncStep?.script).toContain('git reset --hard "origin/$target_branch"');
+    expect(gitSyncStep?.script).toContain("git fetch origin main --prune");
+    expect(gitSyncStep?.script).toContain("git reset --hard origin/main");
     expect(gitSyncStep?.script).toContain("git clean -fd");
   });
 
