@@ -85,117 +85,19 @@
     return;
   }
 
+  const CLAWOS_DOWNLOAD_URL = "https://clawos.cc";
   const versionEl = root.querySelector("[data-app-version]");
-  const buttonEl = root.querySelector("[data-app-update-button]");
   const restartButtonEl = root.querySelector("[data-app-restart-button]");
-  const progressWrapEl = root.querySelector("[data-app-update-progress-wrap]");
-  const progressEl = root.querySelector("[data-app-update-progress]");
-  const progressTextEl = root.querySelector("[data-app-update-progress-text]");
   const metaEl = root.querySelector("[data-app-update-meta]");
 
-  if (!versionEl || !buttonEl || !restartButtonEl || !progressWrapEl || !progressEl || !progressTextEl || !metaEl) {
+  if (!versionEl || !restartButtonEl || !metaEl) {
     return;
   }
 
-  let latestStatus = null;
-  let running = false;
   let restarting = false;
 
   function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function pendingRestartKey(version) {
-    return `clawos-update-pending-restart-${version || "unknown"}`;
-  }
-
-  function hasPendingRestart(version) {
-    return window.sessionStorage.getItem(pendingRestartKey(version)) === "1";
-  }
-
-  function markPendingRestart(version) {
-    window.sessionStorage.setItem(pendingRestartKey(version), "1");
-  }
-
-  function taskContainsMessage(task, text) {
-    if (!task || !Array.isArray(task.logs)) {
-      return false;
-    }
-    return task.logs.some((item) => typeof item?.message === "string" && item.message.includes(text));
-  }
-
-  function showRestartButton(visible) {
-    restartButtonEl.classList.toggle("hidden", !visible);
-    if (!visible) {
-      restartButtonEl.disabled = false;
-      restartButtonEl.textContent = "一键重启 ClawOS";
-    }
-  }
-
-  function showDownloadProgress(percent, detail) {
-    progressWrapEl.classList.remove("hidden");
-    if (typeof percent === "number" && Number.isFinite(percent)) {
-      const normalized = Math.max(0, Math.min(100, Math.floor(percent)));
-      progressEl.value = normalized;
-      progressEl.setAttribute("value", String(normalized));
-    } else {
-      progressEl.removeAttribute("value");
-    }
-    progressTextEl.textContent = detail || "正在下载更新文件...";
-  }
-
-  function hideDownloadProgress() {
-    progressWrapEl.classList.add("hidden");
-    progressEl.value = 0;
-    progressEl.setAttribute("value", "0");
-    progressTextEl.textContent = "准备下载...";
-  }
-
-  function readTaskDownloadProgress(task) {
-    if (!task || !Array.isArray(task.logs)) {
-      return null;
-    }
-
-    for (let index = task.logs.length - 1; index >= 0; index -= 1) {
-      const message = typeof task.logs[index]?.message === "string" ? task.logs[index].message.trim() : "";
-      if (!message.startsWith("下载进度：")) {
-        continue;
-      }
-
-      const detail = message.slice("下载进度：".length).trim();
-      const matched = detail.match(/^(\d{1,3})%/);
-      if (matched) {
-        const percent = Number.parseInt(matched[1], 10);
-        return {
-          percent: Math.max(0, Math.min(100, percent)),
-          detail,
-        };
-      }
-      return { percent: null, detail };
-    }
-
-    return null;
-  }
-
-  async function waitTaskCompletion(taskId, timeoutMs = 10_000, onTick = null) {
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < timeoutMs) {
-      const data = await api(`/api/tasks/${taskId}`);
-      const task = data.task || null;
-      if (!task) {
-        return null;
-      }
-      if (typeof onTick === "function") {
-        onTick(task);
-      }
-      if (task.status === "success" || task.status === "failed") {
-        return task;
-      }
-      await sleep(400);
-    }
-
-    return null;
   }
 
   async function waitForServiceRecovery(timeoutMs = 25_000) {
@@ -212,183 +114,29 @@
     return false;
   }
 
-  function renderStatus(status) {
-    latestStatus = status;
-    const current = status.currentVersion || "unknown";
-    versionEl.textContent = `v${current}`;
-
-    buttonEl.classList.add("hidden");
-    buttonEl.disabled = false;
-
-    if (!status.supported) {
-      showRestartButton(false);
-      if (!running) {
-        hideDownloadProgress();
-      }
-      metaEl.textContent = status.reason || "当前环境不支持自动更新";
-      return;
-    }
-
-    showRestartButton(true);
-
-    if (status.error) {
-      metaEl.textContent = `更新检查失败：${status.error}`;
-      return;
-    }
-
-    if (!status.hasUpdate) {
-      if (!status.remoteVersion) {
-        metaEl.textContent = "暂未发布更新";
-        if (!running) {
-          hideDownloadProgress();
-        }
-        return;
-      }
-      metaEl.textContent = "已是最新版本";
-      if (!running) {
-        hideDownloadProgress();
-      }
-      return;
-    }
-
-    const remote = status.remoteVersion || "unknown";
-    if (hasPendingRestart(remote)) {
-      metaEl.textContent = `已下载 v${remote}，请手动重启后生效`;
-      if (!running) {
-        hideDownloadProgress();
-      }
-      return;
-    }
-
-    if (status.force) {
-      metaEl.textContent = `检测到强制更新 v${remote}，正在执行更新（完成后请手动重启）...`;
-      autoRunForceUpdate(status);
-      return;
-    }
-
-    metaEl.textContent = `发现新版本 v${remote}`;
-    buttonEl.textContent = `更新到 v${remote}`;
-    buttonEl.classList.remove("hidden");
+  function renderManualUpdateMessage() {
+    metaEl.innerHTML =
+      `自更新已移除，请前往 <a class="link link-primary" href="${CLAWOS_DOWNLOAD_URL}" target="_blank" rel="noopener noreferrer">clawos.cc</a> 下载最新版本并替换 clawos.exe。`;
   }
 
-  async function startUpdate(force) {
-    if (running || restarting) {
-      return;
-    }
-
-    running = true;
-    buttonEl.disabled = true;
-    restartButtonEl.disabled = true;
-    metaEl.textContent = force ? "正在执行强制更新..." : "正在启动更新...";
-    showDownloadProgress(0, "准备下载更新包...");
-
+  async function refreshVersion() {
     try {
-      const runData = await api("/api/app/update/run", {
-        method: "POST",
-        body: JSON.stringify({ force: Boolean(force) }),
-      });
-      const taskId = runData.taskId;
-      if (typeof taskId === "string" && taskId.length > 0) {
-        const task = await waitTaskCompletion(taskId, 15 * 60_000, (pollTask) => {
-          const progress = readTaskDownloadProgress(pollTask);
-          if (!progress) {
-            return;
-          }
-          showDownloadProgress(progress.percent, progress.detail);
-          if (typeof progress.percent === "number") {
-            metaEl.textContent = `正在下载更新包：${progress.percent}%`;
-          } else {
-            metaEl.textContent = `正在下载更新包：${progress.detail}`;
-          }
-        });
-        if (task) {
-          if (task.status === "failed") {
-            const message = task.error || "更新任务执行失败";
-            metaEl.textContent = `更新启动失败：${message}`;
-            buttonEl.disabled = false;
-            restartButtonEl.disabled = false;
-            hideDownloadProgress();
-            running = false;
-            return;
-          }
-
-          if (taskContainsMessage(task, "版本一致，无需更新。")) {
-            metaEl.textContent = "已是最新版本";
-            buttonEl.classList.add("hidden");
-            buttonEl.disabled = false;
-            restartButtonEl.disabled = false;
-            hideDownloadProgress();
-            running = false;
-            await check();
-            return;
-          }
-
-          if (task.status === "success") {
-            showDownloadProgress(100, "100%（下载完成）");
-            const remoteVersion =
-              typeof latestStatus?.remoteVersion === "string" && latestStatus.remoteVersion.trim()
-                ? latestStatus.remoteVersion.trim()
-                : "";
-            if (remoteVersion) {
-              markPendingRestart(remoteVersion);
-            }
-            metaEl.textContent = remoteVersion
-              ? `已下载 v${remoteVersion}，请手动重启后生效`
-              : "更新任务已执行，请关闭并重新打开 ClawOS 使更新生效。";
-            buttonEl.classList.add("hidden");
-            buttonEl.disabled = false;
-            restartButtonEl.disabled = false;
-            running = false;
-            return;
-          }
-        }
-      }
-
-      metaEl.textContent = "更新任务仍在执行，请稍候或前往控制台日志查看进度。";
-      buttonEl.disabled = false;
-      restartButtonEl.disabled = false;
-      running = false;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      metaEl.textContent = `更新启动失败：${message}`;
-      buttonEl.disabled = false;
-      restartButtonEl.disabled = false;
-      hideDownloadProgress();
-      running = false;
-    }
-  }
-
-  function autoRunForceUpdate(status) {
-    const key = `clawos-force-update-${status.remoteVersion || "unknown"}`;
-    const marks = window.sessionStorage;
-    if (marks.getItem(key) === "1") {
-      return;
-    }
-    marks.setItem(key, "1");
-    void startUpdate(true);
-  }
-
-  async function check() {
-    if (running || restarting) {
-      return;
-    }
-
-    try {
-      const data = await api("/api/app/update/status");
-      renderStatus(data.status || {});
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      metaEl.textContent = `更新检查失败：${message}`;
+      const data = await api("/api/health");
+      const current = typeof data?.version === "string" && data.version.trim() ? data.version.trim() : "unknown";
+      versionEl.textContent = `v${current}`;
+    } catch {
+      versionEl.textContent = "v-";
+    } finally {
+      renderManualUpdateMessage();
     }
   }
 
   async function restartClawos() {
-    if (running || restarting) {
+    if (restarting) {
       return;
     }
 
     restarting = true;
-    buttonEl.disabled = true;
     restartButtonEl.disabled = true;
     restartButtonEl.textContent = "正在重启...";
     metaEl.textContent = "正在重启 ClawOS，请稍候...";
@@ -398,21 +146,6 @@
         method: "POST",
         body: JSON.stringify({}),
       });
-
-      if (data && data.mode === "apply-update") {
-        const logPath =
-          typeof data?.pendingReplacement?.logPath === "string" && data.pendingReplacement.logPath.trim()
-            ? data.pendingReplacement.logPath.trim()
-            : "";
-        metaEl.textContent = logPath
-          ? `已退出以应用更新，请稍候后重新打开 ClawOS（替换日志：${logPath}）。`
-          : "已退出以应用更新，请稍候后重新打开 ClawOS。";
-        restarting = false;
-        buttonEl.disabled = false;
-        restartButtonEl.disabled = false;
-        restartButtonEl.textContent = "一键重启 ClawOS";
-        return;
-      }
 
       const recovered = await waitForServiceRecovery();
       if (recovered) {
@@ -429,31 +162,16 @@
     }
 
     restarting = false;
-    buttonEl.disabled = false;
     restartButtonEl.disabled = false;
     restartButtonEl.textContent = "一键重启 ClawOS";
   }
-
-  buttonEl.addEventListener("click", async () => {
-    try {
-      const data = await api("/api/app/update/status");
-      renderStatus(data.status || {});
-      if (!latestStatus || !latestStatus.hasUpdate) {
-        return;
-      }
-      await startUpdate(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      metaEl.textContent = `更新检查失败：${message}`;
-    }
-  });
 
   restartButtonEl.addEventListener("click", () => {
     void restartClawos();
   });
 
-  void check();
+  void refreshVersion();
   setInterval(() => {
-    void check();
+    void refreshVersion();
   }, 5 * 60 * 1000);
 })();

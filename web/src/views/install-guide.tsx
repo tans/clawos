@@ -38,7 +38,7 @@ function InstallGuidePage() {
           <section class="mt-6 rounded-[1.5rem] border border-base-content/10 bg-base-100/80 p-6 sm:p-8">
             <h2 class="text-xl font-semibold">更新说明</h2>
             <ul class="mt-4 list-disc space-y-2 pl-5 text-base-content/85">
-              <li>部分版本自动更新尚未完善，需要手动下载覆盖 clawos.exe 文件。</li>
+              <li>ClawOS 已移除自动更新，请前往 clawos.cc 下载最新版本并覆盖 clawos.exe 文件。</li>
               <li>覆盖前关闭已打开 ClawOS，覆盖后重新打开确认版本号。</li>
             </ul>
           </section>
