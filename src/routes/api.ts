@@ -15,7 +15,7 @@ import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
-import { getPendingReplacementPlan, getSelfUpdateStatus, restartClawosProcess } from "../system/self-update";
+import { restartClawosProcess } from "../system/self-update";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
 import { readWalletBalances } from "../system/wallet-balance";
@@ -28,7 +28,6 @@ import {
   startQwGatewayRestartTask,
 } from "../tasks/gateway";
 import { startWslRepairTask } from "../tasks/system";
-import { startSelfUpdateTask } from "../tasks/self-update";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 
 function sanitizeIdentifier(value: unknown, field: string): string {
@@ -258,36 +257,31 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   }
 
   if (path === "/api/app/update/status" && req.method === "GET") {
-    const status = await getSelfUpdateStatus(false);
-    return jsonResponse({ ok: true, status });
+    return jsonResponse({
+      ok: true,
+      status: {
+        supported: false,
+        reason: "自更新已移除，请前往 https://clawos.cc 下载最新版本并替换 clawos.exe。",
+        manifestUrl: "https://clawos.cc",
+        currentVersion: VERSION,
+        remoteVersion: null,
+        force: false,
+        downloadUrl: null,
+        hasUpdate: false,
+        checkedAt: new Date().toISOString(),
+        error: null,
+      },
+    });
   }
 
   if (path === "/api/app/update/run" && req.method === "POST") {
-    const body = await parseJsonBody(req);
-    const force = body.force === true;
-    const { task, reused } = startSelfUpdateTask(force ? "force" : "manual");
-    return jsonResponse({ ok: true, taskId: task.id, task, reused });
+    throw new HttpError(410, "自更新已移除，请前往 https://clawos.cc 下载最新版本并替换 clawos.exe。");
   }
 
   if (path === "/api/app/restart" && req.method === "POST") {
-    const pendingReplacement = getPendingReplacementPlan();
-    if (pendingReplacement) {
-      setTimeout(() => process.exit(0), 300);
-      return jsonResponse({
-        ok: true,
-        restarting: true,
-        mode: "apply-update",
-        pendingReplacement: {
-          targetPath: pendingReplacement.targetPath,
-          tempPath: pendingReplacement.tempPath,
-          logPath: pendingReplacement.logPath,
-        },
-      });
-    }
-
     restartClawosProcess();
     setTimeout(() => process.exit(0), 300);
-    return jsonResponse({ ok: true, restarting: true, mode: "normal" });
+    return jsonResponse({ ok: true, restarting: true });
   }
 
   if (path === "/api/config" && req.method === "GET") {
