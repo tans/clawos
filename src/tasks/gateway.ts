@@ -4,6 +4,10 @@ import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 import type { GatewayCallResult } from "../gateway/schema";
 import { runTask, type Step } from "./runner";
 import { normalizeOutput, runProcess } from "./shell";
+import {
+  readLocalOpenclawSourceVersionHash,
+  updateLocalOpenclawSourceVersionHash,
+} from "../config/local";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -144,14 +148,21 @@ function buildOpenclawStepScript(command: string): string {
   return `set -euo pipefail\ncd ${OPENCLAW_SOURCE_DIR}\n${command}`;
 }
 
-function buildGitForceSyncWithNoUpdateShortCircuitScript(): string {
+function escapeDoubleQuotedShell(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
+}
+
+function buildGitForceSyncWithNoUpdateShortCircuitScript(recordedSourceHash: string): string {
+  const safeRecordedSourceHash = escapeDoubleQuotedShell(recordedSourceHash.trim());
   return [
     "set -euo pipefail",
     `cd ${OPENCLAW_SOURCE_DIR}`,
+    `saved_hash="${safeRecordedSourceHash}"`,
     'before_commit="$(git rev-parse HEAD)"',
     'before_origin_commit="$(git rev-parse --verify refs/remotes/origin/main 2>/dev/null || true)"',
     "git fetch origin main --prune",
     'remote_commit="$(git rev-parse origin/main)"',
+    'echo "__CLAWOS_REMOTE_COMMIT__=$remote_commit"',
     'echo "同步前本地提交: $before_commit"',
     'if [ -n "$before_origin_commit" ] && [ "$before_origin_commit" != "$remote_commit" ]; then',
     '  echo "远端跟踪分支已刷新: $before_origin_commit -> $remote_commit"',
@@ -159,17 +170,22 @@ function buildGitForceSyncWithNoUpdateShortCircuitScript(): string {
     'echo "同步后远端提交: $remote_commit"',
     "git reset --hard origin/main",
     "git clean -fd",
-    'if [ "$before_commit" = "$remote_commit" ]; then',
-    '  echo "本地源码已是最新提交，后续安装与构建步骤已自动跳过。"',
+    'if [ -n "$saved_hash" ] && [ "$saved_hash" = "$remote_commit" ]; then',
+    '  echo "版本 hash 未变化（$saved_hash），后续安装与构建步骤已自动跳过。"',
     '  echo "__CLAWOS_TASK_EARLY_SUCCESS__"',
     "else",
     '  echo "源码已更新：$before_commit -> $remote_commit"',
+    '  if [ -n "$saved_hash" ]; then',
+    '    echo "上次记录 hash: $saved_hash"',
+    "  else",
+    '    echo "上次记录 hash: <empty>"',
+    "  fi",
     '  echo "将继续执行安装与构建步骤。"',
     "fi",
   ].join("\n");
 }
 
-export function buildOpenclawSourceUpdateSteps(): Step[] {
+export function buildOpenclawSourceUpdateSteps(recordedSourceHash = ""): Step[] {
   return [
     {
       name: "进入源码目录",
@@ -179,7 +195,7 @@ export function buildOpenclawSourceUpdateSteps(): Step[] {
     {
       name: "强制同步源码（覆盖本地改动）",
       command: `cd ${OPENCLAW_SOURCE_DIR} && git fetch origin main --prune && git reset --hard origin/main && git clean -fd`,
-      script: buildGitForceSyncWithNoUpdateShortCircuitScript(),
+      script: buildGitForceSyncWithNoUpdateShortCircuitScript(recordedSourceHash),
     },
     {
       name: "安装 nrm（npm i -g nrm）",
@@ -221,9 +237,46 @@ export function startGatewayUpdateTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const steps = buildOpenclawSourceUpdateSteps();
+  const recordedSourceHash = readLocalOpenclawSourceVersionHash();
+  const steps = buildOpenclawSourceUpdateSteps(recordedSourceHash);
   const task = createTask("gateway-update", "更新 openclaw（源码升级）", steps.length);
-  runTask(task, steps);
+  let remoteCommitFromTask = "";
+
+  if (recordedSourceHash) {
+    appendTaskLog(task, `当前记录源码 hash：${recordedSourceHash}`);
+  } else {
+    appendTaskLog(task, "当前记录源码 hash：<empty>");
+  }
+
+  runTask(task, steps, {
+    onStepSuccess: (info) => {
+      if (info.stepIndex !== 1) {
+        return;
+      }
+      const commit = readNonEmptyString(info.metadata.openclawRemoteCommit);
+      if (!commit) {
+        return;
+      }
+      remoteCommitFromTask = commit;
+      appendTaskLog(task, `本次远端源码 hash：${commit}`);
+    },
+    onTaskSuccess: () => {
+      if (!remoteCommitFromTask) {
+        appendTaskLog(task, "未获取到本次远端源码 hash，已跳过本地 hash 写入。");
+        return;
+      }
+      if (remoteCommitFromTask === recordedSourceHash) {
+        return;
+      }
+      try {
+        const savedHash = updateLocalOpenclawSourceVersionHash(remoteCommitFromTask);
+        appendTaskLog(task, `已写入源码 hash 到 clawos.json：${savedHash}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        appendTaskLog(task, `写入源码 hash 失败：${message}`, "error");
+      }
+    },
+  });
 
   return { task, reused: false };
 }

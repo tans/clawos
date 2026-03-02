@@ -45,6 +45,7 @@ export type LocalClawosConfig = {
   };
   openclaw?: {
     configPath?: string;
+    sourceVersionHash?: string;
   };
   wallet?: LocalWalletConfig;
 };
@@ -105,6 +106,7 @@ export function localConfigTemplate(): LocalClawosConfig {
     },
     openclaw: {
       configPath: OPENCLAW_CONFIG_PATH,
+      sourceVersionHash: "",
     },
     wallet: {
       address: "",
@@ -209,6 +211,7 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
     },
     openclaw: {
       configPath: pickString(cfg.openclaw?.configPath, defaults.openclaw?.configPath || OPENCLAW_CONFIG_PATH),
+      sourceVersionHash: pickString(cfg.openclaw?.sourceVersionHash, defaults.openclaw?.sourceVersionHash || ""),
     },
     wallet: {
       address: pickString(cfg.wallet?.address, defaults.wallet?.address || ""),
@@ -433,4 +436,27 @@ export function resolveOpenclawConfigPath(): string {
   const pathValue = localConfig?.openclaw?.configPath;
   const trimmed = typeof pathValue === "string" ? pathValue.trim() : "";
   return trimmed || OPENCLAW_CONFIG_PATH;
+}
+
+export function readLocalOpenclawSourceVersionHash(): string {
+  const localConfig = readNormalizedLocalConfig();
+  return pickString(localConfig.openclaw?.sourceVersionHash, "");
+}
+
+export function updateLocalOpenclawSourceVersionHash(hash: string): string {
+  const normalizedHash = pickString(hash, "");
+  const current = readNormalizedLocalConfig();
+  const next = normalizeLocalConfig({
+    ...current,
+    openclaw: {
+      ...current.openclaw,
+      sourceVersionHash: normalizedHash,
+    },
+  });
+
+  if (!writeLocalConfig(CLAWOS_LOCAL_CONFIG_PATH, next)) {
+    throw new Error(`保存 openclaw 源码版本 hash 失败：${CLAWOS_LOCAL_CONFIG_PATH}`);
+  }
+
+  return pickString(next.openclaw?.sourceVersionHash, "");
 }

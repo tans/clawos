@@ -37,11 +37,14 @@ describe("openclaw source update steps", () => {
   });
 
   it("short-circuits when source is unchanged", () => {
-    const steps = buildOpenclawSourceUpdateSteps();
+    const steps = buildOpenclawSourceUpdateSteps("abc123");
     const gitSyncStep = steps[1];
 
     expect(gitSyncStep?.script).toContain('before_commit="$(git rev-parse HEAD)"');
+    expect(gitSyncStep?.script).toContain('saved_hash="abc123"');
     expect(gitSyncStep?.script).toContain('remote_commit="$(git rev-parse origin/main)"');
+    expect(gitSyncStep?.script).toContain('echo "__CLAWOS_REMOTE_COMMIT__=$remote_commit"');
+    expect(gitSyncStep?.script).toContain('if [ -n "$saved_hash" ] && [ "$saved_hash" = "$remote_commit" ]; then');
     expect(gitSyncStep?.script).toContain("__CLAWOS_TASK_EARLY_SUCCESS__");
   });
 });
