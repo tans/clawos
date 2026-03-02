@@ -8,7 +8,7 @@ describe("openclaw source update steps", () => {
     expect(steps).toHaveLength(8);
     expect(steps.map((item) => item.command)).toEqual([
       `cd ${OPENCLAW_SOURCE_DIR}`,
-      `cd ${OPENCLAW_SOURCE_DIR} && git fetch --all --prune && git reset --hard origin/main && git clean -fd`,
+      `cd ${OPENCLAW_SOURCE_DIR} && git fetch origin main --prune && git reset --hard origin/main && git clean -fd`,
       `cd ${OPENCLAW_SOURCE_DIR} && npm i -g nrm`,
       `cd ${OPENCLAW_SOURCE_DIR} && nrm use tencent`,
       `cd ${OPENCLAW_SOURCE_DIR} && pnpm install`,
@@ -41,7 +41,7 @@ describe("openclaw source update steps", () => {
     const gitSyncStep = steps[1];
 
     expect(gitSyncStep?.script).toContain('before_commit="$(git rev-parse HEAD)"');
-    expect(gitSyncStep?.script).toContain('after_commit="$(git rev-parse HEAD)"');
+    expect(gitSyncStep?.script).toContain('remote_commit="$(git rev-parse origin/main)"');
     expect(gitSyncStep?.script).toContain("__CLAWOS_TASK_EARLY_SUCCESS__");
   });
 });
