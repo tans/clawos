@@ -5,6 +5,10 @@
   "scripts": {
     "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
     "dev": "bun run tailwind:build && bun --watch src/server.ts",
+    "desktop:dev": "bun run tailwind:build && bun x electrobun dev",
+    "desktop:build": "bun x electrobun build",
+    "desktop:build:canary": "bun x electrobun build --env=canary",
+    "desktop:build:stable": "bun x electrobun build --env=stable",
     "build": "bun run build:exe",
     "publish": "bun run publish:clawos",
     "publish:json": "bun run scripts/publish-clawos.ts --skip-installer",
@@ -20,6 +24,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",
     "daisyui": "^5.5.18",
+    "electrobun": "^1.13.1",
     "png-to-ico": "^3.0.1",
     "tailwindcss": "^4.1.16"
   }
