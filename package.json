@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
+    "tailwind:watch": "tailwindcss -i src/styles/input.css -o dist/output.css --watch",
     "dev": "bun run tailwind:build && bun --watch src/server.ts",
-    "desktop:dev": "bun run tailwind:build && bun x electrobun dev",
+    "desktop:dev": "bun run scripts/desktop-dev.ts",
+    "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun x electrobun dev --watch",
     "desktop:build": "bun x electrobun build",
     "desktop:build:canary": "bun x electrobun build --env=canary",
     "desktop:build:stable": "bun x electrobun build --env=stable",

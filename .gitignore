@@ -4,5 +4,7 @@ bun.lockb
 bun.lock
 clawos.json
 dist
+build
+artifacts
 web/storage/assets
 web/storage/releases/latest.json

@@ -17,6 +17,7 @@ const config: ElectrobunConfig = {
     bun: {
       entrypoint: "src/bun/index.ts",
     },
+    watch: ["src", "dist", "electrobun.config.ts"],
     win: {
       icon: "web/public/logo.ico",
     },
