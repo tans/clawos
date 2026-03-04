@@ -33,7 +33,7 @@
                 <h2 class="card-title text-base">配置提示</h2>
                 <button class="btn btn-warning btn-xs" type="button" data-openclaw-entry>打开 openclaw 后台</button>
               </div>
-              <div class="text-sm text-base-content/80">建议优先在 openclaw 后台完成通讯渠道配置，这里仅保留本地辅助编辑能力。</div>
+              <div class="text-sm text-base-content/80">建议优先在 openclaw 后台完成通讯渠道配置，这里仅保留本地辅助编辑能力。其他通讯渠道到 openclaw 后台配置。</div>
             </div>
           </section>
 
@@ -41,7 +41,7 @@
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="card-title text-base">渠道开关与参数入口</h2>
-                <span class="text-[11px] text-base-content/60">复杂配置请切换 JSON 编辑模式</span>
+                <span class="text-[11px] text-base-content/60">其他通讯渠道到 openclaw 后台配置</span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
             </div>
@@ -64,7 +64,7 @@
         <div class="mb-2 flex items-start justify-between gap-3">
           <div>
             <h3 class="text-base font-semibold" data-modal-title>渠道参数</h3>
-            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅包含常用字段，完整配置请使用 JSON 编辑模式。</div>
+            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅保留当前可编辑字段，其他通讯渠道到 openclaw 后台配置。</div>
           </div>
           <button class="btn btn-ghost btn-xs" type="button" data-modal-close>关闭</button>
         </div>
@@ -85,162 +85,23 @@
 
     <script>
       const SECTION = "channels";
-      const WECOM_KEYS = ["wecom", "wxwork", "qywx", "wechatWork", "enterpriseWechat"];
-      const COMMON_POLICY_FIELDS = [
-        { path: "dmPolicy", label: "dmPolicy", type: "select", options: ["", "*", "allowFrom"] },
-        { path: "allowFrom", label: "allowFrom（一行一个）", type: "list" },
-        { path: "groupPolicy", label: "groupPolicy", type: "select", options: ["", "*", "allowFrom"] },
-        { path: "groupAllowFrom", label: "groupAllowFrom（一行一个）", type: "list" },
-      ];
+      const LEGACY_WECOM_KEYS = ["wxwork", "qywx", "wechatWork", "enterpriseWechat"];
 
       const CHANNEL_SPECS = [
-        {
-          key: "telegram",
-          title: "Telegram",
-          icon: "fa-brands fa-telegram",
-          fields: [
-            { path: "token", label: "token", type: "password" },
-            { path: "defaultId", label: "defaultId", type: "text" },
-            { path: "ids", label: "ids（一行一个）", type: "list" },
-            { path: "parseMode", label: "parseMode", type: "text" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "discord",
-          title: "Discord",
-          icon: "fa-brands fa-discord",
-          fields: [
-            { path: "token", label: "token", type: "password" },
-            { path: "defaultId", label: "defaultId", type: "text" },
-            { path: "ids", label: "ids（一行一个）", type: "list" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "slack",
-          title: "Slack",
-          icon: "fa-brands fa-slack",
-          fields: [
-            { path: "botToken", label: "botToken", type: "password" },
-            { path: "appToken", label: "appToken", type: "password" },
-            { path: "signingSecret", label: "signingSecret", type: "password" },
-            { path: "socketMode", label: "socketMode", type: "boolean" },
-            { path: "defaultId", label: "defaultId", type: "text" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "googleChat",
-          title: "Google Chat",
-          icon: "fa-brands fa-google",
-          fields: [
-            { path: "webhookUrl", label: "webhookUrl", type: "text" },
-            { path: "defaultId", label: "defaultId", type: "text" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "mattermost",
-          title: "Mattermost",
-          icon: "fa-solid fa-comments",
-          fields: [
-            { path: "apiBaseUrl", label: "apiBaseUrl", type: "text" },
-            { path: "token", label: "token", type: "password" },
-            { path: "defaultId", label: "defaultId", type: "text" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "signal",
-          title: "Signal",
-          icon: "fa-solid fa-signal",
-          fields: [
-            { path: "cliPath", label: "cliPath", type: "text" },
-            { path: "defaultAccount", label: "defaultAccount", type: "text" },
-            { path: "accounts", label: "accounts（一行一个）", type: "list" },
-            { path: "timeoutMs", label: "timeoutMs", type: "number", min: 1, max: 120000 },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "imessage",
-          title: "iMessage",
-          icon: "fa-solid fa-message",
-          fields: [
-            { path: "socketPath", label: "socketPath", type: "text" },
-            { path: "defaultAccount", label: "defaultAccount", type: "text" },
-            { path: "accounts", label: "accounts（一行一个）", type: "list" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
-        {
-          key: "whatsapp",
-          title: "WhatsApp",
-          icon: "fa-brands fa-whatsapp",
-          fields: [
-            { path: "apiBaseUrl", label: "apiBaseUrl", type: "text" },
-            { path: "token", label: "token", type: "password" },
-            { path: "phoneNumberId", label: "phoneNumberId", type: "text" },
-            { path: "defaultId", label: "defaultId", type: "text" },
-            ...COMMON_POLICY_FIELDS,
-          ],
-        },
         {
           key: "feishu",
           title: "飞书",
           icon: "fa-solid fa-feather-pointed",
           fields: [
-            { path: "domain", label: "domain", type: "select", options: ["", "feishu.cn", "larksuite.com"] },
             { path: "appId", label: "appId", type: "text" },
-            { path: "appSecret", label: "appSecret", type: "password" },
-            { path: "connectionMode", label: "connectionMode", type: "select", options: ["", "auto", "websocket", "webhook"] },
-            { path: "verificationToken", label: "verificationToken", type: "password" },
-            { path: "webhookPath", label: "webhookPath", type: "text" },
-            { path: "webhookHost", label: "webhookHost", type: "text" },
-            { path: "webhookPort", label: "webhookPort", type: "number", min: 1, max: 65535 },
-            { path: "dmPolicy", label: "dmPolicy", type: "select", options: ["", "*", "allowFrom"] },
-            { path: "allowFrom", label: "allowFrom（一行一个 open_id）", type: "list" },
-            { path: "groupPolicy", label: "groupPolicy", type: "select", options: ["", "*", "allowFrom"] },
-            { path: "groupAllowFrom", label: "groupAllowFrom（一行一个 chat_id）", type: "list" },
-            { path: "streaming", label: "streaming", type: "boolean" },
-            { path: "blockStreaming", label: "blockStreaming", type: "boolean" },
-            { path: "textChunkLimit", label: "textChunkLimit", type: "number", min: 1, max: 50000 },
-            { path: "mediaMaxMb", label: "mediaMaxMb", type: "number", min: 0.1, max: 1024, integer: false },
-            { path: "accounts", label: "accounts（JSON 对象）", type: "json" },
+            { path: "secret", label: "secret", type: "password" },
           ],
-          validate: (draft) => {
-            const mode = typeof draft.connectionMode === "string" ? draft.connectionMode.trim() : "";
-            const token = typeof draft.verificationToken === "string" ? draft.verificationToken.trim() : "";
-            if (mode === "webhook" && !token) {
-              throw new Error("feishu.connectionMode = webhook 时，verificationToken 不能为空");
-            }
-
-            const webhookPath = typeof draft.webhookPath === "string" ? draft.webhookPath.trim() : "";
-            if (webhookPath && !webhookPath.startsWith("/")) {
-              throw new Error("feishu.webhookPath 必须以 / 开头");
-            }
-
-            const dmPolicy = typeof draft.dmPolicy === "string" ? draft.dmPolicy : "";
-            const allowFrom = Array.isArray(draft.allowFrom) ? draft.allowFrom : [];
-            if (dmPolicy === "allowFrom" && allowFrom.length === 0) {
-              throw new Error("feishu.dmPolicy = allowFrom 时，allowFrom 不能为空");
-            }
-
-            const groupPolicy = typeof draft.groupPolicy === "string" ? draft.groupPolicy : "";
-            const groupAllowFrom = Array.isArray(draft.groupAllowFrom) ? draft.groupAllowFrom : [];
-            if (groupPolicy === "allowFrom" && groupAllowFrom.length === 0) {
-              throw new Error("feishu.groupPolicy = allowFrom 时，groupAllowFrom 不能为空");
-            }
-          },
         },
         {
           key: "wecom",
           title: "企业微信",
           icon: "fa-brands fa-weixin",
-          fields: [
-            ...COMMON_POLICY_FIELDS,
-          ],
+          fields: [],
         },
       ];
 
@@ -263,9 +124,7 @@
 
       let channelsConfig = {};
       let mode = "card";
-      let currentWecomKey = "wecom";
       let activeSpec = null;
-      let activeResolvedKey = "";
       let activeDraft = {};
 
       function pretty(value) {
@@ -417,63 +276,87 @@
         return parseJsonObject(text, fieldLabel);
       }
 
-      function validatePolicySelections(spec, draft) {
-        const dmPolicy = typeof draft.dmPolicy === "string" ? draft.dmPolicy : "";
-        const allowFrom = Array.isArray(draft.allowFrom) ? draft.allowFrom : [];
-        if (dmPolicy === "allowFrom" && allowFrom.length === 0) {
-          throw new Error(`${spec.title}.dmPolicy = allowFrom 时，allowFrom 不能为空`);
+      function readOptionalText(value) {
+        if (typeof value !== "string") {
+          return undefined;
         }
-
-        const groupPolicy = typeof draft.groupPolicy === "string" ? draft.groupPolicy : "";
-        const groupAllowFrom = Array.isArray(draft.groupAllowFrom) ? draft.groupAllowFrom : [];
-        if (groupPolicy === "allowFrom" && groupAllowFrom.length === 0) {
-          throw new Error(`${spec.title}.groupPolicy = allowFrom 时，groupAllowFrom 不能为空`);
-        }
+        const trimmed = value.trim();
+        return trimmed || undefined;
       }
 
-      function getWecomEntry(config) {
-        for (const key of WECOM_KEYS) {
-          if (isObject(config[key])) {
-            return { key, value: config[key] };
-          }
+      function resolveRawWecomEntry(config) {
+        if (isObject(config.wecom)) {
+          return config.wecom;
         }
 
-        return { key: currentWecomKey || "wecom", value: {} };
+        for (const key of LEGACY_WECOM_KEYS) {
+          if (isObject(config[key])) {
+            return config[key];
+          }
+        }
+        return {};
+      }
+
+      function sanitizeFeishuEntry(rawEntry) {
+        const source = isObject(rawEntry) ? rawEntry : {};
+        const draft = {};
+        const appId = readOptionalText(source.appId);
+        const secret = readOptionalText(source.secret) || readOptionalText(source.appSecret);
+
+        if (source.enabled === true) {
+          draft.enabled = true;
+        } else if (source.enabled === false) {
+          draft.enabled = false;
+        }
+
+        if (appId) {
+          draft.appId = appId;
+        }
+
+        if (secret) {
+          draft.secret = secret;
+        }
+
+        return draft;
+      }
+
+      function sanitizeWecomEntry(rawEntry) {
+        const source = isObject(rawEntry) ? rawEntry : {};
+        const draft = {};
+
+        if (source.enabled === true) {
+          draft.enabled = true;
+        } else if (source.enabled === false) {
+          draft.enabled = false;
+        }
+
+        return draft;
+      }
+
+      function sanitizeChannelsConfig(config) {
+        const source = isObject(config) ? config : {};
+        const next = {};
+
+        const feishu = sanitizeFeishuEntry(source.feishu);
+        if (Object.keys(feishu).length > 0) {
+          next.feishu = feishu;
+        }
+
+        const wecom = sanitizeWecomEntry(resolveRawWecomEntry(source));
+        if (Object.keys(wecom).length > 0) {
+          next.wecom = wecom;
+        }
+
+        return next;
       }
 
       function getChannelEntry(config, specKey) {
-        if (specKey === "wecom") {
-          const entry = getWecomEntry(config);
-          return {
-            key: entry.key,
-            value: isObject(entry.value) ? entry.value : {},
-          };
-        }
-
         const value = isObject(config[specKey]) ? config[specKey] : {};
         return { key: specKey, value };
       }
 
-      function setChannelEntry(config, specKey, channel, resolvedKey = "") {
+      function setChannelEntry(config, specKey, channel) {
         const channelObj = isObject(channel) ? channel : {};
-
-        if (specKey === "wecom") {
-          const key = resolvedKey || currentWecomKey || "wecom";
-          currentWecomKey = key;
-
-          for (const candidate of WECOM_KEYS) {
-            if (candidate !== key) {
-              delete config[candidate];
-            }
-          }
-
-          if (Object.keys(channelObj).length > 0) {
-            config[key] = channelObj;
-          } else {
-            delete config[key];
-          }
-          return;
-        }
 
         if (Object.keys(channelObj).length > 0) {
           config[specKey] = channelObj;
@@ -539,7 +422,7 @@
                     <span class="text-xs">开启</span>
                     <input class="toggle toggle-sm" type="checkbox" data-channel-enabled data-channel-key="${spec.key}" />
                   </label>
-                  <button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>
+                  ${spec.fields.length > 0 ? `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>` : ""}
                 </div>
               </div>
             </section>
@@ -572,12 +455,15 @@
 
         cardEls.enabled.checked = channel.enabled === true;
 
+        if (spec.fields.length === 0) {
+          cardEls.summary.textContent = channel.enabled === true ? "已开启" : "已关闭";
+          return;
+        }
+
         if (configured > 0) {
-          const keyText = spec.key === "wecom" ? `，键名：${entry.key}` : "";
-          cardEls.summary.textContent = `已配置 ${configured} 项参数${keyText}`;
+          cardEls.summary.textContent = `已配置 ${configured} 项参数`;
         } else {
-          const keyText = spec.key === "wecom" ? `（键名：${entry.key}）` : "";
-          cardEls.summary.textContent = `未配置参数${keyText}`;
+          cardEls.summary.textContent = "未配置参数";
         }
       }
 
@@ -703,14 +589,17 @@
         }
 
         const spec = findSpec(specKey);
+        if (spec.fields.length === 0) {
+          throw new Error(`${spec.title}仅支持开关，不需要额外参数`);
+        }
+
         const entry = getChannelEntry(channelsConfig, spec.key);
 
         activeSpec = spec;
-        activeResolvedKey = entry.key;
         activeDraft = cloneObject(entry.value);
 
         modalTitleEl.textContent = `${spec.title} 参数配置`;
-        modalSubtitleEl.textContent = "统一表单样式，仅展示常用字段；其余字段请在 JSON 模式中编辑。";
+        modalSubtitleEl.textContent = "统一表单样式，仅保留当前可编辑字段；其他通讯渠道到 openclaw 后台配置。";
         modalFieldsEl.innerHTML = spec.fields.map((field) => renderModalField(spec.key, field, activeDraft)).join("");
 
         showModal();
@@ -760,12 +649,7 @@
           readModalField(field, fieldEl, nextDraft, activeSpec.title);
         }
 
-        validatePolicySelections(activeSpec, nextDraft);
-        if (typeof activeSpec.validate === "function") {
-          activeSpec.validate(nextDraft);
-        }
-
-        setChannelEntry(channelsConfig, activeSpec.key, nextDraft, activeResolvedKey);
+        setChannelEntry(channelsConfig, activeSpec.key, nextDraft);
         fillCardForm(channelsConfig);
       }
 
@@ -788,12 +672,12 @@
           }
         }
 
-        setChannelEntry(channelsConfig, specKey, draft, entry.key);
+        setChannelEntry(channelsConfig, specKey, draft);
         updateCardState(findSpec(specKey), channelsConfig);
       }
 
       function buildCardConfig(baseConfig) {
-        const next = isObject(baseConfig) ? cloneObject(baseConfig) : {};
+        const next = sanitizeChannelsConfig(baseConfig);
 
         for (const spec of CHANNEL_SPECS) {
           const cardEls = getChannelCardElements(spec.key);
@@ -815,7 +699,7 @@
             }
           }
 
-          setChannelEntry(next, spec.key, channel, entry.key);
+          setChannelEntry(next, spec.key, channel);
         }
 
         return next;
@@ -836,15 +720,14 @@
 
       async function loadSection() {
         const data = await api(`/api/config/${SECTION}`);
-        channelsConfig = ensureObject(data.data || {}, SECTION);
-        currentWecomKey = getWecomEntry(channelsConfig).key;
+        channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
         fillCardForm(channelsConfig);
         jsonInputEl.value = pretty(channelsConfig);
         metaEl.textContent = `${SECTION} 已加载`;
       }
 
       function enterJsonMode() {
-        const draft = buildCardConfig(channelsConfig);
+        const draft = sanitizeChannelsConfig(buildCardConfig(channelsConfig));
         channelsConfig = draft;
         jsonInputEl.value = pretty(draft);
         mode = "json";
@@ -852,16 +735,17 @@
       }
 
       function leaveJsonMode() {
-        const parsed = parseJsonObject(jsonInputEl.value, SECTION);
+        const parsed = sanitizeChannelsConfig(parseJsonObject(jsonInputEl.value, SECTION));
         channelsConfig = parsed;
-        currentWecomKey = getWecomEntry(parsed).key;
         fillCardForm(parsed);
         mode = "card";
         renderMode();
       }
 
       async function saveSection() {
-        const payload = mode === "json" ? parseJsonObject(jsonInputEl.value, SECTION) : buildCardConfig(channelsConfig);
+        const payload = sanitizeChannelsConfig(
+          mode === "json" ? parseJsonObject(jsonInputEl.value, SECTION) : buildCardConfig(channelsConfig),
+        );
 
         await api(`/api/config/${SECTION}`, {
           method: "PUT",
@@ -869,7 +753,6 @@
         });
 
         channelsConfig = payload;
-        currentWecomKey = getWecomEntry(payload).key;
         fillCardForm(payload);
         jsonInputEl.value = pretty(payload);
         metaEl.textContent = `${SECTION} 配置已保存`;

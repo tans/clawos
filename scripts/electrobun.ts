@@ -1,14 +1,9 @@
-import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, statSync, unlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 type HostOs = "macos" | "win" | "linux";
 type ReleasePlatform = "darwin" | "win" | "linux";
 type Arch = "x64" | "arm64";
-
-const MIRROR_DEFAULTS = [
-  "https://gh.llkk.cc/{url}",
-  "https://ghproxy.net/{url}",
-];
 
 function resolvePlatform(): { hostOs: HostOs; releasePlatform: ReleasePlatform; arch: Arch } {
   const hostOs: HostOs =
@@ -28,137 +23,30 @@ async function readElectrobunVersion(electrobunDir: string): Promise<string> {
   return raw.version.trim();
 }
 
-function releaseAssetUrl(version: string, assetName: string): string {
-  return `https://github.com/blackboardsh/electrobun/releases/download/v${version}/${assetName}`;
+function resolveLocalDownloadAsset(assetName: string): string {
+  return join(process.cwd(), "download", assetName);
 }
 
-function resolveMirrorTemplates(): string[] {
-  const fromEnv = process.env.CLAWOS_ELECTROBUN_MIRRORS?.trim();
-  const templates = fromEnv
-    ? fromEnv
-        .split(/[\n,]/g)
-        .map((v) => v.trim())
-        .filter(Boolean)
-    : MIRROR_DEFAULTS;
-  return [...new Set(templates)];
-}
-
-function shouldUseLocalDownloadAsDefault(): boolean {
-  return !(process.env.CLAWOS_ELECTROBUN_MIRRORS || "").trim();
-}
-
-function buildCandidateUrls(sourceUrl: string): string[] {
-  const mirrorTemplates = resolveMirrorTemplates();
-  const expanded: string[] = [];
-
-  for (const template of mirrorTemplates) {
-    if (template.includes("{url}")) {
-      expanded.push(template.replaceAll("{url}", sourceUrl));
-      continue;
-    }
-    const prefix = template.endsWith("/") ? template : `${template}/`;
-    expanded.push(`${prefix}${sourceUrl}`);
+function copyAssetFromLocalDownload(assetName: string, targetPath: string, logPrefix: string): void {
+  const localAssetPath = resolveLocalDownloadAsset(assetName);
+  if (!existsSync(localAssetPath)) {
+    throw new Error(
+      [
+        `未找到离线包：${localAssetPath}`,
+        "当前模式已禁用镜像和 GitHub 下载。",
+        `请先把 ${assetName} 放到项目 download 目录。`,
+      ].join("\n")
+    );
   }
 
-  expanded.push(sourceUrl);
-  return [...new Set(expanded)];
-}
-
-function resolveLocalDownloadAsset(sourceUrl: string): string {
-  const fileName = basename(new URL(sourceUrl).pathname);
-  return join(process.cwd(), "download", fileName);
-}
-
-async function downloadToFile(url: string, filePath: string, timeoutMs = 12_000): Promise<number> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort("timeout"), timeoutMs);
-  try {
-    const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    if (!response.body) {
-      throw new Error("response body empty");
-    }
-
-    mkdirSync(dirname(filePath), { recursive: true });
-    const output = createWriteStream(filePath, { flags: "w" });
-    const reader = response.body.getReader();
-    let bytes = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      if (!value || value.byteLength === 0) {
-        continue;
-      }
-      output.write(Buffer.from(value));
-      bytes += value.byteLength;
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      output.end((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve();
-      });
-    });
-    return bytes;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function downloadAssetWithMirror(
-  sourceUrl: string,
-  targetPath: string,
-  logPrefix: string
-): Promise<void> {
-  const localAssetPath = resolveLocalDownloadAsset(sourceUrl);
-  if (shouldUseLocalDownloadAsDefault() && existsSync(localAssetPath)) {
-    try {
-      const size = statSync(localAssetPath).size;
-      if (size <= 0) {
-        throw new Error("local file is empty");
-      }
-      mkdirSync(dirname(targetPath), { recursive: true });
-      copyFileSync(localAssetPath, targetPath);
-      console.log(`[${logPrefix}] 使用本地离线包: ${localAssetPath}`);
-      return;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`[${logPrefix}] 本地离线包不可用，改为网络下载: ${localAssetPath} -> ${message}`);
-    }
+  const size = statSync(localAssetPath).size;
+  if (size <= 0) {
+    throw new Error(`离线包为空文件：${localAssetPath}`);
   }
 
-  const candidates = buildCandidateUrls(sourceUrl);
-  const errors: string[] = [];
-
-  for (const candidateUrl of candidates) {
-    try {
-      console.log(`[${logPrefix}] 下载中: ${candidateUrl}`);
-      const bytes = await downloadToFile(candidateUrl, targetPath);
-      if (!existsSync(targetPath) || bytes <= 0 || statSync(targetPath).size <= 0) {
-        throw new Error("downloaded file is empty");
-      }
-      return;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      errors.push(`${candidateUrl} -> ${message}`);
-    }
-  }
-
-  throw new Error(
-    [
-      "下载失败（已尝试镜像与 GitHub）",
-      ...errors.map((item) => `- ${item}`),
-      "可通过 CLAWOS_ELECTROBUN_MIRRORS 覆盖镜像列表（逗号分隔，支持 {url} 模板）。",
-    ].join("\n")
-  );
+  mkdirSync(dirname(targetPath), { recursive: true });
+  copyFileSync(localAssetPath, targetPath);
+  console.log(`[${logPrefix}] 使用本地离线包: ${localAssetPath}`);
 }
 
 function requiredCoreBinaryPaths(electrobunDir: string, hostOs: HostOs, arch: Arch): string[] {
@@ -185,7 +73,7 @@ function hasCoreDependencies(electrobunDir: string, hostOs: HostOs, arch: Arch):
   return requiredCoreBinaryPaths(electrobunDir, hostOs, arch).every((filePath) => existsSync(filePath));
 }
 
-async function ensureElectrobunCliFromMirror(
+async function ensureElectrobunCliFromLocalPackage(
   electrobunDir: string,
   releasePlatform: ReleasePlatform,
   arch: Arch,
@@ -213,11 +101,10 @@ async function ensureElectrobunCliFromMirror(
   }
 
   const cliAsset = `electrobun-cli-${releasePlatform}-${arch}.tar.gz`;
-  const sourceUrl = releaseAssetUrl(version, cliAsset);
   const tempTarPath = join(cacheDir, `clawos-cli-${versionTag}-${releasePlatform}-${arch}.tar.gz`);
 
   try {
-    await downloadAssetWithMirror(sourceUrl, tempTarPath, "electrobun-cli");
+    copyAssetFromLocalDownload(cliAsset, tempTarPath, "electrobun-cli");
     const archiveBytes = await Bun.file(tempTarPath).arrayBuffer();
     const archive = new Bun.Archive(archiveBytes);
     mkdirSync(cacheDir, { recursive: true });
@@ -241,7 +128,7 @@ async function ensureElectrobunCliFromMirror(
   return binCliPath;
 }
 
-async function ensureElectrobunCoreFromMirror(
+async function ensureElectrobunCoreFromLocalPackage(
   electrobunDir: string,
   hostOs: HostOs,
   releasePlatform: ReleasePlatform,
@@ -253,11 +140,10 @@ async function ensureElectrobunCoreFromMirror(
   }
 
   const coreAsset = `electrobun-core-${releasePlatform}-${arch}.tar.gz`;
-  const sourceUrl = releaseAssetUrl(version, coreAsset);
   const tempTarPath = join(electrobunDir, `.clawos-core-${releasePlatform}-${arch}.tar.gz`);
 
   try {
-    await downloadAssetWithMirror(sourceUrl, tempTarPath, "electrobun-core");
+    copyAssetFromLocalDownload(coreAsset, tempTarPath, "electrobun-core");
     const archiveBytes = await Bun.file(tempTarPath).arrayBuffer();
     const archive = new Bun.Archive(archiveBytes);
     const targetDir = join(electrobunDir, `dist-${hostOs}-${arch}`);
@@ -272,7 +158,7 @@ async function ensureElectrobunCoreFromMirror(
   }
 
   if (!hasCoreDependencies(electrobunDir, hostOs, arch)) {
-    throw new Error("镜像包已下载并解压，但 electrobun core 依赖仍不完整。");
+    throw new Error("离线包已解压，但 electrobun core 依赖仍不完整。");
   }
 }
 
@@ -298,10 +184,10 @@ async function main(): Promise<void> {
   }
 
   const version = await readElectrobunVersion(electrobunDir);
-  const cliPath = await ensureElectrobunCliFromMirror(electrobunDir, releasePlatform, arch, version);
+  const cliPath = await ensureElectrobunCliFromLocalPackage(electrobunDir, releasePlatform, arch, version);
 
   if (args.length > 0 && !["--help", "-h", "help"].includes(args[0])) {
-    await ensureElectrobunCoreFromMirror(electrobunDir, hostOs, releasePlatform, arch, version);
+    await ensureElectrobunCoreFromLocalPackage(electrobunDir, hostOs, releasePlatform, arch, version);
   }
 
   const code = await runElectrobunCliBinary(cliPath, args);
