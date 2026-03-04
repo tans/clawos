@@ -43,6 +43,10 @@ function resolveMirrorTemplates(): string[] {
   return [...new Set(templates)];
 }
 
+function shouldUseLocalDownloadAsDefault(): boolean {
+  return !(process.env.CLAWOS_ELECTROBUN_MIRRORS || "").trim();
+}
+
 function buildCandidateUrls(sourceUrl: string): string[] {
   const mirrorTemplates = resolveMirrorTemplates();
   const expanded: string[] = [];
@@ -115,7 +119,7 @@ async function downloadAssetWithMirror(
   logPrefix: string
 ): Promise<void> {
   const localAssetPath = resolveLocalDownloadAsset(sourceUrl);
-  if (existsSync(localAssetPath)) {
+  if (shouldUseLocalDownloadAsDefault() && existsSync(localAssetPath)) {
     try {
       const size = statSync(localAssetPath).size;
       if (size <= 0) {
