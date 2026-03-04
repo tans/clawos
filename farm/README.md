@@ -1,9 +1,9 @@
-# clawos-cloud
+# clawos-farm
 
 `clawos` 云端控制面工程，技术栈：`bun + hono + sqlite`。
 
 ## 文档
-- 配置与启动文档：[/Users/ke/code/clawos/cloud/CONFIG_AND_START.md](/Users/ke/code/clawos/cloud/CONFIG_AND_START.md)
+- 配置与启动文档：[/Users/ke/code/clawos/farm/CONFIG_AND_START.md](/Users/ke/code/clawos/farm/CONFIG_AND_START.md)
 - 协议文档：[/Users/ke/code/clawos/cloud-remote-control-protocol.md](/Users/ke/code/clawos/cloud-remote-control-protocol.md)
 
 ## 已实现能力
@@ -23,7 +23,7 @@
 ## 本地运行
 
 ```bash
-cd cloud
+cd farm
 bun install
 bun run dev
 ```
@@ -36,5 +36,5 @@ bun run dev
 - 健康检查: [http://127.0.0.1:8787/health](http://127.0.0.1:8787/health)
 
 ## 数据库
-- 默认路径：`cloud/data/cloud.db`
-- 可通过环境变量覆盖：`CLOUD_DB_PATH=/path/to/cloud.db`
+- 默认路径：`farm/data/farm.db`
+- 可通过环境变量覆盖：`FARM_DB_PATH=/path/to/farm.db`

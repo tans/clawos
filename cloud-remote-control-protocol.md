@@ -227,4 +227,4 @@ Cloud 根据心跳更新状态：`online | degraded | offline`。
 
 ## 10. 仓库对应
 - 协议文档：`/Users/ke/code/clawos/cloud-remote-control-protocol.md`
-- 云端工程：`/Users/ke/code/clawos/cloud`
+- 云端工程：`/Users/ke/code/clawos/farm`

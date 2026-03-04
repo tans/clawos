@@ -1,9 +1,9 @@
 # ClawOS Cloud 配置与启动文档
 
-本文档说明 `cloud` 服务的配置、启动、首次初始化和 Agent 接入方式。
+本文档说明 `farm` 服务的配置、启动、首次初始化和 Agent 接入方式。
 
 ## 1. 项目位置与技术栈
-- 目录：`/Users/ke/code/clawos/cloud`
+- 目录：`/Users/ke/code/clawos/farm`
 - 运行时：`bun`
 - Web 框架：`hono`
 - 存储：`sqlite`
@@ -13,7 +13,7 @@
 - 进入目录：
 
 ```bash
-cd /Users/ke/code/clawos/cloud
+cd /Users/ke/code/clawos/farm
 ```
 
 - 安装依赖：
@@ -29,13 +29,13 @@ bun install
 | 变量名 | 默认值 | 说明 |
 |---|---|---|
 | `PORT` | `8787` | Cloud HTTP 服务监听端口 |
-| `CLOUD_DB_PATH` | `cloud/data/cloud.db` | SQLite 数据库文件路径 |
+| `FARM_DB_PATH` | `farm/data/farm.db` | SQLite 数据库文件路径 |
 
 示例：
 
 ```bash
 export PORT=8787
-export CLOUD_DB_PATH=/data/clawos/cloud.db
+export FARM_DB_PATH=/data/clawos/farm.db
 ```
 
 ## 4. 启动方式
@@ -138,9 +138,9 @@ curl -X POST "http://127.0.0.1:8787/api/agent/commands/<commandId>/result" \
 ## 8. 数据文件
 
 默认会自动创建：
-- `cloud/data/cloud.db`
-- `cloud/data/cloud.db-shm`
-- `cloud/data/cloud.db-wal`
+- `farm/data/farm.db`
+- `farm/data/farm.db-shm`
+- `farm/data/farm.db-wal`
 
 仓库已忽略数据库与 `node_modules`。
 
@@ -166,9 +166,9 @@ PORT=8877 bun run start
 ## 10. 生产部署建议
 - 使用反向代理（Nginx/Caddy）对外暴露 HTTPS 域名
 - 限制数据库文件目录权限
-- 定期备份 `cloud.db`
+- 定期备份 `farm.db`
 - 打开访问日志并结合 `/api/audit` 做审计追踪
 
 ## 11. 关联文档
-- Cloud 简介：[/Users/ke/code/clawos/cloud/README.md](/Users/ke/code/clawos/cloud/README.md)
+- Farm 简介：[/Users/ke/code/clawos/farm/README.md](/Users/ke/code/clawos/farm/README.md)
 - 协议文档：[/Users/ke/code/clawos/cloud-remote-control-protocol.md](/Users/ke/code/clawos/cloud-remote-control-protocol.md)
