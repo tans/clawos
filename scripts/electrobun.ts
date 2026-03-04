@@ -1,5 +1,5 @@
 import { chmodSync, copyFileSync, createWriteStream, existsSync, mkdirSync, statSync, unlinkSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 type HostOs = "macos" | "win" | "linux";
 type ReleasePlatform = "darwin" | "win" | "linux";
@@ -60,6 +60,11 @@ function buildCandidateUrls(sourceUrl: string): string[] {
   return [...new Set(expanded)];
 }
 
+function resolveLocalDownloadAsset(sourceUrl: string): string {
+  const fileName = basename(new URL(sourceUrl).pathname);
+  return join(process.cwd(), "download", fileName);
+}
+
 async function downloadToFile(url: string, filePath: string, timeoutMs = 12_000): Promise<number> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort("timeout"), timeoutMs);
@@ -109,6 +114,23 @@ async function downloadAssetWithMirror(
   targetPath: string,
   logPrefix: string
 ): Promise<void> {
+  const localAssetPath = resolveLocalDownloadAsset(sourceUrl);
+  if (existsSync(localAssetPath)) {
+    try {
+      const size = statSync(localAssetPath).size;
+      if (size <= 0) {
+        throw new Error("local file is empty");
+      }
+      mkdirSync(dirname(targetPath), { recursive: true });
+      copyFileSync(localAssetPath, targetPath);
+      console.log(`[${logPrefix}] 使用本地离线包: ${localAssetPath}`);
+      return;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`[${logPrefix}] 本地离线包不可用，改为网络下载: ${localAssetPath} -> ${message}`);
+    }
+  }
+
   const candidates = buildCandidateUrls(sourceUrl);
   const errors: string[] = [];
 
