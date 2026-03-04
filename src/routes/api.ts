@@ -21,6 +21,8 @@ import { readWalletBalances } from "../system/wallet-balance";
 import { startBrowserConfigResetTask, startBrowserRestartTask } from "../tasks/browser";
 import {
   getQwGatewayStartupStatus,
+  listOpenclawConfigBackups,
+  startOpenclawConfigRollbackTask,
   startGatewayControlTask,
   startGatewayStatusTask,
   startGatewayUpdateTask,
@@ -74,6 +76,14 @@ function readRequiredBoolean(body: Record<string, unknown>, field: string): bool
     throw new HttpError(400, `${field} 必须是 boolean。`);
   }
   return value;
+}
+
+function readRequiredNonEmptyString(body: Record<string, unknown>, field: string): string {
+  const value = body[field];
+  if (typeof value !== "string" || !value.trim()) {
+    throw new HttpError(400, `${field} 必须是非空字符串。`);
+  }
+  return value.trim();
 }
 
 function parseLocalGatewayBody(body: Record<string, unknown>): Partial<LocalGatewayConnectionConfig> {
@@ -194,6 +204,17 @@ async function handleGatewayAction(req: Request): Promise<Response> {
 
   const task = startGatewayControlTask(action);
   return jsonResponse({ ok: true, taskId: task.id, task });
+}
+
+async function handleOpenclawConfigRollback(req: Request): Promise<Response> {
+  const body = await parseJsonBody(req);
+  const backupPath = readRequiredNonEmptyString(body, "backupPath");
+  if (/[\r\n\0]/.test(backupPath)) {
+    throw new HttpError(400, "backupPath 包含非法字符。");
+  }
+
+  const { task, reused } = await startOpenclawConfigRollbackTask(backupPath);
+  return jsonResponse({ ok: true, taskId: task.id, task, reused });
 }
 
 async function handleBrowserAction(req: Request): Promise<Response> {
@@ -407,6 +428,15 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
   if (path === "/api/gateway/update" && req.method === "POST") {
     const { task, reused } = startGatewayUpdateTask();
     return jsonResponse({ ok: true, taskId: task.id, task, reused });
+  }
+
+  if (path === "/api/gateway/config/backups" && req.method === "GET") {
+    const backups = await listOpenclawConfigBackups();
+    return jsonResponse({ ok: true, backups });
+  }
+
+  if (path === "/api/gateway/config/rollback" && req.method === "POST") {
+    return await handleOpenclawConfigRollback(req);
   }
 
   if (path === "/api/gateway/action" && req.method === "POST") {

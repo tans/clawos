@@ -16,18 +16,561 @@
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <h1 class="text-lg font-semibold">大模型</h1>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+            <button class="btn btn-primary btn-xs" type="button" data-action="save">保存配置</button>
+          </div>
         </header>
 
-        <section class="flex flex-1 items-center justify-center p-6">
-          <div class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body items-center gap-4 text-center">
-              <div class="text-sm text-base-content/80">开发中，请跳转到openclaw后台设置。</div>
+        <section class="flex-1 p-6">
+          <section class="card card-compact border border-warning/30 bg-warning/10">
+            <div class="card-body gap-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="card-title text-base">配置提示</h2>
+                <button class="btn btn-warning btn-xs" type="button" data-openclaw-entry>打开 openclaw 后台</button>
+              </div>
+              <div class="text-sm text-base-content/80">
+                每个大模型仅保留一个 API Key 输入；用单选框选择 primary，用复选框勾选 fallback。
+              </div>
             </div>
-          </div>
+          </section>
+
+          <section class="mt-4 card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-3">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="card-title text-base">模型路由</h2>
+                <span class="text-[11px] text-base-content/60">primary 只能选一个，fallback 可多选。</span>
+              </div>
+              <div class="grid gap-3 xl:grid-cols-2" data-model-list></div>
+            </div>
+          </section>
+
+          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
         </section>
       </main>
     </div>
 
     <script src="/sidebar-update.js"></script>
+
+    <script>
+      const MODEL_SECTION = "models";
+      const AGENT_SECTION = "agents";
+      const MODEL_API_OPTIONS = [
+        "openai-completions",
+        "openai-responses",
+        "anthropic-messages",
+        "google-generative-ai",
+        "github-copilot",
+        "bedrock-converse-stream",
+      ];
+      const PROVIDER_PRESETS = [
+        {
+          key: "deepseek",
+          title: "DeepSeek",
+          baseUrl: "https://api.deepseek.com/v1",
+          api: "openai-completions",
+          modelId: "deepseek-chat",
+        },
+        {
+          key: "openai",
+          title: "OpenAI",
+          baseUrl: "https://api.openai.com/v1",
+          api: "openai-responses",
+          modelId: "gpt-4.1-mini",
+        },
+        {
+          key: "anthropic",
+          title: "Anthropic",
+          baseUrl: "https://api.anthropic.com/v1",
+          api: "anthropic-messages",
+          modelId: "claude-3-5-haiku-latest",
+        },
+      ];
+
+      const presetByProviderKey = new Map(PROVIDER_PRESETS.map((item) => [item.key, item]));
+      const presetOrder = new Map(PROVIDER_PRESETS.map((item, index) => [item.key, index]));
+      const metaEl = document.querySelector("[data-meta]");
+      const modelListEl = document.querySelector("[data-model-list]");
+      const reloadBtn = document.querySelector('[data-action="reload"]');
+      const saveBtn = document.querySelector('[data-action="save"]');
+
+      let modelsConfig = {};
+      let agentsConfig = {};
+      let providerDrafts = [];
+
+      function isObject(value) {
+        return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+      }
+
+      function ensureObject(value, field) {
+        if (!isObject(value)) {
+          throw new Error(`${field} 必须是 JSON 对象`);
+        }
+        return value;
+      }
+
+      function cloneObject(value) {
+        return JSON.parse(JSON.stringify(value || {}));
+      }
+
+      function readOptionalText(value) {
+        if (typeof value !== "string") {
+          return "";
+        }
+        return value.trim();
+      }
+
+      function escapeHtml(raw) {
+        return String(raw)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function parseProviderModel(raw) {
+        const text = readOptionalText(raw);
+        if (!text) {
+          return null;
+        }
+
+        const slashIndex = text.indexOf("/");
+        if (slashIndex <= 0 || slashIndex >= text.length - 1) {
+          return null;
+        }
+
+        const provider = text.slice(0, slashIndex).trim();
+        const model = text.slice(slashIndex + 1).trim();
+        if (!provider || !model) {
+          return null;
+        }
+
+        return {
+          provider,
+          model,
+          key: `${provider}/${model}`,
+        };
+      }
+
+      function readProviderModels(provider) {
+        const models = Array.isArray(provider?.models) ? provider.models : [];
+        return models.filter((item) => isObject(item) && readOptionalText(item.id));
+      }
+
+      function resolveTitle(providerKey) {
+        const preset = presetByProviderKey.get(providerKey);
+        if (preset && readOptionalText(preset.title)) {
+          return preset.title;
+        }
+        return providerKey || "未命名";
+      }
+
+      function readAgentRouting(sourceAgents) {
+        const agents = ensureObject(sourceAgents || {}, AGENT_SECTION);
+        const defaults = isObject(agents.defaults) ? agents.defaults : {};
+        const model = isObject(defaults.model) ? defaults.model : {};
+
+        const primaryRef = parseProviderModel(model.primary);
+        const fallbackRefs = Array.isArray(model.fallbacks)
+          ? model.fallbacks.map((item) => parseProviderModel(item)).filter(Boolean)
+          : [];
+
+        const modelByProvider = new Map();
+        const fallbackProviderSet = new Set();
+
+        if (primaryRef) {
+          modelByProvider.set(primaryRef.provider, primaryRef.model);
+        }
+
+        for (const ref of fallbackRefs) {
+          fallbackProviderSet.add(ref.provider);
+          if (!modelByProvider.has(ref.provider)) {
+            modelByProvider.set(ref.provider, ref.model);
+          }
+        }
+
+        return {
+          primaryRef,
+          fallbackProviderSet,
+          modelByProvider,
+        };
+      }
+
+      function buildProviderDrafts(sourceModels, sourceAgents) {
+        const models = ensureObject(sourceModels || {}, MODEL_SECTION);
+        const providers = isObject(models.providers) ? models.providers : {};
+        const routing = readAgentRouting(sourceAgents);
+        const providerKeys = new Set(Object.keys(providers));
+
+        if (routing.primaryRef) {
+          providerKeys.add(routing.primaryRef.provider);
+        }
+        for (const providerKey of routing.fallbackProviderSet) {
+          providerKeys.add(providerKey);
+        }
+        if (providerKeys.size === 0) {
+          for (const preset of PROVIDER_PRESETS) {
+            providerKeys.add(preset.key);
+          }
+        }
+
+        const keys = Array.from(providerKeys);
+        keys.sort((left, right) => {
+          const leftOrder = presetOrder.has(left) ? presetOrder.get(left) : 10_000;
+          const rightOrder = presetOrder.has(right) ? presetOrder.get(right) : 10_000;
+          if (leftOrder !== rightOrder) {
+            return leftOrder - rightOrder;
+          }
+          return left.localeCompare(right);
+        });
+
+        const drafts = keys.map((providerKey) => {
+          const provider = isObject(providers[providerKey]) ? providers[providerKey] : {};
+          const preset = presetByProviderKey.get(providerKey);
+          const existingModels = readProviderModels(provider);
+          const referencedModelId = routing.modelByProvider.get(providerKey) || "";
+          const firstModel = existingModels[0] || null;
+          const modelId = referencedModelId || readOptionalText(firstModel?.id) || readOptionalText(preset?.modelId);
+          const exactModel = existingModels.find((item) => readOptionalText(item.id) === modelId) || firstModel;
+          const modelName = readOptionalText(exactModel?.name) || modelId;
+
+          return {
+            providerKey,
+            title: resolveTitle(providerKey),
+            existing: isObject(providers[providerKey]),
+            baseUrl: readOptionalText(provider.baseUrl) || readOptionalText(preset?.baseUrl),
+            api: readOptionalText(provider.api) || readOptionalText(preset?.api),
+            apiKey: readOptionalText(provider.apiKey),
+            modelId,
+            modelName,
+            primary: routing.primaryRef ? routing.primaryRef.provider === providerKey : false,
+            fallback: routing.fallbackProviderSet.has(providerKey),
+          };
+        });
+
+        const hasPrimary = drafts.some((item) => item.primary);
+        if (!hasPrimary && drafts.length > 0) {
+          drafts[0].primary = true;
+        }
+
+        for (const item of drafts) {
+          if (item.primary) {
+            item.fallback = false;
+          }
+        }
+
+        return drafts;
+      }
+
+      function renderApiOptions(currentValue) {
+        const current = readOptionalText(currentValue);
+        const values = current && !MODEL_API_OPTIONS.includes(current) ? [current, ...MODEL_API_OPTIONS] : MODEL_API_OPTIONS;
+        return values
+          .map((item) => {
+            const selected = item === current ? "selected" : "";
+            return `<option value="${escapeHtml(item)}" ${selected}>${escapeHtml(item)}</option>`;
+          })
+          .join("");
+      }
+
+      function renderCards() {
+        if (!modelListEl) {
+          return;
+        }
+
+        modelListEl.innerHTML = providerDrafts
+          .map((item) => {
+            const primaryChecked = item.primary ? "checked" : "";
+            const fallbackChecked = item.primary ? "" : item.fallback ? "checked" : "";
+            const fallbackDisabled = item.primary ? "disabled" : "";
+            return `
+              <section class="rounded-lg border border-base-200 p-3" data-provider-card data-provider-key="${escapeHtml(item.providerKey)}">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="text-sm font-medium">${escapeHtml(item.title)}</div>
+                    <div class="text-[11px] text-base-content/60 font-mono">${escapeHtml(item.providerKey)}</div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
+                      <span class="text-xs">Primary</span>
+                      <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
+                    </label>
+                    <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
+                      <span class="text-xs">Fallback</span>
+                      <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
+                    </label>
+                  </div>
+                </div>
+
+                <div class="mt-3 grid gap-3">
+                  <label class="form-control w-full gap-1">
+                    <span class="text-xs text-base-content/70">模型 ID</span>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="gpt-4.1-mini" />
+                  </label>
+
+                  <label class="form-control w-full gap-1">
+                    <span class="text-xs text-base-content/70">API Key</span>
+                    <input class="input input-bordered input-sm font-mono" type="password" data-field="api-key" value="${escapeHtml(item.apiKey)}" placeholder="sk-..." />
+                  </label>
+
+                  <label class="form-control w-full gap-1">
+                    <span class="text-xs text-base-content/70">Base URL</span>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="base-url" value="${escapeHtml(item.baseUrl)}" placeholder="https://api.example.com/v1" />
+                  </label>
+
+                  <label class="form-control w-full gap-1">
+                    <span class="text-xs text-base-content/70">API 协议</span>
+                    <select class="select select-bordered select-sm" data-field="api">${renderApiOptions(item.api)}</select>
+                  </label>
+                </div>
+              </section>
+            `;
+          })
+          .join("");
+
+        syncSelectionUI();
+      }
+
+      function readProviderDraftsFromDom() {
+        const cards = Array.from(modelListEl.querySelectorAll("[data-provider-card]"));
+        return cards.map((card) => {
+          const providerKey = readOptionalText(card.getAttribute("data-provider-key"));
+          const origin = providerDrafts.find((item) => item.providerKey === providerKey);
+          const modelIdInput = card.querySelector('[data-field="model-id"]');
+          const apiKeyInput = card.querySelector('[data-field="api-key"]');
+          const baseUrlInput = card.querySelector('[data-field="base-url"]');
+          const apiSelect = card.querySelector('[data-field="api"]');
+          const fallbackInput = card.querySelector('[data-field="fallback"]');
+          const primaryInput = card.querySelector('input[name="primary-model"]');
+
+          return {
+            providerKey,
+            title: origin ? origin.title : resolveTitle(providerKey),
+            existing: origin ? origin.existing : false,
+            modelId: readOptionalText(modelIdInput?.value),
+            modelName: readOptionalText(modelIdInput?.value),
+            apiKey: readOptionalText(apiKeyInput?.value),
+            baseUrl: readOptionalText(baseUrlInput?.value),
+            api: readOptionalText(apiSelect?.value),
+            fallback: Boolean(fallbackInput?.checked),
+            primary: Boolean(primaryInput?.checked),
+          };
+        });
+      }
+
+      function syncSelectionUI() {
+        const checkedPrimary = modelListEl.querySelector('input[name="primary-model"]:checked');
+        const primaryProvider = readOptionalText(checkedPrimary?.value);
+        const cards = Array.from(modelListEl.querySelectorAll("[data-provider-card]"));
+
+        for (const card of cards) {
+          const providerKey = readOptionalText(card.getAttribute("data-provider-key"));
+          const fallbackInput = card.querySelector('[data-field="fallback"]');
+          if (!(fallbackInput instanceof HTMLInputElement)) {
+            continue;
+          }
+
+          if (providerKey && providerKey === primaryProvider) {
+            fallbackInput.checked = false;
+            fallbackInput.disabled = true;
+          } else {
+            fallbackInput.disabled = false;
+          }
+        }
+      }
+
+      function buildNextModelsConfig(baseConfig, drafts) {
+        const next = ensureObject(cloneObject(baseConfig || {}), MODEL_SECTION);
+        const providers = isObject(next.providers) ? cloneObject(next.providers) : {};
+
+        for (const draft of drafts) {
+          const providerKey = readOptionalText(draft.providerKey);
+          if (!providerKey) {
+            continue;
+          }
+
+          const keepProvider = Boolean(draft.existing || draft.primary || draft.fallback || draft.apiKey);
+          if (!keepProvider) {
+            continue;
+          }
+
+          const preset = presetByProviderKey.get(providerKey);
+          const currentProvider = isObject(providers[providerKey]) ? cloneObject(providers[providerKey]) : {};
+          const currentModels = readProviderModels(currentProvider);
+          const modelId = readOptionalText(draft.modelId);
+          if (!modelId) {
+            throw new Error(`${resolveTitle(providerKey)} 的模型 ID 不能为空`);
+          }
+
+          const baseUrl = readOptionalText(draft.baseUrl) || readOptionalText(currentProvider.baseUrl) || readOptionalText(preset?.baseUrl);
+          if (!baseUrl) {
+            throw new Error(`${resolveTitle(providerKey)} 的 Base URL 不能为空`);
+          }
+
+          const existingModel = currentModels.find((item) => readOptionalText(item.id) === modelId);
+          const modelName = readOptionalText(draft.modelName) || readOptionalText(existingModel?.name) || modelId;
+          const nextModel = existingModel ? { ...existingModel, id: modelId, name: modelName } : { id: modelId, name: modelName };
+
+          currentProvider.baseUrl = baseUrl;
+          currentProvider.models = [nextModel];
+
+          const api = readOptionalText(draft.api) || readOptionalText(currentProvider.api) || readOptionalText(preset?.api);
+          if (api) {
+            currentProvider.api = api;
+          } else {
+            delete currentProvider.api;
+          }
+
+          if (draft.apiKey) {
+            currentProvider.apiKey = draft.apiKey;
+          } else {
+            delete currentProvider.apiKey;
+          }
+
+          providers[providerKey] = currentProvider;
+        }
+
+        next.providers = providers;
+        return next;
+      }
+
+      function buildNextAgentsConfig(baseConfig, drafts) {
+        const next = ensureObject(cloneObject(baseConfig || {}), AGENT_SECTION);
+        const defaults = isObject(next.defaults) ? cloneObject(next.defaults) : {};
+        const model = isObject(defaults.model) ? cloneObject(defaults.model) : {};
+        const primaryDraft = drafts.find((item) => item.primary);
+
+        if (!primaryDraft) {
+          throw new Error("请先选择一个 primary 模型");
+        }
+
+        const primaryModelId = readOptionalText(primaryDraft.modelId);
+        if (!primaryModelId) {
+          throw new Error(`${resolveTitle(primaryDraft.providerKey)} 的模型 ID 不能为空`);
+        }
+
+        const primaryKey = `${primaryDraft.providerKey}/${primaryModelId}`;
+        const fallbackKeys = [];
+        const seen = new Set();
+
+        for (const draft of drafts) {
+          if (!draft.fallback) {
+            continue;
+          }
+
+          const modelId = readOptionalText(draft.modelId);
+          if (!modelId) {
+            throw new Error(`${resolveTitle(draft.providerKey)} 的模型 ID 不能为空`);
+          }
+
+          const key = `${draft.providerKey}/${modelId}`;
+          if (key === primaryKey || seen.has(key)) {
+            continue;
+          }
+          seen.add(key);
+          fallbackKeys.push(key);
+        }
+
+        model.primary = primaryKey;
+        model.fallbacks = fallbackKeys;
+        defaults.model = model;
+        next.defaults = defaults;
+        return next;
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      async function loadSections() {
+        const [modelsData, agentsData] = await Promise.all([api(`/api/config/${MODEL_SECTION}`), api(`/api/config/${AGENT_SECTION}`)]);
+
+        modelsConfig = ensureObject(modelsData.data || {}, MODEL_SECTION);
+        agentsConfig = ensureObject(agentsData.data || {}, AGENT_SECTION);
+        providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
+        renderCards();
+        metaEl.textContent = "大模型配置已加载";
+      }
+
+      async function saveSections() {
+        const drafts = readProviderDraftsFromDom();
+        const nextModels = buildNextModelsConfig(modelsConfig, drafts);
+        const nextAgents = buildNextAgentsConfig(agentsConfig, drafts);
+
+        await api(`/api/config/${MODEL_SECTION}`, {
+          method: "PUT",
+          body: JSON.stringify({ data: nextModels }),
+        });
+        await api(`/api/config/${AGENT_SECTION}`, {
+          method: "PUT",
+          body: JSON.stringify({ data: nextAgents }),
+        });
+
+        modelsConfig = nextModels;
+        agentsConfig = nextAgents;
+        providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
+        renderCards();
+        metaEl.textContent = "大模型配置已保存";
+      }
+
+      if (modelListEl) {
+        modelListEl.addEventListener("change", (event) => {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) {
+            return;
+          }
+
+          const isPrimaryRadio = target.matches('input[name="primary-model"]');
+          const isFallback = target.matches('[data-field="fallback"]');
+          if (!isPrimaryRadio && !isFallback) {
+            return;
+          }
+          syncSelectionUI();
+        });
+      }
+
+      if (reloadBtn) {
+        reloadBtn.addEventListener("click", async () => {
+          reloadBtn.disabled = true;
+          try {
+            await loadSections();
+          } catch (error) {
+            metaEl.textContent = `加载失败: ${error.message}`;
+          } finally {
+            reloadBtn.disabled = false;
+          }
+        });
+      }
+
+      if (saveBtn) {
+        saveBtn.addEventListener("click", async () => {
+          saveBtn.disabled = true;
+          try {
+            await saveSections();
+          } catch (error) {
+            metaEl.textContent = `保存失败: ${error.message}`;
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+      }
+
+      (async function init() {
+        try {
+          await loadSections();
+        } catch (error) {
+          metaEl.textContent = `初始化失败: ${error.message}`;
+        }
+      })();
+    </script>
   </body>
 </html>

@@ -14,6 +14,8 @@ import path from "node:path";
 const IS_WINDOWS = process.platform === "win32";
 export const DEFAULT_QWCLI_EXE_PATH = "c:\\xiake\\qwcli\\cli.exe";
 export const OPENCLAW_SOURCE_DIR = "/data/openclaw";
+export const OPENCLAW_CONFIG_DIR = "/root/.openclaw";
+export const OPENCLAW_CONFIG_PATH = `${OPENCLAW_CONFIG_DIR}/openclaw.json`;
 const QW_GATEWAY_STABLE_WINDOW_MS = 10_000;
 
 type QwGatewayRestartTrigger = "manual" | "startup";
@@ -25,6 +27,14 @@ type QwGatewayStartupStatus = {
   taskId: string | null;
   message: string;
   updatedAt: string | null;
+};
+
+export type OpenclawConfigBackup = {
+  path: string;
+  fileName: string;
+  modifiedAt: string;
+  modifiedAtEpoch: number;
+  size: number;
 };
 
 const qwGatewayStartupStatus: QwGatewayStartupStatus = {
@@ -150,6 +160,95 @@ function buildOpenclawStepScript(command: string): string {
 
 function escapeDoubleQuotedShell(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
+}
+
+function buildOpenclawConfigBackupListScript(): string {
+  return [
+    "set -euo pipefail",
+    `config_dir="${OPENCLAW_CONFIG_DIR}"`,
+    'if [ ! -d "$config_dir" ]; then',
+    "  exit 0",
+    "fi",
+    "shopt -s nullglob",
+    'files=("$config_dir"/openclaw.json*.bak*)',
+    'if [ "${#files[@]}" -eq 0 ]; then',
+    "  exit 0",
+    "fi",
+    'for file in "${files[@]}"; do',
+    '  if [ -f "$file" ]; then',
+    '    mtime="$(stat -c "%Y" "$file")"',
+    '    size="$(stat -c "%s" "$file")"',
+    '    printf "%s\\t%s\\t%s\\n" "$mtime" "$size" "$file"',
+    "  fi",
+    'done | sort -rn -k1,1',
+  ].join("\n");
+}
+
+export function parseOpenclawConfigBackupLine(line: string): OpenclawConfigBackup | null {
+  const match = line.match(/^(\d+)\t(\d+)\t(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const modifiedAtEpoch = Number(match[1]);
+  const size = Number(match[2]);
+  const backupPath = match[3].trim();
+  if (!Number.isFinite(modifiedAtEpoch) || !Number.isFinite(size) || !backupPath) {
+    return null;
+  }
+
+  return {
+    path: backupPath,
+    fileName: path.posix.basename(backupPath),
+    modifiedAt: new Date(modifiedAtEpoch * 1000).toISOString(),
+    modifiedAtEpoch,
+    size,
+  };
+}
+
+export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackup[]> {
+  const result = await runWslScript(buildOpenclawConfigBackupListScript());
+  if (!result.ok) {
+    throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）`);
+  }
+
+  return normalizeOutput(result.stdout)
+    .map((line) => parseOpenclawConfigBackupLine(line))
+    .filter((item): item is OpenclawConfigBackup => Boolean(item));
+}
+
+export function buildOpenclawConfigRollbackSteps(backupPath: string): Step[] {
+  const safeBackupPath = escapeDoubleQuotedShell(backupPath);
+  const stepCommand = `cp "${backupPath}" "${OPENCLAW_CONFIG_PATH}" && openclaw gateway restart`;
+  const script = [
+    "set -euo pipefail",
+    `backup_path="${safeBackupPath}"`,
+    `target_path="${OPENCLAW_CONFIG_PATH}"`,
+    'if [ ! -f "$backup_path" ]; then',
+    '  echo "备份文件不存在：$backup_path" >&2',
+    "  exit 1",
+    "fi",
+    'backup_dir="$(dirname "$target_path")"',
+    'mkdir -p "$backup_dir"',
+    'if [ -f "$target_path" ]; then',
+    '  rollback_snapshot="$target_path.before-rollback.$(date +%Y%m%d-%H%M%S).bak"',
+    '  cp "$target_path" "$rollback_snapshot"',
+    '  echo "已备份当前配置：$rollback_snapshot"',
+    "else",
+    '  echo "当前配置不存在，将直接从备份恢复。"',
+    "fi",
+    'cp "$backup_path" "$target_path"',
+    'echo "已恢复配置：$backup_path -> $target_path"',
+    "openclaw gateway restart",
+  ].join("\n");
+
+  return [
+    {
+      name: "回滚 openclaw.json 并重启 gateway",
+      command: stepCommand,
+      script,
+    },
+  ];
 }
 
 function buildGitForceSyncWithNoUpdateShortCircuitScript(recordedSourceHash: string): string {
@@ -278,6 +377,38 @@ export function startGatewayUpdateTask(): { task: Task; reused: boolean } {
     },
   });
 
+  return { task, reused: false };
+}
+
+export async function startOpenclawConfigRollbackTask(
+  backupPath: string
+): Promise<{ task: Task; reused: boolean }> {
+  const runningTask = findRunningTask("openclaw-config-rollback");
+  if (runningTask) {
+    appendTaskLog(runningTask, "检测到已有回滚任务正在执行，已复用当前任务。");
+    return { task: runningTask, reused: true };
+  }
+
+  const normalizedPath = backupPath.trim();
+  if (!normalizedPath) {
+    throw new Error("backupPath 不能为空。");
+  }
+  if (/[\r\n\0]/.test(normalizedPath)) {
+    throw new Error("backupPath 包含非法字符。");
+  }
+
+  const backups = await listOpenclawConfigBackups();
+  const targetBackup = backups.find((item) => item.path === normalizedPath);
+  if (!targetBackup) {
+    throw new Error(`未找到指定备份：${normalizedPath}`);
+  }
+
+  const steps = buildOpenclawConfigRollbackSteps(targetBackup.path);
+  const task = createTask("openclaw-config-rollback", "回滚 openclaw.json", steps.length);
+  appendTaskLog(task, `已选择备份：${targetBackup.fileName}`);
+  appendTaskLog(task, `备份路径：${targetBackup.path}`);
+  appendTaskLog(task, `备份时间：${targetBackup.modifiedAt}`);
+  runTask(task, steps);
   return { task, reused: false };
 }
 
