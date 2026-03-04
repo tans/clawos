@@ -8,3 +8,4 @@ build
 artifacts
 web/storage/assets
 web/storage/releases/latest.json
+download
