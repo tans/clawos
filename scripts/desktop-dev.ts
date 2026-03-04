@@ -12,6 +12,7 @@ function spawnChild(name: string, cmd: string[], env?: Record<string, string>): 
       ...process.env,
       ...(env || {}),
     },
+    stdin: "inherit",
     stdout: "inherit",
     stderr: "inherit",
   });
@@ -32,7 +33,7 @@ function stopChild(child: ChildProcessHandle): void {
 async function main(): Promise<void> {
   const children: ChildProcessHandle[] = [
     spawnChild("tailwind", ["bun", "run", "tailwind:watch"]),
-    spawnChild("electrobun", ["bun", "x", "electrobun", "dev", "--watch"], { CLAWOS_DESKTOP_DEV: "1" }),
+    spawnChild("electrobun", ["bun", "run", "scripts/electrobun.ts", "dev", "--watch"], { CLAWOS_DESKTOP_DEV: "1" }),
   ];
 
   let shuttingDown = false;

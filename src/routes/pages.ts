@@ -107,7 +107,6 @@ function renderSidebar(active: SidebarNavId | null): string {
           <div class="text-xs text-base-content/70">
             <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> · 版本：<span data-app-version>v-</span>
           </div>
-          <button class="btn btn-outline btn-xs mt-2 w-full" type="button" data-app-restart-button>一键重启 ClawOS</button>
           <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
         </div>
       </aside>`;

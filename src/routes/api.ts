@@ -15,7 +15,6 @@ import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
-import { restartClawosProcess } from "../system/self-update";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
 import { readWalletBalances } from "../system/wallet-balance";
@@ -276,12 +275,6 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
   if (path === "/api/app/update/run" && req.method === "POST") {
     throw new HttpError(410, "自更新已移除，请前往 https://clawos.cc 下载最新版本并替换 clawos.exe。");
-  }
-
-  if (path === "/api/app/restart" && req.method === "POST") {
-    restartClawosProcess();
-    setTimeout(() => process.exit(0), 300);
-    return jsonResponse({ ok: true, restarting: true });
   }
 
   if (path === "/api/config" && req.method === "GET") {

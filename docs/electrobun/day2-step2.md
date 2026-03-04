@@ -5,6 +5,7 @@
 - 新增 `tailwind:watch`，实现样式增量构建
 - Electrobun 增加 watch 配置：`src`、`dist`、`electrobun.config.ts`
 - 桌面壳支持开发模式日志与自动打开 DevTools（`CLAWOS_DESKTOP_DEV=1`）
+- Electrobun 启动链路迁移为本地 wrapper，支持镜像下载 CLI/core 依赖
 
 ## 开发命令
 - 推荐：`bun run desktop:dev`

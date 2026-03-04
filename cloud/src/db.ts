@@ -2,8 +2,8 @@ import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 
-const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "cloud.db");
-export const DB_PATH = process.env.CLOUD_DB_PATH?.trim() || DEFAULT_DB_PATH;
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "farm.db");
+export const DB_PATH = process.env.FARM_DB_PATH?.trim() || DEFAULT_DB_PATH;
 
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
 

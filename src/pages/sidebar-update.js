@@ -87,31 +87,10 @@
 
   const CLAWOS_DOWNLOAD_URL = "https://clawos.cc";
   const versionEl = root.querySelector("[data-app-version]");
-  const restartButtonEl = root.querySelector("[data-app-restart-button]");
   const metaEl = root.querySelector("[data-app-update-meta]");
 
-  if (!versionEl || !restartButtonEl || !metaEl) {
+  if (!versionEl || !metaEl) {
     return;
-  }
-
-  let restarting = false;
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  async function waitForServiceRecovery(timeoutMs = 25_000) {
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < timeoutMs) {
-      await sleep(1_000);
-      try {
-        await api("/api/health");
-        return true;
-      } catch {
-        // ignore until timeout
-      }
-    }
-    return false;
   }
 
   function renderManualUpdateMessage() {
@@ -130,45 +109,6 @@
       renderManualUpdateMessage();
     }
   }
-
-  async function restartClawos() {
-    if (restarting) {
-      return;
-    }
-
-    restarting = true;
-    restartButtonEl.disabled = true;
-    restartButtonEl.textContent = "正在重启...";
-    metaEl.textContent = "正在重启 ClawOS，请稍候...";
-
-    try {
-      const data = await api("/api/app/restart", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-
-      const recovered = await waitForServiceRecovery();
-      if (recovered) {
-        metaEl.textContent = "ClawOS 已重启，页面即将刷新。";
-        restarting = false;
-        window.location.reload();
-        return;
-      }
-
-      metaEl.textContent = "重启命令已发送，正在等待服务恢复，请稍后刷新页面。";
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      metaEl.textContent = `重启失败：${message}`;
-    }
-
-    restarting = false;
-    restartButtonEl.disabled = false;
-    restartButtonEl.textContent = "一键重启 ClawOS";
-  }
-
-  restartButtonEl.addEventListener("click", () => {
-    void restartClawos();
-  });
 
   void refreshVersion();
   setInterval(() => {

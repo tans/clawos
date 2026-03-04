@@ -1,13 +1,17 @@
-import Electrobun, { BrowserWindow } from "electrobun";
-import { createServer, createConnection, type Server } from "node:net";
+import Electrobun, { BrowserView, BrowserWindow } from "electrobun";
+import { createConnection, createServer, type Server } from "node:net";
 import { ensureLocalConfigTemplateFile, readLocalAppSettings } from "../config/local";
+import type { DesktopRpcSchema } from "../desktop-ui/rpc-schema";
+import { invokeDesktopApi, renderDesktopPage } from "./desktop-ui";
+import { computeDesktopControlPort } from "./single-instance";
 
 const DEFAULT_PORT = 8080;
-const HEALTH_PATH = "/api/health";
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
+const SHELL_ENTRY_URL = "views://clawos/shell.html";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
 );
+
 let desktopWindow: BrowserWindow | null = null;
 
 function resolveServerPort(): number {
@@ -27,23 +31,6 @@ function resolveServerPort(): number {
   }
 
   return DEFAULT_PORT;
-}
-
-function buildServerUrl(port: number): string {
-  return `http://127.0.0.1:${port}`;
-}
-
-function resolveControlPort(serverPort: number): number {
-  const fromEnv = Number.parseInt(process.env.CLAWOS_DESKTOP_CONTROL_PORT || "", 10);
-  if (Number.isFinite(fromEnv) && fromEnv > 0 && fromEnv <= 65535) {
-    return fromEnv;
-  }
-
-  const derived = serverPort + 71;
-  if (derived <= 65535) {
-    return derived;
-  }
-  return Math.max(1, serverPort - 71);
 }
 
 function focusDesktopWindow(): void {
@@ -131,57 +118,16 @@ async function acquireSingleInstanceGuard(controlPort: number): Promise<{ isPrim
   }
 }
 
-async function isServerReady(serverUrl: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${serverUrl}${HEALTH_PATH}`);
-    if (!response.ok) {
-      return false;
-    }
-    const payload = await response.json().catch(() => null);
-    return Boolean(payload && typeof payload === "object" && (payload as { ok?: unknown }).ok === true);
-  } catch {
-    return false;
-  }
-}
-
-async function waitForServer(serverUrl: string, timeoutMs: number): Promise<boolean> {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt <= timeoutMs) {
-    if (await isServerReady(serverUrl)) {
-      return true;
-    }
-    await Bun.sleep(300);
-  }
-  return false;
-}
-
-async function ensureClawosServer(serverUrl: string): Promise<void> {
-  if (await waitForServer(serverUrl, 800)) {
-    return;
-  }
-
-  // Do not open an external browser when running inside the desktop shell.
-  process.env.CLAWOS_AUTO_OPEN_BROWSER = "0";
-  process.env.CLAWOS_DESKTOP = "1";
-  await import("../server.ts");
-
-  const started = await waitForServer(serverUrl, 15_000);
-  if (!started) {
-    throw new Error(`ClawOS 服务启动超时：${serverUrl}`);
-  }
-}
-
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
-function renderStartupErrorHtml(serverUrl: string, errorMessage: string): string {
-  const safeUrl = escapeHtml(serverUrl);
+function renderStartupErrorHtml(errorMessage: string): string {
   const safeError = escapeHtml(errorMessage);
   return `
 <!doctype html>
@@ -202,21 +148,31 @@ function renderStartupErrorHtml(serverUrl: string, errorMessage: string): string
   <body>
     <main>
       <h1>ClawOS 启动失败</h1>
-      <p>桌面壳未能连接到本地服务：<code>${safeUrl}</code></p>
+      <p>桌面壳初始化失败。</p>
       <p>错误信息：</p>
       <code>${safeError}</code>
-      <p>请先检查端口占用、WSL 状态和权限后重试。</p>
+      <p>请重启客户端后重试。</p>
     </main>
   </body>
 </html>
   `.trim();
 }
 
+function createDesktopRpc() {
+  return BrowserView.defineRPC<DesktopRpcSchema>({
+    handlers: {
+      requests: {
+        api: async (params) => await invokeDesktopApi(params),
+        renderPage: async (params) => await renderDesktopPage(params.path),
+      },
+    },
+  });
+}
+
 async function main(): Promise<void> {
   const serverPort = resolveServerPort();
-  const serverUrl = buildServerUrl(serverPort);
-  const controlPort = resolveControlPort(serverPort);
-  console.log(`[desktop] booting ClawOS shell at ${serverUrl}`);
+  const controlPort = computeDesktopControlPort(serverPort);
+  console.log(`[desktop] booting ClawOS shell (${SHELL_ENTRY_URL})`);
   console.log(`[desktop] single-instance control at ${SINGLE_INSTANCE_HOST}:${controlPort}`);
   if (IS_DESKTOP_DEV) {
     console.log("[desktop] dev mode enabled");
@@ -228,17 +184,19 @@ async function main(): Promise<void> {
     process.exit(0);
     return;
   }
+
   Electrobun.events.on("before-quit", () => {
     guard.server?.close();
   });
 
   try {
-    await ensureClawosServer(serverUrl);
     desktopWindow = new BrowserWindow({
       title: "ClawOS",
       frame: { x: 120, y: 80, width: 1360, height: 900 },
-      url: serverUrl,
+      url: SHELL_ENTRY_URL,
+      rpc: createDesktopRpc(),
     });
+
     if (IS_DESKTOP_DEV) {
       try {
         desktopWindow.webview.openDevTools();
@@ -249,11 +207,11 @@ async function main(): Promise<void> {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`[desktop] failed to bootstrap ClawOS server: ${message}`);
+    console.error(`[desktop] failed to bootstrap desktop UI: ${message}`);
     desktopWindow = new BrowserWindow({
       title: "ClawOS (启动失败)",
       frame: { x: 120, y: 80, width: 980, height: 700 },
-      html: renderStartupErrorHtml(serverUrl, message),
+      html: renderStartupErrorHtml(message),
     });
   }
 }

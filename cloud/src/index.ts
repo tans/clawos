@@ -33,6 +33,7 @@ const PORT = Number(process.env.PORT || 8787);
 const CONSOLE_SESSION_COOKIE = "clawos_console_session";
 const CONSOLE_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const HOST_OFFLINE_THRESHOLD_MS = 30 * 1000;
+const APP_TITLE = "龙虾养殖场";
 
 const app = new Hono<{ Variables: AppVariables }>();
 app.use("*", cors());
@@ -161,7 +162,7 @@ function newToken(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
 }
 
-function pageShell(title: string, body: string, user?: ConsoleUser): string {
+function pageShell(_title: string, body: string, user?: ConsoleUser): string {
   const nav = user
     ? `<div class="topbar"><span>账号：${escapeHtml(user.mobile)}（钱包：${escapeHtml(user.walletAddress)}）</span><a href="/console/logout">退出</a></div>`
     : "";
@@ -171,7 +172,7 @@ function pageShell(title: string, body: string, user?: ConsoleUser): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${escapeHtml(title)}</title>
+  <title>${escapeHtml(APP_TITLE)}</title>
   <style>
     body { margin: 0; font-family: "Segoe UI", "PingFang SC", sans-serif; color: #1f2937; background: radial-gradient(circle at top right, #f7efe1, #e9f4ff 50%, #f3f7ff); }
     main { max-width: 1080px; margin: 18px auto 40px; padding: 0 14px; }
@@ -212,7 +213,7 @@ function pageShell(title: string, body: string, user?: ConsoleUser): string {
 function renderLoginPage(error = "", mobile = ""): string {
   const errorHtml = error ? `<div class="error">${escapeHtml(error)}</div>` : "";
   return pageShell(
-    "ClawOS Cloud 登录",
+    "ClawOS Farm 登录",
     `<section class="card" style="max-width:480px;margin:40px auto;">
       <h1 class="title">云端控制台登录</h1>
       <p class="muted">使用手机号和密码登录。</p>
@@ -232,7 +233,7 @@ function renderLoginPage(error = "", mobile = ""): string {
 function renderRegisterPage(error = "", payload?: { mobile?: string; walletAddress?: string }): string {
   const errorHtml = error ? `<div class="error">${escapeHtml(error)}</div>` : "";
   return pageShell(
-    "ClawOS Cloud 注册",
+    "ClawOS Farm 注册",
     `<section class="card" style="max-width:520px;margin:40px auto;">
       <h1 class="title">注册控制台账号</h1>
       <p class="muted">注册后使用手机号 + 密码登录，钱包地址用于匹配你能控制的主机。</p>
@@ -508,7 +509,7 @@ app.get("/", async (c) => {
 
 app.get("/health", (c) => {
   clearExpiredRows();
-  return c.json({ ok: true, service: "clawos-cloud", dbPath: DB_PATH, ts: new Date().toISOString() });
+  return c.json({ ok: true, service: "clawos-farm", dbPath: DB_PATH, ts: new Date().toISOString() });
 });
 
 app.get("/console/login", async (c) => {
@@ -940,8 +941,8 @@ app.get("/api/audit", (c) => {
   });
 });
 
-console.log(`[cloud] listening on http://127.0.0.1:${PORT}`);
-console.log(`[cloud] sqlite: ${DB_PATH}`);
+console.log(`[farm] listening on http://127.0.0.1:${PORT}`);
+console.log(`[farm] sqlite: ${DB_PATH}`);
 
 export default {
   port: PORT,

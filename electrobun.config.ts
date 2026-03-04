@@ -17,6 +17,17 @@ const config: ElectrobunConfig = {
     bun: {
       entrypoint: "src/bun/index.ts",
     },
+    views: {
+      clawos: {
+        entrypoint: "src/desktop-ui/bridge.ts",
+        format: "iife",
+      },
+    },
+    copy: {
+      "src/desktop-ui/shell.html": "views/clawos/shell.html",
+      "src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
+      "dist/output.css": "views/clawos/styles.css",
+    },
     watch: ["src", "dist", "electrobun.config.ts"],
     win: {
       icon: "web/public/logo.ico",
