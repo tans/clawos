@@ -3,7 +3,7 @@ import { readNonEmptyString } from "../lib/value";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 import type { GatewayCallResult } from "../gateway/schema";
 import { runTask, type Step } from "./runner";
-import { normalizeOutput, runProcess } from "./shell";
+import { normalizeOutput, runProcess, runWslScript } from "./shell";
 import {
   readLocalOpenclawSourceVersionHash,
   updateLocalOpenclawSourceVersionHash,
