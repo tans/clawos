@@ -5,9 +5,6 @@ const appVersion =
   packageJson && typeof packageJson === "object" && "version" in packageJson
     ? String((packageJson as { version?: unknown }).version || "0.1.0")
     : "0.1.0";
-const isDesktopDev = ["1", "true", "yes", "on"].includes(
-  (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
-);
 
 const config: ElectrobunConfig = {
   app: {
@@ -31,9 +28,20 @@ const config: ElectrobunConfig = {
       "src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
       "dist/output.css": "views/clawos/styles.css",
     },
-    watch: ["src", "dist", "electrobun.config.ts"],
+    watch: ["src", "dist"],
+    watchIgnore: [
+      "build/**",
+      "artifacts/**",
+      "node_modules/**",
+      "**/*.log",
+      "**/.DS_Store",
+      "**\\build\\**",
+      "**\\artifacts\\**",
+      "**\\node_modules\\**",
+      "**\\*.log",
+    ],
     win: {
-      icon: isDesktopDev ? undefined : "web/public/logo.ico",
+      icon: "web/public/logo.ico",
     },
   },
   runtime: {
