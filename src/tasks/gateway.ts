@@ -1,11 +1,12 @@
-import { callGatewayMethod, gatewayTroubleshootingTips } from "../gateway/sock";
+import { callGatewayMethodViaCli, type GatewayCliCallResult } from "../openclaw/gateway-cli";
 import { readNonEmptyString } from "../lib/value";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
-import type { GatewayCallResult } from "../gateway/schema";
+import { openclawCliTroubleshootingTips, runOpenclawCli } from "../openclaw/cli";
 import { runTask, type Step } from "./runner";
 import { normalizeOutput, runProcess, runWslScript } from "./shell";
 import {
   readLocalOpenclawSourceVersionHash,
+  resolveOpenclawConfigPath,
   updateLocalOpenclawSourceVersionHash,
 } from "../config/local";
 import { existsSync } from "node:fs";
@@ -14,8 +15,6 @@ import path from "node:path";
 const IS_WINDOWS = process.platform === "win32";
 export const DEFAULT_QWCLI_EXE_PATH = "c:\\xiake\\qwcli\\cli.exe";
 export const OPENCLAW_SOURCE_DIR = "/data/openclaw";
-export const OPENCLAW_CONFIG_DIR = "/root/.openclaw";
-export const OPENCLAW_CONFIG_PATH = `${OPENCLAW_CONFIG_DIR}/openclaw.json`;
 const QW_GATEWAY_STABLE_WINDOW_MS = 10_000;
 
 type QwGatewayRestartTrigger = "manual" | "startup";
@@ -134,20 +133,22 @@ async function runGatewayTaskStep(
   name: string,
   method: string,
   params: unknown,
-  timeoutMs: number
-): Promise<GatewayCallResult<unknown>> {
+  _timeoutMs: number
+): Promise<GatewayCliCallResult<unknown>> {
   task.step = step;
   appendTaskLog(task, `步骤 ${step}/${totalSteps}：${name}`);
-  appendTaskLog(task, `执行命令：gateway.${method}`);
+  appendTaskLog(task, `执行命令：openclaw gateway call ${method}`);
 
-  const result = await callGatewayMethod(method, params, { timeoutMs });
+  const result = await callGatewayMethodViaCli(method, params);
+  const envelope = result.envelope as Record<string, unknown> | null;
 
-  if (step === 1) {
-    const version = readNonEmptyString(result.hello.server?.version);
+  if (step === 1 && envelope) {
+    const version =
+      readNonEmptyString((envelope as Record<string, unknown>).version) ||
+      readNonEmptyString((envelope.server as Record<string, unknown> | undefined)?.version);
     if (version) {
       appendTaskLog(task, `网关版本：${version}`);
     }
-    appendTaskLog(task, `网关地址：${result.url}`);
   }
 
   appendPayloadLog(task, `${method} 返回`, result.payload, 80);
@@ -162,22 +163,44 @@ function escapeDoubleQuotedShell(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
 }
 
-function buildOpenclawConfigBackupListScript(): string {
+export function buildOpenclawConfigBackupListScript(configPath: string): string {
+  const safeConfigPath = escapeDoubleQuotedShell(configPath);
   return [
     "set -euo pipefail",
-    `config_dir="${OPENCLAW_CONFIG_DIR}"`,
+    `config_path_raw="${safeConfigPath}"`,
+    'if [ "$config_path_raw" = "~" ]; then',
+    '  config_path="$HOME"',
+    'elif [[ "$config_path_raw" == "~/"* ]]; then',
+    '  config_path="$HOME/${config_path_raw#~/}"',
+    "else",
+    '  config_path="$config_path_raw"',
+    "fi",
+    'config_dir="$(dirname "$config_path")"',
     'if [ ! -d "$config_dir" ]; then',
     "  exit 0",
     "fi",
     "shopt -s nullglob",
-    'files=("$config_dir"/openclaw.json*.bak*)',
+    'config_base="$(basename "$config_path")"',
+    'files=("$config_dir"/"$config_base"*.bak*)',
     'if [ "${#files[@]}" -eq 0 ]; then',
     "  exit 0",
     "fi",
     'for file in "${files[@]}"; do',
     '  if [ -f "$file" ]; then',
-    '    mtime="$(stat -c "%Y" "$file")"',
-    '    size="$(stat -c "%s" "$file")"',
+    '    stat_out=""',
+    '    if stat_out="$(stat -c "%Y %s" "$file" 2>/dev/null)"; then',
+    "      :",
+    '    elif stat_out="$(stat -f "%m %z" "$file" 2>/dev/null)"; then',
+    "      :",
+    "    else",
+    '      echo "读取备份文件元数据失败：$file" >&2',
+    "      continue",
+    "    fi",
+    '    mtime="$(printf "%s" "$stat_out" | awk \'{print $1}\')"',
+    '    size="$(printf "%s" "$stat_out" | awk \'{print $2}\')"',
+    '    if [ -z "$mtime" ] || [ -z "$size" ]; then',
+    "      continue",
+    "    fi",
     '    printf "%s\\t%s\\t%s\\n" "$mtime" "$size" "$file"',
     "  fi",
     'done | sort -rn -k1,1',
@@ -207,7 +230,8 @@ export function parseOpenclawConfigBackupLine(line: string): OpenclawConfigBacku
 }
 
 export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackup[]> {
-  const result = await runWslScript(buildOpenclawConfigBackupListScript());
+  const configPath = resolveOpenclawConfigPath();
+  const result = await runWslScript(buildOpenclawConfigBackupListScript(configPath));
   if (!result.ok) {
     throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）`);
   }
@@ -218,12 +242,21 @@ export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackup[
 }
 
 export function buildOpenclawConfigRollbackSteps(backupPath: string): Step[] {
+  const configPath = resolveOpenclawConfigPath();
   const safeBackupPath = escapeDoubleQuotedShell(backupPath);
-  const stepCommand = `cp "${backupPath}" "${OPENCLAW_CONFIG_PATH}" && openclaw gateway restart`;
+  const safeConfigPath = escapeDoubleQuotedShell(configPath);
+  const stepCommand = `cp "${backupPath}" "${configPath}" && openclaw gateway restart`;
   const script = [
     "set -euo pipefail",
     `backup_path="${safeBackupPath}"`,
-    `target_path="${OPENCLAW_CONFIG_PATH}"`,
+    `target_path_raw="${safeConfigPath}"`,
+    'if [ "$target_path_raw" = "~" ]; then',
+    '  target_path="$HOME"',
+    'elif [[ "$target_path_raw" == "~/"* ]]; then',
+    '  target_path="$HOME/${target_path_raw#~/}"',
+    "else",
+    '  target_path="$target_path_raw"',
+    "fi",
     'if [ ! -f "$backup_path" ]; then',
     '  echo "备份文件不存在：$backup_path" >&2',
     "  exit 1",
@@ -439,7 +472,7 @@ export function startGatewayStatusTask(): Task {
       const message = error instanceof Error ? error.message : String(error);
       task.error = message;
       appendTaskLog(task, message, "error");
-      for (const tip of gatewayTroubleshootingTips(message)) {
+      for (const tip of openclawCliTroubleshootingTips(message)) {
         appendTaskLog(task, `修复建议：${tip}`, "error");
       }
     }
@@ -451,12 +484,12 @@ export function startGatewayStatusTask(): Task {
 export function startGatewayControlTask(
   action: "restart" | "install" | "uninstall" | "start" | "stop"
 ): Task {
-  const commandMap: Record<typeof action, string> = {
-    restart: "openclaw gateway restart",
-    install: "openclaw gateway install",
-    uninstall: "openclaw gateway uninstall",
-    start: "openclaw gateway start",
-    stop: "openclaw gateway stop",
+  const commandMap: Record<typeof action, string[]> = {
+    restart: ["gateway", "restart"],
+    install: ["gateway", "install"],
+    uninstall: ["gateway", "uninstall"],
+    start: ["gateway", "start"],
+    stop: ["gateway", "stop"],
   };
 
   const actionNameMap: Record<typeof action, string> = {
@@ -467,16 +500,43 @@ export function startGatewayControlTask(
     stop: "停止 gateway（CLI 兼容模式）",
   };
 
-  const steps: Step[] = [
-    {
-      name: actionNameMap[action],
-      command: commandMap[action],
-      script: `set -euo pipefail\n${commandMap[action]}`,
-    },
-  ];
+  const task = createTask(`gateway-${action}`, actionNameMap[action], 1);
+  task.status = "running";
 
-  const task = createTask(`gateway-${action}`, actionNameMap[action], steps.length);
-  runTask(task, steps);
+  (async () => {
+    try {
+      task.step = 1;
+      appendTaskLog(task, `步骤 1/1：${actionNameMap[action]}`);
+      appendTaskLog(task, `执行命令：openclaw ${commandMap[action].join(" ")}`);
+
+      const result = await runOpenclawCli(commandMap[action]);
+      for (const line of normalizeOutput(result.stdout)) {
+        appendTaskLog(task, line, "info");
+      }
+      for (const line of normalizeOutput(result.stderr)) {
+        appendTaskLog(task, line, result.ok ? "info" : "error");
+      }
+
+      if (!result.ok) {
+        const message = result.stderr.trim() || result.stdout.trim() || `退出码 ${result.code}`;
+        throw new Error(message);
+      }
+
+      task.status = "success";
+      task.endedAt = new Date().toISOString();
+      appendTaskLog(task, "任务完成");
+    } catch (error) {
+      task.status = "failed";
+      task.endedAt = new Date().toISOString();
+      const message = error instanceof Error ? error.message : String(error);
+      task.error = message;
+      appendTaskLog(task, message, "error");
+      for (const tip of openclawCliTroubleshootingTips(message)) {
+        appendTaskLog(task, `修复建议：${tip}`, "error");
+      }
+    }
+  })();
+
   return task;
 }
 

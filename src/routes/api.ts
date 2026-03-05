@@ -16,7 +16,6 @@ import {
   readOpenclawConfigForSection,
   saveOpenclawConfigSection,
 } from "../gateway/config";
-import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
 import { asObject } from "../lib/value";
@@ -256,7 +255,7 @@ function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalApp
 async function saveConfigSection(
   section: string,
   data: Record<string, unknown>
-): Promise<{ mode: "file-overwrite" | "gateway-apply"; backupPath?: string | null; targetPath?: string }> {
+): Promise<{ mode: "file-overwrite" | "cli-apply"; backupPath?: string | null; targetPath?: string }> {
   const result = await saveOpenclawConfigSection(section, data);
   if (result.mode === "file-overwrite") {
     return {
@@ -265,7 +264,7 @@ async function saveConfigSection(
       targetPath: result.fileWrite?.targetPath,
     };
   }
-  return { mode: "gateway-apply" };
+  return { mode: "cli-apply" };
 }
 
 async function handleConfigSectionSave(req: Request): Promise<Response> {
@@ -461,7 +460,6 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     const body = await parseJsonBody(req);
     const patch = parseLocalGatewayBody(body);
     const gateway = updateLocalGatewayConnectionConfig(patch);
-    invalidateGatewayConnectionSettingsCache();
     return jsonResponse({ ok: true, gateway });
   }
 

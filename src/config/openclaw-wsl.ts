@@ -41,8 +41,16 @@ function parseOpenclawConfigText(text: string): Record<string, unknown> {
 export async function readOpenclawConfigFromWsl(): Promise<Record<string, unknown>> {
   const openclawConfigPath = resolveOpenclawConfigPath();
   const script = `set -euo pipefail
-if [ -f ${shellQuote(openclawConfigPath)} ]; then
-  cat ${shellQuote(openclawConfigPath)}
+config_path_raw=${shellQuote(openclawConfigPath)}
+if [ "$config_path_raw" = "~" ]; then
+  config_path="$HOME"
+elif [[ "$config_path_raw" == "~/"* ]]; then
+  config_path="$HOME/\${config_path_raw#~/}"
+else
+  config_path="$config_path_raw"
+fi
+if [ -f "$config_path" ]; then
+  cat "$config_path"
 else
   printf '{}'\\n
 fi`;
@@ -92,9 +100,16 @@ export async function writeOpenclawConfigToWsl(
 
   const script = [
     "set -euo pipefail",
-    `target_path=${shellQuote(openclawConfigPath)}`,
+    `target_path_raw=${shellQuote(openclawConfigPath)}`,
     `backup_suffix=${shellQuote(backupSuffix)}`,
     `payload_b64=${shellQuote(encoded)}`,
+    'if [ "$target_path_raw" = "~" ]; then',
+    '  target_path="$HOME"',
+    'elif [[ "$target_path_raw" == "~/"* ]]; then',
+    '  target_path="$HOME/${target_path_raw#~/}"',
+    "else",
+    '  target_path="$target_path_raw"',
+    "fi",
     'target_dir="$(dirname "$target_path")"',
     'mkdir -p "$target_dir"',
     'backup_path=""',
@@ -103,7 +118,16 @@ export async function writeOpenclawConfigToWsl(
     '  cp "$target_path" "$backup_path"',
     "fi",
     'tmp_path="$target_path.clawos-tmp.$$"',
-    'printf "%s" "$payload_b64" | base64 -d > "$tmp_path"',
+    'if printf "%s" "$payload_b64" | base64 -d > "$tmp_path" 2>/dev/null; then',
+    "  :",
+    'elif printf "%s" "$payload_b64" | base64 --decode > "$tmp_path" 2>/dev/null; then',
+    "  :",
+    'elif printf "%s" "$payload_b64" | base64 -D > "$tmp_path" 2>/dev/null; then',
+    "  :",
+    "else",
+    '  echo "base64 解码失败：请检查系统 base64 命令兼容性" >&2',
+    "  exit 1",
+    "fi",
     'mv "$tmp_path" "$target_path"',
     'printf "__CLAWOS_TARGET__=%s\\n" "$target_path"',
     'printf "__CLAWOS_BACKUP__=%s\\n" "$backup_path"',

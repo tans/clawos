@@ -4,6 +4,7 @@ import { ensureLocalConfigTemplateFile, readLocalAppSettings } from "../config/l
 import type { DesktopRpcSchema } from "../desktop-ui/rpc-schema";
 import { invokeDesktopApi, renderDesktopPage } from "./desktop-ui";
 import { computeDesktopControlPort } from "./single-instance";
+import { detectAndPersistOpenclawExecutionEnvironment } from "../system/openclaw-execution";
 
 const DEFAULT_PORT = 8080;
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
@@ -176,6 +177,14 @@ async function main(): Promise<void> {
   console.log(`[desktop] single-instance control at ${SINGLE_INSTANCE_HOST}:${controlPort}`);
   if (IS_DESKTOP_DEV) {
     console.log("[desktop] dev mode enabled");
+  }
+
+  try {
+    ensureLocalConfigTemplateFile();
+    await detectAndPersistOpenclawExecutionEnvironment();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[desktop] failed to detect execution environment: ${message}`);
   }
 
   const guard = await acquireSingleInstanceGuard(controlPort);

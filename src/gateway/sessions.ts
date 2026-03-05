@@ -1,5 +1,5 @@
 import { asObject, readNonEmptyString, toFiniteNumber } from "../lib/value";
-import { callGatewayMethod } from "./sock";
+import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
 
 export type GatewaySessionListItem = {
   key: string;
@@ -219,7 +219,7 @@ function normalizeSessionHistoryItem(item: unknown, index: number): GatewaySessi
 
 export async function listGatewaySessions(limit = 200): Promise<GatewaySessionListItem[]> {
   const safeLimit = Number.isFinite(limit) ? Math.min(1000, Math.max(1, Math.floor(limit))) : 200;
-  const result = await callGatewayMethod("sessions.list", {
+  const result = await callGatewayMethodViaCli("sessions.list", {
     limit: safeLimit,
     includeDerivedTitles: true,
     includeLastMessage: true,
@@ -240,7 +240,7 @@ export async function listGatewaySessionHistory(
   limit = 200
 ): Promise<GatewaySessionHistoryItem[]> {
   const safeLimit = Number.isFinite(limit) ? Math.min(1000, Math.max(1, Math.floor(limit))) : 200;
-  const result = await callGatewayMethod("chat.history", {
+  const result = await callGatewayMethodViaCli("chat.history", {
     sessionKey,
     limit: safeLimit,
   });

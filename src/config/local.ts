@@ -42,6 +42,9 @@ export type LocalClawosConfig = {
   wsl?: {
     distro?: string;
     wslBin?: string;
+    available?: boolean;
+    checkedAt?: string;
+    execMode?: "wsl" | "direct";
   };
   openclaw?: {
     configPath?: string;
@@ -78,6 +81,12 @@ export type LocalAppSettings = {
   controllerAddress: string;
 };
 
+export type LocalOpenclawExecutionEnvironment = {
+  available: boolean;
+  checkedAt: string;
+  execMode: "wsl" | "direct";
+};
+
 export function getDefaultOpenclawConfigPath(): string {
   return OPENCLAW_CONFIG_PATH;
 }
@@ -103,6 +112,9 @@ export function localConfigTemplate(): LocalClawosConfig {
     wsl: {
       distro: "",
       wslBin: "wsl.exe",
+      available: false,
+      checkedAt: "",
+      execMode: IS_WINDOWS ? "wsl" : "direct",
     },
     openclaw: {
       configPath: OPENCLAW_CONFIG_PATH,
@@ -188,6 +200,19 @@ function pickBoolean(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+function pickExecMode(value: unknown, fallback: "wsl" | "direct"): "wsl" | "direct" {
+  if (value === "wsl" || value === "direct") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "wsl" || normalized === "direct") {
+      return normalized;
+    }
+  }
+  return fallback;
+}
+
 function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): LocalClawosConfig {
   const defaults = localConfigTemplate();
   const cfg = input || {};
@@ -208,6 +233,9 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
     wsl: {
       distro: pickString(cfg.wsl?.distro, defaults.wsl?.distro || ""),
       wslBin: pickString(cfg.wsl?.wslBin, defaults.wsl?.wslBin || "wsl.exe"),
+      available: pickBoolean(cfg.wsl?.available, defaults.wsl?.available ?? false),
+      checkedAt: pickString(cfg.wsl?.checkedAt, defaults.wsl?.checkedAt || ""),
+      execMode: pickExecMode(cfg.wsl?.execMode, defaults.wsl?.execMode || (IS_WINDOWS ? "wsl" : "direct")),
     },
     openclaw: {
       configPath: pickString(cfg.openclaw?.configPath, defaults.openclaw?.configPath || OPENCLAW_CONFIG_PATH),
@@ -441,6 +469,47 @@ export function resolveOpenclawConfigPath(): string {
 export function readLocalOpenclawSourceVersionHash(): string {
   const localConfig = readNormalizedLocalConfig();
   return pickString(localConfig.openclaw?.sourceVersionHash, "");
+}
+
+export function readLocalOpenclawExecutionEnvironment(): LocalOpenclawExecutionEnvironment {
+  const localConfig = readNormalizedLocalConfig();
+  return {
+    available: pickBoolean(localConfig.wsl?.available, false),
+    checkedAt: pickString(localConfig.wsl?.checkedAt, ""),
+    execMode: pickExecMode(localConfig.wsl?.execMode, IS_WINDOWS ? "wsl" : "direct"),
+  };
+}
+
+export function updateLocalOpenclawExecutionEnvironment(
+  patch: Partial<LocalOpenclawExecutionEnvironment>
+): LocalOpenclawExecutionEnvironment {
+  const current = readNormalizedLocalConfig();
+  const currentState = readLocalOpenclawExecutionEnvironment();
+
+  const next = normalizeLocalConfig({
+    ...current,
+    wsl: {
+      ...current.wsl,
+      available:
+        typeof patch.available === "boolean" ? patch.available : currentState.available,
+      checkedAt:
+        typeof patch.checkedAt === "string" ? patch.checkedAt.trim() : currentState.checkedAt,
+      execMode:
+        patch.execMode === "wsl" || patch.execMode === "direct"
+          ? patch.execMode
+          : currentState.execMode,
+    },
+  });
+
+  if (!writeLocalConfig(CLAWOS_LOCAL_CONFIG_PATH, next)) {
+    throw new Error(`保存 openclaw 执行环境失败：${CLAWOS_LOCAL_CONFIG_PATH}`);
+  }
+
+  return {
+    available: pickBoolean(next.wsl?.available, false),
+    checkedAt: pickString(next.wsl?.checkedAt, ""),
+    execMode: pickExecMode(next.wsl?.execMode, IS_WINDOWS ? "wsl" : "direct"),
+  };
 }
 
 export function updateLocalOpenclawSourceVersionHash(hash: string): string {

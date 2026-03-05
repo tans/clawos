@@ -1,18 +1,15 @@
 import { asObject, readNonEmptyString } from "../lib/value";
-import { resolveGatewayConnectionSettings } from "../gateway/settings";
-import { callGatewayMethod } from "../gateway/sock";
+import { readLocalOpenclawExecutionEnvironment } from "../config/local";
+import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
 import { runWslScript, troubleshootingTips } from "../tasks/shell";
-import { gatewayTroubleshootingTips } from "../gateway/sock";
+import { openclawCliTroubleshootingTips, resolveOpenclawCliMode } from "../openclaw/cli";
 import { checkBrowserConnectivity } from "./browser-connectivity";
 import { checkWslCommandRequirements } from "./wsl-requirements";
-import type { GatewayHelloPayload } from "../gateway/schema";
 
 type GatewayProbe =
   | {
       ok: true;
       payload: unknown;
-      hello: GatewayHelloPayload;
-      url: string;
     }
   | {
       ok: false;
@@ -21,20 +18,19 @@ type GatewayProbe =
     };
 
 async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 10000): Promise<GatewayProbe> {
+  void timeoutMs;
   try {
-    const result = await callGatewayMethod(method, params, { timeoutMs });
+    const result = await callGatewayMethodViaCli(method, params);
     return {
       ok: true,
       payload: result.payload,
-      hello: result.hello,
-      url: result.url,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
       error: message,
-      tips: gatewayTroubleshootingTips(message),
+      tips: openclawCliTroubleshootingTips(message),
     };
   }
 }
@@ -204,8 +200,22 @@ async function probeOpenclawVersionFromPackageJson(): Promise<OpenclawVersionPro
   };
 }
 
+function readGatewayVersionFromProbe(probe: GatewayProbe): string | null {
+  if (!probe.ok) {
+    return null;
+  }
+  const payload = asObject(probe.payload);
+  return (
+    readNonEmptyString(payload?.version) ||
+    readNonEmptyString(asObject(payload?.server)?.version) ||
+    readNonEmptyString(asObject(payload?.gateway)?.version) ||
+    null
+  );
+}
+
 export async function checkEnvironment(): Promise<Record<string, unknown>> {
-  const connection = await resolveGatewayConnectionSettings();
+  const executionEnv = readLocalOpenclawExecutionEnvironment();
+  const execMode = resolveOpenclawCliMode();
 
   const [wslProbe, statusProbe, healthProbe, channelsProbe, configProbe, packageVersionProbe] = await Promise.all([
     runWslScript("set -euo pipefail\necho WSL_OK"),
@@ -237,13 +247,9 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
     ? browserConnectivity?.ready === true
     : gatewayReady && browserEnabled && browserConfigured;
 
-  const gatewayReportedVersion = statusProbe.ok
-    ? readNonEmptyString(statusProbe.hello.server?.version) || null
-    : healthProbe.ok
-      ? readNonEmptyString(healthProbe.hello.server?.version) || null
-      : null;
+  const gatewayReportedVersion = readGatewayVersionFromProbe(statusProbe) || readGatewayVersionFromProbe(healthProbe);
   const openclawVersion = packageVersionProbe.version || gatewayReportedVersion;
-  const openclawVersionSource = packageVersionProbe.version ? "package.json" : "gateway.hello.server.version";
+  const openclawVersionSource = packageVersionProbe.version ? "package.json" : "gateway.status/health";
 
   const statusDetailBlocks: string[] = [];
   if (statusProbe.ok) {
@@ -316,7 +322,10 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
 
   return {
     os: process.platform,
-    execution: `gateway-protocol (${connection.url})`,
+    execution: `openclaw-cli (${execMode})`,
+    openclawExecMode: execMode,
+    wslAvailable: executionEnv.available,
+    executionCheckedAt: executionEnv.checkedAt,
     wslReady,
     wslCommands: wslCommandProbe?.commands || [],
     openclawReady,

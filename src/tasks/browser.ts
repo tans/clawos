@@ -427,7 +427,7 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
 
       task.step = 3;
       appendTaskLog(task, `步骤 3/${totalSteps}：写入 openclaw browser 配置`);
-      appendTaskLog(task, "执行命令：gateway.config.apply(browser)");
+      appendTaskLog(task, "执行命令：openclaw gateway call config.apply (browser)");
       await resetOpenclawBrowserConfig(task, prepared.remoteCdpUrl);
 
       task.status = "success";

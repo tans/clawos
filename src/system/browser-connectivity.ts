@@ -1,6 +1,5 @@
-import { gatewayTroubleshootingTips } from "../gateway/sock";
-import type { GatewayHelloPayload } from "../gateway/schema";
-import { callGatewayMethod } from "../gateway/sock";
+import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
+import { openclawCliTroubleshootingTips } from "../openclaw/cli";
 import { asObject, readNonEmptyString } from "../lib/value";
 import { runWslScript } from "../tasks/shell";
 
@@ -8,8 +7,6 @@ type GatewayProbe =
   | {
       ok: true;
       payload: unknown;
-      hello: GatewayHelloPayload;
-      url: string;
     }
   | {
       ok: false;
@@ -60,20 +57,19 @@ type CdpProbeClassification = {
 };
 
 async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 10000): Promise<GatewayProbe> {
+  void timeoutMs;
   try {
-    const result = await callGatewayMethod(method, params, { timeoutMs });
+    const result = await callGatewayMethodViaCli(method, params);
     return {
       ok: true,
       payload: result.payload,
-      hello: result.hello,
-      url: result.url,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
       error: message,
-      tips: gatewayTroubleshootingTips(message),
+      tips: openclawCliTroubleshootingTips(message),
     };
   }
 }

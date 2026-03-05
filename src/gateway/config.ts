@@ -1,6 +1,6 @@
 import { HttpError } from "../lib/http";
 import { asObject, readNonEmptyString } from "../lib/value";
-import { callGatewayMethod } from "./sock";
+import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
 import type { GatewayConfigSnapshot } from "./schema";
 import JSON5 from "json5";
 import {
@@ -89,7 +89,7 @@ function resolveConfigSnapshotHash(snapshot: GatewayConfigSnapshot): string {
 }
 
 export async function readGatewayConfigSnapshot(): Promise<GatewayConfigSnapshot> {
-  const result = await callGatewayMethod<GatewayConfigSnapshot>("config.get", {}, { timeoutMs: 10000 });
+  const result = await callGatewayMethodViaCli<GatewayConfigSnapshot>("config.get", {});
   const snapshot = asObject(result.payload);
   if (!snapshot) {
     throw new HttpError(500, "config.get 返回格式无效。");
@@ -98,19 +98,25 @@ export async function readGatewayConfigSnapshot(): Promise<GatewayConfigSnapshot
 }
 
 export async function readOpenclawConfig(): Promise<Record<string, unknown>> {
-  const snapshot = await readGatewayConfigSnapshot();
-  return normalizeConfigSnapshot(snapshot);
+  try {
+    const snapshot = await readGatewayConfigSnapshot();
+    return normalizeConfigSnapshot(snapshot);
+  } catch {
+    return await readOpenclawConfigFromWsl();
+  }
 }
 
 export async function applyOpenclawConfig(config: Record<string, unknown>, note: string): Promise<void> {
+  void note;
   const raw = `${JSON.stringify(config, null, 2)}\n`;
+  let lastGatewayError: string | null = null;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    const snapshot = await readGatewayConfigSnapshot();
-    const baseHash = resolveConfigSnapshotHash(snapshot);
-
     try {
-      await callGatewayMethod("config.apply", {
+      const snapshot = await readGatewayConfigSnapshot();
+      const baseHash = resolveConfigSnapshotHash(snapshot);
+
+      await callGatewayMethodViaCli("config.apply", {
         raw,
         baseHash,
         note,
@@ -119,6 +125,7 @@ export async function applyOpenclawConfig(config: Record<string, unknown>, note:
       return;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      lastGatewayError = message;
       const shouldRetry =
         attempt === 0 &&
         (message.includes("base hash") ||
@@ -127,11 +134,19 @@ export async function applyOpenclawConfig(config: Record<string, unknown>, note:
       if (shouldRetry) {
         continue;
       }
-      throw new HttpError(500, `写入 openclaw 配置失败：${message}`);
+      break;
     }
   }
 
-  throw new HttpError(500, "写入 openclaw 配置失败：配置冲突，请重试。");
+  try {
+    await writeOpenclawConfigToWsl(config);
+  } catch (error) {
+    const fileError = error instanceof Error ? error.message : String(error);
+    if (lastGatewayError) {
+      throw new HttpError(500, `写入 openclaw 配置失败：gateway=${lastGatewayError}; file=${fileError}`);
+    }
+    throw new HttpError(500, `写入 openclaw 配置失败：${fileError}`);
+  }
 }
 
 export function shouldUseFileBackedSection(section: string): boolean {
@@ -148,7 +163,7 @@ export async function readOpenclawConfigForSection(section: string): Promise<Rec
 export async function saveOpenclawConfigSection(
   section: string,
   data: Record<string, unknown>
-): Promise<{ mode: "file-overwrite" | "gateway-apply"; fileWrite?: WriteOpenclawConfigFromWslResult }> {
+): Promise<{ mode: "file-overwrite" | "cli-apply"; fileWrite?: WriteOpenclawConfigFromWslResult }> {
   if (shouldUseFileBackedSection(section)) {
     const config = await readOpenclawConfigFromWsl();
     config[section] = data;
@@ -159,10 +174,21 @@ export async function saveOpenclawConfigSection(
     };
   }
 
-  const snapshot = await readGatewayConfigSnapshot();
-  const config = normalizeWritableConfigSnapshot(snapshot);
-  const currentSection = asObject(config[section]) || {};
-  config[section] = (restoreRedactedValues(currentSection, data) as Record<string, unknown>) || {};
-  await applyOpenclawConfig(config, `ClawOS 保存 ${section} 配置`);
-  return { mode: "gateway-apply" };
+  try {
+    const snapshot = await readGatewayConfigSnapshot();
+    const config = normalizeWritableConfigSnapshot(snapshot);
+    const currentSection = asObject(config[section]) || {};
+    config[section] = (restoreRedactedValues(currentSection, data) as Record<string, unknown>) || {};
+    await applyOpenclawConfig(config, `ClawOS 保存 ${section} 配置`);
+    return { mode: "cli-apply" };
+  } catch {
+    const config = await readOpenclawConfigFromWsl();
+    const currentSection = asObject(config[section]) || {};
+    config[section] = (restoreRedactedValues(currentSection, data) as Record<string, unknown>) || {};
+    const fileWrite = await writeOpenclawConfigToWsl(config);
+    return {
+      mode: "file-overwrite",
+      fileWrite,
+    };
+  }
 }
