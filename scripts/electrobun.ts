@@ -190,6 +190,15 @@ async function runElectrobunCliBinary(cliPath: string, args: string[]): Promise<
   return await proc.exited;
 }
 
+function resolveBuildEnvironmentArg(args: string[]): "dev" | "canary" | "stable" {
+  const envArg = args.find((arg) => arg.startsWith("--env="));
+  const env = envArg ? envArg.slice("--env=".length).trim().toLowerCase() : "dev";
+  if (env === "canary" || env === "stable") {
+    return env;
+  }
+  return "dev";
+}
+
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const { hostOs, releasePlatform, arch } = resolvePlatform();
@@ -208,6 +217,14 @@ async function main(): Promise<void> {
   }
 
   const code = await runElectrobunCliBinary(cliPath, args);
+  if (code === 0 && args[0] === "build") {
+    const buildEnv = resolveBuildEnvironmentArg(args);
+    const buildDir = join(process.cwd(), "build", `${buildEnv}-${releasePlatform}-${arch}`);
+    console.log(`[electrobun-wrapper] 构建目录: ${buildDir}`);
+    if (releasePlatform === "win" && buildEnv === "dev") {
+      console.log(`[electrobun-wrapper] Windows 可运行程序请在该目录内搜索 launcher.exe（位于 */bin/launcher.exe）。`);
+    }
+  }
   process.exit(code);
 }
 

@@ -4,7 +4,7 @@ import {
   downloadUpdateExecutable,
   getSelfUpdateStatus,
   resolveSelfExecutableOrThrow,
-  scheduleWindowsExecutableReplacement,
+  scheduleSelfExecutableReplacement,
 } from "../system/self-update";
 
 type SelfUpdateTaskOptions = {
@@ -108,7 +108,7 @@ export function startSelfUpdateTask(
       task.step = 3;
       appendTaskLog(task, "步骤 3/4：计划替换当前可执行文件（重命名旧文件后替换）");
       const autoRestart = options.autoRestart === true;
-      const replacementPlan = scheduleWindowsExecutableReplacement(downloaded.filePath, targetExecutablePath, process.pid, {
+      const replacementPlan = scheduleSelfExecutableReplacement(downloaded.filePath, targetExecutablePath, process.pid, {
         launchAfterReplace: autoRestart,
       });
       appendTaskLog(task, `目标文件：${replacementPlan.targetPath}`);

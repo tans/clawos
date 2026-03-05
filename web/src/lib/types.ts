@@ -6,9 +6,12 @@ export interface ReleaseAsset {
   uploadedAt: string;
 }
 
+export type InstallerPlatform = "windows" | "macos" | "linux";
+
 export interface LatestRelease {
   version: string;
   publishedAt: string;
   installer: ReleaseAsset | null;
+  installers?: Partial<Record<InstallerPlatform, ReleaseAsset>>;
   xiakeConfig: ReleaseAsset | null;
 }

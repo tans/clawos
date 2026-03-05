@@ -1,12 +1,14 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, createWriteStream, existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { VERSION } from "../app.constants";
 
 const IS_WINDOWS = process.platform === "win32";
+const IS_DARWIN = process.platform === "darwin";
+const IS_LINUX = process.platform === "linux";
 const DEFAULT_MANIFEST_URL = "https://clawos.minapp.xin/api/releases/latest";
 const MANIFEST_TIMEOUT_MS = 10_000;
 const MANIFEST_CACHE_TTL_MS = 60_000;
@@ -106,6 +108,59 @@ function resolveManifestDownloadUrl(raw: string, manifestUrl: string): string {
   }
 }
 
+function readNonEmptyText(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function currentPlatformAliases(): string[] {
+  if (IS_WINDOWS) {
+    return ["windows", "win32", "win"];
+  }
+  if (IS_DARWIN) {
+    return ["darwin", "macos", "mac", "osx"];
+  }
+  if (IS_LINUX) {
+    return ["linux"];
+  }
+  return [process.platform];
+}
+
+function pickPlatformDownloadUrl(links: Record<string, unknown>, manifestUrl: string): string | null {
+  const aliases = currentPlatformAliases();
+  const keys = aliases.flatMap((alias) => [`installer${alias[0].toUpperCase()}${alias.slice(1)}`, alias]);
+
+  for (const key of keys) {
+    const direct = readNonEmptyText(links[key]);
+    if (direct) {
+      return resolveManifestDownloadUrl(direct, manifestUrl);
+    }
+  }
+
+  const installers =
+    links.installers && typeof links.installers === "object" && !Array.isArray(links.installers)
+      ? (links.installers as Record<string, unknown>)
+      : null;
+  if (installers) {
+    for (const alias of aliases) {
+      const nested = readNonEmptyText(installers[alias]);
+      if (nested) {
+        return resolveManifestDownloadUrl(nested, manifestUrl);
+      }
+    }
+  }
+
+  const latest = readNonEmptyText(links.installerLatest);
+  if (latest) {
+    return resolveManifestDownloadUrl(latest, manifestUrl);
+  }
+
+  return null;
+}
+
 function validateManifest(raw: unknown, manifestUrl: string): UpdateManifest {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     throw new Error("更新清单格式错误：必须是对象。");
@@ -132,9 +187,9 @@ function validateManifest(raw: unknown, manifestUrl: string): UpdateManifest {
     ? (obj.links as Record<string, unknown>)
     : null;
   const releaseVersion = typeof release?.version === "string" ? release.version.trim() : "";
-  const installerLatest = typeof links?.installerLatest === "string" ? links.installerLatest.trim() : "";
-  if (releaseVersion && installerLatest) {
-    const resolved = resolveManifestDownloadUrl(installerLatest, manifestUrl);
+  const resolvedLink = links ? pickPlatformDownloadUrl(links, manifestUrl) : null;
+  if (releaseVersion && resolvedLink) {
+    const resolved = resolvedLink;
     const parsed = new URL(resolved);
     if (!["http:", "https:"].includes(parsed.protocol)) {
       throw new Error("更新地址仅支持 http/https。");
@@ -142,18 +197,14 @@ function validateManifest(raw: unknown, manifestUrl: string): UpdateManifest {
     return { version: releaseVersion, force, url: resolved };
   }
 
-  throw new Error("更新清单缺少 version/url（或 release.version + links.installerLatest）。");
+  throw new Error("更新清单缺少可用下载地址（url 或 release.version + links.*）。");
 }
 
 function resolveSelfExecutablePath(): { path: string | null; reason: string | null } {
-  if (!IS_WINDOWS) {
-    return { path: null, reason: "当前系统不是 Windows，无法执行自更新。" };
-  }
-
   const executablePath = process.execPath;
   const lowerName = path.basename(executablePath).toLowerCase();
 
-  if (!lowerName.endsWith(".exe")) {
+  if (IS_WINDOWS && !lowerName.endsWith(".exe")) {
     return { path: null, reason: "当前进程不是 .exe 可执行文件，无法执行自更新。" };
   }
 
@@ -359,13 +410,15 @@ export async function downloadUpdateExecutable(
   const targetDir = path.dirname(targetExecutablePath);
   ensureDirExists(targetDir);
 
-  const tempName = `${path.basename(targetExecutablePath)}.download-${Date.now()}.exe`;
+  const targetName = path.basename(targetExecutablePath);
+  const targetExt = path.extname(targetName);
+  const tempName = `${targetName}.download-${Date.now()}${targetExt}`;
   const tempPath = path.join(targetDir, tempName);
 
   const response = await fetch(downloadUrl, {
     method: "GET",
     headers: {
-      accept: "application/octet-stream,application/x-msdownload,*/*",
+      accept: "application/octet-stream,application/x-msdownload,application/zip,*/*",
     },
   });
 
@@ -449,7 +502,11 @@ function escapePowerShellLiteral(value: string): string {
   return value.replace(/'/g, "''");
 }
 
-function writeReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
+function escapePosixSingleQuoted(value: string): string {
+  return value.replace(/'/g, `'\\''`);
+}
+
+function writeWindowsReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
   const script = [
     "$ErrorActionPreference = 'Stop'",
     `$target = '${escapePowerShellLiteral(plan.targetPath)}'`,
@@ -529,21 +586,86 @@ function writeReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
   writeFileSync(plan.scriptPath, script, "utf-8");
 }
 
-export function scheduleWindowsExecutableReplacement(
+function writePosixReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
+  const target = escapePosixSingleQuoted(plan.targetPath);
+  const backup = escapePosixSingleQuoted(plan.backupPath);
+  const incoming = escapePosixSingleQuoted(plan.tempPath);
+  const scriptPath = escapePosixSingleQuoted(plan.scriptPath);
+  const logPath = escapePosixSingleQuoted(plan.logPath);
+  const launchAfterReplace = plan.launchAfterReplace ? "1" : "0";
+
+  const script = [
+    "#!/bin/sh",
+    "set -eu",
+    `target='${target}'`,
+    `backup='${backup}'`,
+    `incoming='${incoming}'`,
+    `script_path='${scriptPath}'`,
+    `log_path='${logPath}'`,
+    `launch_after_replace='${launchAfterReplace}'`,
+    `owner_pid='${ownerPid}'`,
+    "replaced=0",
+    "log() {",
+    "  if [ -n \"${log_path:-}\" ]; then",
+    "    printf '[%s] %s\\n' \"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\" \"$1\" >> \"$log_path\" 2>/dev/null || true",
+    "  fi",
+    "}",
+    "log \"Self-update script started. incoming=$incoming target=$target\"",
+    "i=0",
+    "while [ \"$i\" -lt 240 ]; do",
+    "  if kill -0 \"$owner_pid\" 2>/dev/null; then",
+    "    i=$((i + 1))",
+    "    sleep 1",
+    "    continue",
+    "  fi",
+    "  if [ -f \"$backup\" ]; then rm -f \"$backup\" || true; fi",
+    "  if [ -f \"$target\" ]; then mv \"$target\" \"$backup\" || true; fi",
+    "  if [ ! -f \"$incoming\" ]; then",
+    "    log 'incoming update file missing before replacement'",
+    "    i=$((i + 1))",
+    "    sleep 1",
+    "    continue",
+    "  fi",
+    "  if mv \"$incoming\" \"$target\"; then",
+    "    chmod +x \"$target\" 2>/dev/null || true",
+    "    replaced=1",
+    "    log \"Replacement succeeded on attempt $((i + 1)).\"",
+    "    break",
+    "  fi",
+    "  log \"Replacement attempt $((i + 1)) failed.\"",
+    "  if [ ! -f \"$target\" ] && [ -f \"$backup\" ]; then mv \"$backup\" \"$target\" || true; fi",
+    "  i=$((i + 1))",
+    "  sleep 1",
+    "done",
+    "if [ \"$replaced\" -eq 0 ]; then",
+    "  log 'Self-update replacement failed after timeout.'",
+    "fi",
+    "if [ \"$replaced\" -eq 1 ] && [ \"$launch_after_replace\" = '1' ]; then",
+    "  \"$target\" >/dev/null 2>&1 &",
+    "  log 'Updated executable launched.'",
+    "fi",
+    "log 'Self-update script finished.'",
+    "rm -f \"$script_path\" >/dev/null 2>&1 || true",
+    "exit 0",
+    "",
+  ].join("\n");
+
+  writeFileSync(plan.scriptPath, script, "utf-8");
+  chmodSync(plan.scriptPath, 0o755);
+}
+
+export function scheduleSelfExecutableReplacement(
   tempExecutablePath: string,
   targetExecutablePath: string,
   ownerPid: number,
   options?: { launchAfterReplace?: boolean }
 ): ReplacementPlan {
-  if (!IS_WINDOWS) {
-    throw new Error("当前系统不是 Windows，无法执行自更新。");
-  }
-
   const normalizedTarget = path.resolve(targetExecutablePath);
   const normalizedTemp = path.resolve(tempExecutablePath);
   const backupPath = `${normalizedTarget}.old`;
   const stamp = Date.now();
-  const scriptPath = path.join(tmpdir(), `clawos-self-update-${stamp}.ps1`);
+  const scriptExt = IS_WINDOWS ? "ps1" : "sh";
+  const scriptPath = path.join(tmpdir(), `clawos-self-update-${stamp}.${scriptExt}`);
   const logPath = path.join(tmpdir(), `clawos-self-update-${stamp}.log`);
 
   const plan: ReplacementPlan = {
@@ -555,18 +677,27 @@ export function scheduleWindowsExecutableReplacement(
     launchAfterReplace: options?.launchAfterReplace === true,
   };
 
-  writeReplacementScript(plan, ownerPid);
+  if (IS_WINDOWS) {
+    writeWindowsReplacementScript(plan, ownerPid);
+  } else {
+    writePosixReplacementScript(plan, ownerPid);
+  }
   pendingReplacementPlan = plan;
 
   try {
-    const child = spawn(
-      "powershell.exe",
-      ["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", plan.scriptPath],
-      {
-        detached: true,
-        stdio: "ignore",
-      }
-    );
+    const child = IS_WINDOWS
+      ? spawn(
+          "powershell.exe",
+          ["-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", plan.scriptPath],
+          {
+            detached: true,
+            stdio: "ignore",
+          }
+        )
+      : spawn("sh", [plan.scriptPath], {
+          detached: true,
+          stdio: "ignore",
+        });
     child.unref();
   } catch (error) {
     try {
@@ -579,6 +710,15 @@ export function scheduleWindowsExecutableReplacement(
   }
 
   return plan;
+}
+
+export function scheduleWindowsExecutableReplacement(
+  tempExecutablePath: string,
+  targetExecutablePath: string,
+  ownerPid: number,
+  options?: { launchAfterReplace?: boolean }
+): ReplacementPlan {
+  return scheduleSelfExecutableReplacement(tempExecutablePath, targetExecutablePath, ownerPid, options);
 }
 
 export function getPendingReplacementPlan(): ReplacementPlan | null {
