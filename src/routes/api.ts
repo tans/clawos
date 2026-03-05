@@ -205,18 +205,6 @@ function parseLocalGatewayBody(body: Record<string, unknown>): Partial<LocalGate
 function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalAppSettings> {
   const patch: Partial<LocalAppSettings> = {};
 
-  if (Object.prototype.hasOwnProperty.call(body, "port")) {
-    const rawPort = body.port;
-    if (typeof rawPort !== "number" || !Number.isFinite(rawPort)) {
-      throw new HttpError(400, "port 必须是数字。");
-    }
-    const parsed = Math.floor(rawPort);
-    if (parsed < 1 || parsed > 65535) {
-      throw new HttpError(400, "port 必须在 1-65535 之间。");
-    }
-    patch.port = parsed;
-  }
-
   if (Object.prototype.hasOwnProperty.call(body, "openclawToken")) {
     const rawToken = body.openclawToken;
     if (typeof rawToken !== "string") {
@@ -227,14 +215,6 @@ function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalApp
       throw new HttpError(400, "openclawToken 不能为空。");
     }
     patch.openclawToken = trimmed;
-  }
-
-  if (Object.prototype.hasOwnProperty.call(body, "autoOpenBrowser")) {
-    const raw = body.autoOpenBrowser;
-    if (typeof raw !== "boolean") {
-      throw new HttpError(400, "autoOpenBrowser 必须是 boolean。");
-    }
-    patch.autoOpenBrowser = raw;
   }
 
   if (Object.prototype.hasOwnProperty.call(body, "controllerAddress")) {

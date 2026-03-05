@@ -538,7 +538,7 @@ export function gatewayTroubleshootingTips(rawMessage: string): string[] {
   }
   if (text.includes("origin not allowed") || text.includes("allowedorigins")) {
     tips.push(
-      "网关 Origin 校验未通过：请在 openclaw 配置中设置 gateway.controlUi.allowedOrigins，至少包含 http://127.0.0.1:8080 和 http://localhost:8080。"
+      "网关 Origin 校验未通过：请在 openclaw 配置中检查 gateway.controlUi.allowedOrigins，并放行当前 ClawOS 使用的 Origin。"
     );
     tips.push(
       "可在 ClawOS 中设置 CLAWOS_GATEWAY_ORIGIN 或 clawos.json 的 gateway.origin，强制 WebSocket 握手使用指定 Origin。"

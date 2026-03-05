@@ -7,7 +7,7 @@ import {
   obfuscateSecret,
   WALLET_OBFUSCATION_ALGORITHM,
 } from "../lib/secret-obfuscation";
-import { DEFAULT_OPENCLAW_TOKEN, DEFAULT_PORT } from "../app.constants";
+import { DEFAULT_OPENCLAW_TOKEN } from "../app.constants";
 import { asObject } from "../lib/value";
 
 const IS_WINDOWS = process.platform === "win32";
@@ -25,9 +25,7 @@ export type LocalWalletConfig = {
 };
 
 export type LocalAppConfig = {
-  port?: number;
   openclawToken?: string;
-  autoOpenBrowser?: boolean;
 };
 
 export type LocalClawosConfig = {
@@ -75,9 +73,7 @@ export type GeneratedLocalWallet = {
 };
 
 export type LocalAppSettings = {
-  port: number;
   openclawToken: string;
-  autoOpenBrowser: boolean;
   controllerAddress: string;
 };
 
@@ -99,9 +95,7 @@ export function localConfigTemplate(): LocalClawosConfig {
   return {
     controllerAddress: "",
     app: {
-      port: DEFAULT_PORT,
       openclawToken: DEFAULT_OPENCLAW_TOKEN,
-      autoOpenBrowser: true,
     },
     gateway: {
       url: "ws://127.0.0.1:18789",
@@ -161,27 +155,6 @@ function pickString(value: unknown, fallback: string): string {
   return trimmed.length > 0 ? trimmed : fallback;
 }
 
-function pickPort(value: unknown, fallback: number): number {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    const parsed = Math.floor(value);
-    if (parsed >= 1 && parsed <= 65535) {
-      return parsed;
-    }
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.trim());
-    if (Number.isFinite(parsed)) {
-      const intValue = Math.floor(parsed);
-      if (intValue >= 1 && intValue <= 65535) {
-        return intValue;
-      }
-    }
-  }
-
-  return fallback;
-}
-
 function pickBoolean(value: unknown, fallback: boolean): boolean {
   if (typeof value === "boolean") {
     return value;
@@ -220,9 +193,7 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
   return {
     controllerAddress: pickString(cfg.controllerAddress, defaults.controllerAddress || ""),
     app: {
-      port: pickPort(cfg.app?.port, defaults.app?.port || DEFAULT_PORT),
       openclawToken: pickString(cfg.app?.openclawToken, defaults.app?.openclawToken || DEFAULT_OPENCLAW_TOKEN),
-      autoOpenBrowser: pickBoolean(cfg.app?.autoOpenBrowser, defaults.app?.autoOpenBrowser ?? true),
     },
     gateway: {
       url: pickString(cfg.gateway?.url, defaults.gateway?.url || ""),
@@ -340,9 +311,7 @@ export function readLocalGatewayConnectionConfig(): LocalGatewayConnectionConfig
 export function readLocalAppSettings(): LocalAppSettings {
   const localConfig = readNormalizedLocalConfig();
   return {
-    port: pickPort(localConfig.app?.port, DEFAULT_PORT),
     openclawToken: pickString(localConfig.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
-    autoOpenBrowser: pickBoolean(localConfig.app?.autoOpenBrowser, true),
     controllerAddress: pickString(localConfig.controllerAddress, ""),
   };
 }
@@ -352,15 +321,10 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
   const currentSettings = readLocalAppSettings();
 
   const nextApp: LocalAppConfig = {
-    port: typeof patch.port === "number" ? pickPort(patch.port, currentSettings.port) : currentSettings.port,
     openclawToken:
       typeof patch.openclawToken === "string"
         ? pickString(patch.openclawToken, currentSettings.openclawToken)
         : currentSettings.openclawToken,
-    autoOpenBrowser:
-      typeof patch.autoOpenBrowser === "boolean"
-        ? patch.autoOpenBrowser
-        : currentSettings.autoOpenBrowser,
   };
 
   const next = normalizeLocalConfig({
@@ -380,9 +344,7 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
   }
 
   return {
-    port: pickPort(next.app?.port, DEFAULT_PORT),
     openclawToken: pickString(next.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
-    autoOpenBrowser: pickBoolean(next.app?.autoOpenBrowser, true),
     controllerAddress: pickString(next.controllerAddress, ""),
   };
 }

@@ -5,7 +5,7 @@
   "scripts": {
     "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
     "tailwind:watch": "tailwindcss -i src/styles/input.css -o dist/output.css --watch=always",
-    "dev": "bun run tailwind:build && bun --watch src/server.ts",
+    "dev": "bun run desktop:dev",
     "electrobun:dev": "bun run scripts/electrobun.ts dev",
     "electrobun:dev:watch": "bun run scripts/electrobun.ts dev --watch",
     "electrobun:build": "bun run scripts/electrobun.ts build",
@@ -15,13 +15,13 @@
     "desktop:build": "bun run tailwind:build && bun run scripts/electrobun.ts build",
     "desktop:build:canary": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=canary",
     "desktop:build:stable": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=stable",
-    "build": "bun run build:exe",
+    "build": "bun run desktop:build",
     "publish": "bun run publish:clawos",
     "publish:json": "bun run scripts/publish-clawos.ts --skip-installer",
-    "start": "bun run src/server.ts",
+    "start": "bun run tailwind:build && bun run scripts/electrobun.ts dev",
     "test": "bun test",
     "publish:clawos": "bun run scripts/publish-clawos.ts",
-    "build:exe": "bun run scripts/build-clawos.ts"
+    "build:exe": "bun run desktop:build"
   },
   "dependencies": {
     "json5": "^2.2.3",

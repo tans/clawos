@@ -304,7 +304,7 @@ async function main(): Promise<void> {
   const compileCmd = [
     "bun",
     "build",
-    "src/server.ts",
+    "src/bun/index.ts",
     "--compile",
     "--target",
     options.target,

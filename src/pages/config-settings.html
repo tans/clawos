@@ -30,24 +30,6 @@
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">默认端口</div>
-                      <div class="text-xs text-base-content/60">默认值 8080，修改后需重启 ClawOS 生效。</div>
-                    </div>
-                    <input
-                      class="input input-bordered input-sm w-full"
-                      type="number"
-                      min="1"
-                      max="65535"
-                      step="1"
-                      data-field="port"
-                      placeholder="8080"
-                    />
-                  </div>
-                </div>
-
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
-                    <div class="space-y-1">
                       <div class="text-sm font-medium">openclaw Token</div>
                       <div class="text-xs text-base-content/60">默认值 xiake，用于侧边栏“打开 openclaw 后台”入口拼接访问链接。</div>
                     </div>
@@ -74,19 +56,6 @@
                       data-field="controller-address"
                       placeholder="0x..."
                     />
-                  </div>
-                </div>
-
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
-                    <div class="space-y-1">
-                      <div class="text-sm font-medium">启动时自动打开浏览器</div>
-                      <div class="text-xs text-base-content/60">关闭后，重启 ClawOS 不会自动弹出浏览器（适合开发调试）。</div>
-                    </div>
-                    <label class="label cursor-pointer justify-start gap-3 p-0">
-                      <input id="auto-open-browser" type="checkbox" class="toggle toggle-primary" />
-                      <span class="label-text text-sm">启用</span>
-                    </label>
                   </div>
                 </div>
 
@@ -124,10 +93,8 @@
       const metaEl = document.querySelector("[data-meta]");
       const reloadBtn = document.querySelector('[data-action="reload"]');
       const saveBtn = document.querySelector('[data-action="save"]');
-      const portInput = document.querySelector('[data-field="port"]');
       const tokenInput = document.querySelector('[data-field="openclaw-token"]');
       const controllerAddressInput = document.querySelector('[data-field="controller-address"]');
-      const autoOpenBrowserCheckbox = document.querySelector("#auto-open-browser");
       const autoStartCheckbox = document.querySelector("#clawos-autostart");
       const autoStartStatusEl = document.querySelector("[data-autostart-status]");
 
@@ -173,18 +140,12 @@
         ]);
 
         const settings = settingsData.settings || {};
-        if (portInput) {
-          portInput.value = Number.isFinite(settings.port) ? String(settings.port) : "8080";
-        }
         if (tokenInput) {
           tokenInput.value = typeof settings.openclawToken === "string" ? settings.openclawToken : "xiake";
         }
         if (controllerAddressInput) {
           controllerAddressInput.value =
             typeof settings.controllerAddress === "string" ? settings.controllerAddress : "";
-        }
-        if (autoOpenBrowserCheckbox) {
-          autoOpenBrowserCheckbox.checked = settings.autoOpenBrowser !== false;
         }
 
         const state = autoStartData.state || {};
@@ -208,13 +169,8 @@
       }
 
       async function saveSettings() {
-        if (!portInput || !tokenInput || !controllerAddressInput) {
+        if (!tokenInput || !controllerAddressInput) {
           return;
-        }
-
-        const rawPort = Number(portInput.value);
-        if (!Number.isFinite(rawPort) || rawPort < 1 || rawPort > 65535) {
-          throw new Error("端口必须在 1-65535 之间。");
         }
 
         const openclawToken = tokenInput.value.trim();
@@ -230,9 +186,7 @@
         await api("/api/local/settings", {
           method: "PUT",
           body: JSON.stringify({
-            port: Math.floor(rawPort),
             openclawToken,
-            autoOpenBrowser: autoOpenBrowserCheckbox ? autoOpenBrowserCheckbox.checked : true,
             controllerAddress,
           }),
         });
@@ -269,7 +223,7 @@
             setSaving(true);
             setMeta("正在保存设置...");
             await saveSettings();
-            setMeta("设置已保存。端口与自动打开浏览器开关在重启 ClawOS 后生效。openclaw Token 与授权控制地址会立即用于后续连接。");
+            setMeta("设置已保存。openclaw Token 与授权控制地址会立即用于后续连接。");
           } catch (error) {
             setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
           } finally {

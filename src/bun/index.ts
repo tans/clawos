@@ -1,12 +1,11 @@
 import Electrobun, { BrowserView, BrowserWindow } from "electrobun";
 import { createConnection, createServer, type Server } from "node:net";
-import { ensureLocalConfigTemplateFile, readLocalAppSettings } from "../config/local";
+import { ensureLocalConfigTemplateFile } from "../config/local";
 import type { DesktopRpcSchema } from "../desktop-ui/rpc-schema";
 import { invokeDesktopApi, renderDesktopPage } from "./desktop-ui";
 import { computeDesktopControlPort } from "./single-instance";
 import { detectAndPersistOpenclawExecutionEnvironment } from "../system/openclaw-execution";
 
-const DEFAULT_PORT = 8080;
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
 const SHELL_ENTRY_URL = "views://clawos/shell.html";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
@@ -14,25 +13,6 @@ const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
 );
 
 let desktopWindow: BrowserWindow | null = null;
-
-function resolveServerPort(): number {
-  const fromEnv = Number.parseInt(process.env.CLAWOS_DESKTOP_PORT || "", 10);
-  if (Number.isFinite(fromEnv) && fromEnv > 0 && fromEnv <= 65535) {
-    return fromEnv;
-  }
-
-  try {
-    ensureLocalConfigTemplateFile();
-    const settings = readLocalAppSettings();
-    if (Number.isFinite(settings.port) && settings.port > 0 && settings.port <= 65535) {
-      return settings.port;
-    }
-  } catch {
-    // Fall back to the default port when local config is unreadable.
-  }
-
-  return DEFAULT_PORT;
-}
 
 function focusDesktopWindow(): void {
   if (!desktopWindow) {
@@ -171,8 +151,7 @@ function createDesktopRpc() {
 }
 
 async function main(): Promise<void> {
-  const serverPort = resolveServerPort();
-  const controlPort = computeDesktopControlPort(serverPort);
+  const controlPort = computeDesktopControlPort();
   console.log(`[desktop] booting ClawOS shell (${SHELL_ENTRY_URL})`);
   console.log(`[desktop] single-instance control at ${SINGLE_INSTANCE_HOST}:${controlPort}`);
   if (IS_DESKTOP_DEV) {

@@ -1,4 +1,6 @@
-export function computeDesktopControlPort(serverPort: number, rawEnvValue?: string): number {
+const DEFAULT_DESKTOP_CONTROL_PORT = 8151;
+
+export function computeDesktopControlPort(rawEnvValue?: string): number {
   const fromEnv = Number.parseInt(
     typeof rawEnvValue === "string" ? rawEnvValue : process.env.CLAWOS_DESKTOP_CONTROL_PORT || "",
     10
@@ -7,9 +9,5 @@ export function computeDesktopControlPort(serverPort: number, rawEnvValue?: stri
     return fromEnv;
   }
 
-  const derived = serverPort + 71;
-  if (derived <= 65535) {
-    return derived;
-  }
-  return Math.max(1, serverPort - 71);
+  return DEFAULT_DESKTOP_CONTROL_PORT;
 }
