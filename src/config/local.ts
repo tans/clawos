@@ -13,7 +13,7 @@ import { asObject } from "../lib/value";
 const IS_WINDOWS = process.platform === "win32";
 const OPENCLAW_CONFIG_DIR =
   process.env.CLAWOS_OPENCLAW_CONFIG_DIR?.trim() ||
-  (IS_WINDOWS ? "/root/.openclaw" : "/tmp/clawos-openclaw/.openclaw");
+  (IS_WINDOWS ? "/root/.openclaw" : "~/.openclaw");
 const OPENCLAW_CONFIG_PATH = `${OPENCLAW_CONFIG_DIR}/openclaw.json`;
 const CLAWOS_LOCAL_CONFIG_PATH = path.join(process.cwd(), "clawos.json");
 

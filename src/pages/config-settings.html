@@ -26,64 +26,87 @@
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
               <h2 class="card-title text-base">服务参数</h2>
-
-              <label class="form-control w-full gap-2">
-                <div class="label py-0">
-                  <span class="label-text text-xs">默认端口</span>
+              <div class="grid gap-3">
+                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
+                    <div class="space-y-1">
+                      <div class="text-sm font-medium">默认端口</div>
+                      <div class="text-xs text-base-content/60">默认值 8080，修改后需重启 ClawOS 生效。</div>
+                    </div>
+                    <input
+                      class="input input-bordered input-sm w-full"
+                      type="number"
+                      min="1"
+                      max="65535"
+                      step="1"
+                      data-field="port"
+                      placeholder="8080"
+                    />
+                  </div>
                 </div>
-                <input
-                  class="input input-bordered input-sm"
-                  type="number"
-                  min="1"
-                  max="65535"
-                  step="1"
-                  data-field="port"
-                  placeholder="8080"
-                />
-                <div class="text-xs text-base-content/60">默认值 8080，修改后需重启 ClawOS 生效。</div>
-              </label>
 
-              <label class="form-control w-full gap-2">
-                <div class="label py-0">
-                  <span class="label-text text-xs">openclaw Token</span>
+                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
+                    <div class="space-y-1">
+                      <div class="text-sm font-medium">openclaw Token</div>
+                      <div class="text-xs text-base-content/60">默认值 xiake，用于侧边栏“打开 openclaw 后台”入口拼接访问链接。</div>
+                    </div>
+                    <input
+                      class="input input-bordered input-sm w-full font-mono"
+                      type="text"
+                      data-field="openclaw-token"
+                      placeholder="xiake"
+                    />
+                  </div>
                 </div>
-                <input
-                  class="input input-bordered input-sm font-mono"
-                  type="text"
-                  data-field="openclaw-token"
-                  placeholder="xiake"
-                />
-                <div class="text-xs text-base-content/60">默认值 xiake，用于“打开 openclaw”时拼接访问链接。</div>
-              </label>
 
-              <label class="form-control w-full gap-2">
-                <div class="label py-0">
-                  <span class="label-text text-xs">授权控制地址</span>
+                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
+                    <div class="space-y-1">
+                      <div class="text-sm font-medium">授权控制地址</div>
+                      <div class="text-xs text-base-content/60">
+                        可为空。填写后会写入 <code>clawos.json</code> 的 <code>controllerAddress</code> 字段。
+                      </div>
+                    </div>
+                    <input
+                      class="input input-bordered input-sm w-full font-mono"
+                      type="text"
+                      data-field="controller-address"
+                      placeholder="0x..."
+                    />
+                  </div>
                 </div>
-                <input
-                  class="input input-bordered input-sm font-mono"
-                  type="text"
-                  data-field="controller-address"
-                  placeholder="0x..."
-                />
-                <div class="text-xs text-base-content/60">
-                  可为空。填写后会写入 <code>clawos.json</code> 的 <code>controllerAddress</code> 字段。
+
+                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
+                    <div class="space-y-1">
+                      <div class="text-sm font-medium">启动时自动打开浏览器</div>
+                      <div class="text-xs text-base-content/60">关闭后，重启 ClawOS 不会自动弹出浏览器（适合开发调试）。</div>
+                    </div>
+                    <label class="label cursor-pointer justify-start gap-3 p-0">
+                      <input id="auto-open-browser" type="checkbox" class="toggle toggle-primary" />
+                      <span class="label-text text-sm">启用</span>
+                    </label>
+                  </div>
                 </div>
-              </label>
 
-              <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
-                <input id="auto-open-browser" type="checkbox" class="toggle toggle-primary" />
-                <span class="label-text">启动时自动打开浏览器</span>
-              </label>
-              <div class="text-xs text-base-content/60">关闭后，重启 ClawOS 不会自动弹出浏览器（适合开发调试）。</div>
-
-              <label class="label cursor-pointer justify-start gap-3 rounded-lg border border-base-200 px-3 py-2">
-                <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
-                <span class="label-text">开机后自动启动 ClawOS</span>
-              </label>
-              <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
-              <div class="text-xs text-base-content/60">
-                说明：会写入当前用户注册表 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>。
+                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
+                    <div class="space-y-1">
+                      <div class="text-sm font-medium">开机后自动启动 ClawOS</div>
+                      <div class="text-xs text-base-content/60">
+                        说明：会写入当前用户注册表 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>。
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <label class="label cursor-pointer justify-start gap-3 p-0">
+                        <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
+                        <span class="label-text text-sm">启用</span>
+                      </label>
+                      <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>

@@ -17,11 +17,6 @@
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <h1 class="text-lg font-semibold">通讯渠道</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-warning btn-xs" type="button" data-openclaw-entry>打开 openclaw 后台</button>
-            <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-3 py-1">
-              <span class="text-xs">JSON 编辑</span>
-              <input class="toggle toggle-xs" type="checkbox" data-mode-toggle />
-            </label>
             <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
           </div>
         </header>
@@ -34,13 +29,6 @@
                 <span class="text-[11px] text-base-content/60">其他通讯渠道到 openclaw 后台配置</span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
-            </div>
-          </section>
-
-          <section class="mt-4 hidden card card-compact border border-base-200 bg-base-100" data-json-editor>
-            <div class="card-body gap-3">
-              <h2 class="card-title text-base">channels JSON（高级模式）</h2>
-              <textarea class="textarea textarea-bordered h-[62vh] w-full font-mono text-xs" data-json-input readonly></textarea>
             </div>
           </section>
 
@@ -99,10 +87,6 @@
       const specByKey = new Map(CHANNEL_SPECS.map((spec) => [spec.key, spec]));
 
       const metaEl = document.querySelector("[data-meta]");
-      const modeToggle = document.querySelector("[data-mode-toggle]");
-      const cardEditorEl = document.querySelector("[data-card-editor]");
-      const jsonEditorEl = document.querySelector("[data-json-editor]");
-      const jsonInputEl = document.querySelector("[data-json-input]");
       const channelListEl = document.querySelector("[data-channel-list]");
 
       const modalEl = document.querySelector("[data-channel-modal]");
@@ -114,13 +98,8 @@
       const modalSaveEl = document.querySelector("[data-modal-save]");
 
       let channelsConfig = {};
-      let mode = "card";
       let activeSpec = null;
       let activeDraft = {};
-
-      function pretty(value) {
-        return JSON.stringify(value || {}, null, 2);
-      }
 
       function isObject(value) {
         return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -144,22 +123,6 @@
           .replaceAll(">", "&gt;")
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#39;");
-      }
-
-      function parseJsonObject(text, field) {
-        const raw = String(text || "").trim();
-        if (!raw) {
-          return {};
-        }
-
-        let parsed;
-        try {
-          parsed = JSON.parse(raw);
-        } catch (error) {
-          throw new Error(`${field} JSON 格式错误: ${error.message}`);
-        }
-
-        return ensureObject(parsed, field);
       }
 
       function getPath(source, path) {
@@ -256,15 +219,6 @@
         }
 
         return value;
-      }
-
-      function parseObjectArea(rawText, fieldLabel) {
-        const text = String(rawText || "").trim();
-        if (!text) {
-          return undefined;
-        }
-
-        return parseJsonObject(text, fieldLabel);
       }
 
       function readOptionalText(value) {
@@ -485,13 +439,6 @@
         }
       }
 
-      function renderMode() {
-        const jsonMode = mode === "json";
-        cardEditorEl.classList.toggle("hidden", jsonMode);
-        jsonEditorEl.classList.toggle("hidden", !jsonMode);
-        modeToggle.checked = jsonMode;
-      }
-
       function findSpec(specKey) {
         const spec = specByKey.get(specKey);
         if (!spec) {
@@ -545,16 +492,6 @@
           `;
         }
 
-        if (field.type === "json") {
-          const text = isObject(value) ? pretty(value) : "";
-          return `
-            <div class="${rowClass}">
-              <div class="${labelClass}">${escapeHtml(field.label)}</div>
-              <textarea class="textarea textarea-bordered h-32 w-full font-mono text-xs" ${attrSpec} ${attrPath}>${escapeHtml(text)}</textarea>
-            </div>
-          `;
-        }
-
         if (field.type === "select") {
           const current = typeof value === "string" ? value : "";
           const options = (field.options || []).map((option) => {
@@ -596,10 +533,6 @@
       }
 
       function openChannelConfig(specKey) {
-        if (mode !== "card") {
-          throw new Error("请先退出 JSON 编辑模式再配置参数");
-        }
-
         const spec = findSpec(specKey);
         if (spec.fields.length === 0) {
           throw new Error(`${spec.title}仅支持开关，不需要额外参数`);
@@ -624,8 +557,6 @@
           value = inputEl.checked;
         } else if (field.type === "list") {
           value = parseList(inputEl.value);
-        } else if (field.type === "json") {
-          value = parseObjectArea(inputEl.value, `${specTitle}.${field.path}`);
         } else if (field.type === "number") {
           value = parseNumberValue(inputEl.value, `${specTitle}.${field.path}`, field);
         } else {
@@ -672,32 +603,6 @@
         return sanitizeChannelDraft(specKey, draft);
       }
 
-      function buildCardConfig(baseConfig) {
-        const next = sanitizeChannelsConfig(baseConfig);
-
-        for (const spec of CHANNEL_SPECS) {
-          const cardEls = getChannelCardElements(spec.key);
-          if (!cardEls) {
-            continue;
-          }
-
-          const enabled = Boolean(cardEls.enabled.checked);
-          const entry = getChannelEntry(next, spec.key);
-          const channel = cloneObject(entry.value);
-          delete channel.enabled;
-
-          if (enabled) {
-            channel.enable = true;
-          } else {
-            channel.enable = false;
-          }
-
-          setChannelEntry(next, spec.key, channel);
-        }
-
-        return next;
-      }
-
       async function api(path, options = {}) {
         const res = await fetch(path, {
           headers: { "content-type": "application/json" },
@@ -714,7 +619,6 @@
       function updateLocalChannelState(specKey, channelDraft) {
         setChannelEntry(channelsConfig, specKey, channelDraft);
         fillCardForm(channelsConfig);
-        jsonInputEl.value = pretty(channelsConfig);
       }
 
       async function saveChannelDraft(specKey, channelDraft) {
@@ -732,40 +636,8 @@
         const data = await api(`/api/config/${SECTION}`);
         channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
         fillCardForm(channelsConfig);
-        jsonInputEl.value = pretty(channelsConfig);
         metaEl.textContent = `${SECTION} 已加载`;
       }
-
-      function enterJsonMode() {
-        const draft = sanitizeChannelsConfig(buildCardConfig(channelsConfig));
-        channelsConfig = draft;
-        jsonInputEl.value = pretty(draft);
-        mode = "json";
-        renderMode();
-      }
-
-      function leaveJsonMode() {
-        const parsed = sanitizeChannelsConfig(parseJsonObject(jsonInputEl.value, SECTION));
-        channelsConfig = parsed;
-        fillCardForm(parsed);
-        mode = "card";
-        renderMode();
-      }
-
-      modeToggle.addEventListener("change", (event) => {
-        const enabled = Boolean(event.currentTarget.checked);
-        try {
-          if (enabled) {
-            enterJsonMode();
-          } else {
-            leaveJsonMode();
-          }
-          metaEl.textContent = enabled ? "已切换到 JSON 编辑" : "已切换到表单编辑";
-        } catch (error) {
-          modeToggle.checked = mode === "json";
-          metaEl.textContent = `切换失败: ${error.message}`;
-        }
-      });
 
       channelListEl.addEventListener("click", (event) => {
         const btn = event.target.closest("[data-action='open-config']");
@@ -841,8 +713,6 @@
         event.currentTarget.disabled = true;
         try {
           await loadSection();
-          mode = "card";
-          renderMode();
         } catch (error) {
           metaEl.textContent = `加载失败: ${error.message}`;
         } finally {
@@ -853,7 +723,6 @@
       (async function init() {
         try {
           renderChannelCards();
-          renderMode();
           await loadSection();
         } catch (error) {
           metaEl.textContent = `初始化失败: ${error.message}`;

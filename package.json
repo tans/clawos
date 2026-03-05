@@ -9,6 +9,7 @@
     "electrobun:dev": "bun run scripts/electrobun.ts dev",
     "electrobun:dev:watch": "bun run scripts/electrobun.ts dev --watch",
     "electrobun:build": "bun run scripts/electrobun.ts build",
+    "electrobun:download": "bun run scripts/download-electrobun-assets.ts",
     "desktop:dev": "bun run scripts/desktop-dev.ts",
     "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun run scripts/electrobun.ts dev --watch",
     "desktop:build": "bun run tailwind:build && bun run scripts/electrobun.ts build",

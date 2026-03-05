@@ -16,18 +16,220 @@
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <h1 class="text-lg font-semibold">功能</h1>
+          <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+          </div>
         </header>
 
-        <section class="flex flex-1 items-center justify-center p-6">
-          <div class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body items-center gap-4 text-center">
-              <div class="text-sm text-base-content/80">开发中，请跳转到openclaw后台设置。</div>
+        <section class="flex-1 p-6">
+          <section class="card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="card-title text-base">Tools 设置</h2>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">保存 Tools</button>
+              </div>
+              <div class="text-xs text-base-content/60">上面是工具 tools 的设置（保存到 <code>gateway.tools</code>）。</div>
+              <textarea
+                class="textarea textarea-bordered min-h-64 w-full font-mono text-xs leading-6"
+                data-field="tools-json"
+                spellcheck="false"
+                placeholder='例如：{"web":{"search":{"enabled":true}}}'
+              ></textarea>
             </div>
-          </div>
+          </section>
+
+          <section class="card card-compact mt-4 border border-base-200 bg-base-100">
+            <div class="card-body gap-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="card-title text-base">Skills 学习</h2>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存 Skills</button>
+              </div>
+              <div class="text-xs text-base-content/60">下面是 skills 的学习（保存到 <code>skills</code>）。</div>
+              <textarea
+                class="textarea textarea-bordered min-h-64 w-full font-mono text-xs leading-6"
+                data-field="skills-json"
+                spellcheck="false"
+                placeholder='例如：{"load":{"watch":true}}'
+              ></textarea>
+            </div>
+          </section>
+
+          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
         </section>
       </main>
     </div>
 
     <script src="/sidebar-update.js"></script>
+
+    <script>
+      const toolsInput = document.querySelector('[data-field="tools-json"]');
+      const skillsInput = document.querySelector('[data-field="skills-json"]');
+      const reloadBtn = document.querySelector('[data-action="reload"]');
+      const saveToolsBtn = document.querySelector('[data-action="save-tools"]');
+      const saveSkillsBtn = document.querySelector('[data-action="save-skills"]');
+      const metaEl = document.querySelector("[data-meta]");
+
+      let gatewayConfig = {};
+
+      function isObject(value) {
+        return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+      }
+
+      function cloneObject(value) {
+        return JSON.parse(JSON.stringify(value || {}));
+      }
+
+      function setMeta(text) {
+        if (metaEl) {
+          metaEl.textContent = text;
+        }
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || `请求失败: ${res.status}`);
+        }
+        return data;
+      }
+
+      function formatJsonObject(value) {
+        const safeValue = isObject(value) ? value : {};
+        return `${JSON.stringify(safeValue, null, 2)}\n`;
+      }
+
+      function parseJsonObject(rawText, label) {
+        let parsed;
+        try {
+          parsed = JSON.parse(String(rawText || "{}").trim() || "{}");
+        } catch {
+          throw new Error(`${label} 不是合法 JSON。`);
+        }
+
+        if (!isObject(parsed)) {
+          throw new Error(`${label} 必须是 JSON 对象。`);
+        }
+        return parsed;
+      }
+
+      function setButtonBusy(button, busy, loadingText, normalText) {
+        if (!button) {
+          return;
+        }
+        button.disabled = busy;
+        button.textContent = busy ? loadingText : normalText;
+      }
+
+      async function loadFeatureConfig() {
+        const [gatewayData, skillsData] = await Promise.all([api("/api/config/gateway"), api("/api/config/skills")]);
+
+        gatewayConfig = isObject(gatewayData.data) ? cloneObject(gatewayData.data) : {};
+        const toolsConfig = isObject(gatewayConfig.tools) ? gatewayConfig.tools : {};
+        const skillsConfig = isObject(skillsData.data) ? skillsData.data : {};
+
+        if (toolsInput) {
+          toolsInput.value = formatJsonObject(toolsConfig);
+        }
+        if (skillsInput) {
+          skillsInput.value = formatJsonObject(skillsConfig);
+        }
+      }
+
+      async function saveToolsConfig() {
+        if (!toolsInput) {
+          return;
+        }
+
+        const nextTools = parseJsonObject(toolsInput.value, "Tools 配置");
+        const nextGateway = cloneObject(gatewayConfig);
+        nextGateway.tools = nextTools;
+
+        const result = await api("/api/config/gateway", {
+          method: "PUT",
+          body: JSON.stringify({ data: nextGateway }),
+        });
+
+        gatewayConfig = isObject(result.data) ? cloneObject(result.data) : nextGateway;
+        toolsInput.value = formatJsonObject(nextTools);
+      }
+
+      async function saveSkillsConfig() {
+        if (!skillsInput) {
+          return;
+        }
+
+        const nextSkills = parseJsonObject(skillsInput.value, "Skills 配置");
+        const result = await api("/api/config/skills", {
+          method: "PUT",
+          body: JSON.stringify({ data: nextSkills }),
+        });
+
+        const savedSkills = isObject(result.data) ? result.data : nextSkills;
+        skillsInput.value = formatJsonObject(savedSkills);
+      }
+
+      if (reloadBtn) {
+        reloadBtn.addEventListener("click", async () => {
+          try {
+            setMeta("正在读取功能配置...");
+            setButtonBusy(reloadBtn, true, "加载中...", "重新加载");
+            await loadFeatureConfig();
+            setMeta("已加载：上面是 tools 设置，下面是 skills 学习。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`读取失败: ${message}`);
+          } finally {
+            setButtonBusy(reloadBtn, false, "加载中...", "重新加载");
+          }
+        });
+      }
+
+      if (saveToolsBtn) {
+        saveToolsBtn.addEventListener("click", async () => {
+          try {
+            setMeta("正在保存 Tools 配置...");
+            setButtonBusy(saveToolsBtn, true, "保存中...", "保存 Tools");
+            await saveToolsConfig();
+            setMeta("Tools 配置已保存。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`保存 Tools 失败: ${message}`);
+          } finally {
+            setButtonBusy(saveToolsBtn, false, "保存中...", "保存 Tools");
+          }
+        });
+      }
+
+      if (saveSkillsBtn) {
+        saveSkillsBtn.addEventListener("click", async () => {
+          try {
+            setMeta("正在保存 Skills 配置...");
+            setButtonBusy(saveSkillsBtn, true, "保存中...", "保存 Skills");
+            await saveSkillsConfig();
+            setMeta("Skills 配置已保存。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`保存 Skills 失败: ${message}`);
+          } finally {
+            setButtonBusy(saveSkillsBtn, false, "保存中...", "保存 Skills");
+          }
+        });
+      }
+
+      (async () => {
+        try {
+          setMeta("正在读取功能配置...");
+          await loadFeatureConfig();
+          setMeta("已加载：上面是 tools 设置，下面是 skills 学习。");
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          setMeta(`读取失败: ${message}`);
+        }
+      })();
+    </script>
   </body>
 </html>

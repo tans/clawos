@@ -42,13 +42,11 @@ export async function readOpenclawConfigFromWsl(): Promise<Record<string, unknow
   const openclawConfigPath = resolveOpenclawConfigPath();
   const script = `set -euo pipefail
 config_path_raw=${shellQuote(openclawConfigPath)}
-if [ "$config_path_raw" = "~" ]; then
-  config_path="$HOME"
-elif [[ "$config_path_raw" == "~/"* ]]; then
-  config_path="$HOME/\${config_path_raw#~/}"
-else
-  config_path="$config_path_raw"
-fi
+case "$config_path_raw" in
+  "~") config_path="$HOME" ;;
+  "~/"*) config_path="$HOME/\${config_path_raw:2}" ;;
+  *) config_path="$config_path_raw" ;;
+esac
 if [ -f "$config_path" ]; then
   cat "$config_path"
 else
@@ -103,13 +101,11 @@ export async function writeOpenclawConfigToWsl(
     `target_path_raw=${shellQuote(openclawConfigPath)}`,
     `backup_suffix=${shellQuote(backupSuffix)}`,
     `payload_b64=${shellQuote(encoded)}`,
-    'if [ "$target_path_raw" = "~" ]; then',
-    '  target_path="$HOME"',
-    'elif [[ "$target_path_raw" == "~/"* ]]; then',
-    '  target_path="$HOME/${target_path_raw#~/}"',
-    "else",
-    '  target_path="$target_path_raw"',
-    "fi",
+    'case "$target_path_raw" in',
+    '  "~") target_path="$HOME" ;;',
+    '  "~/"*) target_path="$HOME/${target_path_raw:2}" ;;',
+    '  *) target_path="$target_path_raw" ;;',
+    "esac",
     'target_dir="$(dirname "$target_path")"',
     'mkdir -p "$target_dir"',
     'backup_path=""',

@@ -103,11 +103,18 @@ function renderSidebar(active: SidebarNavId | null): string {
           ${nav}
         </nav>
 
-        <div class="mt-auto border-t border-base-200 pt-3" data-app-update-widget>
-          <div class="text-xs text-base-content/70">
-            <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> · 版本：<span data-app-version>v-</span>
+        <div class="mt-auto flex flex-col gap-3">
+          <button class="btn btn-outline btn-sm justify-start gap-2" type="button" data-openclaw-entry>
+            <i class="fa-solid fa-arrow-up-right-from-square w-4 text-center" aria-hidden="true"></i>
+            <span>打开 openclaw 后台</span>
+          </button>
+
+          <div class="border-t border-base-200 pt-3" data-app-update-widget>
+            <div class="text-xs text-base-content/70">
+              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> · 版本：<span data-app-version>v-</span>
+            </div>
+            <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
           </div>
-          <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
         </div>
       </aside>`;
 }
