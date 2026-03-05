@@ -57,20 +57,23 @@
       const AGENT_SECTION = "agents";
       const PROVIDER_PRESETS = [
         {
-          key: "kimi",
+          key: "kimi-coding",
           title: "Kimi",
-          baseUrl: "https://api.moonshot.cn/v1",
-          api: "openai-completions",
-          modelId: "moonshot-v1-8k",
+          baseUrl: "https://api.kimi.com/coding/",
+          api: "anthropic-messages",
+          modelId: "k2p5",
         },
         {
           key: "minimax",
           title: "MiniMax",
-          baseUrl: "https://api.minimax.chat/v1",
-          api: "openai-completions",
-          modelId: "abab6.5s-chat",
+          baseUrl: "https://api.minimax.io/anthropic",
+          api: "anthropic-messages",
+          modelId: "MiniMax-M2.1",
         },
       ];
+      const PROVIDER_ALIASES = {
+        kimi: "kimi-coding",
+      };
 
       const presetByProviderKey = new Map(PROVIDER_PRESETS.map((item) => [item.key, item]));
       const presetOrder = new Map(PROVIDER_PRESETS.map((item, index) => [item.key, index]));
@@ -105,6 +108,14 @@
         return value.trim();
       }
 
+      function normalizeProviderKey(rawProviderKey) {
+        const key = readOptionalText(rawProviderKey);
+        if (!key) {
+          return "";
+        }
+        return PROVIDER_ALIASES[key] || key;
+      }
+
       function escapeHtml(raw) {
         return String(raw)
           .replaceAll("&", "&amp;")
@@ -127,14 +138,15 @@
 
         const provider = text.slice(0, slashIndex).trim();
         const model = text.slice(slashIndex + 1).trim();
-        if (!provider || !model) {
+        const normalizedProvider = normalizeProviderKey(provider);
+        if (!normalizedProvider || !model) {
           return null;
         }
 
         return {
-          provider,
+          provider: normalizedProvider,
           model,
-          key: `${provider}/${model}`,
+          key: `${normalizedProvider}/${model}`,
         };
       }
 
@@ -149,6 +161,23 @@
           return preset.title;
         }
         return providerKey || "未命名";
+      }
+
+      function isPresetProvider(providerKey) {
+        return presetByProviderKey.has(providerKey);
+      }
+
+      function resolveProviderEntry(providers, providerKey) {
+        if (isObject(providers[providerKey])) {
+          return providers[providerKey];
+        }
+
+        for (const [aliasKey, normalizedKey] of Object.entries(PROVIDER_ALIASES)) {
+          if (normalizedKey === providerKey && isObject(providers[aliasKey])) {
+            return providers[aliasKey];
+          }
+        }
+        return {};
       }
 
       function readAgentRouting(sourceAgents) {
@@ -186,16 +215,22 @@
         const models = ensureObject(sourceModels || {}, MODEL_SECTION);
         const providers = isObject(models.providers) ? models.providers : {};
         const routing = readAgentRouting(sourceAgents);
-        const providerKeys = new Set(Object.keys(providers));
+        const providerKeys = new Set(PROVIDER_PRESETS.map((item) => item.key));
 
-        if (routing.primaryRef) {
+        for (const rawProviderKey of Object.keys(providers)) {
+          const providerKey = normalizeProviderKey(rawProviderKey);
+          if (isPresetProvider(providerKey)) {
+            providerKeys.add(providerKey);
+          }
+        }
+
+        if (routing.primaryRef && isPresetProvider(routing.primaryRef.provider)) {
           providerKeys.add(routing.primaryRef.provider);
         }
         for (const providerKey of routing.fallbackProviderSet) {
-          providerKeys.add(providerKey);
-        }
-        for (const preset of PROVIDER_PRESETS) {
-          providerKeys.add(preset.key);
+          if (isPresetProvider(providerKey)) {
+            providerKeys.add(providerKey);
+          }
         }
 
         const keys = Array.from(providerKeys);
@@ -209,7 +244,7 @@
         });
 
         const drafts = keys.map((providerKey) => {
-          const provider = isObject(providers[providerKey]) ? providers[providerKey] : {};
+          const provider = resolveProviderEntry(providers, providerKey);
           const preset = presetByProviderKey.get(providerKey);
           const existingModels = readProviderModels(provider);
           const referencedModelId = routing.modelByProvider.get(providerKey) || "";
@@ -221,7 +256,7 @@
           return {
             providerKey,
             title: resolveTitle(providerKey),
-            existing: isObject(providers[providerKey]),
+            existing: isObject(provider) && Object.keys(provider).length > 0,
             baseUrl: readOptionalText(provider.baseUrl) || readOptionalText(preset?.baseUrl),
             api: readOptionalText(provider.api) || readOptionalText(preset?.api),
             apiKey: readOptionalText(provider.apiKey),
@@ -278,7 +313,7 @@
                 <div class="mt-3 grid gap-3">
                   <label class="form-control w-full gap-1">
                     <span class="text-xs text-base-content/70">当前模型（Coding Plan）</span>
-                    <input class="input input-bordered input-sm font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="例如 moonshot-v1-8k" />
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="例如 k2p5 / MiniMax-M2.1" />
                   </label>
 
                   <label class="form-control w-full gap-1">
@@ -345,7 +380,7 @@
         const providers = isObject(next.providers) ? cloneObject(next.providers) : {};
 
         for (const draft of drafts) {
-          const providerKey = readOptionalText(draft.providerKey);
+          const providerKey = normalizeProviderKey(draft.providerKey);
           if (!providerKey) {
             continue;
           }
@@ -356,7 +391,7 @@
           }
 
           const preset = presetByProviderKey.get(providerKey);
-          const currentProvider = isObject(providers[providerKey]) ? cloneObject(providers[providerKey]) : {};
+          const currentProvider = cloneObject(resolveProviderEntry(providers, providerKey));
           const currentModels = readProviderModels(currentProvider);
           const modelId = readOptionalText(draft.modelId);
           if (!modelId) {
@@ -389,6 +424,12 @@
           }
 
           providers[providerKey] = currentProvider;
+
+          for (const [aliasKey, normalizedKey] of Object.entries(PROVIDER_ALIASES)) {
+            if (normalizedKey === providerKey && aliasKey !== providerKey && Object.prototype.hasOwnProperty.call(providers, aliasKey)) {
+              delete providers[aliasKey];
+            }
+          }
         }
 
         next.providers = providers;
@@ -405,12 +446,13 @@
           throw new Error("请先选择一个 primary 模型");
         }
 
+        const primaryProviderKey = normalizeProviderKey(primaryDraft.providerKey);
         const primaryModelId = readOptionalText(primaryDraft.modelId);
         if (!primaryModelId) {
-          throw new Error(`${resolveTitle(primaryDraft.providerKey)} 的模型 ID 不能为空`);
+          throw new Error(`${resolveTitle(primaryProviderKey)} 的模型 ID 不能为空`);
         }
 
-        const primaryKey = `${primaryDraft.providerKey}/${primaryModelId}`;
+        const primaryKey = `${primaryProviderKey}/${primaryModelId}`;
         const fallbackKeys = [];
         const seen = new Set();
 
@@ -419,12 +461,13 @@
             continue;
           }
 
+          const providerKey = normalizeProviderKey(draft.providerKey);
           const modelId = readOptionalText(draft.modelId);
           if (!modelId) {
-            throw new Error(`${resolveTitle(draft.providerKey)} 的模型 ID 不能为空`);
+            throw new Error(`${resolveTitle(providerKey)} 的模型 ID 不能为空`);
           }
 
-          const key = `${draft.providerKey}/${modelId}`;
+          const key = `${providerKey}/${modelId}`;
           if (key === primaryKey || seen.has(key)) {
             continue;
           }

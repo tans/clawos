@@ -27,16 +27,32 @@ function resolveLocalDownloadAsset(assetName: string): string {
   return join(process.cwd(), "download", assetName);
 }
 
-function copyAssetFromLocalDownload(assetName: string, targetPath: string, logPrefix: string): void {
+function buildMissingAssetHint(assetName: string, version: string, releasePlatform: ReleasePlatform, arch: Arch): string {
+  const downloadDir = join(process.cwd(), "download");
+  const localAssetPath = resolveLocalDownloadAsset(assetName);
+  return [
+    `未找到离线包：${localAssetPath}`,
+    "当前为纯离线模式，已禁用镜像和 GitHub 在线下载。",
+    "请先手动下载后重试：",
+    `1) 目标版本: electrobun v${version}`,
+    `2) 目标平台: ${releasePlatform}-${arch}`,
+    `3) 目标文件: ${assetName}`,
+    `4) 放置目录: ${downloadDir}`,
+    `5) 预期路径: ${localAssetPath}`,
+  ].join("\n");
+}
+
+function copyAssetFromLocalDownload(
+  assetName: string,
+  targetPath: string,
+  logPrefix: string,
+  version: string,
+  releasePlatform: ReleasePlatform,
+  arch: Arch
+): void {
   const localAssetPath = resolveLocalDownloadAsset(assetName);
   if (!existsSync(localAssetPath)) {
-    throw new Error(
-      [
-        `未找到离线包：${localAssetPath}`,
-        "当前模式已禁用镜像和 GitHub 下载。",
-        `请先把 ${assetName} 放到项目 download 目录。`,
-      ].join("\n")
-    );
+    throw new Error(buildMissingAssetHint(assetName, version, releasePlatform, arch));
   }
 
   const size = statSync(localAssetPath).size;
@@ -104,7 +120,7 @@ async function ensureElectrobunCliFromLocalPackage(
   const tempTarPath = join(cacheDir, `clawos-cli-${versionTag}-${releasePlatform}-${arch}.tar.gz`);
 
   try {
-    copyAssetFromLocalDownload(cliAsset, tempTarPath, "electrobun-cli");
+    copyAssetFromLocalDownload(cliAsset, tempTarPath, "electrobun-cli", version, releasePlatform, arch);
     const archiveBytes = await Bun.file(tempTarPath).arrayBuffer();
     const archive = new Bun.Archive(archiveBytes);
     mkdirSync(cacheDir, { recursive: true });
@@ -143,7 +159,7 @@ async function ensureElectrobunCoreFromLocalPackage(
   const tempTarPath = join(electrobunDir, `.clawos-core-${releasePlatform}-${arch}.tar.gz`);
 
   try {
-    copyAssetFromLocalDownload(coreAsset, tempTarPath, "electrobun-core");
+    copyAssetFromLocalDownload(coreAsset, tempTarPath, "electrobun-core", version, releasePlatform, arch);
     const archiveBytes = await Bun.file(tempTarPath).arrayBuffer();
     const archive = new Bun.Archive(archiveBytes);
     const targetDir = join(electrobunDir, `dist-${hostOs}-${arch}`);
@@ -178,6 +194,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const { hostOs, releasePlatform, arch } = resolvePlatform();
   const electrobunDir = join(process.cwd(), "node_modules", "electrobun");
+  console.log(`[electrobun-wrapper] 离线模式已启用（${releasePlatform}-${arch}），仅使用项目 download 目录中的离线包。`);
 
   if (!existsSync(electrobunDir)) {
     throw new Error("未检测到 node_modules/electrobun，请先执行 bun install。");
