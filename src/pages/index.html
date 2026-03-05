@@ -92,78 +92,45 @@
                             class="card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
-                                <h2 class="card-title text-base">系统其他</h2>
+                                <h2 class="card-title text-base">
+                                    openclaw.json 备份切换
+                                </h2>
+                                <div
+                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
+                                    data-openclaw-backup-summary
+                                >
+                                    正在加载备份列表...
+                                </div>
+                                <label class="form-control w-full gap-1.5">
+                                    <span class="label-text text-xs text-base-content/70"
+                                        >备份文件</span
+                                    >
+                                    <select
+                                        class="select select-sm select-bordered w-full"
+                                        data-openclaw-backup-select
+                                    >
+                                        <option value="">正在加载...</option>
+                                    </select>
+                                </label>
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         class="btn btn-outline btn-sm"
-                                        data-action="check-env"
+                                        data-action="refresh-openclaw-backups"
                                     >
-                                        检查环境
+                                        刷新备份
                                     </button>
                                     <button
                                         class="btn btn-warning btn-sm"
-                                        data-action="repair-env"
+                                        data-action="rollback-openclaw-backup"
                                     >
-                                        环境修复
-                                    </button>
-                                    <button
-                                        class="btn btn-outline btn-sm"
-                                        data-action="check-browser-connectivity"
-                                    >
-                                        浏览器连通性
+                                        切换到该备份
                                     </button>
                                 </div>
                                 <div
-                                    class="rounded-lg border border-base-200 bg-base-200/20 p-3"
+                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-[11px] text-base-content/70"
+                                    data-openclaw-backup-detail
                                 >
-                                    <div
-                                        class="text-xs font-medium text-base-content/70"
-                                        data-status="execution"
-                                    >
-                                        执行模式: 未知
-                                    </div>
-                                    <div class="mt-2 grid gap-2 text-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="h-2.5 w-2.5 rounded-full bg-base-300"
-                                                data-status-light="wsl"
-                                                aria-hidden="true"
-                                            ></span>
-                                            <span data-status-label="wsl"
-                                                >WSL: 未知</span
-                                            >
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="h-2.5 w-2.5 rounded-full bg-base-300"
-                                                data-status-light="openclaw"
-                                                aria-hidden="true"
-                                            ></span>
-                                            <span data-status-label="openclaw"
-                                                >openclaw: 未知</span
-                                            >
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="h-2.5 w-2.5 rounded-full bg-base-300"
-                                                data-status-light="gateway"
-                                                aria-hidden="true"
-                                            ></span>
-                                            <span data-status-label="gateway"
-                                                >gateway: 未知</span
-                                            >
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span
-                                                class="h-2.5 w-2.5 rounded-full bg-base-300"
-                                                data-status-light="browser"
-                                                aria-hidden="true"
-                                            ></span>
-                                            <span data-status-label="browser"
-                                                >浏览器: 未知</span
-                                            >
-                                        </div>
-                                    </div>
+                                    当前配置文件: /root/.openclaw/openclaw.json
                                 </div>
                             </div>
                         </section>
@@ -237,6 +204,15 @@
             const taskMeta = document.querySelector("[data-task-meta]");
             const taskProgress = document.querySelector("[data-task-progress]");
             const taskOutput = document.querySelector("[data-task-output]");
+            const openclawBackupUI = {
+                select: document.querySelector("[data-openclaw-backup-select]"),
+                summary: document.querySelector("[data-openclaw-backup-summary]"),
+                detail: document.querySelector("[data-openclaw-backup-detail]"),
+            };
+            const openclawBackupState = {
+                backups: [],
+                selectedPath: "",
+            };
 
             let pollTimer = null;
             let qwGatewayStatusTimer = null;
@@ -380,6 +356,145 @@
                     clearInterval(pollTimer);
                     pollTimer = null;
                 }
+            }
+
+            function formatBackupTime(value) {
+                if (typeof value !== "string" || !value.trim()) return "未知";
+                const time = new Date(value);
+                if (!Number.isFinite(time.getTime())) return value;
+                return time.toLocaleString("zh-CN", { hour12: false });
+            }
+
+            function formatBackupSize(value) {
+                const size = Number(value);
+                if (!Number.isFinite(size) || size < 0) return "未知";
+                if (size < 1024) return `${size} B`;
+                if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+                return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+            }
+
+            function getSelectedOpenclawBackup() {
+                const currentPath =
+                    openclawBackupUI.select?.value ||
+                    openclawBackupState.selectedPath;
+                if (!currentPath) return null;
+                openclawBackupState.selectedPath = currentPath;
+                return (
+                    openclawBackupState.backups.find(
+                        (item) => item.path === currentPath,
+                    ) || null
+                );
+            }
+
+            function renderOpenclawBackupMeta() {
+                const selectedBackup = getSelectedOpenclawBackup();
+                if (!selectedBackup) {
+                    if (openclawBackupUI.summary) {
+                        openclawBackupUI.summary.textContent =
+                            "当前未发现 openclaw.json 备份";
+                    }
+                    if (openclawBackupUI.detail) {
+                        openclawBackupUI.detail.textContent =
+                            "请先生成 openclaw.json*.bak* 文件后再进行切换。";
+                    }
+                    return;
+                }
+
+                if (openclawBackupUI.summary) {
+                    openclawBackupUI.summary.textContent = `共 ${openclawBackupState.backups.length} 个备份，当前选择：${selectedBackup.fileName}`;
+                }
+                if (openclawBackupUI.detail) {
+                    openclawBackupUI.detail.textContent =
+                        `时间: ${formatBackupTime(selectedBackup.modifiedAt)} | 大小: ${formatBackupSize(selectedBackup.size)} | 路径: ${selectedBackup.path}`;
+                }
+            }
+
+            function renderOpenclawBackupOptions(preferredPath = "") {
+                const select = openclawBackupUI.select;
+                if (!select) return;
+
+                const backups = openclawBackupState.backups;
+                select.innerHTML = "";
+                if (backups.length === 0) {
+                    const option = document.createElement("option");
+                    option.value = "";
+                    option.textContent = "未找到备份文件";
+                    select.append(option);
+                    select.disabled = true;
+                    openclawBackupState.selectedPath = "";
+                    renderOpenclawBackupMeta();
+                    return;
+                }
+
+                const matchedPath = [preferredPath, openclawBackupState.selectedPath]
+                    .filter((item) => typeof item === "string" && item.trim())
+                    .find((item) =>
+                        backups.some((backup) => backup.path === item),
+                    );
+                const selectedPath = matchedPath || backups[0].path;
+
+                for (const backup of backups) {
+                    const option = document.createElement("option");
+                    option.value = backup.path;
+                    option.textContent = `${backup.fileName} | ${formatBackupTime(backup.modifiedAt)}`;
+                    select.append(option);
+                }
+
+                select.disabled = false;
+                select.value = selectedPath;
+                openclawBackupState.selectedPath = selectedPath;
+                renderOpenclawBackupMeta();
+            }
+
+            async function refreshOpenclawBackups(preferredPath = "") {
+                taskProgress.classList.add("hidden");
+                taskMeta.textContent = "正在读取 openclaw.json 备份列表...";
+                const data = await api("/api/gateway/config/backups");
+                const backups = Array.isArray(data.backups) ? data.backups : [];
+                openclawBackupState.backups = backups.filter(
+                    (item) => item && typeof item.path === "string",
+                );
+                renderOpenclawBackupOptions(preferredPath);
+
+                if (openclawBackupState.backups.length === 0) {
+                    taskMeta.textContent = "未找到 openclaw.json 备份";
+                    taskOutput.textContent =
+                        "未找到 openclaw.json*.bak* 备份文件。";
+                    taskOutput.scrollTop = taskOutput.scrollHeight;
+                    return;
+                }
+
+                const selectedBackup = getSelectedOpenclawBackup();
+                if (!selectedBackup) return;
+                taskMeta.textContent = `已加载备份 ${openclawBackupState.backups.length} 个`;
+                taskOutput.textContent = [
+                    `当前选择: ${selectedBackup.fileName}`,
+                    `时间: ${formatBackupTime(selectedBackup.modifiedAt)}`,
+                    `大小: ${formatBackupSize(selectedBackup.size)}`,
+                    `路径: ${selectedBackup.path}`,
+                ].join("\n");
+                taskOutput.scrollTop = taskOutput.scrollHeight;
+            }
+
+            async function rollbackOpenclawBackup() {
+                const selectedBackup = getSelectedOpenclawBackup();
+                if (!selectedBackup) {
+                    throw new Error("请先选择可用备份。");
+                }
+
+                const confirmed = window.confirm(
+                    `将切换到备份 ${selectedBackup.fileName}。\n此操作会覆盖当前 openclaw.json 并重启 gateway，是否继续？`,
+                );
+                if (!confirmed) {
+                    taskProgress.classList.add("hidden");
+                    taskMeta.textContent = "已取消备份切换。";
+                    return;
+                }
+
+                await startTask("/api/gateway/config/rollback", {
+                    backupPath: selectedBackup.path,
+                });
+                await refreshOpenclawBackups(selectedBackup.path);
             }
 
             function formatHealthState(value) {
@@ -661,6 +776,12 @@
                     case "check-browser-connectivity":
                         await checkBrowserConnectivity();
                         return;
+                    case "refresh-openclaw-backups":
+                        await refreshOpenclawBackups();
+                        return;
+                    case "rollback-openclaw-backup":
+                        await rollbackOpenclawBackup();
+                        return;
                     case "update-openclaw":
                         await startTask("/api/gateway/update");
                         return;
@@ -711,9 +832,18 @@
                 });
             });
 
+            if (openclawBackupUI.select) {
+                openclawBackupUI.select.addEventListener("change", () => {
+                    openclawBackupState.selectedPath =
+                        openclawBackupUI.select.value;
+                    renderOpenclawBackupMeta();
+                });
+            }
+
             (async function init() {
                 try {
                     await checkEnvironment();
+                    await refreshOpenclawBackups();
                 } catch (error) {
                     taskProgress.classList.add("hidden");
                     taskMeta.textContent = `初始化失败: ${error.message}`;
