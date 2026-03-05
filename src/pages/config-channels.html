@@ -663,6 +663,7 @@
           const data = await api(`/api/config/${SECTION}`);
           channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
           fillCardForm(channelsConfig);
+          metaEl.textContent = `${SECTION} 已加载`;
         } finally {
           setLoadingToast(false);
         }
@@ -752,6 +753,7 @@
       (async function init() {
         try {
           renderChannelCards();
+          metaEl.textContent = "加载中...";
           await loadSection();
         } catch (error) {
           metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
