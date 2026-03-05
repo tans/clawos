@@ -150,13 +150,13 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
             <div class="hero-content w-full max-w-6xl flex-col gap-10 px-6 py-10 text-center sm:px-12 sm:py-14">
               <div class="space-y-5">
                 <div class="flex flex-wrap justify-center gap-2">
-                  <span class="badge badge-primary badge-outline">Windows 即装即用</span>
+                  <span class="badge badge-primary badge-outline">兼容多平台</span>
                   <span class="badge badge-info badge-outline">可视化管理</span>
                   <span class="badge badge-accent badge-outline">行业定制</span>
                 </div>
                 <h1 class="text-4xl font-black tracking-tight sm:text-5xl">可定制的openclaw</h1>
                 <p class="mx-auto max-w-3xl text-base text-base-content/70 sm:text-lg">
-                  像用普通软件一样使用 openclaw：一键更新，常用能力开箱即用。
+                  像用普通软件一样使用 openclaw：兼容 Windows / Linux / macOS，一键更新，常用能力开箱即用。
                 </p>
                 <div class="flex flex-wrap justify-center gap-3">
                   {hasInstaller ? (
@@ -175,8 +175,9 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                   </a>
                 </div>
                 <p class="text-center text-sm text-base-content/70">
-                  下载后，建议放到以下目录{" "}
-                  <code class="rounded bg-base-200 px-1.5 py-0.5 text-xs sm:text-sm">{"c:\\xiake\\"}</code>
+                  下载后可按系统放置到常用目录，例如{" "}
+                  <code class="rounded bg-base-200 px-1.5 py-0.5 text-xs sm:text-sm">{"c:\\xiake\\"}</code> 或{" "}
+                  <code class="rounded bg-base-200 px-1.5 py-0.5 text-xs sm:text-sm">~/clawos/</code>
                 </p>
               </div>
 

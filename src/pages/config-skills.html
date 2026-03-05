@@ -10,7 +10,7 @@
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">loading...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
@@ -23,34 +23,417 @@
 
         <section class="flex-1 p-6">
           <section class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body gap-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">工具设置</h2>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">保存工具设置</button>
+            <div class="card-body gap-4">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h2 class="card-title text-base">Tools 设置</h2>
+                  <div class="mt-1 text-xs text-base-content/60">
+                    上面是工具 tools 的设置（保存到 <code>gateway.tools</code>）。
+                    <a
+                      class="link link-hover"
+                      href="https://docs.openclaw.ai/tools"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      文档参考
+                    </a>
+                  </div>
+                </div>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">保存 Tools</button>
               </div>
-              <div class="text-xs text-base-content/60">管理工具开关与参数，保存后立即生效。</div>
-              <textarea
-                class="textarea textarea-bordered min-h-64 w-full font-mono text-xs leading-6"
-                data-field="tools-json"
-                spellcheck="false"
-                placeholder='例如：{"web":{"search":{"enabled":true}}}'
-              ></textarea>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="text-sm font-semibold">1) 策略与权限</div>
+                <div class="mt-3 grid gap-3 xl:grid-cols-2">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0">
+                      <span class="label-text text-xs">Tool Profile</span>
+                    </div>
+                    <select class="select select-bordered select-sm" data-field="tools-profile">
+                      <option value="">跟随默认</option>
+                      <option value="minimal">minimal</option>
+                      <option value="coding">coding</option>
+                      <option value="messaging">messaging</option>
+                      <option value="full">full</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="mt-3 grid gap-3 xl:grid-cols-3">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0">
+                      <span class="label-text text-xs">allow（每行一个）</span>
+                    </div>
+                    <textarea
+                      class="textarea textarea-bordered h-28 w-full font-mono text-xs"
+                      data-field="tools-allow"
+                      placeholder="web_search"
+                    ></textarea>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0">
+                      <span class="label-text text-xs">alsoAllow（每行一个）</span>
+                    </div>
+                    <textarea
+                      class="textarea textarea-bordered h-28 w-full font-mono text-xs"
+                      data-field="tools-also-allow"
+                      placeholder="message_send"
+                    ></textarea>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0">
+                      <span class="label-text text-xs">deny（每行一个）</span>
+                    </div>
+                    <textarea
+                      class="textarea textarea-bordered h-28 w-full font-mono text-xs"
+                      data-field="tools-deny"
+                      placeholder="exec_command"
+                    ></textarea>
+                  </label>
+                </div>
+
+                <div class="mt-4">
+                  <div class="mb-2 flex items-center justify-between gap-2">
+                    <div class="text-xs font-semibold">byProvider（按 provider 定制策略）</div>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="add-provider-row">新增 provider</button>
+                  </div>
+                  <div class="grid gap-3" data-provider-rows></div>
+                </div>
+              </section>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="text-sm font-semibold">2) Web 工具</div>
+
+                <div class="mt-3 rounded-lg border border-base-200 p-3">
+                  <div class="text-xs font-semibold">web.search</div>
+                  <div class="mt-2 grid gap-3 xl:grid-cols-3">
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">enabled</span></div>
+                      <select class="select select-bordered select-sm" data-field="tools-web-search-enabled">
+                        <option value="">跟随默认</option>
+                        <option value="true">启用</option>
+                        <option value="false">禁用</option>
+                      </select>
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">provider</span></div>
+                      <select class="select select-bordered select-sm" data-field="tools-web-search-provider">
+                        <option value="">不设置</option>
+                        <option value="brave">brave</option>
+                        <option value="perplexity">perplexity</option>
+                        <option value="grok">grok</option>
+                      </select>
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">apiKey（通用）</span></div>
+                      <input
+                        class="input input-bordered input-sm font-mono"
+                        type="password"
+                        data-field="tools-web-search-api-key"
+                        autocomplete="off"
+                        placeholder="可留空"
+                      />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">maxResults</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-web-search-max-results" />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">timeoutSeconds</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-web-search-timeout-seconds" />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">cacheTtlMinutes</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="0" step="0.1" data-field="tools-web-search-cache-ttl-minutes" />
+                    </label>
+                  </div>
+
+                  <div class="mt-3 grid gap-3 xl:grid-cols-2">
+                    <div class="rounded-lg border border-base-200 p-3">
+                      <div class="mb-2 text-xs font-semibold">perplexity 子配置</div>
+                      <div class="grid gap-2">
+                        <input
+                          class="input input-bordered input-sm font-mono"
+                          type="password"
+                          data-field="tools-web-search-perplexity-api-key"
+                          autocomplete="off"
+                          placeholder="apiKey"
+                        />
+                        <input
+                          class="input input-bordered input-sm font-mono"
+                          type="text"
+                          data-field="tools-web-search-perplexity-base-url"
+                          placeholder="baseUrl"
+                        />
+                        <input
+                          class="input input-bordered input-sm font-mono"
+                          type="text"
+                          data-field="tools-web-search-perplexity-model"
+                          placeholder="model"
+                        />
+                      </div>
+                    </div>
+                    <div class="rounded-lg border border-base-200 p-3">
+                      <div class="mb-2 text-xs font-semibold">grok 子配置</div>
+                      <div class="grid gap-2">
+                        <input
+                          class="input input-bordered input-sm font-mono"
+                          type="password"
+                          data-field="tools-web-search-grok-api-key"
+                          autocomplete="off"
+                          placeholder="apiKey"
+                        />
+                        <input
+                          class="input input-bordered input-sm font-mono"
+                          type="text"
+                          data-field="tools-web-search-grok-model"
+                          placeholder="model"
+                        />
+                        <select class="select select-bordered select-sm" data-field="tools-web-search-grok-inline-citations">
+                          <option value="">inlineCitations 跟随默认</option>
+                          <option value="true">inlineCitations: true</option>
+                          <option value="false">inlineCitations: false</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3 rounded-lg border border-base-200 p-3">
+                  <div class="text-xs font-semibold">web.fetch</div>
+                  <div class="mt-2 grid gap-3 xl:grid-cols-3">
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">enabled</span></div>
+                      <select class="select select-bordered select-sm" data-field="tools-web-fetch-enabled">
+                        <option value="">跟随默认</option>
+                        <option value="true">启用</option>
+                        <option value="false">禁用</option>
+                      </select>
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">maxChars</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-web-fetch-max-chars" />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">maxCharsCap</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-web-fetch-max-chars-cap" />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">timeoutSeconds</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-web-fetch-timeout-seconds" />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">cacheTtlMinutes</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="0" step="0.1" data-field="tools-web-fetch-cache-ttl-minutes" />
+                    </label>
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">maxRedirects</span></div>
+                      <input class="input input-bordered input-sm" type="number" min="0" data-field="tools-web-fetch-max-redirects" />
+                    </label>
+                  </div>
+                  <div class="mt-3">
+                    <label class="form-control w-full gap-2">
+                      <div class="label py-0"><span class="label-text text-xs">userAgent</span></div>
+                      <input class="input input-bordered input-sm font-mono" type="text" data-field="tools-web-fetch-user-agent" />
+                    </label>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="text-sm font-semibold">3) Exec 执行工具</div>
+                <div class="mt-3 grid gap-3 xl:grid-cols-3">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">host</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-exec-host">
+                      <option value="">不设置</option>
+                      <option value="sandbox">sandbox</option>
+                      <option value="gateway">gateway</option>
+                      <option value="node">node</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">security</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-exec-security">
+                      <option value="">不设置</option>
+                      <option value="deny">deny</option>
+                      <option value="allowlist">allowlist</option>
+                      <option value="full">full</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">ask</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-exec-ask">
+                      <option value="">不设置</option>
+                      <option value="off">off</option>
+                      <option value="on-miss">on-miss</option>
+                      <option value="always">always</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">node</span></div>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="tools-exec-node" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">backgroundMs</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-exec-background-ms" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">timeoutSec</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-exec-timeout-sec" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">cleanupMs</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="1" data-field="tools-exec-cleanup-ms" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">notifyOnExit</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-exec-notify-on-exit">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">applyPatch.enabled</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-exec-apply-patch-enabled">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="mt-3 grid gap-3 xl:grid-cols-3">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">pathPrepend（每行一个目录）</span></div>
+                    <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-path-prepend"></textarea>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">safeBins（每行一个）</span></div>
+                    <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-safe-bins"></textarea>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">applyPatch.allowModels（每行一个）</span></div>
+                    <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-apply-patch-allow-models"></textarea>
+                  </label>
+                </div>
+              </section>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="text-sm font-semibold">4) Message 跨上下文</div>
+                <div class="mt-3 grid gap-3 xl:grid-cols-3">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">allowCrossContextSend</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-message-allow-cross-context-send">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">crossContext.allowWithinProvider</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-message-cross-context-allow-within-provider">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">crossContext.allowAcrossProviders</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-message-cross-context-allow-across-providers">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">crossContext.marker.enabled</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-message-marker-enabled">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">crossContext.marker.prefix</span></div>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="tools-message-marker-prefix" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">crossContext.marker.suffix</span></div>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="tools-message-marker-suffix" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">broadcast.enabled</span></div>
+                    <select class="select select-bordered select-sm" data-field="tools-message-broadcast-enabled">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div class="text-sm font-semibold">5) Tools 高级 JSON</div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-json-to-form">JSON -> 表单</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-form-to-json">表单 -> JSON</button>
+                  </div>
+                </div>
+                <textarea
+                  class="textarea textarea-bordered min-h-56 w-full font-mono text-xs leading-6"
+                  data-field="tools-json-raw"
+                  spellcheck="false"
+                ></textarea>
+                <div class="mt-2 text-xs text-base-content/60">保留高级字段（如 media/sandbox/subagents/elevated）建议在此编辑。</div>
+              </section>
             </div>
           </section>
 
           <section class="card card-compact mt-4 border border-base-200 bg-base-100">
-            <div class="card-body gap-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">技能设置</h2>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存技能设置</button>
+            <div class="card-body gap-4">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h2 class="card-title text-base">Skills 学习</h2>
+                  <div class="mt-1 text-xs text-base-content/60">下面是 skills 的学习（保存到 <code>skills</code>）。</div>
+                </div>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存 Skills</button>
               </div>
-              <div class="text-xs text-base-content/60">管理已启用技能与参数，保存后立即生效。</div>
-              <textarea
-                class="textarea textarea-bordered min-h-64 w-full font-mono text-xs leading-6"
-                data-field="skills-json"
-                spellcheck="false"
-                placeholder='例如：{"load":{"watch":true}}'
-              ></textarea>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="text-sm font-semibold">1) Skills 快捷项</div>
+                <div class="mt-3 grid gap-3 xl:grid-cols-2">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">load.watch</span></div>
+                    <select class="select select-bordered select-sm" data-field="skills-load-watch">
+                      <option value="">跟随默认</option>
+                      <option value="true">true</option>
+                      <option value="false">false</option>
+                    </select>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">load.watchDebounceMs</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="0" step="1" data-field="skills-load-watch-debounce-ms" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div class="text-sm font-semibold">2) Skills 高级 JSON</div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-json-to-form">JSON -> 表单</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-form-to-json">表单 -> JSON</button>
+                  </div>
+                </div>
+                <textarea
+                  class="textarea textarea-bordered min-h-56 w-full font-mono text-xs leading-6"
+                  data-field="skills-json-raw"
+                  spellcheck="false"
+                ></textarea>
+              </section>
             </div>
           </section>
 
@@ -60,16 +443,33 @@
     </div>
 
     <script src="/sidebar-update.js"></script>
-
     <script>
-      const toolsInput = document.querySelector('[data-field="tools-json"]');
-      const skillsInput = document.querySelector('[data-field="skills-json"]');
+      const metaEl = document.querySelector("[data-meta]");
       const reloadBtn = document.querySelector('[data-action="reload"]');
       const saveToolsBtn = document.querySelector('[data-action="save-tools"]');
       const saveSkillsBtn = document.querySelector('[data-action="save-skills"]');
-      const metaEl = document.querySelector("[data-meta]");
+      const providerRowsEl = document.querySelector("[data-provider-rows]");
+
+      const toolsProfileInput = document.querySelector('[data-field="tools-profile"]');
+      const toolsAllowInput = document.querySelector('[data-field="tools-allow"]');
+      const toolsAlsoAllowInput = document.querySelector('[data-field="tools-also-allow"]');
+      const toolsDenyInput = document.querySelector('[data-field="tools-deny"]');
+      const toolsRawInput = document.querySelector('[data-field="tools-json-raw"]');
+
+      const skillsWatchInput = document.querySelector('[data-field="skills-load-watch"]');
+      const skillsWatchDebounceInput = document.querySelector('[data-field="skills-load-watch-debounce-ms"]');
+      const skillsRawInput = document.querySelector('[data-field="skills-json-raw"]');
 
       let gatewayConfig = {};
+      let loadedToolsConfig = {};
+      let loadedSkillsConfig = {};
+      let providerRows = [];
+
+      function setMeta(text) {
+        if (metaEl) {
+          metaEl.textContent = text;
+        }
+      }
 
       function isObject(value) {
         return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -79,10 +479,21 @@
         return JSON.parse(JSON.stringify(value || {}));
       }
 
-      function setMeta(text) {
-        if (metaEl) {
-          metaEl.textContent = text;
+      function parseJsonObject(rawText, label) {
+        let parsed;
+        try {
+          parsed = JSON.parse(String(rawText || "{}").trim() || "{}");
+        } catch {
+          throw new Error(`${label} 不是合法 JSON。`);
         }
+        if (!isObject(parsed)) {
+          throw new Error(`${label} 必须是 JSON 对象。`);
+        }
+        return parsed;
+      }
+
+      function formatJson(value) {
+        return `${JSON.stringify(isObject(value) ? value : {}, null, 2)}\n`;
       }
 
       async function api(path, options = {}) {
@@ -92,38 +503,9 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
-          apiError.isApiError = true;
-          throw apiError;
+          throw new Error(data.error || `请求失败: ${res.status}`);
         }
         return data;
-      }
-
-      function readUserErrorMessage(error, fallback) {
-        if (error && typeof error === "object" && error.isApiError === true) {
-          return fallback;
-        }
-        const message = error instanceof Error ? String(error.message || "").trim() : "";
-        return message || fallback;
-      }
-
-      function formatJsonObject(value) {
-        const safeValue = isObject(value) ? value : {};
-        return `${JSON.stringify(safeValue, null, 2)}\n`;
-      }
-
-      function parseJsonObject(rawText, label) {
-        let parsed;
-        try {
-          parsed = JSON.parse(String(rawText || "{}").trim() || "{}");
-        } catch {
-          throw new Error(`${label} 不是合法 JSON。`);
-        }
-
-        if (!isObject(parsed)) {
-          throw new Error(`${label} 必须是 JSON 对象。`);
-        }
-        return parsed;
       }
 
       function setButtonBusy(button, busy, loadingText, normalText) {
@@ -134,29 +516,578 @@
         button.textContent = busy ? loadingText : normalText;
       }
 
-      async function loadFeatureConfig() {
-        const [gatewayData, skillsData] = await Promise.all([api("/api/config/gateway"), api("/api/config/skills")]);
+      function readOptionalText(value) {
+        const text = String(value || "").trim();
+        return text || undefined;
+      }
 
-        gatewayConfig = isObject(gatewayData.data) ? cloneObject(gatewayData.data) : {};
-        const toolsConfig = isObject(gatewayConfig.tools) ? gatewayConfig.tools : {};
-        const skillsConfig = isObject(skillsData.data) ? skillsData.data : {};
-
-        if (toolsInput) {
-          toolsInput.value = formatJsonObject(toolsConfig);
+      function readOptionalInteger(value, label, min = null) {
+        const text = String(value || "").trim();
+        if (!text) {
+          return undefined;
         }
-        if (skillsInput) {
-          skillsInput.value = formatJsonObject(skillsConfig);
+        const parsed = Number(text);
+        if (!Number.isInteger(parsed)) {
+          throw new Error(`${label} 必须是整数。`);
+        }
+        if (typeof min === "number" && parsed < min) {
+          throw new Error(`${label} 不能小于 ${min}。`);
+        }
+        return parsed;
+      }
+
+      function readOptionalNumber(value, label, min = null) {
+        const text = String(value || "").trim();
+        if (!text) {
+          return undefined;
+        }
+        const parsed = Number(text);
+        if (!Number.isFinite(parsed)) {
+          throw new Error(`${label} 必须是数字。`);
+        }
+        if (typeof min === "number" && parsed < min) {
+          throw new Error(`${label} 不能小于 ${min}。`);
+        }
+        return parsed;
+      }
+
+      function parseList(rawText) {
+        return String(rawText || "")
+          .split(/\r?\n|,/)
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+
+      function joinList(value) {
+        if (!Array.isArray(value)) {
+          return "";
+        }
+        return value
+          .map((item) => (typeof item === "string" ? item.trim() : ""))
+          .filter(Boolean)
+          .join("\n");
+      }
+
+      function readTriState(value) {
+        if (value === "true") {
+          return true;
+        }
+        if (value === "false") {
+          return false;
+        }
+        return undefined;
+      }
+
+      function writeTriState(input, value) {
+        if (!input) {
+          return;
+        }
+        if (value === true) {
+          input.value = "true";
+          return;
+        }
+        if (value === false) {
+          input.value = "false";
+          return;
+        }
+        input.value = "";
+      }
+
+      function escapeHtml(raw) {
+        return String(raw || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function getPath(source, path) {
+        const parts = path.split(".");
+        let current = source;
+        for (const part of parts) {
+          if (!isObject(current) || !Object.prototype.hasOwnProperty.call(current, part)) {
+            return undefined;
+          }
+          current = current[part];
+        }
+        return current;
+      }
+
+      function setPath(target, path, value) {
+        const parts = path.split(".");
+        let current = target;
+        for (let i = 0; i < parts.length - 1; i += 1) {
+          const key = parts[i];
+          if (!isObject(current[key])) {
+            current[key] = {};
+          }
+          current = current[key];
+        }
+        current[parts[parts.length - 1]] = value;
+      }
+
+      function deletePath(target, path) {
+        const parts = path.split(".");
+        const parents = [];
+        let current = target;
+
+        for (let i = 0; i < parts.length - 1; i += 1) {
+          const key = parts[i];
+          if (!isObject(current[key])) {
+            return;
+          }
+          parents.push({ obj: current, key });
+          current = current[key];
+        }
+
+        delete current[parts[parts.length - 1]];
+
+        for (let i = parents.length - 1; i >= 0; i -= 1) {
+          const { obj, key } = parents[i];
+          if (isObject(obj[key]) && Object.keys(obj[key]).length === 0) {
+            delete obj[key];
+          }
         }
       }
 
-      async function saveToolsConfig() {
-        if (!toolsInput) {
+      function applyPathValue(target, path, value) {
+        if (value === undefined) {
+          deletePath(target, path);
+          return;
+        }
+        setPath(target, path, value);
+      }
+
+      function pruneEmptyObjects(value) {
+        if (Array.isArray(value)) {
+          return value.map((item) => pruneEmptyObjects(item)).filter((item) => item !== undefined);
+        }
+        if (!isObject(value)) {
+          return value;
+        }
+        const next = {};
+        for (const [key, raw] of Object.entries(value)) {
+          const pruned = pruneEmptyObjects(raw);
+          if (pruned !== undefined) {
+            next[key] = pruned;
+          }
+        }
+        if (Object.keys(next).length === 0) {
+          return undefined;
+        }
+        return next;
+      }
+
+      function buildProviderProfileOptions(selected) {
+        const options = [
+          { value: "", label: "跟随默认" },
+          { value: "minimal", label: "minimal" },
+          { value: "coding", label: "coding" },
+          { value: "messaging", label: "messaging" },
+          { value: "full", label: "full" },
+        ];
+        return options
+          .map((option) => {
+            const checked = option.value === selected ? " selected" : "";
+            return `<option value="${escapeHtml(option.value)}"${checked}>${escapeHtml(option.label)}</option>`;
+          })
+          .join("");
+      }
+
+      function renderProviderRows() {
+        if (!providerRowsEl) {
           return;
         }
 
-        const nextTools = parseJsonObject(toolsInput.value, "Tools 配置");
+        if (!Array.isArray(providerRows) || providerRows.length === 0) {
+          providerRowsEl.innerHTML =
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">暂无 provider 定制策略，点击右上角新增。</div>';
+          return;
+        }
+
+        providerRowsEl.innerHTML = providerRows
+          .map((row, index) => {
+            const key = escapeHtml(row.provider || "");
+            const profile = escapeHtml(row.profile || "");
+            const allow = escapeHtml(joinList(row.allow || []));
+            const alsoAllow = escapeHtml(joinList(row.alsoAllow || []));
+            const deny = escapeHtml(joinList(row.deny || []));
+
+            return `
+              <div class="rounded-lg border border-base-200 p-3" data-provider-row="${index}">
+                <div class="mb-2 flex items-center justify-between gap-2">
+                  <div class="text-xs font-semibold">Provider #${index + 1}</div>
+                  <button class="btn btn-ghost btn-xs text-error" type="button" data-action="remove-provider-row" data-index="${index}">删除</button>
+                </div>
+                <div class="grid gap-3 xl:grid-cols-2">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">provider key</span></div>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="provider-key" value="${key}" />
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">profile</span></div>
+                    <select class="select select-bordered select-sm" data-field="provider-profile">
+                      ${buildProviderProfileOptions(profile)}
+                    </select>
+                  </label>
+                </div>
+                <div class="mt-3 grid gap-3 xl:grid-cols-3">
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">allow（每行一个）</span></div>
+                    <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-allow">${allow}</textarea>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">alsoAllow（每行一个）</span></div>
+                    <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-also-allow">${alsoAllow}</textarea>
+                  </label>
+                  <label class="form-control w-full gap-2">
+                    <div class="label py-0"><span class="label-text text-xs">deny（每行一个）</span></div>
+                    <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-deny">${deny}</textarea>
+                  </label>
+                </div>
+              </div>`;
+          })
+          .join("");
+      }
+
+      function readProviderRowsFromForm() {
+        if (!providerRowsEl) {
+          return undefined;
+        }
+
+        const entries = Array.from(providerRowsEl.querySelectorAll("[data-provider-row]"));
+        const byProvider = {};
+
+        for (const rowEl of entries) {
+          const providerKey = readOptionalText(rowEl.querySelector('[data-field="provider-key"]')?.value);
+          if (!providerKey) {
+            continue;
+          }
+
+          const profile = readOptionalText(rowEl.querySelector('[data-field="provider-profile"]')?.value);
+          const allow = parseList(rowEl.querySelector('[data-field="provider-allow"]')?.value);
+          const alsoAllow = parseList(rowEl.querySelector('[data-field="provider-also-allow"]')?.value);
+          const deny = parseList(rowEl.querySelector('[data-field="provider-deny"]')?.value);
+
+          const entry = {};
+          if (profile) {
+            entry.profile = profile;
+          }
+          if (allow.length > 0) {
+            entry.allow = allow;
+          }
+          if (alsoAllow.length > 0) {
+            entry.alsoAllow = alsoAllow;
+          }
+          if (deny.length > 0) {
+            entry.deny = deny;
+          }
+
+          if (Object.keys(entry).length > 0) {
+            byProvider[providerKey] = entry;
+          }
+        }
+
+        return Object.keys(byProvider).length > 0 ? byProvider : undefined;
+      }
+
+      function snapshotProviderRowsFromDom() {
+        if (!providerRowsEl) {
+          return Array.isArray(providerRows) ? [...providerRows] : [];
+        }
+
+        const entries = Array.from(providerRowsEl.querySelectorAll("[data-provider-row]"));
+        return entries.map((rowEl) => ({
+          provider: String(rowEl.querySelector('[data-field="provider-key"]')?.value || "").trim(),
+          profile: String(rowEl.querySelector('[data-field="provider-profile"]')?.value || "").trim(),
+          allow: parseList(rowEl.querySelector('[data-field="provider-allow"]')?.value),
+          alsoAllow: parseList(rowEl.querySelector('[data-field="provider-also-allow"]')?.value),
+          deny: parseList(rowEl.querySelector('[data-field="provider-deny"]')?.value),
+        }));
+      }
+
+      function fillToolsForm(config) {
+        const tools = isObject(config) ? config : {};
+
+        if (toolsProfileInput) {
+          toolsProfileInput.value = readOptionalText(tools.profile) || "";
+        }
+        if (toolsAllowInput) {
+          toolsAllowInput.value = joinList(tools.allow);
+        }
+        if (toolsAlsoAllowInput) {
+          toolsAlsoAllowInput.value = joinList(tools.alsoAllow);
+        }
+        if (toolsDenyInput) {
+          toolsDenyInput.value = joinList(tools.deny);
+        }
+
+        providerRows = Object.entries(isObject(tools.byProvider) ? tools.byProvider : {}).map(([provider, entry]) => ({
+          provider,
+          profile: readOptionalText(entry?.profile) || "",
+          allow: Array.isArray(entry?.allow) ? entry.allow : [],
+          alsoAllow: Array.isArray(entry?.alsoAllow) ? entry.alsoAllow : [],
+          deny: Array.isArray(entry?.deny) ? entry.deny : [],
+        }));
+        renderProviderRows();
+
+        const toolsValues = [
+          ["tools-web-search-enabled", getPath(tools, "web.search.enabled")],
+          ["tools-web-search-provider", getPath(tools, "web.search.provider")],
+          ["tools-web-search-api-key", getPath(tools, "web.search.apiKey")],
+          ["tools-web-search-max-results", getPath(tools, "web.search.maxResults")],
+          ["tools-web-search-timeout-seconds", getPath(tools, "web.search.timeoutSeconds")],
+          ["tools-web-search-cache-ttl-minutes", getPath(tools, "web.search.cacheTtlMinutes")],
+          ["tools-web-search-perplexity-api-key", getPath(tools, "web.search.perplexity.apiKey")],
+          ["tools-web-search-perplexity-base-url", getPath(tools, "web.search.perplexity.baseUrl")],
+          ["tools-web-search-perplexity-model", getPath(tools, "web.search.perplexity.model")],
+          ["tools-web-search-grok-api-key", getPath(tools, "web.search.grok.apiKey")],
+          ["tools-web-search-grok-model", getPath(tools, "web.search.grok.model")],
+          ["tools-web-fetch-enabled", getPath(tools, "web.fetch.enabled")],
+          ["tools-web-fetch-max-chars", getPath(tools, "web.fetch.maxChars")],
+          ["tools-web-fetch-max-chars-cap", getPath(tools, "web.fetch.maxCharsCap")],
+          ["tools-web-fetch-timeout-seconds", getPath(tools, "web.fetch.timeoutSeconds")],
+          ["tools-web-fetch-cache-ttl-minutes", getPath(tools, "web.fetch.cacheTtlMinutes")],
+          ["tools-web-fetch-max-redirects", getPath(tools, "web.fetch.maxRedirects")],
+          ["tools-web-fetch-user-agent", getPath(tools, "web.fetch.userAgent")],
+          ["tools-exec-host", getPath(tools, "exec.host")],
+          ["tools-exec-security", getPath(tools, "exec.security")],
+          ["tools-exec-ask", getPath(tools, "exec.ask")],
+          ["tools-exec-node", getPath(tools, "exec.node")],
+          ["tools-exec-background-ms", getPath(tools, "exec.backgroundMs")],
+          ["tools-exec-timeout-sec", getPath(tools, "exec.timeoutSec")],
+          ["tools-exec-cleanup-ms", getPath(tools, "exec.cleanupMs")],
+          ["tools-exec-path-prepend", joinList(getPath(tools, "exec.pathPrepend"))],
+          ["tools-exec-safe-bins", joinList(getPath(tools, "exec.safeBins"))],
+          ["tools-exec-apply-patch-allow-models", joinList(getPath(tools, "exec.applyPatch.allowModels"))],
+          ["tools-message-marker-prefix", getPath(tools, "message.crossContext.marker.prefix")],
+          ["tools-message-marker-suffix", getPath(tools, "message.crossContext.marker.suffix")],
+        ];
+
+        for (const [field, value] of toolsValues) {
+          const input = document.querySelector(`[data-field="${field}"]`);
+          if (!input) {
+            continue;
+          }
+          input.value = value === undefined || value === null ? "" : String(value);
+        }
+
+        writeTriState(document.querySelector('[data-field="tools-web-search-grok-inline-citations"]'), getPath(tools, "web.search.grok.inlineCitations"));
+        writeTriState(document.querySelector('[data-field="tools-web-search-enabled"]'), getPath(tools, "web.search.enabled"));
+        writeTriState(document.querySelector('[data-field="tools-web-fetch-enabled"]'), getPath(tools, "web.fetch.enabled"));
+        writeTriState(document.querySelector('[data-field="tools-exec-notify-on-exit"]'), getPath(tools, "exec.notifyOnExit"));
+        writeTriState(document.querySelector('[data-field="tools-exec-apply-patch-enabled"]'), getPath(tools, "exec.applyPatch.enabled"));
+        writeTriState(document.querySelector('[data-field="tools-message-allow-cross-context-send"]'), getPath(tools, "message.allowCrossContextSend"));
+        writeTriState(
+          document.querySelector('[data-field="tools-message-cross-context-allow-within-provider"]'),
+          getPath(tools, "message.crossContext.allowWithinProvider")
+        );
+        writeTriState(
+          document.querySelector('[data-field="tools-message-cross-context-allow-across-providers"]'),
+          getPath(tools, "message.crossContext.allowAcrossProviders")
+        );
+        writeTriState(document.querySelector('[data-field="tools-message-marker-enabled"]'), getPath(tools, "message.crossContext.marker.enabled"));
+        writeTriState(document.querySelector('[data-field="tools-message-broadcast-enabled"]'), getPath(tools, "message.broadcast.enabled"));
+      }
+
+      function fillSkillsForm(config) {
+        const skills = isObject(config) ? config : {};
+        writeTriState(skillsWatchInput, getPath(skills, "load.watch"));
+        if (skillsWatchDebounceInput) {
+          const debounce = getPath(skills, "load.watchDebounceMs");
+          skillsWatchDebounceInput.value = Number.isFinite(debounce) ? String(debounce) : "";
+        }
+      }
+
+      function collectToolsPathValues() {
+        const operations = [];
+
+        const profile = readOptionalText(toolsProfileInput?.value);
+        operations.push(["profile", profile]);
+
+        const allow = parseList(toolsAllowInput?.value);
+        operations.push(["allow", allow.length > 0 ? allow : undefined]);
+
+        const alsoAllow = parseList(toolsAlsoAllowInput?.value);
+        operations.push(["alsoAllow", alsoAllow.length > 0 ? alsoAllow : undefined]);
+
+        const deny = parseList(toolsDenyInput?.value);
+        operations.push(["deny", deny.length > 0 ? deny : undefined]);
+
+        const byProvider = readProviderRowsFromForm();
+        operations.push(["byProvider", byProvider]);
+
+        operations.push(["web.search.enabled", readTriState(document.querySelector('[data-field="tools-web-search-enabled"]')?.value)]);
+        operations.push(["web.search.provider", readOptionalText(document.querySelector('[data-field="tools-web-search-provider"]')?.value)]);
+        operations.push(["web.search.apiKey", readOptionalText(document.querySelector('[data-field="tools-web-search-api-key"]')?.value)]);
+        operations.push([
+          "web.search.maxResults",
+          readOptionalInteger(document.querySelector('[data-field="tools-web-search-max-results"]')?.value, "web.search.maxResults", 1),
+        ]);
+        operations.push([
+          "web.search.timeoutSeconds",
+          readOptionalInteger(document.querySelector('[data-field="tools-web-search-timeout-seconds"]')?.value, "web.search.timeoutSeconds", 1),
+        ]);
+        operations.push([
+          "web.search.cacheTtlMinutes",
+          readOptionalNumber(document.querySelector('[data-field="tools-web-search-cache-ttl-minutes"]')?.value, "web.search.cacheTtlMinutes", 0),
+        ]);
+
+        operations.push([
+          "web.search.perplexity.apiKey",
+          readOptionalText(document.querySelector('[data-field="tools-web-search-perplexity-api-key"]')?.value),
+        ]);
+        operations.push([
+          "web.search.perplexity.baseUrl",
+          readOptionalText(document.querySelector('[data-field="tools-web-search-perplexity-base-url"]')?.value),
+        ]);
+        operations.push([
+          "web.search.perplexity.model",
+          readOptionalText(document.querySelector('[data-field="tools-web-search-perplexity-model"]')?.value),
+        ]);
+
+        operations.push([
+          "web.search.grok.apiKey",
+          readOptionalText(document.querySelector('[data-field="tools-web-search-grok-api-key"]')?.value),
+        ]);
+        operations.push([
+          "web.search.grok.model",
+          readOptionalText(document.querySelector('[data-field="tools-web-search-grok-model"]')?.value),
+        ]);
+        operations.push([
+          "web.search.grok.inlineCitations",
+          readTriState(document.querySelector('[data-field="tools-web-search-grok-inline-citations"]')?.value),
+        ]);
+
+        operations.push(["web.fetch.enabled", readTriState(document.querySelector('[data-field="tools-web-fetch-enabled"]')?.value)]);
+        operations.push([
+          "web.fetch.maxChars",
+          readOptionalInteger(document.querySelector('[data-field="tools-web-fetch-max-chars"]')?.value, "web.fetch.maxChars", 1),
+        ]);
+        operations.push([
+          "web.fetch.maxCharsCap",
+          readOptionalInteger(document.querySelector('[data-field="tools-web-fetch-max-chars-cap"]')?.value, "web.fetch.maxCharsCap", 1),
+        ]);
+        operations.push([
+          "web.fetch.timeoutSeconds",
+          readOptionalInteger(document.querySelector('[data-field="tools-web-fetch-timeout-seconds"]')?.value, "web.fetch.timeoutSeconds", 1),
+        ]);
+        operations.push([
+          "web.fetch.cacheTtlMinutes",
+          readOptionalNumber(document.querySelector('[data-field="tools-web-fetch-cache-ttl-minutes"]')?.value, "web.fetch.cacheTtlMinutes", 0),
+        ]);
+        operations.push([
+          "web.fetch.maxRedirects",
+          readOptionalInteger(document.querySelector('[data-field="tools-web-fetch-max-redirects"]')?.value, "web.fetch.maxRedirects", 0),
+        ]);
+        operations.push(["web.fetch.userAgent", readOptionalText(document.querySelector('[data-field="tools-web-fetch-user-agent"]')?.value)]);
+
+        operations.push(["exec.host", readOptionalText(document.querySelector('[data-field="tools-exec-host"]')?.value)]);
+        operations.push(["exec.security", readOptionalText(document.querySelector('[data-field="tools-exec-security"]')?.value)]);
+        operations.push(["exec.ask", readOptionalText(document.querySelector('[data-field="tools-exec-ask"]')?.value)]);
+        operations.push(["exec.node", readOptionalText(document.querySelector('[data-field="tools-exec-node"]')?.value)]);
+        operations.push([
+          "exec.backgroundMs",
+          readOptionalInteger(document.querySelector('[data-field="tools-exec-background-ms"]')?.value, "exec.backgroundMs", 1),
+        ]);
+        operations.push([
+          "exec.timeoutSec",
+          readOptionalInteger(document.querySelector('[data-field="tools-exec-timeout-sec"]')?.value, "exec.timeoutSec", 1),
+        ]);
+        operations.push([
+          "exec.cleanupMs",
+          readOptionalInteger(document.querySelector('[data-field="tools-exec-cleanup-ms"]')?.value, "exec.cleanupMs", 1),
+        ]);
+
+        const pathPrepend = parseList(document.querySelector('[data-field="tools-exec-path-prepend"]')?.value);
+        operations.push(["exec.pathPrepend", pathPrepend.length > 0 ? pathPrepend : undefined]);
+
+        const safeBins = parseList(document.querySelector('[data-field="tools-exec-safe-bins"]')?.value);
+        operations.push(["exec.safeBins", safeBins.length > 0 ? safeBins : undefined]);
+
+        operations.push(["exec.notifyOnExit", readTriState(document.querySelector('[data-field="tools-exec-notify-on-exit"]')?.value)]);
+        operations.push(["exec.applyPatch.enabled", readTriState(document.querySelector('[data-field="tools-exec-apply-patch-enabled"]')?.value)]);
+
+        const allowModels = parseList(document.querySelector('[data-field="tools-exec-apply-patch-allow-models"]')?.value);
+        operations.push(["exec.applyPatch.allowModels", allowModels.length > 0 ? allowModels : undefined]);
+
+        operations.push([
+          "message.allowCrossContextSend",
+          readTriState(document.querySelector('[data-field="tools-message-allow-cross-context-send"]')?.value),
+        ]);
+        operations.push([
+          "message.crossContext.allowWithinProvider",
+          readTriState(document.querySelector('[data-field="tools-message-cross-context-allow-within-provider"]')?.value),
+        ]);
+        operations.push([
+          "message.crossContext.allowAcrossProviders",
+          readTriState(document.querySelector('[data-field="tools-message-cross-context-allow-across-providers"]')?.value),
+        ]);
+        operations.push(["message.crossContext.marker.enabled", readTriState(document.querySelector('[data-field="tools-message-marker-enabled"]')?.value)]);
+        operations.push([
+          "message.crossContext.marker.prefix",
+          readOptionalText(document.querySelector('[data-field="tools-message-marker-prefix"]')?.value),
+        ]);
+        operations.push([
+          "message.crossContext.marker.suffix",
+          readOptionalText(document.querySelector('[data-field="tools-message-marker-suffix"]')?.value),
+        ]);
+        operations.push(["message.broadcast.enabled", readTriState(document.querySelector('[data-field="tools-message-broadcast-enabled"]')?.value)]);
+
+        return operations;
+      }
+
+      function buildToolsConfigFromForm(baseConfig) {
+        const next = cloneObject(baseConfig);
+        const operations = collectToolsPathValues();
+        for (const [path, value] of operations) {
+          applyPathValue(next, path, value);
+        }
+        const pruned = pruneEmptyObjects(next);
+        return isObject(pruned) ? pruned : {};
+      }
+
+      function collectSkillsPathValues() {
+        return [
+          ["load.watch", readTriState(skillsWatchInput?.value)],
+          [
+            "load.watchDebounceMs",
+            readOptionalInteger(skillsWatchDebounceInput?.value, "skills.load.watchDebounceMs", 0),
+          ],
+        ];
+      }
+
+      function buildSkillsConfigFromForm(baseConfig) {
+        const next = cloneObject(baseConfig);
+        const operations = collectSkillsPathValues();
+        for (const [path, value] of operations) {
+          applyPathValue(next, path, value);
+        }
+        const pruned = pruneEmptyObjects(next);
+        return isObject(pruned) ? pruned : {};
+      }
+
+      async function loadConfig() {
+        const [gatewayData, skillsData] = await Promise.all([api("/api/config/gateway"), api("/api/config/skills")]);
+        gatewayConfig = isObject(gatewayData.data) ? cloneObject(gatewayData.data) : {};
+        loadedToolsConfig = isObject(gatewayConfig.tools) ? cloneObject(gatewayConfig.tools) : {};
+        loadedSkillsConfig = isObject(skillsData.data) ? cloneObject(skillsData.data) : {};
+
+        fillToolsForm(loadedToolsConfig);
+        fillSkillsForm(loadedSkillsConfig);
+
+        if (toolsRawInput) {
+          toolsRawInput.value = formatJson(loadedToolsConfig);
+        }
+        if (skillsRawInput) {
+          skillsRawInput.value = formatJson(loadedSkillsConfig);
+        }
+      }
+
+      async function saveTools(toolsConfig) {
         const nextGateway = cloneObject(gatewayConfig);
-        nextGateway.tools = nextTools;
+        nextGateway.tools = isObject(toolsConfig) ? toolsConfig : {};
 
         const result = await api("/api/config/gateway", {
           method: "PUT",
@@ -164,33 +1095,130 @@
         });
 
         gatewayConfig = isObject(result.data) ? cloneObject(result.data) : nextGateway;
-        toolsInput.value = formatJsonObject(nextTools);
+        loadedToolsConfig = isObject(gatewayConfig.tools) ? cloneObject(gatewayConfig.tools) : {};
+        fillToolsForm(loadedToolsConfig);
+        if (toolsRawInput) {
+          toolsRawInput.value = formatJson(loadedToolsConfig);
+        }
       }
 
-      async function saveSkillsConfig() {
-        if (!skillsInput) {
-          return;
-        }
-
-        const nextSkills = parseJsonObject(skillsInput.value, "Skills 配置");
+      async function saveSkills(skillsConfig) {
         const result = await api("/api/config/skills", {
           method: "PUT",
-          body: JSON.stringify({ data: nextSkills }),
+          body: JSON.stringify({ data: isObject(skillsConfig) ? skillsConfig : {} }),
         });
 
-        const savedSkills = isObject(result.data) ? result.data : nextSkills;
-        skillsInput.value = formatJsonObject(savedSkills);
+        loadedSkillsConfig = isObject(result.data) ? cloneObject(result.data) : {};
+        fillSkillsForm(loadedSkillsConfig);
+        if (skillsRawInput) {
+          skillsRawInput.value = formatJson(loadedSkillsConfig);
+        }
+      }
+
+      if (providerRowsEl) {
+        providerRowsEl.addEventListener("click", (event) => {
+          const target = event.target instanceof Element ? event.target.closest('[data-action="remove-provider-row"]') : null;
+          if (!target) {
+            return;
+          }
+
+          providerRows = snapshotProviderRowsFromDom();
+          const index = Number(target.getAttribute("data-index"));
+          if (!Number.isInteger(index) || index < 0 || index >= providerRows.length) {
+            return;
+          }
+          providerRows.splice(index, 1);
+          renderProviderRows();
+        });
+      }
+
+      const addProviderBtn = document.querySelector('[data-action="add-provider-row"]');
+      if (addProviderBtn) {
+        addProviderBtn.addEventListener("click", () => {
+          providerRows = snapshotProviderRowsFromDom();
+          providerRows.push({ provider: "", profile: "", allow: [], alsoAllow: [], deny: [] });
+          renderProviderRows();
+        });
+      }
+
+      const toolsJsonToFormBtn = document.querySelector('[data-action="tools-json-to-form"]');
+      if (toolsJsonToFormBtn) {
+        toolsJsonToFormBtn.addEventListener("click", () => {
+          try {
+            if (!toolsRawInput) {
+              return;
+            }
+            const parsed = parseJsonObject(toolsRawInput.value, "Tools JSON");
+            fillToolsForm(parsed);
+            setMeta("Tools JSON 已应用到表单。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`应用失败: ${message}`);
+          }
+        });
+      }
+
+      const toolsFormToJsonBtn = document.querySelector('[data-action="tools-form-to-json"]');
+      if (toolsFormToJsonBtn) {
+        toolsFormToJsonBtn.addEventListener("click", () => {
+          try {
+            const base = toolsRawInput ? parseJsonObject(toolsRawInput.value, "Tools JSON") : cloneObject(loadedToolsConfig);
+            const merged = buildToolsConfigFromForm(base);
+            if (toolsRawInput) {
+              toolsRawInput.value = formatJson(merged);
+            }
+            setMeta("Tools 表单已同步到 JSON。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`同步失败: ${message}`);
+          }
+        });
+      }
+
+      const skillsJsonToFormBtn = document.querySelector('[data-action="skills-json-to-form"]');
+      if (skillsJsonToFormBtn) {
+        skillsJsonToFormBtn.addEventListener("click", () => {
+          try {
+            if (!skillsRawInput) {
+              return;
+            }
+            const parsed = parseJsonObject(skillsRawInput.value, "Skills JSON");
+            fillSkillsForm(parsed);
+            setMeta("Skills JSON 已应用到表单。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`应用失败: ${message}`);
+          }
+        });
+      }
+
+      const skillsFormToJsonBtn = document.querySelector('[data-action="skills-form-to-json"]');
+      if (skillsFormToJsonBtn) {
+        skillsFormToJsonBtn.addEventListener("click", () => {
+          try {
+            const base = skillsRawInput ? parseJsonObject(skillsRawInput.value, "Skills JSON") : cloneObject(loadedSkillsConfig);
+            const merged = buildSkillsConfigFromForm(base);
+            if (skillsRawInput) {
+              skillsRawInput.value = formatJson(merged);
+            }
+            setMeta("Skills 表单已同步到 JSON。");
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`同步失败: ${message}`);
+          }
+        });
       }
 
       if (reloadBtn) {
         reloadBtn.addEventListener("click", async () => {
           try {
-            setMeta("正在读取功能配置...");
             setButtonBusy(reloadBtn, true, "加载中...", "重新加载");
-            await loadFeatureConfig();
-            setMeta("配置已加载。");
+            setMeta("正在读取功能配置...");
+            await loadConfig();
+            setMeta("功能配置已刷新。");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "读取失败，请检查服务后重试。"));
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`读取失败: ${message}`);
           } finally {
             setButtonBusy(reloadBtn, false, "加载中...", "重新加载");
           }
@@ -200,14 +1228,17 @@
       if (saveToolsBtn) {
         saveToolsBtn.addEventListener("click", async () => {
           try {
-            setMeta("正在保存工具设置...");
-            setButtonBusy(saveToolsBtn, true, "保存中...", "保存工具设置");
-            await saveToolsConfig();
-            setMeta("工具设置已保存。");
+            setButtonBusy(saveToolsBtn, true, "保存中...", "保存 Tools");
+            setMeta("正在保存 Tools 配置...");
+            const base = toolsRawInput ? parseJsonObject(toolsRawInput.value, "Tools JSON") : cloneObject(loadedToolsConfig);
+            const merged = buildToolsConfigFromForm(base);
+            await saveTools(merged);
+            setMeta("Tools 配置已保存。");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "保存工具设置失败，请稍后重试。"));
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`保存 Tools 失败: ${message}`);
           } finally {
-            setButtonBusy(saveToolsBtn, false, "保存中...", "保存工具设置");
+            setButtonBusy(saveToolsBtn, false, "保存中...", "保存 Tools");
           }
         });
       }
@@ -215,14 +1246,17 @@
       if (saveSkillsBtn) {
         saveSkillsBtn.addEventListener("click", async () => {
           try {
-            setMeta("正在保存技能设置...");
-            setButtonBusy(saveSkillsBtn, true, "保存中...", "保存技能设置");
-            await saveSkillsConfig();
-            setMeta("技能设置已保存。");
+            setButtonBusy(saveSkillsBtn, true, "保存中...", "保存 Skills");
+            setMeta("正在保存 Skills 配置...");
+            const base = skillsRawInput ? parseJsonObject(skillsRawInput.value, "Skills JSON") : cloneObject(loadedSkillsConfig);
+            const merged = buildSkillsConfigFromForm(base);
+            await saveSkills(merged);
+            setMeta("Skills 配置已保存。");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "保存技能设置失败，请稍后重试。"));
+            const message = error instanceof Error ? error.message : String(error);
+            setMeta(`保存 Skills 失败: ${message}`);
           } finally {
-            setButtonBusy(saveSkillsBtn, false, "保存中...", "保存技能设置");
+            setButtonBusy(saveSkillsBtn, false, "保存中...", "保存 Skills");
           }
         });
       }
@@ -230,10 +1264,11 @@
       (async () => {
         try {
           setMeta("正在读取功能配置...");
-          await loadFeatureConfig();
-          setMeta("配置已加载。");
+          await loadConfig();
+          setMeta("已加载：上面是 tools 设置，下面是 skills 学习。");
         } catch (error) {
-          setMeta(readUserErrorMessage(error, "读取失败，请检查服务后重试。"));
+          const message = error instanceof Error ? error.message : String(error);
+          setMeta(`读取失败: ${message}`);
         }
       })();
     </script>

@@ -19,7 +19,7 @@ function InstallGuidePage() {
               <img src="/public/logo.png" alt="ClawOS Logo" class="size-9 rounded-md object-contain" />
               <div>
                 <h1 class="text-2xl font-semibold sm:text-3xl">安装文档</h1>
-                <p class="mt-1 text-sm text-base-content/70">ClawOS Windows 端安装与更新说明</p>
+                <p class="mt-1 text-sm text-base-content/70">ClawOS 多平台安装与更新说明</p>
               </div>
             </div>
           </header>
@@ -27,10 +27,11 @@ function InstallGuidePage() {
           <section class="mt-6 rounded-[1.5rem] border border-base-content/10 bg-base-100/80 p-6 sm:p-8">
             <h2 class="text-xl font-semibold">安装使用</h2>
             <ul class="mt-4 list-disc space-y-2 pl-5 text-base-content/85">
-              <li>下载后，直接打开即可。</li>
-              <li>打开点击详情，点击“仍然运行”。</li>
+              <li>下载后，按系统选择对应安装包或可执行文件并直接运行。</li>
+              <li>Windows 首次运行若有安全提示，可点击“更多信息”后选择“仍要运行”。</li>
               <li>
-                可选：建议放入 <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">{"c:\\xiake"}</code> 文件夹中。
+                可选：建议放入常用目录，例如 <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">{"c:\\xiake"}</code> 或{" "}
+                <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">~/clawos</code>。
               </li>
             </ul>
           </section>
@@ -38,8 +39,8 @@ function InstallGuidePage() {
           <section class="mt-6 rounded-[1.5rem] border border-base-content/10 bg-base-100/80 p-6 sm:p-8">
             <h2 class="text-xl font-semibold">更新说明</h2>
             <ul class="mt-4 list-disc space-y-2 pl-5 text-base-content/85">
-              <li>ClawOS 已移除自动更新，请前往 clawos.cc 下载最新版本并覆盖 clawos.exe 文件。</li>
-              <li>覆盖前关闭已打开 ClawOS，覆盖后重新打开确认版本号。</li>
+              <li>ClawOS 已移除自动更新，请前往 clawos.cc 下载最新版本并替换当前安装文件。</li>
+              <li>更新前关闭已打开的 ClawOS，替换后重新启动并确认版本号。</li>
             </ul>
           </section>
 

@@ -22,6 +22,7 @@ import { asObject } from "../lib/value";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
+import { getSelfUpdateStatus } from "../system/self-update";
 import { readWalletBalances } from "../system/wallet-balance";
 import { startBrowserConfigResetTask, startBrowserRestartTask } from "../tasks/browser";
 import {
@@ -33,6 +34,7 @@ import {
   startGatewayUpdateTask,
   startQwGatewayRestartTask,
 } from "../tasks/gateway";
+import { startSelfUpdateTask } from "../tasks/self-update";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 
@@ -350,10 +352,13 @@ async function handleBrowserAction(req: Request): Promise<Response> {
     throw new HttpError(400, "请求体必须是 JSON。");
   });
 
-  const action = sanitizeIdentifier((body as Record<string, unknown>).action, "action") as
-    | "restart-browser"
-    | "restart-cdp"
-    | "reset-config";
+  const rawAction = sanitizeIdentifier((body as Record<string, unknown>).action, "action");
+  const action =
+    rawAction === "restart"
+      ? "restart-browser"
+      : rawAction === "reset"
+        ? "reset-config"
+        : (rawAction as "restart-browser" | "restart-cdp" | "reset-config");
 
   if (!["restart-browser", "restart-cdp", "reset-config"].includes(action)) {
     throw new HttpError(400, `不支持的 action：${action}`);
@@ -369,228 +374,232 @@ async function handleBrowserAction(req: Request): Promise<Response> {
 }
 
 export async function handleApiRequest(req: Request, path: string): Promise<Response | null> {
-  if (path === "/api/health") {
-    return jsonResponse({ ok: true, version: VERSION });
-  }
-
-  if (path === "/api/system/check" && req.method === "GET") {
-    const info = await checkEnvironment();
-    return jsonResponse({ ok: true, info });
-  }
-
-  if (path === "/api/system/browser/check" && req.method === "GET") {
-    const info = await checkBrowserConnectivity();
-    return jsonResponse({ ok: true, info });
-  }
-
-  if (path === "/api/system/repair" && req.method === "POST") {
-    const { task, reused } = startWslRepairTask();
-    return jsonResponse({ ok: true, taskId: task.id, task, reused });
-  }
-
-  if (path === "/api/qw-gateway/status" && req.method === "GET") {
-    return jsonResponse({ ok: true, status: getQwGatewayStartupStatus() });
-  }
-
-  if (path === "/api/system/autostart/clawos" && req.method === "GET") {
-    const state = await getClawosAutoStartState();
-    return jsonResponse({ ok: true, state });
-  }
-
-  if (path === "/api/system/autostart/clawos" && req.method === "PUT") {
-    const body = await parseJsonBody(req);
-    const enabled = readRequiredBoolean(body, "enabled");
-    const state = await setClawosAutoStartEnabled(enabled);
-    return jsonResponse({ ok: true, state });
-  }
-
-  if (path === "/api/app/update/status" && req.method === "GET") {
-    return jsonResponse({
-      ok: true,
-      status: {
-        supported: false,
-        reason: "自更新已移除，请前往 https://clawos.cc 下载最新版本并替换 clawos.exe。",
-        manifestUrl: "https://clawos.cc",
-        currentVersion: VERSION,
-        remoteVersion: null,
-        force: false,
-        downloadUrl: null,
-        hasUpdate: false,
-        checkedAt: new Date().toISOString(),
-        error: null,
-      },
-    });
-  }
-
-  if (path === "/api/app/update/run" && req.method === "POST") {
-    throw new HttpError(410, "自更新已移除，请前往 https://clawos.cc 下载最新版本并替换 clawos.exe。");
-  }
-
-  if (path === "/api/config" && req.method === "GET") {
-    const config = await readOpenclawConfig();
-    return jsonResponse({ ok: true, config });
-  }
-
-  if (path === "/api/local/gateway" && req.method === "GET") {
-    const gateway = readLocalGatewayConnectionConfig();
-    return jsonResponse({ ok: true, gateway });
-  }
-
-  if (path === "/api/local/gateway" && req.method === "PUT") {
-    const body = await parseJsonBody(req);
-    const patch = parseLocalGatewayBody(body);
-    const gateway = updateLocalGatewayConnectionConfig(patch);
-    return jsonResponse({ ok: true, gateway });
-  }
-
-  if (path === "/api/local/settings" && req.method === "GET") {
-    const settings = readLocalAppSettings();
-    return jsonResponse({ ok: true, settings });
-  }
-
-  if (path === "/api/local/settings" && req.method === "PUT") {
-    const body = await parseJsonBody(req);
-    const patch = parseLocalSettingsBody(body);
-    const settings = updateLocalAppSettings(patch);
-    return jsonResponse({ ok: true, settings });
-  }
-
-  if (path === "/api/local/wallet" && req.method === "GET") {
-    const wallet = readLocalWalletSummary();
-    return jsonResponse({ ok: true, wallet });
-  }
-
-  if (path === "/api/local/wallet/generate" && req.method === "POST") {
-    const currentWallet = readLocalWalletSummary();
-    if (currentWallet.exists) {
-      throw new HttpError(409, "已存在钱包，无需重复生成。");
+  try {
+    if (path === "/api/health") {
+      return jsonResponse({ ok: true, version: VERSION });
     }
 
-    const generated = generateAndSaveLocalWallet();
-    return jsonResponse({
-      ok: true,
-      address: generated.address,
-      privateKey: generated.privateKey,
-      wallet: generated.wallet,
-    });
-  }
-
-  if (path === "/api/local/wallet/balances" && req.method === "GET") {
-    const wallet = readLocalWalletSummary();
-    if (!wallet.exists || !wallet.address) {
-      return jsonResponse({ ok: true, wallet, balances: null });
+    if (path === "/api/system/check" && req.method === "GET") {
+      const info = await checkEnvironment();
+      return jsonResponse({ ok: true, info });
     }
 
-    const balances = await readWalletBalances(wallet.address);
-    return jsonResponse({ ok: true, wallet, balances });
-  }
+    if (path === "/api/system/browser/check" && req.method === "GET") {
+      const info = await checkBrowserConnectivity();
+      return jsonResponse({ ok: true, info });
+    }
 
-  if (path === "/api/config/section" && req.method === "PUT") {
-    return await handleConfigSectionSave(req);
-  }
+    if (path === "/api/system/repair" && req.method === "POST") {
+      const { task, reused } = startWslRepairTask();
+      return jsonResponse({ ok: true, taskId: task.id, task, reused });
+    }
 
-  const channelPatchMatch = path.match(/^\/api\/config\/channels\/channel\/([a-zA-Z0-9_.-]{1,64})\/?$/);
-  if (channelPatchMatch && req.method === "PATCH") {
-    return await handleSingleChannelPatch(req, channelPatchMatch[1]);
-  }
+    if (path === "/api/qw-gateway/status" && req.method === "GET") {
+      return jsonResponse({ ok: true, status: getQwGatewayStartupStatus() });
+    }
 
-  const schemaMatch = path.match(/^\/api\/config\/schema\/([a-zA-Z0-9_.-]{1,64})\/?$/);
-  if (schemaMatch && req.method === "GET") {
-    const section = assertAllowedSection(schemaMatch[1]);
-    const schema = readConfigSectionSchema(section);
-    return jsonResponse({ ok: true, section, schema });
-  }
+    if (path === "/api/system/autostart/clawos" && req.method === "GET") {
+      const state = await getClawosAutoStartState();
+      return jsonResponse({ ok: true, state });
+    }
 
-  const sectionMatch = path.match(/^\/api\/config\/([a-zA-Z0-9_.-]{1,64})\/?$/);
-  if (sectionMatch) {
-    const section = assertAllowedSection(sectionMatch[1]);
+    if (path === "/api/system/autostart/clawos" && req.method === "PUT") {
+      const body = await parseJsonBody(req);
+      const enabled = readRequiredBoolean(body, "enabled");
+      const state = await setClawosAutoStartEnabled(enabled);
+      return jsonResponse({ ok: true, state });
+    }
 
-    if (req.method === "GET") {
-      const config = await readOpenclawConfigForSection(section);
-      const sectionData = config[section];
+    if (path === "/api/app/update/status" && req.method === "GET") {
+      const status = await getSelfUpdateStatus(true);
+      return jsonResponse({ ok: true, status });
+    }
+
+    if (path === "/api/app/update/run" && req.method === "POST") {
+      const rawBody = await req.json().catch(() => ({}));
+      if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
+        throw new HttpError(400, "请求体必须是 JSON 对象。");
+      }
+
+      const body = rawBody as Record<string, unknown>;
+      const trigger = body.trigger === "force" ? "force" : "manual";
+      const autoRestart = typeof body.autoRestart === "boolean" ? body.autoRestart : true;
+      const { task, reused } = startSelfUpdateTask(trigger, { autoRestart });
+      return jsonResponse({ ok: true, taskId: task.id, task, reused });
+    }
+
+    if (path === "/api/config" && req.method === "GET") {
+      const config = await readOpenclawConfig();
+      return jsonResponse({ ok: true, config });
+    }
+
+    if (path === "/api/local/gateway" && req.method === "GET") {
+      const gateway = readLocalGatewayConnectionConfig();
+      return jsonResponse({ ok: true, gateway });
+    }
+
+    if (path === "/api/local/gateway" && req.method === "PUT") {
+      const body = await parseJsonBody(req);
+      const patch = parseLocalGatewayBody(body);
+      const gateway = updateLocalGatewayConnectionConfig(patch);
+      return jsonResponse({ ok: true, gateway });
+    }
+
+    if (path === "/api/local/settings" && req.method === "GET") {
+      const settings = readLocalAppSettings();
+      return jsonResponse({ ok: true, settings });
+    }
+
+    if (path === "/api/local/settings" && req.method === "PUT") {
+      const body = await parseJsonBody(req);
+      const patch = parseLocalSettingsBody(body);
+      const settings = updateLocalAppSettings(patch);
+      return jsonResponse({ ok: true, settings });
+    }
+
+    if (path === "/api/local/wallet" && req.method === "GET") {
+      const wallet = readLocalWalletSummary();
+      return jsonResponse({ ok: true, wallet });
+    }
+
+    if (path === "/api/local/wallet/generate" && req.method === "POST") {
+      const currentWallet = readLocalWalletSummary();
+      if (currentWallet.exists) {
+        throw new HttpError(409, "已存在钱包，无需重复生成。");
+      }
+
+      const generated = generateAndSaveLocalWallet();
       return jsonResponse({
         ok: true,
-        section,
-        data:
-          sectionData && typeof sectionData === "object" && !Array.isArray(sectionData)
-            ? (sectionData as Record<string, unknown>)
-            : {},
+        address: generated.address,
+        privateKey: generated.privateKey,
+        wallet: generated.wallet,
       });
     }
 
-    if (req.method === "PUT") {
-      const body = await parseJsonBody(req);
-      const data = Object.prototype.hasOwnProperty.call(body, "data")
-        ? ensureObjectData(body.data)
-        : body;
-      const saveResult = await saveConfigSection(section, data);
-      return jsonResponse({ ok: true, section, data, save: saveResult });
+    if (path === "/api/local/wallet/balances" && req.method === "GET") {
+      const wallet = readLocalWalletSummary();
+      if (!wallet.exists || !wallet.address) {
+        return jsonResponse({ ok: true, wallet, balances: null });
+      }
+
+      const balances = await readWalletBalances(wallet.address);
+      return jsonResponse({ ok: true, wallet, balances });
     }
-  }
 
-  if (path === "/api/sessions" && req.method === "GET") {
-    const url = new URL(req.url);
-    const limit = readLimit(url.searchParams.get("limit"), 200, "limit");
-    const sessions = await listGatewaySessions(limit);
-    return jsonResponse({ ok: true, sessions });
-  }
+    if (path === "/api/config/section" && req.method === "PUT") {
+      return await handleConfigSectionSave(req);
+    }
 
-  if (path.startsWith("/api/sessions/") && req.method === "GET") {
-    const prefix = "/api/sessions/";
-    const suffix = "/history";
-    if (path.endsWith(suffix) && path.length > prefix.length + suffix.length) {
-      const encodedKey = path.slice(prefix.length, -suffix.length);
-      let sessionKey = "";
-      try {
-        sessionKey = decodeURIComponent(encodedKey).trim();
-      } catch {
-        throw new HttpError(400, "sessionKey 编码不合法。");
+    const channelPatchMatch = path.match(/^\/api\/config\/channels\/channel\/([a-zA-Z0-9_.-]{1,64})\/?$/);
+    if (channelPatchMatch && req.method === "PATCH") {
+      return await handleSingleChannelPatch(req, channelPatchMatch[1]);
+    }
+
+    const schemaMatch = path.match(/^\/api\/config\/schema\/([a-zA-Z0-9_.-]{1,64})\/?$/);
+    if (schemaMatch && req.method === "GET") {
+      const section = assertAllowedSection(schemaMatch[1]);
+      const schema = readConfigSectionSchema(section);
+      return jsonResponse({ ok: true, section, schema });
+    }
+
+    const sectionMatch = path.match(/^\/api\/config\/([a-zA-Z0-9_.-]{1,64})\/?$/);
+    if (sectionMatch) {
+      const section = assertAllowedSection(sectionMatch[1]);
+
+      if (req.method === "GET") {
+        const config = await readOpenclawConfigForSection(section);
+        const sectionData = config[section];
+        return jsonResponse({
+          ok: true,
+          section,
+          data:
+            sectionData && typeof sectionData === "object" && !Array.isArray(sectionData)
+              ? (sectionData as Record<string, unknown>)
+              : {},
+        });
       }
-      if (!sessionKey) {
-        throw new HttpError(400, "sessionKey 不能为空。");
-      }
 
+      if (req.method === "PUT") {
+        const body = await parseJsonBody(req);
+        const data = Object.prototype.hasOwnProperty.call(body, "data")
+          ? ensureObjectData(body.data)
+          : body;
+        const saveResult = await saveConfigSection(section, data);
+        return jsonResponse({ ok: true, section, data, save: saveResult });
+      }
+    }
+
+    if (path === "/api/sessions" && req.method === "GET") {
       const url = new URL(req.url);
       const limit = readLimit(url.searchParams.get("limit"), 200, "limit");
-      const history = await listGatewaySessionHistory(sessionKey, limit);
-      return jsonResponse({ ok: true, sessionKey, history });
+      const sessions = await listGatewaySessions(limit);
+      return jsonResponse({ ok: true, sessions });
     }
-  }
 
-  if (path === "/api/gateway/update" && req.method === "POST") {
-    const { task, reused } = startGatewayUpdateTask();
-    return jsonResponse({ ok: true, taskId: task.id, task, reused });
-  }
+    if (path.startsWith("/api/sessions/") && req.method === "GET") {
+      const prefix = "/api/sessions/";
+      const suffix = "/history";
+      if (path.endsWith(suffix) && path.length > prefix.length + suffix.length) {
+        const encodedKey = path.slice(prefix.length, -suffix.length);
+        let sessionKey = "";
+        try {
+          sessionKey = decodeURIComponent(encodedKey).trim();
+        } catch {
+          throw new HttpError(400, "sessionKey 编码不合法。");
+        }
+        if (!sessionKey) {
+          throw new HttpError(400, "sessionKey 不能为空。");
+        }
 
-  if (path === "/api/gateway/config/backups" && req.method === "GET") {
-    const backups = await listOpenclawConfigBackups();
-    return jsonResponse({ ok: true, backups });
-  }
-
-  if (path === "/api/gateway/config/rollback" && req.method === "POST") {
-    return await handleOpenclawConfigRollback(req);
-  }
-
-  if (path === "/api/gateway/action" && req.method === "POST") {
-    return await handleGatewayAction(req);
-  }
-
-  if (path === "/api/browser/action" && req.method === "POST") {
-    return await handleBrowserAction(req);
-  }
-
-  if (path.startsWith("/api/tasks/") && req.method === "GET") {
-    const id = path.slice("/api/tasks/".length);
-    const task = getTaskById(id);
-    if (!task) {
-      throw new HttpError(404, "任务不存在。");
+        const url = new URL(req.url);
+        const limit = readLimit(url.searchParams.get("limit"), 200, "limit");
+        const history = await listGatewaySessionHistory(sessionKey, limit);
+        return jsonResponse({ ok: true, sessionKey, history });
+      }
     }
-    return jsonResponse({ ok: true, task });
-  }
 
-  if (path === "/api/tasks" && req.method === "GET") {
-    return jsonResponse({ ok: true, tasks: listRecentTasks(20) });
-  }
+    if (path === "/api/gateway/update" && req.method === "POST") {
+      const { task, reused } = startGatewayUpdateTask();
+      return jsonResponse({ ok: true, taskId: task.id, task, reused });
+    }
 
-  return null;
+    if (path === "/api/gateway/config/backups" && req.method === "GET") {
+      const backups = await listOpenclawConfigBackups();
+      return jsonResponse({ ok: true, backups });
+    }
+
+    if (path === "/api/gateway/config/rollback" && req.method === "POST") {
+      return await handleOpenclawConfigRollback(req);
+    }
+
+    if (path === "/api/gateway/action" && req.method === "POST") {
+      return await handleGatewayAction(req);
+    }
+
+    if (path === "/api/browser/action" && req.method === "POST") {
+      return await handleBrowserAction(req);
+    }
+
+    if (path.startsWith("/api/tasks/") && req.method === "GET") {
+      const id = path.slice("/api/tasks/".length);
+      const task = getTaskById(id);
+      if (!task) {
+        throw new HttpError(404, "任务不存在。");
+      }
+      return jsonResponse({ ok: true, task });
+    }
+
+    if (path === "/api/tasks" && req.method === "GET") {
+      return jsonResponse({ ok: true, tasks: listRecentTasks(20) });
+    }
+
+    return null;
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return jsonResponse({ ok: false, error: error.message }, error.status);
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return jsonResponse({ ok: false, error: message || "服务器内部错误" }, 500);
+  }
 }

@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { createWriteStream, existsSync, mkdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,7 +7,7 @@ import path from "node:path";
 import { VERSION } from "../app.constants";
 
 const IS_WINDOWS = process.platform === "win32";
-const DEFAULT_MANIFEST_URL = "https://clawos.minapp.xin/downloads/clawos_xiake.json";
+const DEFAULT_MANIFEST_URL = "https://clawos.minapp.xin/api/releases/latest";
 const MANIFEST_TIMEOUT_MS = 10_000;
 const MANIFEST_CACHE_TTL_MS = 60_000;
 
@@ -34,6 +35,7 @@ export type SelfUpdateStatus = {
 export type DownloadedUpdate = {
   filePath: string;
   sizeBytes: number;
+  sha256: string;
 };
 
 export type DownloadProgress = {
@@ -52,6 +54,7 @@ export type ReplacementPlan = {
   tempPath: string;
   scriptPath: string;
   logPath: string;
+  launchAfterReplace: boolean;
 };
 
 let cachedStatus: { expiresAt: number; value: SelfUpdateStatus } | null = null;
@@ -306,6 +309,18 @@ function parseContentLength(raw: string | null): number | null {
   return parsed;
 }
 
+function normalizeSha256(raw: string | null): string | null {
+  if (!raw) {
+    return null;
+  }
+
+  const normalized = raw.trim().toLowerCase();
+  if (/^[a-f0-9]{64}$/.test(normalized)) {
+    return normalized;
+  }
+  return null;
+}
+
 function notifyDownloadProgress(options: DownloadUpdateOptions | undefined, progress: DownloadProgress): void {
   if (!options?.onProgress) {
     return;
@@ -363,8 +378,11 @@ export async function downloadUpdateExecutable(
   }
 
   const totalBytes = parseContentLength(response.headers.get("content-length"));
+  const expectedSha256 =
+    normalizeSha256(response.headers.get("x-file-sha256")) || normalizeSha256(response.headers.get("x-sha256"));
   const reader = response.body.getReader();
   const output = createWriteStream(tempPath, { flags: "w" });
+  const digest = createHash("sha256");
   let receivedBytes = 0;
 
   notifyDownloadProgress(options, buildDownloadProgress(0, totalBytes));
@@ -381,6 +399,7 @@ export async function downloadUpdateExecutable(
       }
 
       receivedBytes += value.byteLength;
+      digest.update(value);
       if (!output.write(Buffer.from(value))) {
         await once(output, "drain");
       }
@@ -406,11 +425,23 @@ export async function downloadUpdateExecutable(
   }
 
   const sizeBytes = ensureDownloadedFile(tempPath);
+  const actualSha256 = digest.digest("hex");
+  if (expectedSha256 && expectedSha256 !== actualSha256) {
+    try {
+      unlinkSync(tempPath);
+    } catch {
+      // ignore cleanup failures
+    }
+    throw new Error(
+      `下载文件校验失败（sha256 不匹配）。expected=${expectedSha256.slice(0, 12)}..., actual=${actualSha256.slice(0, 12)}...`
+    );
+  }
   notifyDownloadProgress(options, buildDownloadProgress(sizeBytes, totalBytes ?? sizeBytes));
 
   return {
     filePath: tempPath,
     sizeBytes,
+    sha256: actualSha256,
   };
 }
 
@@ -426,6 +457,7 @@ function writeReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
     `$incoming = '${escapePowerShellLiteral(plan.tempPath)}'`,
     `$scriptPath = '${escapePowerShellLiteral(plan.scriptPath)}'`,
     `$logPath = '${escapePowerShellLiteral(plan.logPath)}'`,
+    `$launchAfterReplace = ${plan.launchAfterReplace ? "$true" : "$false"}`,
     `$ownerPid = ${ownerPid}`,
     "$replaced = $false",
     "$incomingSize = 0",
@@ -480,6 +512,14 @@ function writeReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
     "if (-not $replaced) {",
     "  Write-UpdateLog 'Self-update replacement failed after timeout.'",
     "}",
+    "if ($replaced -and $launchAfterReplace) {",
+    "  try {",
+    "    Start-Process -FilePath $target -ErrorAction Stop | Out-Null",
+    "    Write-UpdateLog 'Updated executable launched.'",
+    "  } catch {",
+    "    Write-UpdateLog (\"Launch updated executable failed: {0}\" -f $_.Exception.Message)",
+    "  }",
+    "}",
     "Write-UpdateLog 'Self-update script finished.'",
     "Remove-Item -LiteralPath $scriptPath -Force -ErrorAction SilentlyContinue",
     "exit 0",
@@ -492,7 +532,8 @@ function writeReplacementScript(plan: ReplacementPlan, ownerPid: number): void {
 export function scheduleWindowsExecutableReplacement(
   tempExecutablePath: string,
   targetExecutablePath: string,
-  ownerPid: number
+  ownerPid: number,
+  options?: { launchAfterReplace?: boolean }
 ): ReplacementPlan {
   if (!IS_WINDOWS) {
     throw new Error("当前系统不是 Windows，无法执行自更新。");
@@ -511,6 +552,7 @@ export function scheduleWindowsExecutableReplacement(
     tempPath: normalizedTemp,
     scriptPath,
     logPath,
+    launchAfterReplace: options?.launchAfterReplace === true,
   };
 
   writeReplacementScript(plan, ownerPid);

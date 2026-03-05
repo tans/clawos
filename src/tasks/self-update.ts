@@ -7,7 +7,14 @@ import {
   scheduleWindowsExecutableReplacement,
 } from "../system/self-update";
 
-export function startSelfUpdateTask(trigger: "manual" | "force" = "manual"): { task: Task; reused: boolean } {
+type SelfUpdateTaskOptions = {
+  autoRestart?: boolean;
+};
+
+export function startSelfUpdateTask(
+  trigger: "manual" | "force" = "manual",
+  options: SelfUpdateTaskOptions = {}
+): { task: Task; reused: boolean } {
   const runningTask = findRunningTask("self-update");
   if (runningTask) {
     appendTaskLog(runningTask, "检测到已有更新任务正在执行，已复用当前任务。", "info");
@@ -96,21 +103,36 @@ export function startSelfUpdateTask(trigger: "manual" | "force" = "manual"): { t
         },
       });
       appendTaskLog(task, `下载完成：${downloaded.filePath} (${downloaded.sizeBytes} bytes)`);
+      appendTaskLog(task, `文件校验：sha256=${downloaded.sha256}`);
 
       task.step = 3;
       appendTaskLog(task, "步骤 3/4：计划替换当前可执行文件（重命名旧文件后替换）");
-      const replacementPlan = scheduleWindowsExecutableReplacement(downloaded.filePath, targetExecutablePath, process.pid);
+      const autoRestart = options.autoRestart === true;
+      const replacementPlan = scheduleWindowsExecutableReplacement(downloaded.filePath, targetExecutablePath, process.pid, {
+        launchAfterReplace: autoRestart,
+      });
       appendTaskLog(task, `目标文件：${replacementPlan.targetPath}`);
       appendTaskLog(task, `备份文件：${replacementPlan.backupPath}`);
       appendTaskLog(task, `替换日志：${replacementPlan.logPath}`);
       appendTaskLog(task, "更新脚本已启动：将在当前进程退出后执行替换。");
 
       task.step = 4;
-      appendTaskLog(task, "步骤 4/4：等待手动重启");
-      appendTaskLog(task, "请关闭并重新打开 ClawOS，更新将在退出后完成替换并在下次启动生效。");
+      if (autoRestart) {
+        appendTaskLog(task, "步骤 4/4：自动重启 ClawOS");
+        appendTaskLog(task, "当前进程将在 1.5 秒后退出，更新脚本会完成替换并自动拉起新版本。");
+      } else {
+        appendTaskLog(task, "步骤 4/4：等待手动重启");
+        appendTaskLog(task, "请关闭并重新打开 ClawOS，更新将在退出后完成替换并在下次启动生效。");
+      }
       task.status = "success";
       task.endedAt = new Date().toISOString();
       clearSelfUpdateStatusCache();
+
+      if (autoRestart) {
+        setTimeout(() => {
+          process.exit(0);
+        }, 1_500);
+      }
     } catch (error) {
       task.status = "failed";
       task.endedAt = new Date().toISOString();
