@@ -38,7 +38,96 @@ import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 
 const CHANNEL_PATCH_KEYS = new Set(["feishu", "wecom"]);
-const LEGACY_WECOM_KEYS = ["wxwork", "qywx", "wechatWork", "enterpriseWechat"];
+const WECOM_CHANNEL_KEYS = ["wework", "wecom", "wxwork", "qywx", "wechatWork", "enterpriseWechat"];
+const OPENCLAW_REDACTED = "__OPENCLAW_REDACTED__";
+
+const FEISHU_CHANNEL_DEFAULTS: Record<string, unknown> = {
+  enabled: false,
+  domain: "feishu",
+  dmPolicy: "open",
+  groupPolicy: "open",
+  allowFrom: ["*"],
+  groupAllowFrom: ["*"],
+  streaming: false,
+  blockStreaming: false,
+};
+
+const WEWORK_CHANNEL_DEFAULTS: Record<string, unknown> = {
+  enabled: false,
+  accounts: {},
+  allowFrom: ["*"],
+  dmPolicy: "open",
+  groupPolicy: "open",
+};
+
+function readOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
+function readOptionalText(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === OPENCLAW_REDACTED) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+function resolveWecomChannelKey(sectionData: Record<string, unknown>): string {
+  for (const key of WECOM_CHANNEL_KEYS) {
+    if (asObject(sectionData[key])) {
+      return key;
+    }
+  }
+  return "wework";
+}
+
+function buildFeishuChannelData(input: Record<string, unknown>, existing: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {
+    ...FEISHU_CHANNEL_DEFAULTS,
+    ...existing,
+  };
+
+  const existingEnabled = readOptionalBoolean(existing.enabled) ?? readOptionalBoolean(existing.enable);
+  const inputEnabled = readOptionalBoolean(input.enabled) ?? readOptionalBoolean(input.enable);
+  next.enabled = inputEnabled ?? existingEnabled ?? FEISHU_CHANNEL_DEFAULTS.enabled;
+
+  const existingAppId = readOptionalText(existing.appId);
+  const inputAppId = readOptionalText(input.appId);
+  if (inputAppId !== undefined) {
+    next.appId = inputAppId;
+  } else if (existingAppId !== undefined) {
+    next.appId = existingAppId;
+  }
+
+  const existingSecret = readOptionalText(existing.appSecret) ?? readOptionalText(existing.secret);
+  const inputSecret = readOptionalText(input.appSecret) ?? readOptionalText(input.secret);
+  if (inputSecret !== undefined) {
+    next.appSecret = inputSecret;
+  } else if (existingSecret !== undefined) {
+    next.appSecret = existingSecret;
+  }
+
+  delete next.enable;
+  delete next.secret;
+  return next;
+}
+
+function buildWeworkChannelData(input: Record<string, unknown>, existing: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {
+    ...WEWORK_CHANNEL_DEFAULTS,
+    ...existing,
+  };
+
+  const existingEnabled = readOptionalBoolean(existing.enabled) ?? readOptionalBoolean(existing.enable);
+  const inputEnabled = readOptionalBoolean(input.enabled) ?? readOptionalBoolean(input.enable);
+  next.enabled = inputEnabled ?? existingEnabled ?? WEWORK_CHANNEL_DEFAULTS.enabled;
+
+  delete next.enable;
+  return next;
+}
 
 function sanitizeIdentifier(value: unknown, field: string): string {
   if (typeof value !== "string" || !/^[a-zA-Z0-9_.-]{1,64}$/.test(value)) {
@@ -209,12 +298,19 @@ async function handleSingleChannelPatch(req: Request, channelKeyRaw: string): Pr
   const nextChannels: Record<string, unknown> = { ...sectionData };
 
   if (channelKey === "wecom") {
-    for (const key of LEGACY_WECOM_KEYS) {
-      delete nextChannels[key];
+    const targetKey = resolveWecomChannelKey(sectionData);
+    const existing = asObject(sectionData[targetKey]) || {};
+    const normalized = buildWeworkChannelData(data, existing);
+
+    for (const key of WECOM_CHANNEL_KEYS) {
+      if (key !== targetKey) {
+        delete nextChannels[key];
+      }
     }
-    nextChannels.wecom = data;
+    nextChannels[targetKey] = normalized;
   } else {
-    nextChannels.feishu = data;
+    const existing = asObject(sectionData.feishu) || {};
+    nextChannels.feishu = buildFeishuChannelData(data, existing);
   }
 
   const saveResult = await saveConfigSection("channels", nextChannels);

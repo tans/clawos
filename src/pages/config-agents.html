@@ -158,7 +158,7 @@
         return models.filter((item) => isObject(item) && readOptionalText(item.id));
       }
 
-      function buildModelOptions(existingModels, preset, referencedModelId) {
+      function buildModelOptions(existingModels, preset, referencedModelId, catalogModels) {
         const optionMap = new Map();
 
         for (const item of existingModels) {
@@ -167,6 +167,15 @@
             continue;
           }
           const name = readOptionalText(item.name) || id;
+          optionMap.set(id, { id, name });
+        }
+
+        for (const item of Array.isArray(catalogModels) ? catalogModels : []) {
+          const id = readOptionalText(item?.id);
+          if (!id || optionMap.has(id)) {
+            continue;
+          }
+          const name = readOptionalText(item?.name) || id;
           optionMap.set(id, { id, name });
         }
 
@@ -220,6 +229,7 @@
 
         const modelByProvider = new Map();
         const fallbackProviderSet = new Set();
+        const modelCatalogByProvider = new Map();
 
         if (primaryRef) {
           modelByProvider.set(primaryRef.provider, primaryRef.model);
@@ -232,10 +242,31 @@
           }
         }
 
+        const modelCatalog = isObject(defaults.models) ? defaults.models : {};
+        for (const [rawKey, rawEntry] of Object.entries(modelCatalog)) {
+          const parsed = parseProviderModel(rawKey);
+          if (!parsed) {
+            continue;
+          }
+
+          const bucket = modelCatalogByProvider.get(parsed.provider) || [];
+          if (bucket.some((item) => item.id === parsed.model)) {
+            continue;
+          }
+
+          const alias = isObject(rawEntry) ? readOptionalText(rawEntry.alias) : "";
+          bucket.push({
+            id: parsed.model,
+            name: alias || parsed.model,
+          });
+          modelCatalogByProvider.set(parsed.provider, bucket);
+        }
+
         return {
           primaryRef,
           fallbackProviderSet,
           modelByProvider,
+          modelCatalogByProvider,
         };
       }
 
@@ -276,7 +307,8 @@
           const preset = presetByProviderKey.get(providerKey);
           const existingModels = readProviderModels(provider);
           const referencedModelId = routing.modelByProvider.get(providerKey) || "";
-          const modelOptions = buildModelOptions(existingModels, preset, referencedModelId);
+          const catalogModels = routing.modelCatalogByProvider.get(providerKey) || [];
+          const modelOptions = buildModelOptions(existingModels, preset, referencedModelId, catalogModels);
           const firstModel = existingModels[0] || null;
           const modelId =
             referencedModelId ||
