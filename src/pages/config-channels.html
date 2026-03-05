@@ -10,7 +10,7 @@
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">loading...</div>
+        <div class="text-sm text-base-content/60">加载中...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
@@ -611,9 +611,19 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       function updateLocalChannelState(specKey, channelDraft) {
@@ -653,7 +663,7 @@
         try {
           openChannelConfig(specKey);
         } catch (error) {
-          metaEl.textContent = `打开配置失败: ${error.message}`;
+          metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试。");
         }
       });
 
@@ -676,7 +686,7 @@
           metaEl.textContent = `${findSpec(specKey).title} 开关已保存`;
         } catch (error) {
           input.checked = previousChecked;
-          metaEl.textContent = `更新开关失败: ${error.message}`;
+          metaEl.textContent = readUserErrorMessage(error, "更新开关失败，请稍后重试。");
         } finally {
           input.disabled = false;
         }
@@ -696,7 +706,7 @@
           metaEl.textContent = `${activeSpec.title} 参数已保存`;
           closeModal();
         } catch (error) {
-          metaEl.textContent = `保存失败: ${error.message}`;
+          metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
         } finally {
           modalSaveEl.disabled = false;
         }
@@ -714,7 +724,7 @@
         try {
           await loadSection();
         } catch (error) {
-          metaEl.textContent = `加载失败: ${error.message}`;
+          metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
         } finally {
           event.currentTarget.disabled = false;
         }
@@ -725,7 +735,7 @@
           renderChannelCards();
           await loadSection();
         } catch (error) {
-          metaEl.textContent = `初始化失败: ${error.message}`;
+          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
         }
       })();
     </script>
