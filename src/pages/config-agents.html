@@ -55,35 +55,20 @@
     <script>
       const MODEL_SECTION = "models";
       const AGENT_SECTION = "agents";
-      const MODEL_API_OPTIONS = [
-        "openai-completions",
-        "openai-responses",
-        "anthropic-messages",
-        "google-generative-ai",
-        "github-copilot",
-        "bedrock-converse-stream",
-      ];
       const PROVIDER_PRESETS = [
         {
-          key: "deepseek",
-          title: "DeepSeek",
-          baseUrl: "https://api.deepseek.com/v1",
+          key: "kimi",
+          title: "Kimi",
+          baseUrl: "https://api.moonshot.cn/v1",
           api: "openai-completions",
-          modelId: "deepseek-chat",
+          modelId: "moonshot-v1-8k",
         },
         {
-          key: "openai",
-          title: "OpenAI",
-          baseUrl: "https://api.openai.com/v1",
-          api: "openai-responses",
-          modelId: "gpt-4.1-mini",
-        },
-        {
-          key: "anthropic",
-          title: "Anthropic",
-          baseUrl: "https://api.anthropic.com/v1",
-          api: "anthropic-messages",
-          modelId: "claude-3-5-haiku-latest",
+          key: "minimax",
+          title: "MiniMax",
+          baseUrl: "https://api.minimax.chat/v1",
+          api: "openai-completions",
+          modelId: "abab6.5s-chat",
         },
       ];
 
@@ -209,10 +194,8 @@
         for (const providerKey of routing.fallbackProviderSet) {
           providerKeys.add(providerKey);
         }
-        if (providerKeys.size === 0) {
-          for (const preset of PROVIDER_PRESETS) {
-            providerKeys.add(preset.key);
-          }
+        for (const preset of PROVIDER_PRESETS) {
+          providerKeys.add(preset.key);
         }
 
         const keys = Array.from(providerKeys);
@@ -263,17 +246,6 @@
         return drafts;
       }
 
-      function renderApiOptions(currentValue) {
-        const current = readOptionalText(currentValue);
-        const values = current && !MODEL_API_OPTIONS.includes(current) ? [current, ...MODEL_API_OPTIONS] : MODEL_API_OPTIONS;
-        return values
-          .map((item) => {
-            const selected = item === current ? "selected" : "";
-            return `<option value="${escapeHtml(item)}" ${selected}>${escapeHtml(item)}</option>`;
-          })
-          .join("");
-      }
-
       function renderCards() {
         if (!modelListEl) {
           return;
@@ -305,23 +277,13 @@
 
                 <div class="mt-3 grid gap-3">
                   <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">模型 ID</span>
-                    <input class="input input-bordered input-sm font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="gpt-4.1-mini" />
+                    <span class="text-xs text-base-content/70">当前模型（Coding Plan）</span>
+                    <input class="input input-bordered input-sm font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="例如 moonshot-v1-8k" />
                   </label>
 
                   <label class="form-control w-full gap-1">
                     <span class="text-xs text-base-content/70">API Key</span>
                     <input class="input input-bordered input-sm font-mono" type="password" data-field="api-key" value="${escapeHtml(item.apiKey)}" placeholder="sk-..." />
-                  </label>
-
-                  <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">Base URL</span>
-                    <input class="input input-bordered input-sm font-mono" type="text" data-field="base-url" value="${escapeHtml(item.baseUrl)}" placeholder="https://api.example.com/v1" />
-                  </label>
-
-                  <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">API 协议</span>
-                    <select class="select select-bordered select-sm" data-field="api">${renderApiOptions(item.api)}</select>
                   </label>
                 </div>
               </section>
@@ -339,8 +301,6 @@
           const origin = providerDrafts.find((item) => item.providerKey === providerKey);
           const modelIdInput = card.querySelector('[data-field="model-id"]');
           const apiKeyInput = card.querySelector('[data-field="api-key"]');
-          const baseUrlInput = card.querySelector('[data-field="base-url"]');
-          const apiSelect = card.querySelector('[data-field="api"]');
           const fallbackInput = card.querySelector('[data-field="fallback"]');
           const primaryInput = card.querySelector('input[name="primary-model"]');
 
@@ -351,8 +311,8 @@
             modelId: readOptionalText(modelIdInput?.value),
             modelName: readOptionalText(modelIdInput?.value),
             apiKey: readOptionalText(apiKeyInput?.value),
-            baseUrl: readOptionalText(baseUrlInput?.value),
-            api: readOptionalText(apiSelect?.value),
+            baseUrl: origin ? origin.baseUrl : "",
+            api: origin ? origin.api : "",
             fallback: Boolean(fallbackInput?.checked),
             primary: Boolean(primaryInput?.checked),
           };
