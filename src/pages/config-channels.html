@@ -70,10 +70,17 @@
 
     <script>
       const SECTION = "channels";
-      const LEGACY_WECOM_KEYS = ["wework", "wxwork", "qywx", "wechatWork", "enterpriseWechat"];
       const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
+      const IS_MACOS = /mac/i.test(
+        String(
+          (navigator.userAgentData && navigator.userAgentData.platform) ||
+            navigator.platform ||
+            navigator.userAgent ||
+            ""
+        )
+      );
 
-      const CHANNEL_SPECS = [
+      const CHANNEL_SPECS_BASE = [
         {
           key: "feishu",
           title: "飞书",
@@ -84,12 +91,13 @@
           ],
         },
         {
-          key: "wecom",
+          key: "wework",
           title: "企业微信",
           icon: "fa-brands fa-weixin",
           fields: [],
         },
       ];
+      const CHANNEL_SPECS = IS_MACOS ? CHANNEL_SPECS_BASE.filter((spec) => spec.key !== "wework") : CHANNEL_SPECS_BASE;
 
       const specByKey = new Map(CHANNEL_SPECS.map((spec) => [spec.key, spec]));
 
@@ -240,15 +248,9 @@
         return trimmed || undefined;
       }
 
-      function resolveRawWecomEntry(config) {
-        if (isObject(config.wecom)) {
-          return config.wecom;
-        }
-
-        for (const key of LEGACY_WECOM_KEYS) {
-          if (isObject(config[key])) {
-            return config[key];
-          }
+      function resolveRawWeworkEntry(config) {
+        if (isObject(config.wework)) {
+          return config.wework;
         }
         return {};
       }
@@ -285,7 +287,7 @@
         return draft;
       }
 
-      function sanitizeWecomEntry(rawEntry) {
+      function sanitizeWeworkEntry(rawEntry) {
         const source = isObject(rawEntry) ? rawEntry : {};
         const draft = {};
         const enable = readEnableFlag(source);
@@ -306,9 +308,9 @@
           next.feishu = feishu;
         }
 
-        const wecom = sanitizeWecomEntry(resolveRawWecomEntry(source));
-        if (Object.keys(wecom).length > 0) {
-          next.wecom = wecom;
+        const wework = sanitizeWeworkEntry(resolveRawWeworkEntry(source));
+        if (Object.keys(wework).length > 0) {
+          next.wework = wework;
         }
 
         return next;
@@ -318,8 +320,8 @@
         if (specKey === "feishu") {
           return sanitizeFeishuEntry(draft);
         }
-        if (specKey === "wecom") {
-          return sanitizeWecomEntry(draft);
+        if (specKey === "wework") {
+          return sanitizeWeworkEntry(draft);
         }
         throw new Error(`未知渠道：${specKey}`);
       }
@@ -663,7 +665,9 @@
           const data = await api(`/api/config/${SECTION}`);
           channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
           fillCardForm(channelsConfig);
-          metaEl.textContent = `${SECTION} 已加载`;
+          metaEl.textContent = IS_MACOS
+            ? `${SECTION} 已加载（macOS 已隐藏企业微信配置）`
+            : `${SECTION} 已加载`;
         } finally {
           setLoadingToast(false);
         }

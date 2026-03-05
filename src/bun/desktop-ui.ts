@@ -60,6 +60,40 @@ function normalizePagePath(path: string): string {
   return "/";
 }
 
+function wrapDesktopInlineScripts(html: string): string {
+  return html.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, (match, attrs: string, content: string) => {
+    const attrText = attrs || "";
+    if (/\bsrc\s*=/.test(attrText)) {
+      return match;
+    }
+    if (/\bdata-clawos-scoped\b/i.test(attrText)) {
+      return match;
+    }
+
+    const typeMatch = attrText.match(/\btype\s*=\s*(['"]?)([^"'\s>]+)\1/i);
+    const scriptType = (typeMatch?.[2] || "").trim().toLowerCase();
+    if (scriptType === "module") {
+      return match;
+    }
+    if (
+      scriptType &&
+      scriptType !== "text/javascript" &&
+      scriptType !== "application/javascript" &&
+      scriptType !== "application/ecmascript" &&
+      scriptType !== "text/ecmascript"
+    ) {
+      return match;
+    }
+
+    if (!content.trim()) {
+      return match;
+    }
+
+    const nextAttrs = `${attrText} data-clawos-scoped="1"`;
+    return `<script${nextAttrs}>\n(() => {\n${content}\n})();\n</script>`;
+  });
+}
+
 function appendDesktopBridge(html: string): string {
   let output = html;
 
@@ -83,7 +117,7 @@ function appendDesktopBridge(html: string): string {
     return `<html${attrs} data-clawos-desktop-page="1">`;
   });
 
-  return output;
+  return wrapDesktopInlineScripts(output);
 }
 
 function responseToHeaders(response: Response): Record<string, string> {

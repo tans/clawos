@@ -1,6 +1,4 @@
 import { readLocalOpenclawExecutionEnvironment } from "../config/local";
-import { readOpenclawConfigFromWsl, writeOpenclawConfigToWsl } from "../config/openclaw-wsl";
-import { asObject } from "../lib/value";
 import { runProcess, runWslScript, type CommandResult, type WslShellMode } from "../tasks/shell";
 
 const IS_WINDOWS = process.platform === "win32";
@@ -72,54 +70,6 @@ function shouldFallbackMode(result: CommandResult): boolean {
   return result.code === -1 || isCommandMissingText(`${result.stderr}\n${result.stdout}`);
 }
 
-function hasLegacyWeworkChannelError(result: CommandResult): boolean {
-  const text = `${result.stderr}\n${result.stdout}`.toLowerCase();
-  return text.includes("unknown channel id: wework");
-}
-
-export function normalizeLegacyChannelAliases(config: Record<string, unknown>): {
-  changed: boolean;
-  config: Record<string, unknown>;
-} {
-  const channels = asObject(config.channels);
-  const wework = asObject(channels?.wework);
-  if (!channels || !wework) {
-    return { changed: false, config };
-  }
-
-  const nextChannels: Record<string, unknown> = { ...channels };
-  if (!asObject(nextChannels.wecom)) {
-    nextChannels.wecom = wework;
-  }
-  delete nextChannels.wework;
-
-  return {
-    changed: true,
-    config: {
-      ...config,
-      channels: nextChannels,
-    },
-  };
-}
-
-async function tryRepairLegacyChannelAliases(result: CommandResult): Promise<boolean> {
-  if (!hasLegacyWeworkChannelError(result)) {
-    return false;
-  }
-
-  try {
-    const current = await readOpenclawConfigFromWsl();
-    const normalized = normalizeLegacyChannelAliases(current);
-    if (!normalized.changed) {
-      return false;
-    }
-    await writeOpenclawConfigToWsl(normalized.config);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function runOpenclawCliInMode(
   mode: OpenclawCliExecutionMode,
   args: string[],
@@ -150,11 +100,7 @@ export async function runOpenclawCli(
   options: { cwd?: string; loginShell?: boolean; shellMode?: WslShellMode } = {}
 ): Promise<OpenclawCliResult> {
   const preferredMode = resolveOpenclawCliMode();
-  let first = await runOpenclawCliInMode(preferredMode, args, options);
-  if (!first.ok && (await tryRepairLegacyChannelAliases(first))) {
-    first = await runOpenclawCliInMode(preferredMode, args, options);
-  }
-
+  const first = await runOpenclawCliInMode(preferredMode, args, options);
   if (first.ok || !IS_WINDOWS || !shouldFallbackMode(first)) {
     return first;
   }

@@ -38,9 +38,9 @@ import { startSelfUpdateTask } from "../tasks/self-update";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 
-const CHANNEL_PATCH_KEYS = new Set(["feishu", "wecom"]);
-const WECOM_CHANNEL_KEYS = ["wework", "wecom", "wxwork", "qywx", "wechatWork", "enterpriseWechat"];
+const CHANNEL_PATCH_KEYS = new Set(["feishu", "wework"]);
 const OPENCLAW_REDACTED = "__OPENCLAW_REDACTED__";
+const IS_MACOS = process.platform === "darwin";
 
 const FEISHU_CHANNEL_DEFAULTS: Record<string, unknown> = {
   enabled: false,
@@ -74,15 +74,6 @@ function readOptionalText(value: unknown): string | undefined {
     return undefined;
   }
   return trimmed;
-}
-
-function resolveWecomChannelKey(sectionData: Record<string, unknown>): string {
-  for (const key of WECOM_CHANNEL_KEYS) {
-    if (asObject(sectionData[key])) {
-      return key;
-    }
-  }
-  return "wework";
 }
 
 function buildFeishuChannelData(input: Record<string, unknown>, existing: Record<string, unknown>): Record<string, unknown> {
@@ -269,6 +260,19 @@ async function handleSingleChannelPatch(req: Request, channelKeyRaw: string): Pr
     throw new HttpError(400, `不支持的渠道：${channelKey}`);
   }
 
+  if (IS_MACOS && channelKey === "wework") {
+    const config = await readOpenclawConfigForSection("channels");
+    const sectionData = asObject(config.channels) || {};
+    return jsonResponse({
+      ok: true,
+      section: "channels",
+      channel: channelKey,
+      ignored: true,
+      reason: "当前系统为 macOS，已忽略企业微信渠道配置。",
+      data: asObject(sectionData.wework) || {},
+    });
+  }
+
   const body = await parseJsonBody(req);
   const data = Object.prototype.hasOwnProperty.call(body, "data")
     ? ensureObjectData(body.data)
@@ -278,17 +282,10 @@ async function handleSingleChannelPatch(req: Request, channelKeyRaw: string): Pr
   const sectionData = asObject(config.channels) || {};
   const nextChannels: Record<string, unknown> = { ...sectionData };
 
-  if (channelKey === "wecom") {
-    const targetKey = resolveWecomChannelKey(sectionData);
-    const existing = asObject(sectionData[targetKey]) || {};
+  if (channelKey === "wework") {
+    const existing = asObject(sectionData.wework) || {};
     const normalized = buildWeworkChannelData(data, existing);
-
-    for (const key of WECOM_CHANNEL_KEYS) {
-      if (key !== targetKey) {
-        delete nextChannels[key];
-      }
-    }
-    nextChannels[targetKey] = normalized;
+    nextChannels.wework = normalized;
   } else {
     const existing = asObject(sectionData.feishu) || {};
     nextChannels.feishu = buildFeishuChannelData(data, existing);

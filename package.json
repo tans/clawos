@@ -11,17 +11,15 @@
     "electrobun:build": "bun run scripts/electrobun.ts build",
     "electrobun:download": "bun run scripts/download-electrobun-assets.ts",
     "desktop:dev": "bun run scripts/desktop-dev.ts",
-    "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun run scripts/electrobun.ts dev --watch",
-    "desktop:build": "bun run tailwind:build && bun run scripts/electrobun.ts build",
+    "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun run electrobun:dev:watch",
+    "desktop:build": "bun run tailwind:build && bun run electrobun:build",
     "desktop:build:canary": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=canary",
     "desktop:build:stable": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=stable",
     "build": "bun run desktop:build",
-    "publish": "bun run publish:clawos",
+    "publish": "bun run scripts/publish-clawos.ts",
     "publish:json": "bun run scripts/publish-clawos.ts --skip-installer",
-    "start": "bun run tailwind:build && bun run scripts/electrobun.ts dev",
-    "test": "bun test",
-    "publish:clawos": "bun run scripts/publish-clawos.ts",
-    "build:exe": "bun run desktop:build"
+    "start": "bun run tailwind:build && bun run electrobun:dev",
+    "test": "bun test"
   },
   "dependencies": {
     "json5": "^2.2.3",
