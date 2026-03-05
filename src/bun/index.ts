@@ -11,6 +11,9 @@ const SHELL_ENTRY_URL = "views://clawos/shell.html";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
 );
+const SHOULD_OPEN_DEVTOOLS = ["1", "true", "yes", "on"].includes(
+  (process.env.CLAWOS_DESKTOP_OPEN_DEVTOOLS || "").trim().toLowerCase()
+);
 
 let desktopWindow: BrowserWindow | null = null;
 
@@ -156,6 +159,9 @@ async function main(): Promise<void> {
   console.log(`[desktop] single-instance control at ${SINGLE_INSTANCE_HOST}:${controlPort}`);
   if (IS_DESKTOP_DEV) {
     console.log("[desktop] dev mode enabled");
+    if (SHOULD_OPEN_DEVTOOLS) {
+      console.log("[desktop] devtools auto-open enabled");
+    }
   }
 
   try {
@@ -185,7 +191,7 @@ async function main(): Promise<void> {
       rpc: createDesktopRpc(),
     });
 
-    if (IS_DESKTOP_DEV) {
+    if (IS_DESKTOP_DEV && SHOULD_OPEN_DEVTOOLS) {
       try {
         desktopWindow.webview.openDevTools();
       } catch (error) {
