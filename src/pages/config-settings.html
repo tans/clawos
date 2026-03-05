@@ -65,7 +65,7 @@
                     <div class="space-y-1">
                       <div class="text-sm font-medium">授权控制地址</div>
                       <div class="text-xs text-base-content/60">
-                        可为空。填写后会写入 <code>clawos.json</code> 的 <code>controllerAddress</code> 字段。
+                        可为空。填写后将用于授权控制功能。
                       </div>
                     </div>
                     <input
@@ -95,7 +95,7 @@
                     <div class="space-y-1">
                       <div class="text-sm font-medium">开机后自动启动 ClawOS</div>
                       <div class="text-xs text-base-content/60">
-                        说明：会写入当前用户注册表 <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code>。
+                        说明：启用后，登录系统时会自动启动 ClawOS。
                       </div>
                     </div>
                     <div class="space-y-2">
@@ -144,9 +144,19 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       function setSaving(saving) {
@@ -248,8 +258,7 @@
             await loadSettings();
             setMeta("设置已刷新。");
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setMeta(`读取失败: ${message}`);
+            setMeta(readUserErrorMessage(error, "读取失败，请检查服务状态后重试。"));
           }
         });
       }
@@ -262,8 +271,7 @@
             await saveSettings();
             setMeta("设置已保存。端口与自动打开浏览器开关在重启 ClawOS 后生效。openclaw Token 与授权控制地址会立即用于后续连接。");
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setMeta(`保存失败: ${message}`);
+            setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
           } finally {
             setSaving(false);
           }
@@ -282,9 +290,8 @@
             setMeta("开机自启动状态已更新。");
           } catch (error) {
             autoStartCheckbox.checked = !next;
-            const message = error instanceof Error ? error.message : String(error);
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = `保存失败: ${message}`;
+              autoStartStatusEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
             }
           } finally {
             autoStartCheckbox.disabled = false;
@@ -297,8 +304,7 @@
           await loadSettings();
           setMeta("设置已加载。可以修改后点击“保存设置”。");
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          setMeta(`初始化失败: ${message}`);
+          setMeta(readUserErrorMessage(error, "初始化失败，请刷新页面重试。"));
         }
       })();
     </script>

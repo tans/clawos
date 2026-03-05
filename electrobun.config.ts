@@ -5,6 +5,9 @@ const appVersion =
   packageJson && typeof packageJson === "object" && "version" in packageJson
     ? String((packageJson as { version?: unknown }).version || "0.1.0")
     : "0.1.0";
+const isDesktopDev = ["1", "true", "yes", "on"].includes(
+  (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
+);
 
 const config: ElectrobunConfig = {
   app: {
@@ -30,7 +33,7 @@ const config: ElectrobunConfig = {
     },
     watch: ["src", "dist", "electrobun.config.ts"],
     win: {
-      icon: "web/public/logo.ico",
+      icon: isDesktopDev ? undefined : "web/public/logo.ico",
     },
   },
   runtime: {

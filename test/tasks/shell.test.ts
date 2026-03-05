@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   buildWslProcessArgs,
+  decodeProcessOutput,
   parseWslDistroList,
   selectPreferredWslDistro,
 } from "../../src/tasks/shell";
@@ -102,5 +103,24 @@ describe("runWslScript shell mode", () => {
 
   it("falls back to the only distro when exactly one exists", () => {
     expect(selectPreferredWslDistro(["Debian"])).toBe("Debian");
+  });
+
+  it("decodes utf-8 process output", () => {
+    const bytes = new TextEncoder().encode("中文 output");
+    expect(decodeProcessOutput(bytes)).toBe("中文 output");
+  });
+
+  it("decodes utf-16le output with BOM", () => {
+    const payload = Buffer.from("中文输出", "utf16le");
+    const bytes = new Uint8Array(payload.length + 2);
+    bytes[0] = 0xff;
+    bytes[1] = 0xfe;
+    bytes.set(payload, 2);
+    expect(decodeProcessOutput(bytes)).toBe("中文输出");
+  });
+
+  it("decodes utf-16le output without BOM when null-pattern is detected", () => {
+    const bytes = new Uint8Array(Buffer.from("Hello 中文", "utf16le"));
+    expect(decodeProcessOutput(bytes)).toBe("Hello 中文");
   });
 });

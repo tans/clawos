@@ -101,7 +101,7 @@
   async function refreshVersion() {
     try {
       const data = await api("/api/health");
-      const current = typeof data?.version === "string" && data.version.trim() ? data.version.trim() : "unknown";
+      const current = typeof data?.version === "string" && data.version.trim() ? data.version.trim() : "未知";
       versionEl.textContent = `v${current}`;
     } catch {
       versionEl.textContent = "v-";

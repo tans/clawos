@@ -26,7 +26,7 @@
             <div class="card-body gap-3">
               <div class="flex items-center justify-between gap-2">
                 <h2 class="card-title text-base">模型路由</h2>
-                <span class="text-[11px] text-base-content/60">primary 只能选一个，fallback 可多选。</span>
+                <span class="text-[11px] text-base-content/60">主模型只能选一个，备用模型可多选。</span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-model-list></div>
             </div>
@@ -368,11 +368,11 @@
                   </div>
                   <div class="flex items-center gap-2 flex-wrap justify-end">
                     <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                      <span class="text-xs">Primary</span>
+                      <span class="text-xs">主模型</span>
                       <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
                     </label>
                     <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                      <span class="text-xs">Fallback</span>
+                      <span class="text-xs">备用</span>
                       <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
                     </label>
                     <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">保存此卡片</button>
@@ -572,9 +572,19 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       async function loadSections() {
@@ -645,7 +655,7 @@
           try {
             await saveSingleProvider(providerKey);
           } catch (error) {
-            metaEl.textContent = `保存失败: ${error.message}`;
+            metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
           } finally {
             button.disabled = false;
             button.textContent = originalText || "保存此卡片";
@@ -659,7 +669,7 @@
           try {
             await loadSections();
           } catch (error) {
-            metaEl.textContent = `加载失败: ${error.message}`;
+            metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
           } finally {
             reloadBtn.disabled = false;
           }
@@ -670,7 +680,7 @@
         try {
           await loadSections();
         } catch (error) {
-          metaEl.textContent = `初始化失败: ${error.message}`;
+          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
         }
       })();
     </script>

@@ -25,10 +25,10 @@
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">Tools 设置</h2>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">保存 Tools</button>
+                <h2 class="card-title text-base">工具设置</h2>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">保存工具设置</button>
               </div>
-              <div class="text-xs text-base-content/60">上面是工具 tools 的设置（保存到 <code>gateway.tools</code>）。</div>
+              <div class="text-xs text-base-content/60">管理工具开关与参数，保存后立即生效。</div>
               <textarea
                 class="textarea textarea-bordered min-h-64 w-full font-mono text-xs leading-6"
                 data-field="tools-json"
@@ -41,10 +41,10 @@
           <section class="card card-compact mt-4 border border-base-200 bg-base-100">
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">Skills 学习</h2>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存 Skills</button>
+                <h2 class="card-title text-base">技能设置</h2>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存技能设置</button>
               </div>
-              <div class="text-xs text-base-content/60">下面是 skills 的学习（保存到 <code>skills</code>）。</div>
+              <div class="text-xs text-base-content/60">管理已启用技能与参数，保存后立即生效。</div>
               <textarea
                 class="textarea textarea-bordered min-h-64 w-full font-mono text-xs leading-6"
                 data-field="skills-json"
@@ -92,9 +92,19 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       function formatJsonObject(value) {
@@ -178,10 +188,9 @@
             setMeta("正在读取功能配置...");
             setButtonBusy(reloadBtn, true, "加载中...", "重新加载");
             await loadFeatureConfig();
-            setMeta("已加载：上面是 tools 设置，下面是 skills 学习。");
+            setMeta("配置已加载。");
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setMeta(`读取失败: ${message}`);
+            setMeta(readUserErrorMessage(error, "读取失败，请检查服务后重试。"));
           } finally {
             setButtonBusy(reloadBtn, false, "加载中...", "重新加载");
           }
@@ -191,15 +200,14 @@
       if (saveToolsBtn) {
         saveToolsBtn.addEventListener("click", async () => {
           try {
-            setMeta("正在保存 Tools 配置...");
-            setButtonBusy(saveToolsBtn, true, "保存中...", "保存 Tools");
+            setMeta("正在保存工具设置...");
+            setButtonBusy(saveToolsBtn, true, "保存中...", "保存工具设置");
             await saveToolsConfig();
-            setMeta("Tools 配置已保存。");
+            setMeta("工具设置已保存。");
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setMeta(`保存 Tools 失败: ${message}`);
+            setMeta(readUserErrorMessage(error, "保存工具设置失败，请稍后重试。"));
           } finally {
-            setButtonBusy(saveToolsBtn, false, "保存中...", "保存 Tools");
+            setButtonBusy(saveToolsBtn, false, "保存中...", "保存工具设置");
           }
         });
       }
@@ -207,15 +215,14 @@
       if (saveSkillsBtn) {
         saveSkillsBtn.addEventListener("click", async () => {
           try {
-            setMeta("正在保存 Skills 配置...");
-            setButtonBusy(saveSkillsBtn, true, "保存中...", "保存 Skills");
+            setMeta("正在保存技能设置...");
+            setButtonBusy(saveSkillsBtn, true, "保存中...", "保存技能设置");
             await saveSkillsConfig();
-            setMeta("Skills 配置已保存。");
+            setMeta("技能设置已保存。");
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setMeta(`保存 Skills 失败: ${message}`);
+            setMeta(readUserErrorMessage(error, "保存技能设置失败，请稍后重试。"));
           } finally {
-            setButtonBusy(saveSkillsBtn, false, "保存中...", "保存 Skills");
+            setButtonBusy(saveSkillsBtn, false, "保存中...", "保存技能设置");
           }
         });
       }
@@ -224,10 +231,9 @@
         try {
           setMeta("正在读取功能配置...");
           await loadFeatureConfig();
-          setMeta("已加载：上面是 tools 设置，下面是 skills 学习。");
+          setMeta("配置已加载。");
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          setMeta(`读取失败: ${message}`);
+          setMeta(readUserErrorMessage(error, "读取失败，请检查服务后重试。"));
         }
       })();
     </script>

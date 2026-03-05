@@ -62,9 +62,19 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       function formatTs(ts) {
@@ -90,7 +100,7 @@
         if (["user", "human"].includes(key)) return "用户";
         if (["assistant", "ai", "bot", "agent"].includes(key)) return "助手";
         if (["system"].includes(key)) return "系统";
-        return key;
+        return "其他";
       }
 
       function clearChildren(el) {
@@ -216,10 +226,10 @@
         try {
           const data = await api(`/api/sessions/${encodeURIComponent(sessionKey)}/history?limit=300`);
           const history = Array.isArray(data.history) ? data.history : [];
-          detailMetaEl.textContent = `会话键: ${sessionKey} | 共 ${history.length} 条`;
+          detailMetaEl.textContent = `共 ${history.length} 条消息`;
           renderMessageList(history);
         } catch (error) {
-          detailMetaEl.textContent = `加载失败: ${error.message}`;
+          detailMetaEl.textContent = readUserErrorMessage(error, "加载失败，请稍后重试。");
           renderMessageList([]);
         }
       }
@@ -230,7 +240,7 @@
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = `刷新失败: ${error.message}`;
+          listMetaEl.textContent = readUserErrorMessage(error, "刷新失败，请稍后重试。");
           clearChildren(sessionListEl);
         } finally {
           event.currentTarget.disabled = false;
@@ -241,10 +251,10 @@
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = `初始化失败: ${error.message}`;
+          listMetaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
           clearChildren(sessionListEl);
           titleEl.textContent = "未选择会话";
-          detailMetaEl.textContent = "请先检查 gateway 连接状态";
+          detailMetaEl.textContent = "请先检查服务连接状态";
           renderMessageList([]);
         }
       })();

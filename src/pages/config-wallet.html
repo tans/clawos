@@ -122,9 +122,19 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       function formatCreatedAt(iso) {
@@ -160,10 +170,10 @@
 
           const errors = [];
           if (typeof item.nativeError === "string" && item.nativeError.length > 0) {
-            errors.push(`原生币查询失败: ${item.nativeError}`);
+            errors.push("原生币余额暂时无法获取");
           }
           if (typeof item.usdtError === "string" && item.usdtError.length > 0) {
-            errors.push(`USDT 查询失败: ${item.usdtError}`);
+            errors.push("USDT 余额暂时无法获取");
           }
           balanceEls[key].error.textContent = errors.join("；");
         });
@@ -221,7 +231,7 @@
 
       async function generateWallet() {
         setRunning(true);
-        metaEl.textContent = "正在生成钱包并写入 clawos.json...";
+        metaEl.textContent = "正在生成钱包并保存配置...";
 
         try {
           const data = await api("/api/local/wallet/generate", {
@@ -243,7 +253,7 @@
             await loadWallet();
             metaEl.textContent = "已存在钱包，无需重复生成。";
           } else {
-            metaEl.textContent = `生成失败: ${message}`;
+            metaEl.textContent = readUserErrorMessage(error, "生成失败，请稍后重试。");
           }
         } finally {
           setRunning(false);

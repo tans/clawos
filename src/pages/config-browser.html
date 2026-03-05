@@ -59,9 +59,19 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
         }
         return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
       }
 
       function stopTaskPolling() {
@@ -111,14 +121,14 @@
               if (task.status === "success") {
                 browserOpStatusEl.textContent = "操作完成。";
               } else {
-                browserOpStatusEl.textContent = `操作失败: ${task.error || "未知错误"}`;
+                browserOpStatusEl.textContent = "操作未完成，请稍后重试。";
               }
             }
           } catch (error) {
             stopTaskPolling();
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = `任务轮询失败: ${error.message}`;
-            browserOpStatusEl.textContent = `操作失败: ${error.message}`;
+            browserTaskMetaEl.textContent = readUserErrorMessage(error, "状态刷新失败，请稍后重试。");
+            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
           }
         };
 
@@ -162,8 +172,8 @@
             await runBrowserAction(action);
           } catch (error) {
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = `操作失败: ${error.message}`;
-            browserOpStatusEl.textContent = `操作失败: ${error.message}`;
+            browserTaskMetaEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
+            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
           } finally {
             button.disabled = false;
           }
