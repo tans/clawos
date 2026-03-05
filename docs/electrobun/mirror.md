@@ -32,5 +32,6 @@ CLAWOS_ELECTROBUN_MIRRORS="https://your-proxy/" bun run desktop:dev
 - `bun run desktop:dev`
 - `bun run desktop:dev:raw`
 - `bun run desktop:build`
+- `bun run desktop:build:dev`
 - `bun run desktop:build:canary`
 - `bun run desktop:build:stable`
