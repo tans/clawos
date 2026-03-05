@@ -18,7 +18,6 @@
           <h1 class="text-lg font-semibold">大模型</h1>
           <div class="flex flex-wrap items-center gap-2">
             <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
-            <button class="btn btn-primary btn-xs" type="button" data-action="save">保存配置</button>
           </div>
         </header>
 
@@ -30,7 +29,7 @@
                 <button class="btn btn-warning btn-xs" type="button" data-openclaw-entry>打开 openclaw 后台</button>
               </div>
               <div class="text-sm text-base-content/80">
-                每个大模型仅保留一个 API Key 输入；用单选框选择 primary，用复选框勾选 fallback。
+                每个卡片独立保存；模型通过下拉框选择；用单选框选择 primary，用复选框勾选 fallback。
               </div>
             </div>
           </section>
@@ -85,7 +84,6 @@
       const metaEl = document.querySelector("[data-meta]");
       const modelListEl = document.querySelector("[data-model-list]");
       const reloadBtn = document.querySelector('[data-action="reload"]');
-      const saveBtn = document.querySelector('[data-action="save"]');
 
       let modelsConfig = {};
       let agentsConfig = {};
@@ -158,6 +156,31 @@
       function readProviderModels(provider) {
         const models = Array.isArray(provider?.models) ? provider.models : [];
         return models.filter((item) => isObject(item) && readOptionalText(item.id));
+      }
+
+      function buildModelOptions(existingModels, preset, referencedModelId) {
+        const optionMap = new Map();
+
+        for (const item of existingModels) {
+          const id = readOptionalText(item.id);
+          if (!id || optionMap.has(id)) {
+            continue;
+          }
+          const name = readOptionalText(item.name) || id;
+          optionMap.set(id, { id, name });
+        }
+
+        const presetModelId = readOptionalText(preset?.modelId);
+        if (presetModelId && !optionMap.has(presetModelId)) {
+          optionMap.set(presetModelId, { id: presetModelId, name: presetModelId });
+        }
+
+        const refModelId = readOptionalText(referencedModelId);
+        if (refModelId && !optionMap.has(refModelId)) {
+          optionMap.set(refModelId, { id: refModelId, name: refModelId });
+        }
+
+        return Array.from(optionMap.values());
       }
 
       function resolveTitle(providerKey) {
@@ -253,10 +276,16 @@
           const preset = presetByProviderKey.get(providerKey);
           const existingModels = readProviderModels(provider);
           const referencedModelId = routing.modelByProvider.get(providerKey) || "";
+          const modelOptions = buildModelOptions(existingModels, preset, referencedModelId);
           const firstModel = existingModels[0] || null;
-          const modelId = referencedModelId || readOptionalText(firstModel?.id) || readOptionalText(preset?.modelId);
+          const modelId =
+            referencedModelId ||
+            readOptionalText(firstModel?.id) ||
+            readOptionalText(modelOptions[0]?.id) ||
+            readOptionalText(preset?.modelId);
           const exactModel = existingModels.find((item) => readOptionalText(item.id) === modelId) || firstModel;
-          const modelName = readOptionalText(exactModel?.name) || modelId;
+          const optionModel = modelOptions.find((item) => item.id === modelId);
+          const modelName = readOptionalText(exactModel?.name) || readOptionalText(optionModel?.name) || modelId;
 
           return {
             providerKey,
@@ -267,6 +296,7 @@
             apiKey: readOptionalText(provider.apiKey),
             modelId,
             modelName,
+            modelOptions,
             primary: routing.primaryRef ? routing.primaryRef.provider === providerKey : false,
             fallback: routing.fallbackProviderSet.has(providerKey),
           };
@@ -291,6 +321,19 @@
           return;
         }
 
+        function renderModelOptions(options, selectedModelId) {
+          const selectedId = readOptionalText(selectedModelId);
+          return options
+            .map((option) => {
+              const id = readOptionalText(option?.id);
+              const name = readOptionalText(option?.name) || id;
+              const selected = id === selectedId ? "selected" : "";
+              const label = name === id ? id : `${name} (${id})`;
+              return `<option value="${escapeHtml(id)}" data-model-name="${escapeHtml(name)}" ${selected}>${escapeHtml(label)}</option>`;
+            })
+            .join("");
+        }
+
         modelListEl.innerHTML = providerDrafts
           .map((item) => {
             const primaryChecked = item.primary ? "checked" : "";
@@ -303,7 +346,7 @@
                     <div class="text-sm font-medium">${escapeHtml(item.title)}</div>
                     <div class="text-[11px] text-base-content/60 font-mono">${escapeHtml(item.providerKey)}</div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 flex-wrap justify-end">
                     <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
                       <span class="text-xs">Primary</span>
                       <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
@@ -312,13 +355,16 @@
                       <span class="text-xs">Fallback</span>
                       <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
                     </label>
+                    <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">保存此卡片</button>
                   </div>
                 </div>
 
                 <div class="mt-3 grid gap-3">
                   <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">当前模型（Coding Plan）</span>
-                    <input class="input input-bordered input-sm font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="例如 moonshot-v1-8k / k2p5 / MiniMax-M2.1" />
+                    <span class="text-xs text-base-content/70">当前模型</span>
+                    <select class="select select-bordered select-sm w-full font-mono" data-field="model-id">
+                      ${renderModelOptions(item.modelOptions || [], item.modelId)}
+                    </select>
                   </label>
 
                   <label class="form-control w-full gap-1">
@@ -343,13 +389,23 @@
           const apiKeyInput = card.querySelector('[data-field="api-key"]');
           const fallbackInput = card.querySelector('[data-field="fallback"]');
           const primaryInput = card.querySelector('input[name="primary-model"]');
+          const selectedOption =
+            modelIdInput instanceof HTMLSelectElement && modelIdInput.selectedIndex >= 0
+              ? modelIdInput.options[modelIdInput.selectedIndex]
+              : null;
+          const selectedModelId = readOptionalText(modelIdInput?.value);
+          const selectedModelName =
+            readOptionalText(selectedOption?.getAttribute("data-model-name")) ||
+            readOptionalText(selectedOption?.textContent) ||
+            selectedModelId;
 
           return {
             providerKey,
             title: origin ? origin.title : resolveTitle(providerKey),
             existing: origin ? origin.existing : false,
-            modelId: readOptionalText(modelIdInput?.value),
-            modelName: readOptionalText(modelIdInput?.value),
+            modelId: selectedModelId,
+            modelName: selectedModelName,
+            modelOptions: origin ? cloneObject(origin.modelOptions || []) : [],
             apiKey: readOptionalText(apiKeyInput?.value),
             baseUrl: origin ? origin.baseUrl : "",
             api: origin ? origin.api : "",
@@ -390,7 +446,7 @@
             continue;
           }
 
-          const keepProvider = Boolean(draft.existing || draft.primary || draft.fallback || draft.apiKey);
+          const keepProvider = Boolean(draft.existing || draft.primary || draft.fallback || draft.apiKey || draft.modelId);
           if (!keepProvider) {
             continue;
           }
@@ -441,47 +497,49 @@
         return next;
       }
 
-      function buildNextAgentsConfig(baseConfig, drafts) {
+      function buildNextAgentsConfigForProvider(baseConfig, draft) {
         const next = ensureObject(cloneObject(baseConfig || {}), AGENT_SECTION);
         const defaults = isObject(next.defaults) ? cloneObject(next.defaults) : {};
         const model = isObject(defaults.model) ? cloneObject(defaults.model) : {};
-        const primaryDraft = drafts.find((item) => item.primary);
+        const providerKey = normalizeProviderKey(draft.providerKey);
+        const modelId = readOptionalText(draft.modelId);
 
-        if (!primaryDraft) {
-          throw new Error("请先选择一个 primary 模型");
+        if (!providerKey || !modelId) {
+          throw new Error(`${resolveTitle(providerKey || draft.providerKey)} 的模型不能为空`);
         }
 
-        const primaryProviderKey = normalizeProviderKey(primaryDraft.providerKey);
-        const primaryModelId = readOptionalText(primaryDraft.modelId);
-        if (!primaryModelId) {
-          throw new Error(`${resolveTitle(primaryProviderKey)} 的模型 ID 不能为空`);
+        const targetKey = `${providerKey}/${modelId}`;
+        const currentPrimaryRef = parseProviderModel(model.primary);
+
+        if (draft.primary) {
+          model.primary = targetKey;
+        } else if (currentPrimaryRef && currentPrimaryRef.provider === providerKey) {
+          model.primary = targetKey;
         }
 
-        const primaryKey = `${primaryProviderKey}/${primaryModelId}`;
-        const fallbackKeys = [];
+        const nextFallbacks = [];
         const seen = new Set();
-
-        for (const draft of drafts) {
-          if (!draft.fallback) {
+        const sourceFallbacks = Array.isArray(model.fallbacks) ? model.fallbacks : [];
+        for (const raw of sourceFallbacks) {
+          const parsed = parseProviderModel(raw);
+          if (!parsed) {
             continue;
           }
-
-          const providerKey = normalizeProviderKey(draft.providerKey);
-          const modelId = readOptionalText(draft.modelId);
-          if (!modelId) {
-            throw new Error(`${resolveTitle(providerKey)} 的模型 ID 不能为空`);
-          }
-
-          const key = `${providerKey}/${modelId}`;
-          if (key === primaryKey || seen.has(key)) {
+          if (parsed.provider === providerKey) {
             continue;
           }
-          seen.add(key);
-          fallbackKeys.push(key);
+          if (parsed.key === model.primary || seen.has(parsed.key)) {
+            continue;
+          }
+          seen.add(parsed.key);
+          nextFallbacks.push(parsed.key);
         }
 
-        model.primary = primaryKey;
-        model.fallbacks = fallbackKeys;
+        if (draft.fallback && targetKey !== model.primary && !seen.has(targetKey)) {
+          nextFallbacks.push(targetKey);
+        }
+
+        model.fallbacks = nextFallbacks;
         defaults.model = model;
         next.defaults = defaults;
         return next;
@@ -509,10 +567,15 @@
         metaEl.textContent = "大模型配置已加载";
       }
 
-      async function saveSections() {
+      async function saveSingleProvider(providerKey) {
         const drafts = readProviderDraftsFromDom();
-        const nextModels = buildNextModelsConfig(modelsConfig, drafts);
-        const nextAgents = buildNextAgentsConfig(agentsConfig, drafts);
+        const targetDraft = drafts.find((item) => normalizeProviderKey(item.providerKey) === normalizeProviderKey(providerKey));
+        if (!targetDraft) {
+          throw new Error(`未找到 provider：${providerKey}`);
+        }
+
+        const nextModels = buildNextModelsConfig(modelsConfig, [targetDraft]);
+        const nextAgents = buildNextAgentsConfigForProvider(agentsConfig, targetDraft);
 
         await api(`/api/config/${MODEL_SECTION}`, {
           method: "PUT",
@@ -527,7 +590,7 @@
         agentsConfig = nextAgents;
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = "大模型配置已保存";
+        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} 已保存`;
       }
 
       if (modelListEl) {
@@ -544,6 +607,30 @@
           }
           syncSelectionUI();
         });
+
+        modelListEl.addEventListener("click", async (event) => {
+          const button = event.target.closest("[data-action='save-card']");
+          if (!(button instanceof HTMLButtonElement)) {
+            return;
+          }
+
+          const providerKey = readOptionalText(button.getAttribute("data-provider-key"));
+          if (!providerKey) {
+            return;
+          }
+
+          button.disabled = true;
+          const originalText = button.textContent;
+          button.textContent = "保存中...";
+          try {
+            await saveSingleProvider(providerKey);
+          } catch (error) {
+            metaEl.textContent = `保存失败: ${error.message}`;
+          } finally {
+            button.disabled = false;
+            button.textContent = originalText || "保存此卡片";
+          }
+        });
       }
 
       if (reloadBtn) {
@@ -555,19 +642,6 @@
             metaEl.textContent = `加载失败: ${error.message}`;
           } finally {
             reloadBtn.disabled = false;
-          }
-        });
-      }
-
-      if (saveBtn) {
-        saveBtn.addEventListener("click", async () => {
-          saveBtn.disabled = true;
-          try {
-            await saveSections();
-          } catch (error) {
-            metaEl.textContent = `保存失败: ${error.message}`;
-          } finally {
-            saveBtn.disabled = false;
           }
         });
       }

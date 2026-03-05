@@ -71,7 +71,7 @@ function renderSidebar(active: SidebarNavId | null): string {
     { id: "dashboard", href: "/", icon: "fa-gauge-high", label: "控制台" },
     { id: "channels", href: "/config/channels", icon: "fa-comments", label: "通讯渠道" },
     { id: "agents", href: "/config/agents", icon: "fa-brain", label: "大模型" },
-    { id: "skills", href: "/config/skills", icon: "fa-graduation-cap", label: "技能学习" },
+    { id: "skills", href: "/config/skills", icon: "fa-graduation-cap", label: "功能" },
     { id: "browser", href: "/config/browser", icon: "fa-globe", label: "浏览器" },
     { id: "wallet", href: "/config/wallet", icon: "fa-wallet", label: "钱包" },
     { id: "settings", href: "/config/settings", icon: "fa-gear", label: "设置" },

@@ -23,7 +23,6 @@
               <input class="toggle toggle-xs" type="checkbox" data-mode-toggle />
             </label>
             <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
-            <button class="btn btn-primary btn-xs" data-action="save">保存配置</button>
           </div>
         </header>
 
@@ -41,7 +40,7 @@
           <section class="mt-4 hidden card card-compact border border-base-200 bg-base-100" data-json-editor>
             <div class="card-body gap-3">
               <h2 class="card-title text-base">channels JSON（高级模式）</h2>
-              <textarea class="textarea textarea-bordered h-[62vh] w-full font-mono text-xs" data-json-input></textarea>
+              <textarea class="textarea textarea-bordered h-[62vh] w-full font-mono text-xs" data-json-input readonly></textarea>
             </div>
           </section>
 
@@ -64,7 +63,7 @@
 
         <div class="modal-action">
           <button class="btn btn-ghost btn-sm" type="button" data-modal-cancel>取消</button>
-          <button class="btn btn-primary btn-sm" type="button" data-modal-apply>应用参数</button>
+          <button class="btn btn-primary btn-sm" type="button" data-modal-save>保存</button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
@@ -77,6 +76,7 @@
     <script>
       const SECTION = "channels";
       const LEGACY_WECOM_KEYS = ["wxwork", "qywx", "wechatWork", "enterpriseWechat"];
+      const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
 
       const CHANNEL_SPECS = [
         {
@@ -111,7 +111,7 @@
       const modalFieldsEl = document.querySelector("[data-modal-fields]");
       const modalCloseEl = document.querySelector("[data-modal-close]");
       const modalCancelEl = document.querySelector("[data-modal-cancel]");
-      const modalApplyEl = document.querySelector("[data-modal-apply]");
+      const modalSaveEl = document.querySelector("[data-modal-save]");
 
       let channelsConfig = {};
       let mode = "card";
@@ -272,6 +272,9 @@
           return undefined;
         }
         const trimmed = value.trim();
+        if (!trimmed || trimmed === REDACTED_SENTINEL) {
+          return undefined;
+        }
         return trimmed || undefined;
       }
 
@@ -347,6 +350,16 @@
         }
 
         return next;
+      }
+
+      function sanitizeChannelDraft(specKey, draft) {
+        if (specKey === "feishu") {
+          return sanitizeFeishuEntry(draft);
+        }
+        if (specKey === "wecom") {
+          return sanitizeWecomEntry(draft);
+        }
+        throw new Error(`未知渠道：${specKey}`);
       }
 
       function getChannelEntry(config, specKey) {
@@ -632,9 +645,9 @@
         }
       }
 
-      function applyActiveModal() {
+      function collectActiveModalDraft() {
         if (!activeSpec) {
-          return;
+          return null;
         }
 
         const nextDraft = cloneObject(activeDraft);
@@ -648,23 +661,15 @@
           readModalField(field, fieldEl, nextDraft, activeSpec.title);
         }
 
-        setChannelEntry(channelsConfig, activeSpec.key, nextDraft);
-        fillCardForm(channelsConfig);
+        return sanitizeChannelDraft(activeSpec.key, nextDraft);
       }
 
-      function setEnabledFromCard(specKey, enabled) {
+      function buildEnabledDraft(specKey, enabled) {
         const entry = getChannelEntry(channelsConfig, specKey);
         const draft = cloneObject(entry.value);
         delete draft.enabled;
-
-        if (enabled) {
-          draft.enable = true;
-        } else {
-          draft.enable = false;
-        }
-
-        setChannelEntry(channelsConfig, specKey, draft);
-        updateCardState(findSpec(specKey), channelsConfig);
+        draft.enable = Boolean(enabled);
+        return sanitizeChannelDraft(specKey, draft);
       }
 
       function buildCardConfig(baseConfig) {
@@ -706,6 +711,23 @@
         return data;
       }
 
+      function updateLocalChannelState(specKey, channelDraft) {
+        setChannelEntry(channelsConfig, specKey, channelDraft);
+        fillCardForm(channelsConfig);
+        jsonInputEl.value = pretty(channelsConfig);
+      }
+
+      async function saveChannelDraft(specKey, channelDraft) {
+        const payload = sanitizeChannelDraft(specKey, channelDraft);
+        const data = await api(`/api/config/channels/channel/${encodeURIComponent(specKey)}`, {
+          method: "PATCH",
+          body: JSON.stringify({ data: payload }),
+        });
+        const saved = sanitizeChannelDraft(specKey, data.data || payload);
+        updateLocalChannelState(specKey, saved);
+        return saved;
+      }
+
       async function loadSection() {
         const data = await api(`/api/config/${SECTION}`);
         channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
@@ -728,22 +750,6 @@
         fillCardForm(parsed);
         mode = "card";
         renderMode();
-      }
-
-      async function saveSection() {
-        const payload = sanitizeChannelsConfig(
-          mode === "json" ? parseJsonObject(jsonInputEl.value, SECTION) : buildCardConfig(channelsConfig),
-        );
-
-        await api(`/api/config/${SECTION}`, {
-          method: "PUT",
-          body: JSON.stringify({ data: payload }),
-        });
-
-        channelsConfig = payload;
-        fillCardForm(payload);
-        jsonInputEl.value = pretty(payload);
-        metaEl.textContent = `${SECTION} 配置已保存`;
       }
 
       modeToggle.addEventListener("change", (event) => {
@@ -779,7 +785,7 @@
         }
       });
 
-      channelListEl.addEventListener("change", (event) => {
+      channelListEl.addEventListener("change", async (event) => {
         const input = event.target.closest("[data-channel-enabled]");
         if (!input) {
           return;
@@ -790,22 +796,37 @@
           return;
         }
 
+        const previousChecked = getChannelEntry(channelsConfig, specKey).value.enable === true;
+        input.disabled = true;
         try {
-          setEnabledFromCard(specKey, Boolean(input.checked));
-          jsonInputEl.value = pretty(channelsConfig);
+          const draft = buildEnabledDraft(specKey, Boolean(input.checked));
+          await saveChannelDraft(specKey, draft);
+          metaEl.textContent = `${findSpec(specKey).title} 开关已保存`;
         } catch (error) {
+          input.checked = previousChecked;
           metaEl.textContent = `更新开关失败: ${error.message}`;
+        } finally {
+          input.disabled = false;
         }
       });
 
-      modalApplyEl.addEventListener("click", () => {
+      modalSaveEl.addEventListener("click", async () => {
+        modalSaveEl.disabled = true;
         try {
-          applyActiveModal();
-          jsonInputEl.value = pretty(channelsConfig);
-          metaEl.textContent = `${activeSpec ? activeSpec.title : "渠道"} 参数已应用（未保存）`;
+          if (!activeSpec) {
+            throw new Error("当前没有可保存的渠道");
+          }
+          const nextDraft = collectActiveModalDraft();
+          if (!nextDraft) {
+            throw new Error("当前没有可保存的渠道");
+          }
+          await saveChannelDraft(activeSpec.key, nextDraft);
+          metaEl.textContent = `${activeSpec.title} 参数已保存`;
           closeModal();
         } catch (error) {
-          metaEl.textContent = `应用参数失败: ${error.message}`;
+          metaEl.textContent = `保存失败: ${error.message}`;
+        } finally {
+          modalSaveEl.disabled = false;
         }
       });
 
@@ -824,17 +845,6 @@
           renderMode();
         } catch (error) {
           metaEl.textContent = `加载失败: ${error.message}`;
-        } finally {
-          event.currentTarget.disabled = false;
-        }
-      });
-
-      document.querySelector('[data-action="save"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
-        try {
-          await saveSection();
-        } catch (error) {
-          metaEl.textContent = `保存失败: ${error.message}`;
         } finally {
           event.currentTarget.disabled = false;
         }

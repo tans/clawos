@@ -19,6 +19,7 @@ import {
 import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
+import { asObject } from "../lib/value";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
 import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
@@ -35,6 +36,9 @@ import {
 } from "../tasks/gateway";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
+
+const CHANNEL_PATCH_KEYS = new Set(["feishu", "wecom"]);
+const LEGACY_WECOM_KEYS = ["wxwork", "qywx", "wechatWork", "enterpriseWechat"];
 
 function sanitizeIdentifier(value: unknown, field: string): string {
   if (typeof value !== "string" || !/^[a-zA-Z0-9_.-]{1,64}$/.test(value)) {
@@ -184,6 +188,40 @@ async function handleConfigSectionSave(req: Request): Promise<Response> {
   return jsonResponse({
     ok: true,
     section,
+    data,
+    save: saveResult,
+  });
+}
+
+async function handleSingleChannelPatch(req: Request, channelKeyRaw: string): Promise<Response> {
+  const channelKey = sanitizeIdentifier(channelKeyRaw, "channel");
+  if (!CHANNEL_PATCH_KEYS.has(channelKey)) {
+    throw new HttpError(400, `不支持的渠道：${channelKey}`);
+  }
+
+  const body = await parseJsonBody(req);
+  const data = Object.prototype.hasOwnProperty.call(body, "data")
+    ? ensureObjectData(body.data)
+    : ensureObjectData(body);
+
+  const config = await readOpenclawConfigForSection("channels");
+  const sectionData = asObject(config.channels) || {};
+  const nextChannels: Record<string, unknown> = { ...sectionData };
+
+  if (channelKey === "wecom") {
+    for (const key of LEGACY_WECOM_KEYS) {
+      delete nextChannels[key];
+    }
+    nextChannels.wecom = data;
+  } else {
+    nextChannels.feishu = data;
+  }
+
+  const saveResult = await saveConfigSection("channels", nextChannels);
+  return jsonResponse({
+    ok: true,
+    section: "channels",
+    channel: channelKey,
     data,
     save: saveResult,
   });
@@ -375,6 +413,11 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
   if (path === "/api/config/section" && req.method === "PUT") {
     return await handleConfigSectionSave(req);
+  }
+
+  const channelPatchMatch = path.match(/^\/api\/config\/channels\/channel\/([a-zA-Z0-9_.-]{1,64})\/?$/);
+  if (channelPatchMatch && req.method === "PATCH") {
+    return await handleSingleChannelPatch(req, channelPatchMatch[1]);
   }
 
   const schemaMatch = path.match(/^\/api\/config\/schema\/([a-zA-Z0-9_.-]{1,64})\/?$/);

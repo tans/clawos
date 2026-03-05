@@ -2,6 +2,7 @@ import { HttpError } from "../lib/http";
 import { asObject, readNonEmptyString } from "../lib/value";
 import { callGatewayMethod } from "./sock";
 import type { GatewayConfigSnapshot } from "./schema";
+import JSON5 from "json5";
 import {
   readOpenclawConfigFromWsl,
   writeOpenclawConfigToWsl,
@@ -10,6 +11,7 @@ import {
 
 export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "browser", "gateway", "models"]);
 const FILE_BACKED_CONFIG_SECTIONS = new Set(["agents", "models"]);
+const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
 
 export function configTemplate(): Record<string, unknown> {
   return {
@@ -27,6 +29,55 @@ function normalizeConfigSnapshot(snapshot: GatewayConfigSnapshot): Record<string
     ...configTemplate(),
     ...(config || {}),
   };
+}
+
+function parseConfigRaw(raw: string): Record<string, unknown> | null {
+  const text = raw.trim();
+  if (!text) {
+    return {};
+  }
+  try {
+    const parsed = JSON5.parse(text);
+    return asObject(parsed) || null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeWritableConfigSnapshot(snapshot: GatewayConfigSnapshot): Record<string, unknown> {
+  const raw = typeof snapshot.raw === "string" ? snapshot.raw : "";
+  const parsedRaw = raw ? parseConfigRaw(raw) : null;
+  const config = parsedRaw || asObject(snapshot.config);
+  return {
+    ...configTemplate(),
+    ...(config || {}),
+  };
+}
+
+function restoreRedactedValues(previous: unknown, next: unknown): unknown {
+  if (typeof next === "string" && next.trim() === REDACTED_SENTINEL) {
+    return previous;
+  }
+
+  if (Array.isArray(next)) {
+    const prevArray = Array.isArray(previous) ? previous : [];
+    return next.map((item, index) => restoreRedactedValues(prevArray[index], item));
+  }
+
+  const nextObject = asObject(next);
+  if (nextObject) {
+    const prevObject = asObject(previous) || {};
+    const merged: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(nextObject)) {
+      const resolved = restoreRedactedValues(prevObject[key], value);
+      if (resolved !== undefined) {
+        merged[key] = resolved;
+      }
+    }
+    return merged;
+  }
+
+  return next;
 }
 
 function resolveConfigSnapshotHash(snapshot: GatewayConfigSnapshot): string {
@@ -108,8 +159,10 @@ export async function saveOpenclawConfigSection(
     };
   }
 
-  const config = await readOpenclawConfig();
-  config[section] = data;
+  const snapshot = await readGatewayConfigSnapshot();
+  const config = normalizeWritableConfigSnapshot(snapshot);
+  const currentSection = asObject(config[section]) || {};
+  config[section] = (restoreRedactedValues(currentSection, data) as Record<string, unknown>) || {};
   await applyOpenclawConfig(config, `ClawOS 保存 ${section} 配置`);
   return { mode: "gateway-apply" };
 }
