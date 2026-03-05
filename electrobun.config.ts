@@ -6,6 +6,11 @@ const appVersion =
     ? String((packageJson as { version?: unknown }).version || "0.1.0")
     : "0.1.0";
 
+const ciRaw = String(process.env.CI ?? "").trim().toLowerCase();
+const isCi = ciRaw === "1" || ciRaw === "true";
+const winIconFlag = String(process.env.CLAWOS_WIN_ICON ?? "").trim().toLowerCase();
+const useWindowsIcon = winIconFlag ? winIconFlag !== "0" && winIconFlag !== "false" : !isCi;
+
 const config: ElectrobunConfig = {
   app: {
     name: "ClawOS",
@@ -40,9 +45,7 @@ const config: ElectrobunConfig = {
       "**\\node_modules\\**",
       "**\\*.log",
     ],
-    win: {
-      icon: "web/public/logo.ico",
-    },
+    win: useWindowsIcon ? { icon: "web/public/logo.ico" } : {},
   },
   runtime: {
     exitOnLastWindowClosed: true,
