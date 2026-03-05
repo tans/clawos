@@ -2,8 +2,14 @@ import { HttpError } from "../lib/http";
 import { asObject, readNonEmptyString } from "../lib/value";
 import { callGatewayMethod } from "./sock";
 import type { GatewayConfigSnapshot } from "./schema";
+import {
+  readOpenclawConfigFromWsl,
+  writeOpenclawConfigToWsl,
+  type WriteOpenclawConfigFromWslResult,
+} from "../config/openclaw-wsl";
 
-export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "browser", "gateway"]);
+export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "browser", "gateway", "models"]);
+const FILE_BACKED_CONFIG_SECTIONS = new Set(["agents", "models"]);
 
 export function configTemplate(): Record<string, unknown> {
   return {
@@ -75,4 +81,35 @@ export async function applyOpenclawConfig(config: Record<string, unknown>, note:
   }
 
   throw new HttpError(500, "写入 openclaw 配置失败：配置冲突，请重试。");
+}
+
+export function shouldUseFileBackedSection(section: string): boolean {
+  return FILE_BACKED_CONFIG_SECTIONS.has(section);
+}
+
+export async function readOpenclawConfigForSection(section: string): Promise<Record<string, unknown>> {
+  if (shouldUseFileBackedSection(section)) {
+    return await readOpenclawConfigFromWsl();
+  }
+  return await readOpenclawConfig();
+}
+
+export async function saveOpenclawConfigSection(
+  section: string,
+  data: Record<string, unknown>
+): Promise<{ mode: "file-overwrite" | "gateway-apply"; fileWrite?: WriteOpenclawConfigFromWslResult }> {
+  if (shouldUseFileBackedSection(section)) {
+    const config = await readOpenclawConfigFromWsl();
+    config[section] = data;
+    const fileWrite = await writeOpenclawConfigToWsl(config);
+    return {
+      mode: "file-overwrite",
+      fileWrite,
+    };
+  }
+
+  const config = await readOpenclawConfig();
+  config[section] = data;
+  await applyOpenclawConfig(config, `ClawOS 保存 ${section} 配置`);
+  return { mode: "gateway-apply" };
 }

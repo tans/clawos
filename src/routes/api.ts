@@ -10,7 +10,12 @@ import {
   type LocalGatewayConnectionConfig,
 } from "../config/local";
 import { readConfigSectionSchema } from "../config/schema";
-import { ALLOWED_CONFIG_SECTIONS, applyOpenclawConfig, readOpenclawConfig } from "../gateway/config";
+import {
+  ALLOWED_CONFIG_SECTIONS,
+  readOpenclawConfig,
+  readOpenclawConfigForSection,
+  saveOpenclawConfigSection,
+} from "../gateway/config";
 import { invalidateGatewayConnectionSettingsCache } from "../gateway/settings";
 import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessions";
 import { HttpError, jsonResponse } from "../lib/http";
@@ -155,22 +160,32 @@ function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalApp
   return patch;
 }
 
-async function saveConfigSection(section: string, data: Record<string, unknown>): Promise<void> {
-  const config = await readOpenclawConfig();
-  config[section] = data;
-  await applyOpenclawConfig(config, `ClawOS 保存 ${section} 配置`);
+async function saveConfigSection(
+  section: string,
+  data: Record<string, unknown>
+): Promise<{ mode: "file-overwrite" | "gateway-apply"; backupPath?: string | null; targetPath?: string }> {
+  const result = await saveOpenclawConfigSection(section, data);
+  if (result.mode === "file-overwrite") {
+    return {
+      mode: "file-overwrite",
+      backupPath: result.fileWrite?.backupPath || null,
+      targetPath: result.fileWrite?.targetPath,
+    };
+  }
+  return { mode: "gateway-apply" };
 }
 
 async function handleConfigSectionSave(req: Request): Promise<Response> {
   const body = await parseJsonBody(req);
   const section = assertAllowedSection(sanitizeIdentifier(body.section, "section"));
   const data = ensureObjectData(body.data);
-  await saveConfigSection(section, data);
+  const saveResult = await saveConfigSection(section, data);
 
   return jsonResponse({
     ok: true,
     section,
     data,
+    save: saveResult,
   });
 }
 
@@ -374,7 +389,7 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     const section = assertAllowedSection(sectionMatch[1]);
 
     if (req.method === "GET") {
-      const config = await readOpenclawConfig();
+      const config = await readOpenclawConfigForSection(section);
       const sectionData = config[section];
       return jsonResponse({
         ok: true,
@@ -391,8 +406,8 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
       const data = Object.prototype.hasOwnProperty.call(body, "data")
         ? ensureObjectData(body.data)
         : body;
-      await saveConfigSection(section, data);
-      return jsonResponse({ ok: true, section, data });
+      const saveResult = await saveConfigSection(section, data);
+      return jsonResponse({ ok: true, section, data, save: saveResult });
     }
   }
 

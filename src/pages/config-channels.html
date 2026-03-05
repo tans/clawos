@@ -17,6 +17,7 @@
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <h1 class="text-lg font-semibold">通讯渠道</h1>
           <div class="flex flex-wrap items-center gap-2">
+            <button class="btn btn-warning btn-xs" type="button" data-openclaw-entry>打开 openclaw 后台</button>
             <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-3 py-1">
               <span class="text-xs">JSON 编辑</span>
               <input class="toggle toggle-xs" type="checkbox" data-mode-toggle />
@@ -27,17 +28,7 @@
         </header>
 
         <section class="flex-1 p-6">
-          <section class="card card-compact border border-warning/30 bg-warning/10">
-            <div class="card-body gap-3">
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">配置提示</h2>
-                <button class="btn btn-warning btn-xs" type="button" data-openclaw-entry>打开 openclaw 后台</button>
-              </div>
-              <div class="text-sm text-base-content/80">建议优先在 openclaw 后台完成通讯渠道配置，这里仅保留本地辅助编辑能力。其他通讯渠道到 openclaw 后台配置。</div>
-            </div>
-          </section>
-
-          <section class="mt-4 card card-compact border border-base-200 bg-base-100" data-card-editor>
+          <section class="card card-compact border border-base-200 bg-base-100" data-card-editor>
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="card-title text-base">渠道开关与参数入口</h2>
@@ -297,16 +288,25 @@
         return {};
       }
 
+      function readEnableFlag(source) {
+        if (source.enable === true || source.enabled === true) {
+          return true;
+        }
+        if (source.enable === false || source.enabled === false) {
+          return false;
+        }
+        return undefined;
+      }
+
       function sanitizeFeishuEntry(rawEntry) {
         const source = isObject(rawEntry) ? rawEntry : {};
         const draft = {};
         const appId = readOptionalText(source.appId);
         const secret = readOptionalText(source.secret) || readOptionalText(source.appSecret);
+        const enable = readEnableFlag(source);
 
-        if (source.enabled === true) {
-          draft.enabled = true;
-        } else if (source.enabled === false) {
-          draft.enabled = false;
+        if (typeof enable === "boolean") {
+          draft.enable = enable;
         }
 
         if (appId) {
@@ -323,11 +323,10 @@
       function sanitizeWecomEntry(rawEntry) {
         const source = isObject(rawEntry) ? rawEntry : {};
         const draft = {};
+        const enable = readEnableFlag(source);
 
-        if (source.enabled === true) {
-          draft.enabled = true;
-        } else if (source.enabled === false) {
-          draft.enabled = false;
+        if (typeof enable === "boolean") {
+          draft.enable = enable;
         }
 
         return draft;
@@ -453,10 +452,10 @@
         const channel = entry.value;
         const configured = countConfiguredBySpec(channel, spec);
 
-        cardEls.enabled.checked = channel.enabled === true;
+        cardEls.enabled.checked = channel.enable === true;
 
         if (spec.fields.length === 0) {
-          cardEls.summary.textContent = channel.enabled === true ? "已开启" : "已关闭";
+          cardEls.summary.textContent = channel.enable === true ? "已开启" : "已关闭";
           return;
         }
 
@@ -656,20 +655,12 @@
       function setEnabledFromCard(specKey, enabled) {
         const entry = getChannelEntry(channelsConfig, specKey);
         const draft = cloneObject(entry.value);
+        delete draft.enabled;
 
         if (enabled) {
-          draft.enabled = true;
+          draft.enable = true;
         } else {
-          if (Object.keys(draft).length === 0) {
-            updateCardState(findSpec(specKey), channelsConfig);
-            return;
-          }
-
-          if (Object.keys(draft).length === 1 && Object.prototype.hasOwnProperty.call(draft, "enabled")) {
-            delete draft.enabled;
-          } else {
-            draft.enabled = false;
-          }
+          draft.enable = false;
         }
 
         setChannelEntry(channelsConfig, specKey, draft);
@@ -688,15 +679,12 @@
           const enabled = Boolean(cardEls.enabled.checked);
           const entry = getChannelEntry(next, spec.key);
           const channel = cloneObject(entry.value);
+          delete channel.enabled;
 
           if (enabled) {
-            channel.enabled = true;
-          } else if (Object.keys(channel).length > 0) {
-            if (Object.keys(channel).length === 1 && Object.prototype.hasOwnProperty.call(channel, "enabled")) {
-              delete channel.enabled;
-            } else {
-              channel.enabled = false;
-            }
+            channel.enable = true;
+          } else {
+            channel.enable = false;
           }
 
           setChannelEntry(next, spec.key, channel);
