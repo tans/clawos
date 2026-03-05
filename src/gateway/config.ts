@@ -10,7 +10,7 @@ import {
 } from "../config/openclaw-wsl";
 
 export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "browser", "gateway", "models"]);
-const FILE_BACKED_CONFIG_SECTIONS = new Set(["agents", "models"]);
+const FILE_BACKED_CONFIG_SECTIONS = new Set(["channels", "agents", "models"]);
 const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
 
 export function configTemplate(): Record<string, unknown> {

@@ -9,13 +9,18 @@ import {
   resolveOpenclawConfigPath,
   updateLocalOpenclawSourceVersionHash,
 } from "../config/local";
-import { existsSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 const IS_WINDOWS = process.platform === "win32";
 export const DEFAULT_QWCLI_EXE_PATH = "c:\\xiake\\qwcli\\cli.exe";
 export const OPENCLAW_SOURCE_DIR = "/data/openclaw";
 const QW_GATEWAY_STABLE_WINDOW_MS = 10_000;
+const QW_GATEWAY_RESTART_LOCK_PATH = path.win32.join(
+  (process.env.TEMP || "C:\\Windows\\Temp").trim() || "C:\\Windows\\Temp",
+  "clawos-qw-gateway-restart.lock"
+);
+const MANAGED_QWCLI_EXE_PATH = path.win32.normalize(DEFAULT_QWCLI_EXE_PATH);
 
 type QwGatewayRestartTrigger = "manual" | "startup";
 type QwGatewayStartupState = "idle" | "running" | "success" | "failed" | "unsupported";
@@ -26,6 +31,11 @@ type QwGatewayStartupStatus = {
   taskId: string | null;
   message: string;
   updatedAt: string | null;
+};
+
+type QwGatewayRestartLock = {
+  fd: number;
+  path: string;
 };
 
 export type OpenclawConfigBackup = {
@@ -64,7 +74,12 @@ export function getQwGatewayStartupStatus(): QwGatewayStartupStatus {
   return { ...qwGatewayStartupStatus };
 }
 
-function buildQwGatewayProbeArgs(): string[] {
+function normalizeWindowsPathForCompare(rawPath: string): string {
+  return path.win32.normalize(rawPath).replace(/\//g, "\\").trim().toLowerCase();
+}
+
+function buildQwGatewayProbeArgs(targetExePath: string): string[] {
+  const safeTargetPath = escapePowerShellSingleQuoted(normalizeWindowsPathForCompare(targetExePath));
   return [
     "powershell.exe",
     "-NoProfile",
@@ -72,7 +87,13 @@ function buildQwGatewayProbeArgs(): string[] {
     "-ExecutionPolicy",
     "Bypass",
     "-Command",
-    "$p = Get-Process -Name 'cli' -ErrorAction SilentlyContinue; if ($p) { exit 0 } else { exit 1 }",
+    [
+      `$target = '${safeTargetPath}'`,
+      `$p = @(Get-CimInstance Win32_Process -Filter "Name='cli.exe'" -ErrorAction SilentlyContinue | Where-Object {`,
+      `  $_.ExecutablePath -and $_.ExecutablePath.Replace('/', '\\').Trim().ToLowerInvariant() -eq $target`,
+      "})",
+      "if ($p.Count -gt 0) { exit 0 } else { exit 1 }",
+    ].join("\n"),
   ];
 }
 
@@ -81,10 +102,6 @@ function escapePowerShellSingleQuoted(value: string): string {
 }
 
 export function resolveQwcliExePath(): string {
-  const fromEnv = process.env.CLAWOS_QWCLI_EXE_PATH?.trim();
-  if (fromEnv) {
-    return fromEnv;
-  }
   return DEFAULT_QWCLI_EXE_PATH;
 }
 
@@ -106,6 +123,126 @@ export function buildQwGatewayStartArgs(exePath: string, workingDirectory: strin
     "-Command",
     buildQwGatewayStartCommand(exePath, workingDirectory),
   ];
+}
+
+function buildQwGatewayStopArgs(targetExePath: string): string[] {
+  const safeTargetPath = escapePowerShellSingleQuoted(normalizeWindowsPathForCompare(targetExePath));
+  return [
+    "powershell.exe",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    [
+      "$ErrorActionPreference = 'Stop'",
+      `$target = '${safeTargetPath}'`,
+      `$procs = @(Get-CimInstance Win32_Process -Filter "Name='cli.exe'" -ErrorAction SilentlyContinue | Where-Object {`,
+      `  $_.ExecutablePath -and $_.ExecutablePath.Replace('/', '\\').Trim().ToLowerInvariant() -eq $target`,
+      "})",
+      "if ($procs.Count -eq 0) { exit 0 }",
+      "foreach ($proc in $procs) {",
+      "  & taskkill /F /T /PID $proc.ProcessId | Out-Null",
+      "}",
+      "exit 0",
+    ].join("\n"),
+  ];
+}
+
+function readQwGatewayRestartLockOwner(lockPath: string): number | null {
+  try {
+    const raw = readFileSync(lockPath, "utf-8").trim();
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw) as { pid?: unknown };
+    const pid = typeof parsed.pid === "number" ? Math.floor(parsed.pid) : Number.NaN;
+    if (!Number.isFinite(pid) || pid <= 0) {
+      return null;
+    }
+    return pid;
+  } catch {
+    return null;
+  }
+}
+
+function isProcessAlive(pid: number): boolean {
+  if (!Number.isFinite(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function tryClearStaleQwGatewayRestartLock(lockPath: string): boolean {
+  const ownerPid = readQwGatewayRestartLockOwner(lockPath);
+  if (!ownerPid || isProcessAlive(ownerPid)) {
+    return false;
+  }
+  try {
+    unlinkSync(lockPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function acquireQwGatewayRestartLock(): { lock: QwGatewayRestartLock | null; message?: string } {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const fd = openSync(QW_GATEWAY_RESTART_LOCK_PATH, "wx");
+      writeFileSync(
+        fd,
+        JSON.stringify({
+          pid: process.pid,
+          startedAt: new Date().toISOString(),
+        }),
+        "utf-8"
+      );
+      return {
+        lock: {
+          fd,
+          path: QW_GATEWAY_RESTART_LOCK_PATH,
+        },
+      };
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException | null)?.code;
+      if (code !== "EEXIST") {
+        throw error;
+      }
+      if (attempt === 0 && tryClearStaleQwGatewayRestartLock(QW_GATEWAY_RESTART_LOCK_PATH)) {
+        continue;
+      }
+      const ownerPid = readQwGatewayRestartLockOwner(QW_GATEWAY_RESTART_LOCK_PATH);
+      const ownerDetail = ownerPid ? `（PID ${ownerPid}）` : "";
+      return {
+        lock: null,
+        message: `检测到另一个 ClawOS 实例正在重启企微网关${ownerDetail}，请稍后重试。`,
+      };
+    }
+  }
+
+  return {
+    lock: null,
+    message: "企微网关重启任务加锁失败，请稍后重试。",
+  };
+}
+
+function releaseQwGatewayRestartLock(lock: QwGatewayRestartLock): void {
+  try {
+    closeSync(lock.fd);
+  } catch {
+    // ignore close errors
+  }
+  try {
+    unlinkSync(lock.path);
+  } catch {
+    // ignore release errors
+  }
 }
 
 function appendPayloadLog(task: Task, title: string, payload: unknown, maxLines = 120): void {
@@ -566,25 +703,33 @@ export function startQwGatewayRestartTask(
   });
 
   (async () => {
+    let lock: QwGatewayRestartLock | null = null;
     try {
       if (!IS_WINDOWS) {
         throw new Error("当前系统不是 Windows，无法执行企微网关重启。");
       }
 
+      const lockResult = acquireQwGatewayRestartLock();
+      if (!lockResult.lock) {
+        throw new Error(lockResult.message || "企微网关重启任务已被其他实例占用。");
+      }
+      lock = lockResult.lock;
+      appendTaskLog(task, `已获取跨进程互斥锁：${lock.path}`);
+
       const qwcliExePath = resolveQwcliExePath();
       if (!existsSync(qwcliExePath)) {
         throw new Error(
-          `企微网关可执行文件不存在：${qwcliExePath}。请检查路径是否拼写正确，或通过 CLAWOS_QWCLI_EXE_PATH 指定正确路径。`
+          `企微网关可执行文件不存在：${qwcliExePath}。请检查路径是否拼写正确。`
         );
       }
       const qwcliWorkingDirectory = resolveQwcliWorkingDirectory(qwcliExePath);
+      appendTaskLog(task, `仅管理来源进程：${MANAGED_QWCLI_EXE_PATH}`);
 
       const steps: Array<{ name: string; command: string; args: string[]; allowExitCodes?: number[] }> = [
         {
-          name: "停止 cli.exe 进程",
-          command: "taskkill /F /IM cli.exe /T",
-          args: ["taskkill", "/F", "/IM", "cli.exe", "/T"],
-          allowExitCodes: [128],
+          name: "停止目标 cli.exe 进程",
+          command: `powershell.exe ... Stop cli.exe where ExecutablePath == ${MANAGED_QWCLI_EXE_PATH}`,
+          args: buildQwGatewayStopArgs(MANAGED_QWCLI_EXE_PATH),
         },
         {
           name: "启动企微网关进程",
@@ -617,8 +762,8 @@ export function startQwGatewayRestartTask(
 
       task.step = 3;
       appendTaskLog(task, `步骤 3/${totalSteps}：校验进程稳定性（10 秒存活）`);
-      appendTaskLog(task, "执行命令：powershell.exe ... Get-Process -Name cli");
-      const firstProbe = await runProcess(buildQwGatewayProbeArgs());
+      appendTaskLog(task, `执行命令：powershell.exe ... Probe cli.exe where ExecutablePath == ${MANAGED_QWCLI_EXE_PATH}`);
+      const firstProbe = await runProcess(buildQwGatewayProbeArgs(MANAGED_QWCLI_EXE_PATH));
       for (const line of normalizeOutput(firstProbe.stdout)) {
         appendTaskLog(task, line, "info");
       }
@@ -626,13 +771,13 @@ export function startQwGatewayRestartTask(
         appendTaskLog(task, line, firstProbe.ok ? "info" : "error");
       }
       if (!firstProbe.ok) {
-        throw new Error("启动后未检测到 cli.exe 进程，企微网关启动失败。");
+        throw new Error(`启动后未检测到目标 cli.exe 进程（${MANAGED_QWCLI_EXE_PATH}），企微网关启动失败。`);
       }
 
       appendTaskLog(task, `首次探活通过，等待 ${QW_GATEWAY_STABLE_WINDOW_MS / 1000} 秒确认未闪退...`);
       await Bun.sleep(QW_GATEWAY_STABLE_WINDOW_MS);
-      appendTaskLog(task, "执行命令：powershell.exe ... Get-Process -Name cli");
-      const secondProbe = await runProcess(buildQwGatewayProbeArgs());
+      appendTaskLog(task, `执行命令：powershell.exe ... Probe cli.exe where ExecutablePath == ${MANAGED_QWCLI_EXE_PATH}`);
+      const secondProbe = await runProcess(buildQwGatewayProbeArgs(MANAGED_QWCLI_EXE_PATH));
       for (const line of normalizeOutput(secondProbe.stdout)) {
         appendTaskLog(task, line, "info");
       }
@@ -640,7 +785,7 @@ export function startQwGatewayRestartTask(
         appendTaskLog(task, line, secondProbe.ok ? "info" : "error");
       }
       if (!secondProbe.ok) {
-        throw new Error("cli.exe 在 10 秒内退出，判定企微网关启动失败。");
+        throw new Error(`目标 cli.exe 在 10 秒内退出（${MANAGED_QWCLI_EXE_PATH}），判定企微网关启动失败。`);
       }
 
       task.status = "success";
@@ -667,6 +812,11 @@ export function startQwGatewayRestartTask(
         taskId: task.id,
         message: unsupported ? "当前系统不是 Windows，无法启动企微网关。" : message,
       });
+    } finally {
+      if (lock) {
+        releaseQwGatewayRestartLock(lock);
+        appendTaskLog(task, `已释放跨进程互斥锁：${lock.path}`);
+      }
     }
   })();
 

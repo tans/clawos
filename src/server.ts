@@ -4,7 +4,6 @@ import { handleApiRequest } from "./routes/api";
 import { handlePageRequest } from "./routes/pages";
 import { openBrowser } from "./system/browser";
 import { detectAndPersistOpenclawExecutionEnvironment } from "./system/openclaw-execution";
-import { startQwGatewayRestartTaskOnStartup } from "./tasks/gateway";
 
 const startupBanner = `
 
@@ -72,7 +71,6 @@ async function startServer(): Promise<void> {
   console.log("ClawOS 已启动");
   console.log(`访问地址: ${serverUrl}`);
   console.log("官网: https://clawos.cc");
-  startQwGatewayRestartTaskOnStartup();
   openBrowser(serverUrl, { enabled: appSettings?.autoOpenBrowser !== false });
 }
 

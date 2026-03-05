@@ -37,6 +37,13 @@
       </main>
     </div>
 
+    <div class="toast toast-end toast-top hidden" data-loading-toast>
+      <div class="alert alert-info text-xs">
+        <span class="loading loading-spinner loading-xs"></span>
+        <span>加载中...</span>
+      </div>
+    </div>
+
     <dialog class="modal" data-channel-modal>
       <div class="modal-box max-w-3xl">
         <div class="mb-2 flex items-start justify-between gap-3">
@@ -88,6 +95,7 @@
 
       const metaEl = document.querySelector("[data-meta]");
       const channelListEl = document.querySelector("[data-channel-list]");
+      const loadingToastEl = document.querySelector("[data-loading-toast]");
 
       const modalEl = document.querySelector("[data-channel-modal]");
       const modalTitleEl = document.querySelector("[data-modal-title]");
@@ -631,6 +639,13 @@
         fillCardForm(channelsConfig);
       }
 
+      function setLoadingToast(visible) {
+        if (!loadingToastEl) {
+          return;
+        }
+        loadingToastEl.classList.toggle("hidden", !visible);
+      }
+
       async function saveChannelDraft(specKey, channelDraft) {
         const payload = sanitizeChannelDraft(specKey, channelDraft);
         const data = await api(`/api/config/channels/channel/${encodeURIComponent(specKey)}`, {
@@ -643,10 +658,14 @@
       }
 
       async function loadSection() {
-        const data = await api(`/api/config/${SECTION}`);
-        channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
-        fillCardForm(channelsConfig);
-        metaEl.textContent = `${SECTION} 已加载`;
+        setLoadingToast(true);
+        try {
+          const data = await api(`/api/config/${SECTION}`);
+          channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
+          fillCardForm(channelsConfig);
+        } finally {
+          setLoadingToast(false);
+        }
       }
 
       channelListEl.addEventListener("click", (event) => {
