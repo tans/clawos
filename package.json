@@ -12,6 +12,7 @@
     "electrobun:build:dev": "bun run scripts/electrobun.ts build --env=dev",
     "electrobun:build:stable": "bun run scripts/electrobun.ts build --env=stable",
     "electrobun:download": "bun run scripts/download-electrobun-assets.ts",
+    "icon:windows": "bun run scripts/generate-windows-icon.ts",
     "desktop:dev": "bun run scripts/desktop-dev.ts",
     "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun run electrobun:dev:watch",
     "desktop:build": "bun run tailwind:build && bun run electrobun:build",
@@ -25,6 +26,10 @@
     "publish:installer": "bun run scripts/publish-clawos.ts --skip-config",
     "publish:config": "bun run scripts/publish-clawos.ts --skip-installer",
     "publish:json": "bun run scripts/publish-clawos.ts --skip-installer",
+    "release": "bun run scripts/release-clawos.ts --env=stable",
+    "release:stable": "bun run scripts/release-clawos.ts --env=stable",
+    "release:canary": "bun run scripts/release-clawos.ts --env=canary",
+    "release:dev": "bun run scripts/release-clawos.ts --env=dev",
     "start": "bun run tailwind:build && bun run electrobun:dev",
     "test": "bun test"
   },

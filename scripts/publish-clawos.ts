@@ -1,21 +1,34 @@
 import { constants as fsConstants } from "node:fs";
-import { access, readFile } from "node:fs/promises";
-import { basename, resolve } from "node:path";
+import { access, readFile, readdir, stat } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
 
 type PublishPlatform = "windows" | "macos" | "linux";
+type BuildEnv = "dev" | "canary" | "stable";
+
 const VERSION_PATTERN = /(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/;
+const PLATFORM_TOKEN: Record<PublishPlatform, string> = {
+  windows: "win",
+  macos: "macos",
+  linux: "linux",
+};
 
 interface Options {
   baseUrl: string;
   token: string;
-  installerPath: string;
+  installerPath?: string;
   configPath: string;
   version?: string;
   skipInstaller: boolean;
   skipConfig: boolean;
   timeoutMs: number;
   heartbeatMs: number;
+  buildEnv: BuildEnv;
 }
+
+type InstallerResolution = {
+  path: string;
+  source: string;
+};
 
 function resolveHostPublishPlatform(): PublishPlatform {
   if (process.platform === "win32") {
@@ -25,6 +38,14 @@ function resolveHostPublishPlatform(): PublishPlatform {
     return "macos";
   }
   return "linux";
+}
+
+function parseBuildEnv(raw: string | undefined): BuildEnv {
+  const value = (raw || "").trim().toLowerCase();
+  if (value === "dev" || value === "canary" || value === "stable") {
+    return value;
+  }
+  return "stable";
 }
 
 function defaultInstallerFileName(platform: PublishPlatform): string {
@@ -39,7 +60,7 @@ function defaultInstallerFileName(platform: PublishPlatform): string {
 
 function allowedInstallerExt(platform: PublishPlatform): string[] {
   if (platform === "windows") {
-    return [".exe", ".msi", ".zip"];
+    return [".zip", ".exe", ".msi"];
   }
   if (platform === "macos") {
     return [".dmg", ".pkg", ".zip"];
@@ -59,12 +80,13 @@ function printUsage(): void {
   bun run scripts/publish-clawos.ts [options]
 
 当前平台:
-  ${platform}（自动判定，不需要手动指定平台参数）
+  ${platform}（自动判定）
 
 选项:
+  --installer <path>    安装包路径（可选，未传则自动探测）
+  --build-env <env>     构建环境 dev/canary/stable，默认 stable
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
-  --installer <path>    安装包路径，默认 ./dist/${defaultInstallerFileName(platform)}
   --config <path>       配置文件路径，默认 ./clawos_xiake.json
   --version <version>   安装包版本（可选）
   --skip-installer      跳过安装包上传
@@ -73,12 +95,18 @@ function printUsage(): void {
   --heartbeat-ms <ms>   上传心跳日志间隔，默认 15000（15 秒）
   -h, --help            显示帮助
 
+自动探测顺序:
+  1) artifacts/（优先 Electrobun 产物）
+  2) build/
+  3) dist/
+
 环境变量（可替代部分参数）:
   CLAWOS_PUBLISH_BASE_URL
   CLAWOS_UPLOAD_TOKEN（或 UPLOAD_TOKEN）
   CLAWOS_INSTALLER_PATH
   CLAWOS_CONFIG_PATH
   CLAWOS_VERSION
+  CLAWOS_BUILD_ENV
 `);
 }
 
@@ -93,16 +121,20 @@ function resolvePathFromEnv(raw: string | undefined, fallbackPath: string): stri
 function parseArgs(argv: string[]): Options {
   const hostPlatform = resolveHostPublishPlatform();
   const args = [...argv];
+
+  const installerFromEnv = process.env.CLAWOS_INSTALLER_PATH?.trim();
+
   const opts: Options = {
     baseUrl: process.env.CLAWOS_PUBLISH_BASE_URL?.trim().replace(/\/+$/, "") || "https://clawos.minapp.xin",
     token: process.env.CLAWOS_UPLOAD_TOKEN?.trim() || process.env.UPLOAD_TOKEN?.trim() || "clawos",
-    installerPath: resolvePathFromEnv(process.env.CLAWOS_INSTALLER_PATH, defaultInstallerPath(hostPlatform)),
+    installerPath: installerFromEnv ? resolve(process.cwd(), installerFromEnv) : undefined,
     configPath: resolvePathFromEnv(process.env.CLAWOS_CONFIG_PATH, resolve(process.cwd(), "clawos_xiake.json")),
     version: process.env.CLAWOS_VERSION?.trim() || undefined,
     skipInstaller: false,
     skipConfig: false,
     timeoutMs: Number.parseInt(process.env.UPLOAD_TIMEOUT_MS || "", 10) || 10 * 60 * 1000,
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
+    buildEnv: parseBuildEnv(process.env.CLAWOS_BUILD_ENV),
   };
 
   while (args.length > 0) {
@@ -128,6 +160,39 @@ function parseArgs(argv: string[]): Options {
 
     if (arg === "--installer-platform" || arg === "--installer-win" || arg === "--installer-macos" || arg === "--installer-linux") {
       throw new Error(`参数已废弃: ${arg}。发布平台会根据当前运行环境自动决定。`);
+    }
+
+    if (arg.startsWith("--base-url=")) {
+      opts.baseUrl = arg.slice("--base-url=".length).trim().replace(/\/+$/, "");
+      continue;
+    }
+    if (arg.startsWith("--token=")) {
+      opts.token = arg.slice("--token=".length).trim();
+      continue;
+    }
+    if (arg.startsWith("--installer=")) {
+      opts.installerPath = resolve(process.cwd(), arg.slice("--installer=".length));
+      continue;
+    }
+    if (arg.startsWith("--config=")) {
+      opts.configPath = resolve(process.cwd(), arg.slice("--config=".length));
+      continue;
+    }
+    if (arg.startsWith("--version=")) {
+      opts.version = arg.slice("--version=".length).trim();
+      continue;
+    }
+    if (arg.startsWith("--timeout-ms=")) {
+      opts.timeoutMs = Number.parseInt(arg.slice("--timeout-ms=".length), 10);
+      continue;
+    }
+    if (arg.startsWith("--heartbeat-ms=")) {
+      opts.heartbeatMs = Number.parseInt(arg.slice("--heartbeat-ms=".length), 10);
+      continue;
+    }
+    if (arg.startsWith("--build-env=")) {
+      opts.buildEnv = parseBuildEnv(arg.slice("--build-env=".length));
+      continue;
     }
 
     const value = args.shift();
@@ -156,6 +221,9 @@ function parseArgs(argv: string[]): Options {
         break;
       case "--heartbeat-ms":
         opts.heartbeatMs = Number.parseInt(value, 10);
+        break;
+      case "--build-env":
+        opts.buildEnv = parseBuildEnv(value);
         break;
       default:
         throw new Error(`未知参数: ${arg}`);
@@ -194,6 +262,201 @@ async function detectVersionFromPackageJson(): Promise<string | undefined> {
   }
 }
 
+function matchesAllowedExt(fileName: string, allowed: string[]): boolean {
+  const lower = fileName.toLowerCase();
+  return allowed.some((item) => lower.endsWith(item));
+}
+
+function normalizeSlash(filePath: string): string {
+  return filePath.replace(/\\/g, "/").toLowerCase();
+}
+
+async function collectFilesRecursively(rootDir: string, maxDepth: number): Promise<string[]> {
+  const files: string[] = [];
+
+  async function walk(current: string, depth: number): Promise<void> {
+    if (depth > maxDepth) {
+      return;
+    }
+
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      const next = join(current, entry.name);
+      if (entry.isDirectory()) {
+        await walk(next, depth + 1);
+      } else if (entry.isFile()) {
+        files.push(next);
+      }
+    }
+  }
+
+  await walk(rootDir, 0);
+  return files;
+}
+
+function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: BuildEnv): number {
+  const normalized = normalizeSlash(filePath);
+  const name = basename(filePath).toLowerCase();
+  const platformToken = PLATFORM_TOKEN[platform];
+  let score = 0;
+
+  if (normalized.includes("/artifacts/")) {
+    score += 120;
+  } else if (normalized.includes("/build/")) {
+    score += 70;
+  } else if (normalized.includes("/dist/")) {
+    score += 40;
+  }
+
+  if (normalized.includes(`/${buildEnv}-${platformToken}-`)) {
+    score += 90;
+  } else if (name.startsWith(`${buildEnv}-${platformToken}-`)) {
+    score += 70;
+  } else if (name.startsWith(`${buildEnv}-`)) {
+    score += 30;
+  }
+
+  if (name.includes("clawos")) {
+    score += 15;
+  }
+
+  if (name.includes("setup")) {
+    score += 25;
+  }
+
+  if (platform === "windows") {
+    if (name.endsWith(".zip")) {
+      score += 80;
+    }
+    if (name.endsWith(".exe") && !name.includes("setup")) {
+      score += 20;
+    }
+  }
+
+  return score;
+}
+
+async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv): Promise<InstallerResolution | null> {
+  const allowed = allowedInstallerExt(platform);
+  const defaultName = defaultInstallerFileName(platform).toLowerCase();
+  const roots = [resolve(process.cwd(), "artifacts"), resolve(process.cwd(), "build"), resolve(process.cwd(), "dist")];
+  const candidates: Array<{ path: string; score: number; mtimeMs: number }> = [];
+
+  for (const root of roots) {
+    const files = await collectFilesRecursively(root, 5);
+    for (const filePath of files) {
+      const name = basename(filePath);
+      const lowerName = name.toLowerCase();
+      if (!matchesAllowedExt(name, allowed)) {
+        continue;
+      }
+      if (
+        platform === "windows" &&
+        lowerName !== defaultName &&
+        !lowerName.includes("clawos") &&
+        !lowerName.includes("setup")
+      ) {
+        continue;
+      }
+      const score = candidateScore(filePath, platform, buildEnv);
+      let mtimeMs = 0;
+      try {
+        const info = await stat(filePath);
+        mtimeMs = info.mtimeMs;
+      } catch {
+        // ignore stat failures
+      }
+      candidates.push({ path: filePath, score, mtimeMs });
+    }
+  }
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  candidates.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return b.mtimeMs - a.mtimeMs;
+  });
+
+  const selected = candidates[0];
+  return { path: selected.path, source: `auto-detected(score=${selected.score})` };
+}
+
+async function resolveInstallerPathForPublish(
+  platform: PublishPlatform,
+  buildEnv: BuildEnv,
+  providedPath: string | undefined
+): Promise<InstallerResolution> {
+  if (providedPath?.trim()) {
+    return { path: resolve(process.cwd(), providedPath), source: "manual" };
+  }
+
+  const auto = await detectInstallerPath(platform, buildEnv);
+  if (auto) {
+    return auto;
+  }
+
+  const fallback = defaultInstallerPath(platform);
+  try {
+    await access(fallback, fsConstants.R_OK);
+    return { path: fallback, source: "default-dist" };
+  } catch {
+    throw new Error(
+      `自动探测安装包失败：未在 artifacts/build/dist 找到 ${platform} 可发布文件。` +
+        `\n你可以手动指定 --installer <path>。`
+    );
+  }
+}
+
+async function normalizeWindowsInstallerPath(filePath: string): Promise<InstallerResolution> {
+  const lower = basename(filePath).toLowerCase();
+  if (!lower.endsWith(".exe") || !lower.includes("setup")) {
+    return { path: filePath, source: "as-is" };
+  }
+
+  const dir = dirname(filePath);
+  const stem = basename(filePath, ".exe");
+  const sameStemZip = join(dir, `${stem}.zip`);
+  const noSpaceStemZip = join(dir, `${stem.replace(/ /g, "")}.zip`);
+  const candidates = [sameStemZip, noSpaceStemZip];
+
+  for (const candidate of candidates) {
+    try {
+      await access(candidate, fsConstants.R_OK);
+      return { path: candidate, source: "paired-zip" };
+    } catch {
+      // continue
+    }
+  }
+
+  const files = await readdir(dir).catch(() => []);
+  const stemLower = stem.toLowerCase().replace(/\s+/g, "");
+  const fuzzy = files.find((name) => {
+    const lowerName = name.toLowerCase();
+    return lowerName.endsWith(".zip") && lowerName.includes(stemLower);
+  });
+
+  if (fuzzy) {
+    const matched = join(dir, fuzzy);
+    await access(matched, fsConstants.R_OK);
+    return { path: matched, source: "paired-zip-fuzzy" };
+  }
+
+  throw new Error(
+    `检测到 Windows Setup.exe：${filePath}\n` +
+      "该文件需要配套 .metadata.json + .tar.zst，不能单独发布。请改为发布同目录 Setup.zip。"
+  );
+}
+
 function ensureInstallerMatchesPlatform(filePath: string, platform: PublishPlatform): void {
   const lower = basename(filePath).toLowerCase();
   const allowed = allowedInstallerExt(platform);
@@ -203,11 +466,11 @@ function ensureInstallerMatchesPlatform(filePath: string, platform: PublishPlatf
   }
 }
 
-async function resolvePublishVersion(opts: Options): Promise<string | undefined> {
+async function resolvePublishVersion(opts: Options, installerPath: string): Promise<string | undefined> {
   if (opts.version?.trim()) {
     return opts.version.trim().replace(/^v/i, "");
   }
-  const fromName = detectVersionFromInstallerPath(opts.installerPath);
+  const fromName = detectVersionFromInstallerPath(installerPath);
   if (fromName) {
     return fromName.replace(/^v/i, "");
   }
@@ -332,12 +595,27 @@ function formatDuration(ms: number): string {
 async function main(): Promise<void> {
   const hostPlatform = resolveHostPublishPlatform();
   const opts = parseArgs(process.argv.slice(2));
+
+  let installerPath = "";
+  let installerSource = "";
+
   if (!opts.skipInstaller) {
-    ensureInstallerMatchesPlatform(opts.installerPath, hostPlatform);
-    opts.version = await resolvePublishVersion(opts);
+    const resolved = await resolveInstallerPathForPublish(hostPlatform, opts.buildEnv, opts.installerPath);
+    installerPath = resolved.path;
+    installerSource = resolved.source;
+
+    if (hostPlatform === "windows") {
+      const normalized = await normalizeWindowsInstallerPath(installerPath);
+      installerPath = normalized.path;
+      installerSource = `${installerSource}+${normalized.source}`;
+    }
+
+    ensureInstallerMatchesPlatform(installerPath, hostPlatform);
+    opts.version = await resolvePublishVersion(opts, installerPath);
   }
 
   console.log(`[publish] host platform: ${hostPlatform}`);
+  console.log(`[publish] build env: ${opts.buildEnv}`);
   console.log(`[publish] base url: ${opts.baseUrl}`);
   console.log(`[publish] token: ${opts.token === "clawos" ? "clawos (default)" : "***"}`);
   console.log(`[publish] timeout: ${formatDuration(opts.timeoutMs)}`);
@@ -345,15 +623,19 @@ async function main(): Promise<void> {
   if (opts.version) {
     console.log(`[publish] version: ${opts.version}`);
   }
+  if (installerPath) {
+    console.log(`[publish] installer path: ${installerPath}`);
+    console.log(`[publish] installer source: ${installerSource}`);
+  }
 
   const uploadedSummaries: Array<{ kind: "installer" | "config"; fileName: string; url: string }> = [];
 
   if (!opts.skipInstaller) {
-    await assertFileReadable(opts.installerPath, `${hostPlatform} 安装包`);
-    console.log(`[publish] 上传安装包(${hostPlatform}): ${opts.installerPath}`);
+    await assertFileReadable(installerPath, `${hostPlatform} 安装包`);
+    console.log(`[publish] 上传安装包(${hostPlatform}): ${installerPath}`);
     const result = await uploadFile({
       endpoint: "/api/upload/installer",
-      filePath: opts.installerPath,
+      filePath: installerPath,
       token: opts.token,
       baseUrl: opts.baseUrl,
       version: opts.version,

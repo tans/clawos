@@ -1,4 +1,5 @@
 import type { ElectrobunConfig } from "electrobun";
+import { existsSync, readFileSync } from "node:fs";
 import packageJson from "./package.json";
 
 const appVersion =
@@ -10,6 +11,35 @@ const ciRaw = String(process.env.CI ?? "").trim().toLowerCase();
 const isCi = ciRaw === "1" || ciRaw === "true";
 const winIconFlag = String(process.env.CLAWOS_WIN_ICON ?? "").trim().toLowerCase();
 const useWindowsIcon = winIconFlag ? winIconFlag !== "0" && winIconFlag !== "false" : !isCi;
+const windowsIcoPath = "web/public/logo.ico";
+const windowsPngPath = "web/public/logo.png";
+
+function isValidIcoFile(filePath: string): boolean {
+  try {
+    const content = readFileSync(filePath);
+    if (content.length < 6) {
+      return false;
+    }
+    const reserved = content.readUInt16LE(0);
+    const imageType = content.readUInt16LE(2);
+    const imageCount = content.readUInt16LE(4);
+    return reserved === 0 && imageType === 1 && imageCount > 0;
+  } catch {
+    return false;
+  }
+}
+
+function resolveWindowsIconPath(): string | null {
+  if (isValidIcoFile(windowsIcoPath)) {
+    return windowsIcoPath;
+  }
+  if (existsSync(windowsPngPath)) {
+    return windowsPngPath;
+  }
+  return null;
+}
+
+const resolvedWindowsIconPath = resolveWindowsIconPath();
 
 const config: ElectrobunConfig = {
   app: {
@@ -45,7 +75,7 @@ const config: ElectrobunConfig = {
       "**\\node_modules\\**",
       "**\\*.log",
     ],
-    win: useWindowsIcon ? { icon: "web/public/logo.ico" } : {},
+    win: useWindowsIcon && resolvedWindowsIconPath ? { icon: resolvedWindowsIconPath } : {},
   },
   runtime: {
     exitOnLastWindowClosed: true,
