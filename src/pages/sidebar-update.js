@@ -1,4 +1,35 @@
 (function initClawosSidebar() {
+  function resolveViewportHeightPx() {
+    const visualHeight =
+      typeof window.visualViewport?.height === "number" && Number.isFinite(window.visualViewport.height)
+        ? window.visualViewport.height
+        : 0;
+    const baseHeight = Number.isFinite(window.innerHeight) ? window.innerHeight : 0;
+    const resolved = Math.max(visualHeight || 0, baseHeight || 0);
+    if (!Number.isFinite(resolved) || resolved <= 0) {
+      return 0;
+    }
+    return Math.round(resolved);
+  }
+
+  function applyViewportHeightVar() {
+    const height = resolveViewportHeightPx();
+    if (height <= 0) {
+      return;
+    }
+    document.documentElement.style.setProperty("--app-vh", `${height}px`);
+  }
+
+  applyViewportHeightVar();
+  const viewportSyncKey = "__clawosViewportHeightSyncBound__";
+  if (!window[viewportSyncKey]) {
+    window[viewportSyncKey] = true;
+    window.addEventListener("resize", applyViewportHeightVar, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", applyViewportHeightVar, { passive: true });
+    }
+  }
+
   const DEFAULT_OPENCLAW_CONSOLE_URL = "http://127.0.0.1:18789";
   const DEFAULT_OPENCLAW_TOKEN = "xiake";
 

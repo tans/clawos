@@ -12,6 +12,9 @@ describe("gateway backup scripts", () => {
     expect(script).toContain('config_path_raw="~/.openclaw/openclaw.json"');
     expect(script).toContain('case "$config_path_raw" in');
     expect(script).toContain('"~/"*) config_path="$HOME/${config_path_raw:2}"');
+    expect(script).toContain('"$config_dir"/"$config_base"*.bak');
+    expect(script).toContain('"$config_dir"/"$config_base"*.backup');
+    expect(script).toContain('"$config_dir"/"$config_base"*.old');
   });
 
   it("builds rollback script with home path expansion", () => {

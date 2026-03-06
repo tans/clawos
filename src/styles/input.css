@@ -5,8 +5,14 @@
 }
 
 @layer base {
+    :root {
+        --app-vh: 100dvh;
+    }
+
     body {
         min-height: 100vh;
+        min-height: 100dvh;
+        min-height: var(--app-vh, 100dvh);
         background:
             radial-gradient(
                 1200px 760px at -18% -24%,
@@ -45,7 +51,11 @@
 
     body > .grid {
         min-height: 100vh;
+        min-height: 100dvh;
+        min-height: var(--app-vh, 100dvh);
         height: 100vh;
+        height: 100dvh;
+        height: var(--app-vh, 100dvh);
     }
 
     body > .grid > aside {
@@ -53,12 +63,16 @@
         top: 0;
         align-self: start;
         height: 100vh;
+        height: 100dvh;
+        height: var(--app-vh, 100dvh);
         overflow-y: auto;
     }
 
     body > .grid > main {
         min-height: 0;
         height: 100vh;
+        height: 100dvh;
+        height: var(--app-vh, 100dvh);
         overflow-y: auto;
     }
 }
