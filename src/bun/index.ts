@@ -133,10 +133,21 @@ function renderStartupErrorHtml(errorMessage: string): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 启动失败</title>
+    <title>ClawOS &#21551;&#21160;&#22833;&#36133;</title>
     <style>
       :root { color-scheme: light; }
-      body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f6f8fb; color: #111827; }
+      body {
+        margin: 0;
+        font-family:
+          "Microsoft YaHei UI",
+          "Microsoft YaHei",
+          "PingFang SC",
+          "Noto Sans CJK SC",
+          "Segoe UI",
+          sans-serif;
+        background: #f6f8fb;
+        color: #111827;
+      }
       main { max-width: 720px; margin: 48px auto; background: #ffffff; border: 1px solid #dbe2ea; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06); }
       h1 { margin: 0 0 12px; font-size: 22px; }
       p { margin: 8px 0; line-height: 1.6; }
@@ -145,11 +156,11 @@ function renderStartupErrorHtml(errorMessage: string): string {
   </head>
   <body>
     <main>
-      <h1>ClawOS 启动失败</h1>
-      <p>桌面壳初始化失败。</p>
-      <p>错误信息：</p>
+      <h1>ClawOS &#21551;&#21160;&#22833;&#36133;</h1>
+      <p>&#26700;&#38754;&#22771;&#21021;&#22987;&#21270;&#22833;&#36133;&#12290;</p>
+      <p>&#38169;&#35823;&#20449;&#24687;&#65306;</p>
       <code>${safeError}</code>
-      <p>请重启客户端后重试。</p>
+      <p>&#35831;&#37325;&#21551;&#23458;&#25143;&#31471;&#21518;&#37325;&#35797;&#12290;</p>
     </main>
   </body>
 </html>

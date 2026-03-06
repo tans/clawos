@@ -88,7 +88,13 @@ function renderDesktopError(message: string): void {
     <style>
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family:
+          "Microsoft YaHei UI",
+          "Microsoft YaHei",
+          "PingFang SC",
+          "Noto Sans CJK SC",
+          "Segoe UI",
+          sans-serif;
         background: #f6f8fb;
         color: #111827;
       }
