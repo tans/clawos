@@ -1,5 +1,5 @@
 import JSON5 from "json5";
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
@@ -15,7 +15,11 @@ const OPENCLAW_CONFIG_DIR =
   process.env.CLAWOS_OPENCLAW_CONFIG_DIR?.trim() ||
   (IS_WINDOWS ? "/root/.openclaw" : "~/.openclaw");
 const OPENCLAW_CONFIG_PATH = `${OPENCLAW_CONFIG_DIR}/openclaw.json`;
-const CLAWOS_LOCAL_CONFIG_PATH = path.join(process.cwd(), "clawos.json");
+const WINDOWS_FIXED_LOCAL_CONFIG_PATH = "c:\\xiake\\clawos.json";
+const LEGACY_CLAWOS_LOCAL_CONFIG_PATH = path.join(process.cwd(), "clawos.json");
+const CLAWOS_LOCAL_CONFIG_PATH =
+  process.env.CLAWOS_LOCAL_CONFIG_PATH?.trim() ||
+  (IS_WINDOWS ? WINDOWS_FIXED_LOCAL_CONFIG_PATH : LEGACY_CLAWOS_LOCAL_CONFIG_PATH);
 
 export type LocalWalletConfig = {
   address?: string;
@@ -223,6 +227,7 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
 
 function writeLocalConfig(filePath: string, config: LocalClawosConfig): boolean {
   try {
+    mkdirSync(path.dirname(filePath), { recursive: true });
     const content = `${JSON.stringify(config, null, 2)}\n`;
     writeFileSync(filePath, content, "utf-8");
     return true;
@@ -243,8 +248,24 @@ function readConfigFileOrNull(filePath: string): LocalClawosConfig | null {
   }
 }
 
+function readLocalConfigFromPrimaryOrLegacy(): LocalClawosConfig | null {
+  const primary = readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH);
+  if (primary) {
+    return primary;
+  }
+
+  if (IS_WINDOWS && CLAWOS_LOCAL_CONFIG_PATH !== LEGACY_CLAWOS_LOCAL_CONFIG_PATH) {
+    const legacy = readConfigFileOrNull(LEGACY_CLAWOS_LOCAL_CONFIG_PATH);
+    if (legacy) {
+      return legacy;
+    }
+  }
+
+  return null;
+}
+
 function readNormalizedLocalConfig(): LocalClawosConfig {
-  return normalizeLocalConfig(readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH));
+  return normalizeLocalConfig(readLocalConfigFromPrimaryOrLegacy());
 }
 
 function hasWallet(wallet: LocalWalletConfig | null | undefined): boolean {
@@ -273,7 +294,7 @@ function toWalletSummary(wallet: LocalWalletConfig | null | undefined): LocalWal
 }
 
 export function ensureLocalConfigTemplateFile(): void {
-  const current = readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH);
+  const current = readLocalConfigFromPrimaryOrLegacy();
   if (current) {
     const normalized = normalizeLocalConfig(current);
     writeLocalConfig(CLAWOS_LOCAL_CONFIG_PATH, normalized);
@@ -290,7 +311,7 @@ export function ensureLocalConfigTemplateFile(): void {
 }
 
 export function readLocalClawosConfig(): LocalClawosConfig | null {
-  const current = readConfigFileOrNull(CLAWOS_LOCAL_CONFIG_PATH);
+  const current = readLocalConfigFromPrimaryOrLegacy();
   if (current) {
     return normalizeLocalConfig(current);
   }
