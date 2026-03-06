@@ -14,6 +14,7 @@ const ALLOWED_PAGE_PATHS = new Set([
 ]);
 
 const rpc = Electroview.defineRPC<DesktopRpcSchema>({
+  maxRequestTime: 60_000,
   handlers: { requests: {} },
 });
 

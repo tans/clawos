@@ -169,6 +169,7 @@ function renderStartupErrorHtml(errorMessage: string): string {
 
 function createDesktopRpc() {
   return BrowserView.defineRPC<DesktopRpcSchema>({
+    maxRequestTime: 60_000,
     handlers: {
       requests: {
         api: async (params) => await invokeDesktopApi(params),
