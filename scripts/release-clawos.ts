@@ -1,4 +1,6 @@
 import { spawn } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 type BuildEnv = "dev" | "canary" | "stable";
 
@@ -6,8 +8,14 @@ type Options = {
   env: BuildEnv;
   skipBuild: boolean;
   skipPublish: boolean;
+  bumpPatch: boolean;
+  fixedVersion: string | null;
   publishArgs: string[];
 };
+
+const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
+const APP_CONSTANTS_PATH = resolve(process.cwd(), "src/app.constants.ts");
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
 function parseEnv(raw: string | undefined): BuildEnv {
   const value = String(raw || "").trim().toLowerCase();
@@ -27,10 +35,13 @@ function printUsage(): void {
   --env <env>        构建环境: dev/canary/stable，默认 stable
   --skip-build       跳过构建，仅执行发布
   --skip-publish     仅构建不发布
+  --no-bump-patch    不自动递增 patch 版本号
+  --version <ver>    指定发布版本（x.y.z），会写入 package.json 和 app.constants
   -h, --help         显示帮助
 
 示例:
   bun run scripts/release-clawos.ts --env=stable
+  bun run scripts/release-clawos.ts --version=0.3.2
   bun run scripts/release-clawos.ts --env=stable -- --skip-config
   bun run scripts/release-clawos.ts --skip-build -- --installer artifacts/stable-win-x64-ClawOS-Setup.zip
 `);
@@ -41,6 +52,8 @@ function parseArgs(argv: string[]): Options {
     env: parseEnv(process.env.CLAWOS_BUILD_ENV),
     skipBuild: false,
     skipPublish: false,
+    bumpPatch: true,
+    fixedVersion: null,
     publishArgs: [],
   };
 
@@ -71,6 +84,16 @@ function parseArgs(argv: string[]): Options {
       continue;
     }
 
+    if (arg === "--no-bump-patch") {
+      options.bumpPatch = false;
+      continue;
+    }
+
+    if (arg.startsWith("--version=")) {
+      options.fixedVersion = arg.slice("--version=".length).trim();
+      continue;
+    }
+
     if (arg.startsWith("--env=")) {
       options.env = parseEnv(arg.slice("--env=".length));
       continue;
@@ -85,10 +108,101 @@ function parseArgs(argv: string[]): Options {
       continue;
     }
 
+    if (arg === "--version") {
+      const value = args.shift();
+      if (!value) {
+        throw new Error("--version 缺少参数");
+      }
+      options.fixedVersion = value.trim();
+      continue;
+    }
+
     options.publishArgs.push(arg);
   }
 
   return options;
+}
+
+function normalizeSemver(value: string): string {
+  const normalized = value.trim().replace(/^v/i, "");
+  if (!SEMVER_PATTERN.test(normalized)) {
+    throw new Error(`版本号格式不合法：${value}（期望 x.y.z）`);
+  }
+  return normalized;
+}
+
+function bumpPatchVersion(version: string): string {
+  const normalized = normalizeSemver(version);
+  const [majorRaw, minorRaw, patchRaw] = normalized.split(".");
+  const major = Number.parseInt(majorRaw, 10);
+  const minor = Number.parseInt(minorRaw, 10);
+  const patch = Number.parseInt(patchRaw, 10);
+  return `${major}.${minor}.${patch + 1}`;
+}
+
+async function readCurrentVersion(): Promise<string> {
+  const pkgRaw = await readFile(PACKAGE_JSON_PATH, "utf-8");
+  const pkg = JSON.parse(pkgRaw) as { version?: unknown };
+  if (typeof pkg.version !== "string" || !pkg.version.trim()) {
+    throw new Error("package.json 缺少合法 version 字段。");
+  }
+  return normalizeSemver(pkg.version);
+}
+
+async function writePackageVersion(nextVersion: string): Promise<void> {
+  const pkgRaw = await readFile(PACKAGE_JSON_PATH, "utf-8");
+  const pkg = JSON.parse(pkgRaw) as Record<string, unknown>;
+  pkg.version = nextVersion;
+  await writeFile(PACKAGE_JSON_PATH, `${JSON.stringify(pkg, null, 2)}\n`, "utf-8");
+}
+
+async function writeAppConstantsVersion(nextVersion: string): Promise<void> {
+  const source = await readFile(APP_CONSTANTS_PATH, "utf-8");
+  const versionLinePattern = /^export const VERSION = "([^"]+)";$/m;
+  const match = source.match(versionLinePattern);
+  if (!match) {
+    throw new Error(`未在 ${APP_CONSTANTS_PATH} 找到 VERSION 常量。`);
+  }
+
+  const replaced = source.replace(versionLinePattern, `export const VERSION = "${nextVersion}";`);
+  await writeFile(APP_CONSTANTS_PATH, replaced, "utf-8");
+}
+
+async function syncVersionFiles(nextVersion: string): Promise<void> {
+  await writePackageVersion(nextVersion);
+  await writeAppConstantsVersion(nextVersion);
+}
+
+async function resolveReleaseVersion(options: Options): Promise<{ version: string; changed: boolean }> {
+  const currentVersion = await readCurrentVersion();
+
+  if (options.skipBuild) {
+    if (options.fixedVersion) {
+      const fixed = normalizeSemver(options.fixedVersion);
+      console.log(`[release] --skip-build 已启用，忽略 --version=${fixed}，使用现有版本 ${currentVersion}`);
+    }
+    if (options.bumpPatch) {
+      console.log(`[release] --skip-build 已启用，不执行自动 patch 递增，使用现有版本 ${currentVersion}`);
+    }
+    return { version: currentVersion, changed: false };
+  }
+
+  if (options.fixedVersion) {
+    const fixed = normalizeSemver(options.fixedVersion);
+    if (fixed !== currentVersion) {
+      await syncVersionFiles(fixed);
+      return { version: fixed, changed: true };
+    }
+    return { version: fixed, changed: false };
+  }
+
+  if (!options.bumpPatch) {
+    return { version: currentVersion, changed: false };
+  }
+
+  const bumped = bumpPatchVersion(currentVersion);
+  await syncVersionFiles(bumped);
+  return { version: bumped, changed: true };
 }
 
 async function runStep(name: string, cmd: string[]): Promise<void> {
@@ -118,8 +232,13 @@ async function runStep(name: string, cmd: string[]): Promise<void> {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  const releaseVersion = await resolveReleaseVersion(options);
 
   console.log(`[release] build env: ${options.env}`);
+  console.log(`[release] release version: ${releaseVersion.version}`);
+  if (releaseVersion.changed) {
+    console.log("[release] version files updated: package.json + src/app.constants.ts");
+  }
   if (options.skipBuild) {
     console.log("[release] 跳过构建 (--skip-build)");
   }
@@ -133,7 +252,14 @@ async function main(): Promise<void> {
   }
 
   if (!options.skipPublish) {
-    const publishCmd = ["bun", "run", "scripts/publish-clawos.ts", `--build-env=${options.env}`, ...options.publishArgs];
+    const publishCmd = [
+      "bun",
+      "run",
+      "scripts/publish-clawos.ts",
+      `--build-env=${options.env}`,
+      `--version=${releaseVersion.version}`,
+      ...options.publishArgs,
+    ];
     await runStep("发布安装包、配置和更新产物", publishCmd);
   }
 
