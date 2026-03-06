@@ -46,6 +46,11 @@ export type OpenclawConfigBackup = {
   size: number;
 };
 
+export type OpenclawConfigBackupListResult = {
+  backups: OpenclawConfigBackup[];
+  command: string;
+};
+
 const qwGatewayStartupStatus: QwGatewayStartupStatus = {
   state: "idle",
   source: null,
@@ -371,16 +376,21 @@ export function parseOpenclawConfigBackupLine(line: string): OpenclawConfigBacku
   };
 }
 
-export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackup[]> {
+export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackupListResult> {
   const configPath = resolveOpenclawConfigPath();
   const result = await runWslScript(buildOpenclawConfigBackupListScript(configPath));
   if (!result.ok) {
-    throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）`);
+    throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）\n命令：${result.command}`);
   }
 
-  return normalizeOutput(result.stdout)
+  const backups = normalizeOutput(result.stdout)
     .map((line) => parseOpenclawConfigBackupLine(line))
     .filter((item): item is OpenclawConfigBackup => Boolean(item));
+
+  return {
+    backups,
+    command: result.command,
+  };
 }
 
 export function buildOpenclawConfigRollbackSteps(backupPath: string): Step[] {
@@ -570,8 +580,8 @@ export async function startOpenclawConfigRollbackTask(
     throw new Error("backupPath 包含非法字符。");
   }
 
-  const backups = await listOpenclawConfigBackups();
-  const targetBackup = backups.find((item) => item.path === normalizedPath);
+  const backupList = await listOpenclawConfigBackups();
+  const targetBackup = backupList.backups.find((item) => item.path === normalizedPath);
   if (!targetBackup) {
     throw new Error(`未找到指定备份：${normalizedPath}`);
   }

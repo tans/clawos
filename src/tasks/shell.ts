@@ -248,7 +248,11 @@ export async function runWslScript(
     shellMode: options.shellMode,
   });
   const commandText = formatProcessCommand(args);
-  if (isTruthyEnv(process.env.CLAWOS_DEBUG_WSL_CMD) || isTruthyEnv(process.env.CLAWOS_DEBUG_PROCESS_CMD)) {
+  if (
+    isTruthyEnv(process.env.CLAWOS_DESKTOP_DEV) ||
+    isTruthyEnv(process.env.CLAWOS_DEBUG_WSL_CMD) ||
+    isTruthyEnv(process.env.CLAWOS_DEBUG_PROCESS_CMD)
+  ) {
     console.log(`[wsl-debug] ${commandText}`);
   }
 

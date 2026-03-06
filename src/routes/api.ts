@@ -562,8 +562,8 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     }
 
     if (path === "/api/gateway/config/backups" && req.method === "GET") {
-      const backups = await listOpenclawConfigBackups();
-      return jsonResponse({ ok: true, backups });
+      const backupList = await listOpenclawConfigBackups();
+      return jsonResponse({ ok: true, backups: backupList.backups, command: backupList.command });
     }
 
     if (path === "/api/gateway/config/rollback" && req.method === "POST") {

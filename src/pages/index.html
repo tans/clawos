@@ -454,6 +454,8 @@
                 taskProgress.classList.add("hidden");
                 taskMeta.textContent = "正在读取配置备份列表...";
                 const data = await api("/api/gateway/config/backups");
+                const command =
+                    typeof data.command === "string" ? data.command.trim() : "";
                 const backups = Array.isArray(data.backups) ? data.backups : [];
                 openclawBackupState.backups = backups.filter(
                     (item) => item && typeof item.path === "string",
@@ -471,10 +473,11 @@
                 if (!selectedBackup) return;
                 taskMeta.textContent = `已加载备份 ${openclawBackupState.backups.length} 个`;
                 taskOutput.textContent = [
+                    command ? `命令: ${command}` : "",
                     `当前选择: ${selectedBackup.fileName}`,
                     `时间: ${formatBackupTime(selectedBackup.modifiedAt)}`,
                     `大小: ${formatBackupSize(selectedBackup.size)}`,
-                ].join("\n");
+                ].filter(Boolean).join("\n");
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
 
