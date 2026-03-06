@@ -12,6 +12,10 @@ import {
 export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "browser", "gateway", "models"]);
 const FILE_BACKED_CONFIG_SECTIONS = new Set(["channels", "agents", "models"]);
 const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
+const CHANNEL_PLUGIN_PATHS: Record<"wework" | "feishu", string> = {
+  wework: "/data/openclaw/extensions/wework",
+  feishu: "/data/openclaw/extensions/feishu",
+};
 
 export function configTemplate(): Record<string, unknown> {
   return {
@@ -78,6 +82,75 @@ function restoreRedactedValues(previous: unknown, next: unknown): unknown {
   }
 
   return next;
+}
+
+function readChannelEnabled(entry: unknown): boolean {
+  const channel = asObject(entry);
+  if (!channel) {
+    return false;
+  }
+  if (typeof channel.enabled === "boolean") {
+    return channel.enabled;
+  }
+  if (typeof channel.enable === "boolean") {
+    return channel.enable;
+  }
+  return false;
+}
+
+function readPluginPaths(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item.trim()) {
+      out.push(item.trim());
+    }
+  }
+  return out;
+}
+
+function ensurePluginEntryEnabled(entries: Record<string, unknown>, key: "wework" | "feishu"): void {
+  const existing = asObject(entries[key]) || {};
+  entries[key] = {
+    ...existing,
+    enabled: true,
+  };
+}
+
+export function ensureChannelPluginsForEnabledChannels(config: Record<string, unknown>): void {
+  const channels = asObject(config.channels) || {};
+  const needsWeworkPlugin = readChannelEnabled(channels.wework);
+  const needsFeishuPlugin = readChannelEnabled(channels.feishu);
+  const needsChannelPlugins = needsWeworkPlugin || needsFeishuPlugin;
+  if (!needsChannelPlugins) {
+    return;
+  }
+
+  const existingPlugins = asObject(config.plugins) || {};
+  const plugins: Record<string, unknown> = { ...existingPlugins };
+
+  const existingLoad = asObject(existingPlugins.load) || {};
+  const load: Record<string, unknown> = { ...existingLoad };
+  const paths = readPluginPaths(existingLoad.paths);
+
+  if (!paths.includes(CHANNEL_PLUGIN_PATHS.wework)) {
+    paths.push(CHANNEL_PLUGIN_PATHS.wework);
+  }
+  if (!paths.includes(CHANNEL_PLUGIN_PATHS.feishu)) {
+    paths.push(CHANNEL_PLUGIN_PATHS.feishu);
+  }
+  load.paths = paths;
+  plugins.load = load;
+
+  const existingEntries = asObject(existingPlugins.entries) || {};
+  const entries: Record<string, unknown> = { ...existingEntries };
+  ensurePluginEntryEnabled(entries, "wework");
+  ensurePluginEntryEnabled(entries, "feishu");
+  plugins.entries = entries;
+
+  config.plugins = plugins;
 }
 
 function resolveConfigSnapshotHash(snapshot: GatewayConfigSnapshot): string {
@@ -167,6 +240,9 @@ export async function saveOpenclawConfigSection(
   if (shouldUseFileBackedSection(section)) {
     const config = await readOpenclawConfigFromWsl();
     config[section] = data;
+    if (section === "channels") {
+      ensureChannelPluginsForEnabledChannels(config);
+    }
     const fileWrite = await writeOpenclawConfigToWsl(config);
     return {
       mode: "file-overwrite",
