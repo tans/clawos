@@ -4,6 +4,11 @@ import { readLocalClawosConfig } from "../config/local";
 const IS_WINDOWS = process.platform === "win32";
 let cachedAutoDetectedWslDistro: string | null | undefined;
 
+function isTruthyEnv(value: string | undefined): boolean {
+  const normalized = String(value || "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
+}
+
 export type CommandResult = {
   ok: boolean;
   code: number;
@@ -242,6 +247,10 @@ export async function runWslScript(
     loginShell: options.loginShell,
     shellMode: options.shellMode,
   });
+  const commandText = formatProcessCommand(args);
+  if (isTruthyEnv(process.env.CLAWOS_DEBUG_WSL_CMD) || isTruthyEnv(process.env.CLAWOS_DEBUG_PROCESS_CMD)) {
+    console.log(`[wsl-debug] ${commandText}`);
+  }
 
   try {
     return await runProcess(args);
@@ -252,7 +261,7 @@ export async function runWslScript(
       code: -1,
       stdout: "",
       stderr: message,
-      command: formatProcessCommand(args),
+      command: commandText,
     };
   }
 }
