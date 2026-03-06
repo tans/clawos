@@ -8,6 +8,7 @@ import { detectAndPersistOpenclawExecutionEnvironment } from "../system/openclaw
 import shellHtml from "../desktop-ui/shell.html" with { type: "text" };
 
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
+const SHELL_VIEW_URL = "views://clawos/shell.html";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
 );
@@ -16,6 +17,19 @@ const SHOULD_OPEN_DEVTOOLS = ["1", "true", "yes", "on"].includes(
 );
 
 let desktopWindow: BrowserWindow | null = null;
+
+function resolveUseInlineShellHtml(): boolean {
+  const raw = (process.env.CLAWOS_DESKTOP_INLINE_HTML || "").trim().toLowerCase();
+  if (raw) {
+    return ["1", "true", "yes", "on"].includes(raw);
+  }
+
+  if (IS_DESKTOP_DEV) {
+    return false;
+  }
+
+  return process.platform === "win32";
+}
 
 function focusDesktopWindow(): void {
   if (!desktopWindow) {
@@ -155,7 +169,8 @@ function createDesktopRpc() {
 
 async function main(): Promise<void> {
   const controlPort = computeDesktopControlPort();
-  console.log("[desktop] booting ClawOS shell (inline html)");
+  const useInlineShellHtml = resolveUseInlineShellHtml();
+  console.log(`[desktop] booting ClawOS shell (${useInlineShellHtml ? "inline html" : "views url"})`);
   console.log(`[desktop] single-instance control at ${SINGLE_INSTANCE_HOST}:${controlPort}`);
   if (IS_DESKTOP_DEV) {
     console.log("[desktop] dev mode enabled");
@@ -184,11 +199,12 @@ async function main(): Promise<void> {
   });
 
   try {
+    const windowContent = useInlineShellHtml ? { html: shellHtml } : { url: SHELL_VIEW_URL };
     desktopWindow = new BrowserWindow({
       title: "ClawOS",
       frame: { x: 120, y: 80, width: 1360, height: 900 },
-      html: shellHtml,
       rpc: createDesktopRpc(),
+      ...windowContent,
     });
 
     if (IS_DESKTOP_DEV && SHOULD_OPEN_DEVTOOLS) {

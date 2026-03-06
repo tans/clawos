@@ -20,6 +20,7 @@ const rpc = Electroview.defineRPC<DesktopRpcSchema>({
 new Electroview({ rpc });
 
 const nativeFetch = window.fetch.bind(window);
+let runtimeErrorRendered = false;
 
 function normalizePagePath(rawPath: string): string {
   const raw = String(rawPath || "").trim();
@@ -71,6 +72,10 @@ function escapeHtml(value: string): string {
 }
 
 function renderDesktopError(message: string): void {
+  if (runtimeErrorRendered) {
+    return;
+  }
+  runtimeErrorRendered = true;
   document.open();
   document.write(`
 <!doctype html>
@@ -120,6 +125,26 @@ function renderDesktopError(message: string): void {
   document.close();
 }
 
+function formatRuntimeError(error: unknown): string {
+  if (error instanceof Error) {
+    const message = error.stack?.trim() || error.message.trim();
+    return message || "未知异常";
+  }
+  const text = String(error || "").trim();
+  return text || "未知异常";
+}
+
+function installGlobalErrorHandlers(): void {
+  window.addEventListener("error", (event) => {
+    const reason = event.error || event.message || "页面脚本异常";
+    renderDesktopError(`页面脚本异常：${formatRuntimeError(reason)}`);
+  });
+
+  window.addEventListener("unhandledrejection", (event) => {
+    renderDesktopError(`未处理的异步异常：${formatRuntimeError(event.reason)}`);
+  });
+}
+
 async function navigateToRoute(route: string): Promise<void> {
   const normalizedRoute = normalizePagePath(route);
 
@@ -127,6 +152,10 @@ async function navigateToRoute(route: string): Promise<void> {
     const page = await rpc.request.renderPage({ path: normalizedRoute });
     if (page.status >= 400) {
       renderDesktopError(`页面返回异常状态码: ${page.status}`);
+      return;
+    }
+    if (typeof page.html !== "string" || !page.html.trim()) {
+      renderDesktopError("页面内容为空，无法渲染。");
       return;
     }
 
@@ -233,6 +262,7 @@ function installFetchShim(): void {
 }
 
 function startDesktopBridge(): void {
+  installGlobalErrorHandlers();
   installFetchShim();
   installNavigationInterceptor();
 
@@ -244,4 +274,8 @@ function startDesktopBridge(): void {
   void navigateToRoute(readRouteFromHash());
 }
 
-startDesktopBridge();
+try {
+  startDesktopBridge();
+} catch (error) {
+  renderDesktopError(`桌面桥接启动失败：${formatRuntimeError(error)}`);
+}
