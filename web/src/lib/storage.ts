@@ -1,4 +1,4 @@
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import { getEnv } from "./env";
@@ -8,6 +8,8 @@ import type { InstallerPlatform, LatestRelease, ReleaseAsset } from "./types";
 const RELEASE_FILE_NAME = "latest.json";
 const CONFIG_CANONICAL_NAME = "clawos_xiake.json";
 const INSTALLER_PLATFORMS: InstallerPlatform[] = ["windows", "macos", "linux"];
+const UPDATER_ASSET_MAX_ENTRIES = 240;
+const UPDATER_FILE_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -35,6 +37,7 @@ function createEmptyRelease(): LatestRelease {
     installer: null,
     installers: {},
     xiakeConfig: null,
+    updaterAssets: [],
   };
 }
 
@@ -55,7 +58,16 @@ function getConfigDir(): string {
   return resolve(env.storageDir, "assets", "config");
 }
 
-function relativeAssetPath(kind: "installer" | "config", fileName: string, platform?: InstallerPlatform): string {
+function getUpdaterDir(): string {
+  const env = getEnv();
+  return resolve(env.storageDir, "assets", "updater");
+}
+
+function relativeAssetPath(
+  kind: "installer" | "config" | "updater",
+  fileName: string,
+  platform?: InstallerPlatform
+): string {
   if (kind === "installer" && platform) {
     return join("assets", kind, platform, fileName);
   }
@@ -71,6 +83,7 @@ async function ensureStorageDirs(): Promise<void> {
   await mkdir(resolve(getEnv().storageDir, "releases"), { recursive: true });
   await mkdir(getInstallerDir(), { recursive: true });
   await mkdir(getConfigDir(), { recursive: true });
+  await mkdir(getUpdaterDir(), { recursive: true });
   await Promise.all(INSTALLER_PLATFORMS.map((platform) => mkdir(getInstallerDir(platform), { recursive: true })));
 }
 
@@ -165,6 +178,12 @@ function normalizeRelease(raw: unknown): LatestRelease {
     installer: normalizeAsset(data.installer),
     installers,
     xiakeConfig: normalizeAsset(data.xiakeConfig),
+    updaterAssets: Array.isArray(data.updaterAssets)
+      ? data.updaterAssets
+          .map((item) => normalizeAsset(item))
+          .filter((item): item is ReleaseAsset => Boolean(item))
+          .slice(0, UPDATER_ASSET_MAX_ENTRIES)
+      : [],
   };
 }
 
@@ -210,6 +229,20 @@ function assertConfigFile(fileName: string): void {
   if (ext !== ".json") {
     throw new Error("配置文件必须是 .json");
   }
+}
+
+function assertUpdaterFileName(fileName: string): string {
+  const trimmed = fileName.trim();
+  if (!trimmed) {
+    throw new Error("更新产物文件名不能为空");
+  }
+  if (trimmed.includes("/") || trimmed.includes("\\")) {
+    throw new Error("更新产物文件名不允许包含路径分隔符");
+  }
+  if (!UPDATER_FILE_NAME_PATTERN.test(trimmed)) {
+    throw new Error("更新产物文件名包含非法字符，仅允许字母、数字、点、下划线和中划线");
+  }
+  return trimmed;
 }
 
 function assertFileSize(size: number, maxBytes: number, label: string): void {
@@ -298,10 +331,101 @@ export async function storeXiakeConfig(params: {
   return { release: latest, asset };
 }
 
+export async function storeUpdaterArtifact(params: {
+  fileName: string;
+  bytes: Uint8Array;
+}): Promise<{ release: LatestRelease; asset: ReleaseAsset }> {
+  const env = getEnv();
+  await ensureStorageDirs();
+
+  const safeName = assertUpdaterFileName(params.fileName);
+  assertFileSize(params.bytes.byteLength, env.maxInstallerSizeBytes, "更新产物");
+
+  const outputPath = resolve(getUpdaterDir(), safeName);
+  await writeFile(outputPath, params.bytes);
+
+  const asset: ReleaseAsset = {
+    name: safeName,
+    relativePath: relativeAssetPath("updater", safeName),
+    size: params.bytes.byteLength,
+    sha256: sha256Hex(params.bytes),
+    uploadedAt: nowIso(),
+  };
+
+  const latest = (await readLatestRelease()) ?? createEmptyRelease();
+  const merged = [...(latest.updaterAssets || []).filter((item) => item.name !== safeName), asset]
+    .sort((a, b) => (a.name === b.name ? 0 : a.name < b.name ? -1 : 1))
+    .slice(-UPDATER_ASSET_MAX_ENTRIES);
+  latest.updaterAssets = merged;
+  latest.publishedAt = nowIso();
+  await writeLatestRelease(latest);
+
+  return { release: latest, asset };
+}
+
 export interface ResolvedDownload {
   release: LatestRelease;
   asset: ReleaseAsset;
   absolutePath: string;
+}
+
+export async function listUpdaterAssets(prefix?: string): Promise<ReleaseAsset[]> {
+  await ensureStorageDirs();
+  const dir = getUpdaterDir();
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  const normalizedPrefix = typeof prefix === "string" ? prefix.trim() : "";
+  const results: ReleaseAsset[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile()) {
+      continue;
+    }
+    const fileName = entry.name;
+    if (normalizedPrefix && !fileName.startsWith(normalizedPrefix)) {
+      continue;
+    }
+    if (!UPDATER_FILE_NAME_PATTERN.test(fileName)) {
+      continue;
+    }
+
+    const absolutePath = resolve(dir, fileName);
+    const fileStat = await stat(absolutePath).catch(() => null);
+    if (!fileStat || !fileStat.isFile() || fileStat.size <= 0) {
+      continue;
+    }
+
+    results.push({
+      name: fileName,
+      relativePath: relativeAssetPath("updater", fileName),
+      size: fileStat.size,
+      sha256: "",
+      uploadedAt: fileStat.mtime.toISOString(),
+    });
+  }
+
+  return results.sort((a, b) => (a.name === b.name ? 0 : a.name < b.name ? -1 : 1));
+}
+
+export async function resolveUpdaterArtifact(fileName: string): Promise<{
+  asset: ReleaseAsset;
+  absolutePath: string;
+}> {
+  await ensureStorageDirs();
+  const safeName = assertUpdaterFileName(fileName);
+  const absolutePath = resolve(getUpdaterDir(), safeName);
+  await ensureReadable(absolutePath);
+
+  const fileStat = await stat(absolutePath);
+  return {
+    asset: {
+      name: safeName,
+      relativePath: relativeAssetPath("updater", safeName),
+      size: fileStat.size,
+      sha256: "",
+      uploadedAt: fileStat.mtime.toISOString(),
+    },
+    absolutePath,
+  };
 }
 
 export async function resolveLatestInstaller(platform?: InstallerPlatform): Promise<ResolvedDownload> {

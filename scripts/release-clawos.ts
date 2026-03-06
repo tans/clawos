@@ -134,7 +134,7 @@ async function main(): Promise<void> {
 
   if (!options.skipPublish) {
     const publishCmd = ["bun", "run", "scripts/publish-clawos.ts", `--build-env=${options.env}`, ...options.publishArgs];
-    await runStep("发布安装包和配置", publishCmd);
+    await runStep("发布安装包、配置和更新产物", publishCmd);
   }
 
   console.log("[release] 完成。");

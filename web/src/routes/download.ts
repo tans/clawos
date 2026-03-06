@@ -1,10 +1,29 @@
 import { Hono } from "hono";
-import { normalizeInstallerPlatform, resolveLatestInstaller, resolveLatestXiakeConfig } from "../lib/storage";
+import {
+  normalizeInstallerPlatform,
+  resolveLatestInstaller,
+  resolveLatestXiakeConfig,
+  resolveUpdaterArtifact,
+} from "../lib/storage";
 
 export const downloadRoutes = new Hono();
 
 function contentDisposition(fileName: string): string {
   return `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
+}
+
+function resolveUpdaterContentType(fileName: string): string {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".json")) {
+    return "application/json; charset=utf-8";
+  }
+  if (lower.endsWith(".patch")) {
+    return "application/octet-stream";
+  }
+  if (lower.endsWith(".zst")) {
+    return "application/zstd";
+  }
+  return "application/octet-stream";
 }
 
 downloadRoutes.get("/downloads/latest", async (c) => {
@@ -51,6 +70,21 @@ downloadRoutes.get("/downloads/clawos_xiake.json", async (c) => {
         "content-type": "application/json; charset=utf-8",
         "content-disposition": contentDisposition("clawos_xiake.json"),
         "x-file-sha256": asset.sha256,
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
+downloadRoutes.get("/updates/:fileName", async (c) => {
+  try {
+    const fileName = c.req.param("fileName");
+    const { absolutePath, asset } = await resolveUpdaterArtifact(fileName);
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": resolveUpdaterContentType(asset.name),
+        "cache-control": "public, max-age=60",
       },
     });
   } catch (error) {

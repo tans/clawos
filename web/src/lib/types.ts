@@ -14,4 +14,5 @@ export interface LatestRelease {
   installer: ReleaseAsset | null;
   installers?: Partial<Record<InstallerPlatform, ReleaseAsset>>;
   xiakeConfig: ReleaseAsset | null;
+  updaterAssets?: ReleaseAsset[];
 }

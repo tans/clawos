@@ -10,7 +10,7 @@
 
 1. 介绍 `clawos` 产品能力和使用场景。
 2. 提供 `clawos_xiake.json` 下载。
-3. 提供最新安装包下载（Windows 可执行文件）。
+3. 提供最新安装包下载（Electrobun Setup.zip/Setup.exe）。
 4. 提供上传接口，支持脚本直接上传安装包和 `clawos_xiake.json`。
 
 ## 功能范围
@@ -20,7 +20,7 @@
 - 首页：介绍 `clawos`、核心能力、Windows + WSL 使用定位。
 - 下载页：
   - `clawos_xiake.json` 下载入口
-  - 最新安装包下载入口（如 `clawos-setup-latest.exe`）
+  - 最新安装包下载入口（如 `stable-win-x64-ClawOS-Setup.zip`）
 - 可选：版本信息展示（版本号、发布时间、更新说明）。
 
 ### 2) 下载接口
@@ -39,7 +39,7 @@
   "version": "0.1.0",
   "publishedAt": "2026-02-22T08:00:00Z",
   "installer": {
-    "name": "clawos-setup-0.1.0.exe",
+    "name": "stable-win-x64-ClawOS-Setup.zip",
     "size": 12345678,
     "sha256": "..."
   },
@@ -75,7 +75,7 @@
 ```json
 {
   "ok": true,
-  "fileName": "clawos-setup-0.1.0.exe",
+  "fileName": "stable-win-x64-ClawOS-Setup.zip",
   "size": 12345678,
   "sha256": "...",
   "url": "/downloads/latest"
@@ -121,7 +121,7 @@ web/
 ```bash
 curl -X POST "https://clawos.minapp.xin/api/upload/installer" \
   -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
-  -F "file=@./dist/clawos.exe"
+  -F "file=@./artifacts/stable-win-x64-ClawOS-Setup.zip"
 ```
 
 上传 `clawos_xiake.json`：
@@ -153,7 +153,7 @@ bun run pm2:start
 - 上传接口必须开启鉴权，且只用于内部发布流程。
 - 不允许目录穿越，保存文件时使用服务端生成的安全路径。
 - 建议上传后生成并落盘 sha256，下载页展示摘要值，便于用户校验。
-- 建议保留版本化文件（如 `clawos-setup-0.1.0.exe`），`latest` 仅做软指针。
+- 建议保留版本化文件（如 `stable-win-x64-ClawOS-Setup.zip`），`latest` 仅做软指针。
 
 ## 里程碑建议
 

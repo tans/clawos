@@ -16,10 +16,12 @@ interface Options {
   baseUrl: string;
   token: string;
   installerPath?: string;
+  updaterDir?: string;
   configPath: string;
   version?: string;
   skipInstaller: boolean;
   skipConfig: boolean;
+  skipUpdater: boolean;
   timeoutMs: number;
   heartbeatMs: number;
   buildEnv: BuildEnv;
@@ -50,7 +52,7 @@ function parseBuildEnv(raw: string | undefined): BuildEnv {
 
 function defaultInstallerFileName(platform: PublishPlatform): string {
   if (platform === "windows") {
-    return "clawos.exe";
+    return "clawos-setup.zip";
   }
   if (platform === "macos") {
     return "clawos.dmg";
@@ -85,12 +87,14 @@ function printUsage(): void {
 选项:
   --installer <path>    安装包路径（可选，未传则自动探测）
   --build-env <env>     构建环境 dev/canary/stable，默认 stable
+  --updater-dir <path>  Electrobun 更新产物目录（可选，默认自动探测）
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
   --config <path>       配置文件路径，默认 ./clawos_xiake.json
   --version <version>   安装包版本（可选）
   --skip-installer      跳过安装包上传
   --skip-config         跳过配置文件上传
+  --skip-updater        跳过 Electrobun 更新产物上传
   --timeout-ms <ms>     单次上传超时，默认 600000（10 分钟）
   --heartbeat-ms <ms>   上传心跳日志间隔，默认 15000（15 秒）
   -h, --help            显示帮助
@@ -107,6 +111,7 @@ function printUsage(): void {
   CLAWOS_CONFIG_PATH
   CLAWOS_VERSION
   CLAWOS_BUILD_ENV
+  CLAWOS_UPDATER_DIR
 `);
 }
 
@@ -128,10 +133,14 @@ function parseArgs(argv: string[]): Options {
     baseUrl: process.env.CLAWOS_PUBLISH_BASE_URL?.trim().replace(/\/+$/, "") || "https://clawos.minapp.xin",
     token: process.env.CLAWOS_UPLOAD_TOKEN?.trim() || process.env.UPLOAD_TOKEN?.trim() || "clawos",
     installerPath: installerFromEnv ? resolve(process.cwd(), installerFromEnv) : undefined,
+    updaterDir: process.env.CLAWOS_UPDATER_DIR?.trim()
+      ? resolve(process.cwd(), process.env.CLAWOS_UPDATER_DIR.trim())
+      : undefined,
     configPath: resolvePathFromEnv(process.env.CLAWOS_CONFIG_PATH, resolve(process.cwd(), "clawos_xiake.json")),
     version: process.env.CLAWOS_VERSION?.trim() || undefined,
     skipInstaller: false,
     skipConfig: false,
+    skipUpdater: ["1", "true", "yes", "on"].includes((process.env.CLAWOS_SKIP_UPDATER || "").trim().toLowerCase()),
     timeoutMs: Number.parseInt(process.env.UPLOAD_TIMEOUT_MS || "", 10) || 10 * 60 * 1000,
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
     buildEnv: parseBuildEnv(process.env.CLAWOS_BUILD_ENV),
@@ -158,6 +167,11 @@ function parseArgs(argv: string[]): Options {
       continue;
     }
 
+    if (arg === "--skip-updater") {
+      opts.skipUpdater = true;
+      continue;
+    }
+
     if (arg === "--installer-platform" || arg === "--installer-win" || arg === "--installer-macos" || arg === "--installer-linux") {
       throw new Error(`参数已废弃: ${arg}。发布平台会根据当前运行环境自动决定。`);
     }
@@ -176,6 +190,10 @@ function parseArgs(argv: string[]): Options {
     }
     if (arg.startsWith("--config=")) {
       opts.configPath = resolve(process.cwd(), arg.slice("--config=".length));
+      continue;
+    }
+    if (arg.startsWith("--updater-dir=")) {
+      opts.updaterDir = resolve(process.cwd(), arg.slice("--updater-dir=".length));
       continue;
     }
     if (arg.startsWith("--version=")) {
@@ -213,6 +231,9 @@ function parseArgs(argv: string[]): Options {
       case "--config":
         opts.configPath = resolve(process.cwd(), value);
         break;
+      case "--updater-dir":
+        opts.updaterDir = resolve(process.cwd(), value);
+        break;
       case "--version":
         opts.version = value.trim();
         break;
@@ -233,8 +254,8 @@ function parseArgs(argv: string[]): Options {
   if (!opts.token) {
     throw new Error("UPLOAD_TOKEN 为空，请通过 --token 或环境变量设置。");
   }
-  if (opts.skipInstaller && opts.skipConfig) {
-    throw new Error("不能同时跳过 installer 和 config。");
+  if (opts.skipInstaller && opts.skipConfig && opts.skipUpdater) {
+    throw new Error("不能同时跳过 installer、config 和 updater。");
   }
   if (!Number.isFinite(opts.timeoutMs) || opts.timeoutMs <= 0) {
     throw new Error(`--timeout-ms 非法: ${opts.timeoutMs}`);
@@ -250,6 +271,80 @@ function detectVersionFromInstallerPath(filePath: string): string | null {
   const name = basename(filePath);
   const match = name.match(VERSION_PATTERN);
   return match?.[1] ?? null;
+}
+
+const UPDATER_ALLOWED_SUFFIXES = [
+  ".update.json",
+  "-update.json",
+  ".metadata.json",
+  ".tar.zst",
+  ".patch",
+  ".zip",
+  ".exe",
+  ".msi",
+  ".dmg",
+  ".pkg",
+  ".appimage",
+  ".deb",
+  ".rpm",
+  ".tar.gz",
+  ".tar",
+  ".json",
+];
+
+function looksLikeUpdaterArtifact(fileName: string, prefix: string): boolean {
+  const lower = fileName.toLowerCase();
+  if (!lower.startsWith(prefix)) {
+    return false;
+  }
+  return UPDATER_ALLOWED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
+}
+
+async function detectUpdaterArtifacts(
+  platform: PublishPlatform,
+  buildEnv: BuildEnv,
+  updaterDir?: string
+): Promise<string[]> {
+  const prefix = `${buildEnv}-${PLATFORM_TOKEN[platform]}-`;
+  const roots = updaterDir
+    ? [resolve(process.cwd(), updaterDir)]
+    : [resolve(process.cwd(), "artifacts"), resolve(process.cwd(), "build"), resolve(process.cwd(), "dist")];
+
+  const byName = new Map<string, { path: string; mtimeMs: number }>();
+
+  for (const root of roots) {
+    const files = await collectFilesRecursively(root, 5);
+    for (const filePath of files) {
+      const name = basename(filePath);
+      if (!looksLikeUpdaterArtifact(name, prefix)) {
+        continue;
+      }
+
+      let mtimeMs = 0;
+      try {
+        const info = await stat(filePath);
+        mtimeMs = info.mtimeMs;
+      } catch {
+        // ignore stat failures
+      }
+
+      const existing = byName.get(name);
+      if (!existing || existing.mtimeMs < mtimeMs) {
+        byName.set(name, { path: filePath, mtimeMs });
+      }
+    }
+  }
+
+  const artifacts = Array.from(byName.values())
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+    .map((item) => item.path);
+
+  const hasUpdateJson = artifacts.some((filePath) => basename(filePath).toLowerCase().endsWith("-update.json"));
+  if (!hasUpdateJson) {
+    return [];
+  }
+
+  return artifacts;
 }
 
 async function detectVersionFromPackageJson(): Promise<string | undefined> {
@@ -331,11 +426,14 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
   }
 
   if (platform === "windows") {
-    if (name.endsWith(".zip")) {
+    if (name.endsWith(".zip") && name.includes("setup")) {
       score += 80;
     }
+    if (name.endsWith(".exe") && name.includes("setup")) {
+      score += 30;
+    }
     if (name.endsWith(".exe") && !name.includes("setup")) {
-      score += 20;
+      score -= 120;
     }
   }
 
@@ -354,6 +452,9 @@ async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv
       const name = basename(filePath);
       const lowerName = name.toLowerCase();
       if (!matchesAllowedExt(name, allowed)) {
+        continue;
+      }
+      if (platform === "windows" && lowerName.endsWith(".exe") && !lowerName.includes("setup")) {
         continue;
       }
       if (
@@ -598,6 +699,7 @@ async function main(): Promise<void> {
 
   let installerPath = "";
   let installerSource = "";
+  let updaterArtifacts: string[] = [];
 
   if (!opts.skipInstaller) {
     const resolved = await resolveInstallerPathForPublish(hostPlatform, opts.buildEnv, opts.installerPath);
@@ -614,6 +716,17 @@ async function main(): Promise<void> {
     opts.version = await resolvePublishVersion(opts, installerPath);
   }
 
+  if (!opts.skipUpdater) {
+    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir);
+    if (updaterArtifacts.length === 0) {
+      throw new Error(
+        `未找到 Electrobun 更新产物（前缀: ${opts.buildEnv}-${PLATFORM_TOKEN[hostPlatform]}-）。` +
+          `\n请确认已执行 Electrobun build，并检查 artifacts 目录。` +
+          `\n也可通过 --updater-dir <path> 指定目录，或使用 --skip-updater 跳过。`
+      );
+    }
+  }
+
   console.log(`[publish] host platform: ${hostPlatform}`);
   console.log(`[publish] build env: ${opts.buildEnv}`);
   console.log(`[publish] base url: ${opts.baseUrl}`);
@@ -623,12 +736,18 @@ async function main(): Promise<void> {
   if (opts.version) {
     console.log(`[publish] version: ${opts.version}`);
   }
+  if (opts.updaterDir) {
+    console.log(`[publish] updater dir: ${opts.updaterDir}`);
+  }
   if (installerPath) {
     console.log(`[publish] installer path: ${installerPath}`);
     console.log(`[publish] installer source: ${installerSource}`);
   }
+  if (!opts.skipUpdater) {
+    console.log(`[publish] updater artifacts: ${updaterArtifacts.length} files`);
+  }
 
-  const uploadedSummaries: Array<{ kind: "installer" | "config"; fileName: string; url: string }> = [];
+  const uploadedSummaries: Array<{ kind: "installer" | "config" | "updater"; fileName: string; url: string }> = [];
 
   if (!opts.skipInstaller) {
     await assertFileReadable(installerPath, `${hostPlatform} 安装包`);
@@ -670,6 +789,26 @@ async function main(): Promise<void> {
       fileName: String(result.fileName || "unknown"),
       url: String(result.url || ""),
     });
+  }
+
+  if (!opts.skipUpdater) {
+    for (const filePath of updaterArtifacts) {
+      await assertFileReadable(filePath, "Electrobun 更新产物");
+      console.log(`[publish] 上传更新产物: ${filePath}`);
+      const result = await uploadFile({
+        endpoint: "/api/upload/electrobun-artifact",
+        filePath,
+        token: opts.token,
+        baseUrl: opts.baseUrl,
+        timeoutMs: opts.timeoutMs,
+        heartbeatMs: opts.heartbeatMs,
+      });
+      uploadedSummaries.push({
+        kind: "updater",
+        fileName: String(result.fileName || basename(filePath)),
+        url: String(result.url || ""),
+      });
+    }
   }
 
   if (uploadedSummaries.length > 0) {

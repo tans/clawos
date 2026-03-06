@@ -12,6 +12,7 @@ releaseRoutes.get("/api/releases/latest", async (c) => {
   const links: Record<string, unknown> = {
     installerLatest: "/downloads/latest",
     xiakeConfig: "/downloads/clawos_xiake.json",
+    updaterBaseUrl: "/updates",
   };
   const installers: Record<string, string> = {};
   if (latest.installers?.windows) {
@@ -28,6 +29,10 @@ releaseRoutes.get("/api/releases/latest", async (c) => {
   }
   if (Object.keys(installers).length > 0) {
     links.installers = installers;
+  }
+
+  if (Array.isArray(latest.updaterAssets) && latest.updaterAssets.length > 0) {
+    links.updaterAssets = latest.updaterAssets.map((asset) => `/updates/${encodeURIComponent(asset.name)}`);
   }
 
   return c.json({

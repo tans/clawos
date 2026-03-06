@@ -28,7 +28,7 @@ function InstallGuidePage() {
             <h2 class="text-xl font-semibold">安装使用</h2>
             <ul class="mt-4 list-disc space-y-2 pl-5 text-base-content/85">
               <li>Windows 推荐统一使用安装脚本：<code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">install-or-update-clawos.bat</code>。</li>
-              <li>安装脚本会自动识别安装包类型（单 exe / Electrobun Setup.zip）并完成安装或更新。</li>
+              <li>安装脚本会自动识别 Electrobun 安装包（Setup.zip / Setup.exe）并完成安装或更新。</li>
               <li>Windows 首次运行若有安全提示，可点击“更多信息”后选择“仍要运行”。</li>
               <li>
                 可选：建议放入常用目录，例如 <code class="rounded bg-base-200 px-1.5 py-0.5 text-sm">{"c:\\xiake"}</code> 或{" "}

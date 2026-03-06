@@ -41,6 +41,23 @@ function resolveWindowsIconPath(): string | null {
 
 const resolvedWindowsIconPath = resolveWindowsIconPath();
 
+function resolveReleaseBaseUrl(): string {
+  const fromEnv =
+    process.env.CLAWOS_RELEASE_BASE_URL?.trim() || process.env.CLAWOS_UPDATER_BASE_URL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/+$/, "");
+  }
+
+  const publishBase = process.env.CLAWOS_PUBLISH_BASE_URL?.trim().replace(/\/+$/, "");
+  if (publishBase) {
+    return `${publishBase}/updates`;
+  }
+
+  return "https://clawos.minapp.xin/updates";
+}
+
+const releaseBaseUrl = resolveReleaseBaseUrl();
+
 const config: ElectrobunConfig = {
   app: {
     name: "ClawOS",
@@ -79,6 +96,9 @@ const config: ElectrobunConfig = {
   },
   runtime: {
     exitOnLastWindowClosed: true,
+  },
+  release: {
+    baseUrl: releaseBaseUrl,
   },
 };
 

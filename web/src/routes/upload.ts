@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import { requireUploadAuth } from "../lib/auth";
-import { normalizeInstallerPlatform, storeInstaller, storeXiakeConfig } from "../lib/storage";
+import { normalizeInstallerPlatform, storeInstaller, storeUpdaterArtifact, storeXiakeConfig } from "../lib/storage";
 import type { InstallerPlatform } from "../lib/types";
 
 export const uploadRoutes = new Hono();
@@ -64,7 +64,7 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
 
 uploadRoutes.post("/api/upload/installer", async (c) => {
   try {
-    const upload = await parseUploadRequest(c, "clawos.exe");
+    const upload = await parseUploadRequest(c, "clawos-setup.zip");
     const result = await storeInstaller(upload);
 
     return c.json({
@@ -93,6 +93,27 @@ uploadRoutes.post("/api/upload/xiake-config", async (c) => {
       sha256: result.asset.sha256,
       version: result.release.version,
       url: "/downloads/clawos_xiake.json",
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+uploadRoutes.post("/api/upload/electrobun-artifact", async (c) => {
+  try {
+    const upload = await parseUploadRequest(c, "artifact.bin");
+    const result = await storeUpdaterArtifact({
+      fileName: upload.fileName,
+      bytes: upload.bytes,
+    });
+
+    return c.json({
+      ok: true,
+      fileName: result.asset.name,
+      size: result.asset.size,
+      sha256: result.asset.sha256,
+      version: result.release.version || null,
+      url: `/updates/${encodeURIComponent(result.asset.name)}`,
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);

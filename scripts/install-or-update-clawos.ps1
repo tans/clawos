@@ -1,11 +1,6 @@
 [CmdletBinding()]
 param(
-  [Parameter(Position = 0)]
-  [string]$TargetDir,
-
   [string]$DownloadUrl = "https://clawos.minapp.xin/downloads/latest",
-
-  [switch]$KeepBackup,
 
   [string]$AppIdentifier = "cc.clawos.desktop",
 
@@ -18,32 +13,6 @@ Set-StrictMode -Version 2
 function Write-Step {
   param([string]$Message)
   Write-Host $Message -ForegroundColor Cyan
-}
-
-function Resolve-DefaultTargetDir {
-  $xiakeCn = [string][char]0x867E + [char]0x58F3
-  $defaultDir = "C:\$xiakeCn"
-  $fallbackDir = "C:\xiake"
-
-  if (Test-Path -LiteralPath $defaultDir) {
-    return $defaultDir
-  }
-
-  if (Test-Path -LiteralPath $fallbackDir) {
-    return $fallbackDir
-  }
-
-  return $defaultDir
-}
-
-function Resolve-TargetDir {
-  param([string]$RawTargetDir)
-
-  if ($RawTargetDir -and $RawTargetDir.Trim().Length -gt 0) {
-    return $RawTargetDir.Trim()
-  }
-
-  return Resolve-DefaultTargetDir
 }
 
 function Enable-Tls12 {
@@ -128,7 +97,7 @@ function Detect-PayloadType {
     if ($lower.Contains("setup")) {
       return "setup-exe"
     }
-    return "portable-exe"
+    return "unknown"
   }
 
   try {
@@ -140,7 +109,7 @@ function Detect-PayloadType {
       if ($lower.Contains("setup")) {
         return "setup-exe"
       }
-      return "portable-exe"
+      return "unknown"
     }
   } catch {
     # ignore magic check failure
@@ -199,21 +168,6 @@ function Download-Payload {
     Path = $finalPath
     Name = $safeName
     Size = $size
-  }
-}
-
-function Stop-ExistingClawos {
-  param([string]$ExePath)
-
-  $procName = [System.IO.Path]::GetFileNameWithoutExtension($ExePath)
-  if (-not $procName) {
-    $procName = "clawos"
-  }
-
-  $procs = Get-Process -Name $procName -ErrorAction SilentlyContinue
-  if ($null -ne $procs) {
-    $procs | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
   }
 }
 
@@ -323,65 +277,6 @@ function Resolve-InstalledElectrobunLauncher {
   return $null
 }
 
-function Install-PortableExe {
-  param(
-    [Parameter(Mandatory = $true)][string]$PayloadPath,
-    [Parameter(Mandatory = $true)][string]$InstallDir,
-    [switch]$KeepBackup
-  )
-
-  $targetExe = Join-Path -Path $InstallDir -ChildPath "clawos.exe"
-  $backupExe = "$targetExe.old"
-  $mode = if (Test-Path -LiteralPath $targetExe) { "update" } else { "install" }
-  $didMoveOld = $false
-
-  if (-not (Test-Path -LiteralPath $InstallDir)) {
-    New-Item -Path $InstallDir -ItemType Directory -Force | Out-Null
-  }
-
-  if ($mode -eq "update") {
-    Stop-ExistingClawos -ExePath $targetExe
-    if (Test-Path -LiteralPath $backupExe) {
-      Remove-Item -LiteralPath $backupExe -Force
-    }
-    Move-Item -LiteralPath $targetExe -Destination $backupExe -Force
-    $didMoveOld = $true
-  }
-
-  try {
-    Copy-Item -LiteralPath $PayloadPath -Destination $targetExe -Force
-
-    if (-not (Test-Path -LiteralPath $targetExe)) {
-      throw "Target executable write failed: $targetExe"
-    }
-
-    Update-RunAutoStart -CommandPath $targetExe
-    Start-Process -FilePath $targetExe | Out-Null
-
-    if (-not $KeepBackup -and (Test-Path -LiteralPath $backupExe)) {
-      Remove-Item -LiteralPath $backupExe -Force
-    }
-
-    return [pscustomobject]@{
-      Mode = $mode
-      Target = $targetExe
-      LaunchPath = $targetExe
-    }
-  } catch {
-    if ($didMoveOld -and (Test-Path -LiteralPath $backupExe)) {
-      try {
-        if (Test-Path -LiteralPath $targetExe) {
-          Remove-Item -LiteralPath $targetExe -Force
-        }
-        Move-Item -LiteralPath $backupExe -Destination $targetExe -Force
-      } catch {
-        # rollback best effort
-      }
-    }
-    throw
-  }
-}
-
 function Run-SetupInstaller {
   param(
     [Parameter(Mandatory = $true)][string]$SetupExe,
@@ -462,7 +357,6 @@ $downloaded = $null
 $tempRoot = $null
 
 try {
-  $resolvedTargetDir = Resolve-TargetDir -RawTargetDir $TargetDir
   $tempRoot = Join-Path -Path $env:TEMP -ChildPath "clawos-installer"
 
   Write-Step "[1/5] Prepare folders"
@@ -481,11 +375,8 @@ try {
   } elseif ($payloadType -eq "setup-exe") {
     Write-Step "[3/5] Install Electrobun setup"
     $result = Install-ElectrobunSetupExe -SetupExePath $downloaded.Path -TempRoot $tempRoot -FallbackIdentifier $AppIdentifier -FallbackChannel $PreferredChannel
-  } elseif ($payloadType -eq "portable-exe") {
-    Write-Step "[3/5] Install portable executable"
-    $result = Install-PortableExe -PayloadPath $downloaded.Path -InstallDir $resolvedTargetDir -KeepBackup:$KeepBackup
   } else {
-    throw "不支持的安装包类型：$($downloaded.Name)。请检查发布文件格式。"
+    throw "不支持的安装包类型：$($downloaded.Name)。仅支持 Electrobun Setup.zip 或 Setup.exe。"
   }
 
   Write-Step "[4/5] Cleanup"
