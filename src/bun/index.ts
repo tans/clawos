@@ -5,9 +5,9 @@ import type { DesktopRpcSchema } from "../desktop-ui/rpc-schema";
 import { invokeDesktopApi, renderDesktopPage } from "./desktop-ui";
 import { computeDesktopControlPort } from "./single-instance";
 import { detectAndPersistOpenclawExecutionEnvironment } from "../system/openclaw-execution";
+import shellHtml from "../desktop-ui/shell.html" with { type: "text" };
 
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
-const SHELL_ENTRY_URL = "views://clawos/shell.html";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
 );
@@ -155,7 +155,7 @@ function createDesktopRpc() {
 
 async function main(): Promise<void> {
   const controlPort = computeDesktopControlPort();
-  console.log(`[desktop] booting ClawOS shell (${SHELL_ENTRY_URL})`);
+  console.log("[desktop] booting ClawOS shell (inline html)");
   console.log(`[desktop] single-instance control at ${SINGLE_INSTANCE_HOST}:${controlPort}`);
   if (IS_DESKTOP_DEV) {
     console.log("[desktop] dev mode enabled");
@@ -187,7 +187,7 @@ async function main(): Promise<void> {
     desktopWindow = new BrowserWindow({
       title: "ClawOS",
       frame: { x: 120, y: 80, width: 1360, height: 900 },
-      url: SHELL_ENTRY_URL,
+      html: shellHtml,
       rpc: createDesktopRpc(),
     });
 
