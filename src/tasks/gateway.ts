@@ -376,19 +376,22 @@ export function parseOpenclawConfigBackupLine(line: string): OpenclawConfigBacku
   };
 }
 
-export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackupListResult> {
-  const configPath = resolveOpenclawConfigPath();
-  const result = await runWslScript(buildOpenclawConfigBackupListScript(configPath));
-  if (!result.ok) {
-    throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）\n命令：${result.command}`);
-  }
-
-  const backups = normalizeOutput(result.stdout)
+function parseOpenclawConfigBackupsOutput(stdout: string): OpenclawConfigBackup[] {
+  return normalizeOutput(stdout)
     .map((line) => parseOpenclawConfigBackupLine(line))
     .filter((item): item is OpenclawConfigBackup => Boolean(item));
+}
+
+export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackupListResult> {
+  const configPath = resolveOpenclawConfigPath();
+  const script = buildOpenclawConfigBackupListScript(configPath);
+  const result = await runWslScript(script, { shellMode: "clean", loginShell: false });
+  if (!result.ok) {
+    throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）\n目标配置：${configPath}\n命令：${result.command}`);
+  }
 
   return {
-    backups,
+    backups: parseOpenclawConfigBackupsOutput(result.stdout),
     command: result.command,
   };
 }

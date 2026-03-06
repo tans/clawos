@@ -190,6 +190,10 @@ function pickExecMode(value: unknown, fallback: "wsl" | "direct"): "wsl" | "dire
   return fallback;
 }
 
+function looksLikeWindowsPath(value: string): boolean {
+  return /^[A-Za-z]:[\\/]/.test(value) || value.startsWith("\\\\");
+}
+
 function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): LocalClawosConfig {
   const defaults = localConfigTemplate();
   const cfg = input || {};
@@ -446,7 +450,16 @@ export function resolveOpenclawConfigPath(): string {
   const localConfig = readLocalClawosConfig();
   const pathValue = localConfig?.openclaw?.configPath;
   const trimmed = typeof pathValue === "string" ? pathValue.trim() : "";
-  return trimmed || OPENCLAW_CONFIG_PATH;
+  if (!trimmed) {
+    return OPENCLAW_CONFIG_PATH;
+  }
+
+  // openclaw config is read inside WSL; Windows host paths are invalid here.
+  if (IS_WINDOWS && looksLikeWindowsPath(trimmed)) {
+    return OPENCLAW_CONFIG_PATH;
+  }
+
+  return trimmed;
 }
 
 export function readLocalOpenclawSourceVersionHash(): string {
