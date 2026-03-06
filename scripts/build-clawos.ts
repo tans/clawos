@@ -10,17 +10,36 @@ interface BuildOptions {
   fixedVersion: string | null;
 }
 
+function resolveDefaultBuildTarget(): string {
+  const arch = process.arch === "arm64" ? "arm64" : "x64";
+  if (process.platform === "win32") {
+    return arch === "arm64" ? "bun-windows-arm64-modern" : "bun-windows-x64-modern";
+  }
+  if (process.platform === "darwin") {
+    return arch === "arm64" ? "bun-darwin-arm64-modern" : "bun-darwin-x64-modern";
+  }
+  return arch === "arm64" ? "bun-linux-arm64-modern" : "bun-linux-x64-modern";
+}
+
+function resolveDefaultOutfile(): string {
+  if (process.platform === "win32") {
+    return resolve(process.cwd(), "dist/clawos.exe");
+  }
+  return resolve(process.cwd(), "dist/clawos");
+}
+
 function printUsage(): void {
   console.log(
-    `ClawOS 打包脚本\n\n用法:\n  bun run scripts/build-clawos.ts [options]\n\n选项:\n  --outfile <path>     输出路径，默认 ./dist/clawos.exe\n  --skip-css           跳过 Tailwind CSS 构建\n  --target <target>    编译目标，默认 bun-windows-x64-modern\n  --no-bump-patch      不自动递增 patch 版本号\n  --version <version>  指定构建版本（会覆盖自动递增）\n  -h, --help           显示帮助\n`
+    `ClawOS 打包脚本\n\n用法:\n  bun run scripts/build-clawos.ts [options]\n\n选项:\n  --outfile <path>     输出路径，默认按当前平台自动选择（Windows: ./dist/clawos.exe；其他: ./dist/clawos）\n  --skip-css           跳过 Tailwind CSS 构建\n  --no-bump-patch      不自动递增 patch 版本号\n  --version <version>  指定构建版本（会覆盖自动递增）\n  -h, --help           显示帮助\n`
   );
 }
 
 function parseArgs(argv: string[]): BuildOptions {
+  const defaultTarget = resolveDefaultBuildTarget();
   const options: BuildOptions = {
-    outfile: resolve(process.cwd(), "dist/clawos.exe"),
+    outfile: resolveDefaultOutfile(),
     skipCss: false,
-    target: "bun-windows-x64-modern",
+    target: defaultTarget,
     bumpPatch: true,
     fixedVersion: null,
   };
@@ -57,12 +76,7 @@ function parseArgs(argv: string[]): BuildOptions {
     }
 
     if (arg === "--target") {
-      const value = args.shift();
-      if (!value) {
-        throw new Error("--target 缺少参数");
-      }
-      options.target = value.trim();
-      continue;
+      throw new Error("参数已废弃: --target。构建目标会根据当前运行环境自动决定。");
     }
 
     if (arg === "--version") {
