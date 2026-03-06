@@ -119,219 +119,79 @@
   const CLAWOS_DOWNLOAD_URL = "https://clawos.cc";
   const versionEl = root.querySelector("[data-app-version]");
   const metaEl = root.querySelector("[data-app-update-meta]");
-  const actionEl = document.createElement("div");
-  actionEl.className = "mt-2 flex flex-wrap gap-2";
-  root.appendChild(actionEl);
 
   if (!(versionEl instanceof HTMLElement) || !(metaEl instanceof HTMLElement)) {
     return;
   }
 
-  function formatIsoTime(raw) {
-    if (typeof raw !== "string" || !raw.trim()) {
-      return "";
-    }
-    const time = new Date(raw);
-    if (Number.isNaN(time.getTime())) {
-      return "";
-    }
-    return time.toLocaleString("zh-CN", { hour12: false });
-  }
-
-  function createButton(label, className, onClick) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = className;
-    btn.textContent = label;
-    btn.addEventListener("click", onClick);
-    return btn;
-  }
-
-  function renderActionButtons(buttons) {
-    actionEl.textContent = "";
-    for (const button of buttons) {
-      actionEl.appendChild(button);
-    }
-  }
-
-  let taskPollTimer = null;
   let refreshing = false;
 
-  function stopTaskPoll() {
-    if (!taskPollTimer) {
-      return;
-    }
-    clearInterval(taskPollTimer);
-    taskPollTimer = null;
-  }
-
-  async function refreshVersionOnly() {
+  async function refreshLocalVersion() {
     try {
       const data = await api("/api/health");
       const current = typeof data?.version === "string" && data.version.trim() ? data.version.trim() : "未知";
       versionEl.textContent = `v${current}`;
+      return current;
     } catch {
       versionEl.textContent = "v-";
+      return null;
     }
   }
 
-  function renderManualDownload(reason) {
-    const message = typeof reason === "string" && reason.trim() ? reason.trim() : "当前环境不支持自动更新。";
+  function renderGotoHomeLink(prefixText) {
     metaEl.textContent = "";
-    metaEl.append(document.createTextNode(`${message} `));
+    if (prefixText) {
+      metaEl.append(document.createTextNode(`${prefixText} `));
+    }
     const link = document.createElement("a");
     link.className = "link link-primary";
     link.href = CLAWOS_DOWNLOAD_URL;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "手动下载";
+    link.textContent = "clawos.cc";
     metaEl.append(link);
-    renderActionButtons([
-      createButton("重新检查", "btn btn-ghost btn-xs", () => {
-        void refreshUpdateStatus(false);
-      }),
-    ]);
   }
 
-  async function pollUpdateTask(taskId) {
-    try {
-      const data = await api(`/api/tasks/${encodeURIComponent(taskId)}`);
-      const task = data?.task || null;
-      if (!task) {
-        stopTaskPoll();
-        return;
-      }
-
-      const lastLog =
-        Array.isArray(task.logs) && task.logs.length > 0 ? task.logs[task.logs.length - 1] : null;
-      const stepText =
-        typeof task.step === "number" && typeof task.totalSteps === "number" && task.totalSteps > 0
-          ? `步骤 ${task.step}/${task.totalSteps}`
-          : "执行中";
-      const logText =
-        lastLog && typeof lastLog.message === "string" && lastLog.message.trim()
-          ? lastLog.message.trim()
-          : "任务进行中...";
-      metaEl.textContent = `${stepText}：${logText}`;
-
-      if (task.status === "failed") {
-        stopTaskPoll();
-        renderActionButtons([
-          createButton("重新检查", "btn btn-ghost btn-xs", () => {
-            void refreshUpdateStatus(false);
-          }),
-        ]);
-        return;
-      }
-
-      if (task.status === "success") {
-        stopTaskPoll();
-        renderActionButtons([
-          createButton("重新检查", "btn btn-ghost btn-xs", () => {
-            void refreshUpdateStatus(false);
-          }),
-        ]);
-      }
-    } catch {
-      stopTaskPoll();
-    }
-  }
-
-  async function startUpdate() {
-    stopTaskPoll();
-    metaEl.textContent = "正在启动更新任务...";
-    renderActionButtons([
-      createButton("更新中...", "btn btn-primary btn-xs pointer-events-none opacity-70", () => {}),
-    ]);
-
-    try {
-      const data = await api("/api/app/update/run", {
-        method: "POST",
-        body: JSON.stringify({ autoRestart: true }),
-      });
-      const taskId = typeof data?.taskId === "string" ? data.taskId : "";
-      if (!taskId) {
-        throw new Error("更新任务未返回 taskId。");
-      }
-      metaEl.textContent = "更新任务已启动，下载完成后将自动重启。";
-      taskPollTimer = setInterval(() => {
-        void pollUpdateTask(taskId);
-      }, 1500);
-      void pollUpdateTask(taskId);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      metaEl.textContent = `启动更新失败：${message}`;
-      renderActionButtons([
-        createButton("重新检查", "btn btn-ghost btn-xs", () => {
-          void refreshUpdateStatus(false);
-        }),
-      ]);
-    }
-  }
-
-  async function refreshUpdateStatus(silent) {
+  async function refreshReleaseHint(silent) {
     if (refreshing) {
       return;
     }
     refreshing = true;
     try {
       if (!silent) {
-        metaEl.textContent = "正在检查更新...";
+        metaEl.textContent = "正在获取版本信息...";
       }
-      await refreshVersionOnly();
+      const currentVersion = await refreshLocalVersion();
       const data = await api("/api/app/update/status");
       const status = data?.status || {};
 
-      if (!status.supported) {
-        renderManualDownload(status.reason);
+      if (status.error || !status.supported) {
+        metaEl.textContent = "版本信息暂不可用。";
         return;
       }
 
-      if (status.error) {
-        metaEl.textContent = `检查更新失败：${status.error}`;
-        renderActionButtons([
-          createButton("重新检查", "btn btn-ghost btn-xs", () => {
-            void refreshUpdateStatus(false);
-          }),
-        ]);
+      const remoteVersion =
+        typeof status.remoteVersion === "string" && status.remoteVersion.trim() ? status.remoteVersion.trim() : "";
+      const hasUpdate = status.hasUpdate === true && !!remoteVersion;
+      if (hasUpdate) {
+        renderGotoHomeLink(`发现新版本 v${remoteVersion}`);
         return;
       }
 
-      const checkedAt = formatIsoTime(status.checkedAt);
-      if (status.hasUpdate) {
-        metaEl.textContent = `发现新版本 v${status.remoteVersion || "?"}（当前 v${status.currentVersion || "?"}）`;
-        renderActionButtons([
-          createButton("更新并重启", "btn btn-primary btn-xs", () => {
-            void startUpdate();
-          }),
-          createButton("重新检查", "btn btn-ghost btn-xs", () => {
-            void refreshUpdateStatus(false);
-          }),
-        ]);
-        return;
+      if (currentVersion) {
+        metaEl.textContent = `当前已是最新版本 v${currentVersion}`;
+      } else {
+        metaEl.textContent = "当前已是最新版本。";
       }
-
-      metaEl.textContent = checkedAt ? `已是最新版本（检查时间：${checkedAt}）` : "已是最新版本。";
-      renderActionButtons([
-        createButton("重新检查", "btn btn-ghost btn-xs", () => {
-          void refreshUpdateStatus(false);
-        }),
-      ]);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      metaEl.textContent = `检查更新失败：${message}`;
-      renderActionButtons([
-        createButton("重新检查", "btn btn-ghost btn-xs", () => {
-          void refreshUpdateStatus(false);
-        }),
-      ]);
+      metaEl.textContent = "版本信息暂不可用。";
     } finally {
       refreshing = false;
     }
   }
 
-  void refreshUpdateStatus(false);
+  void refreshReleaseHint(false);
   setInterval(() => {
-    void refreshUpdateStatus(true);
+    void refreshReleaseHint(true);
   }, 5 * 60 * 1000);
 })();
