@@ -560,60 +560,6 @@
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
 
-            function renderBrowserConnectivity(info) {
-                const mode = info.mode === "local" ? "本地" : "CDP";
-                const browserState =
-                    info.enabled === false ? null : Boolean(info.ready);
-                setLight(
-                    statusBadges.browserLabel,
-                    statusBadges.browserLight,
-                    `浏览器(${mode})`,
-                    browserState,
-                );
-
-                let statusText = "未知";
-                switch (info.status) {
-                    case "ok":
-                        statusText = "正常";
-                        break;
-                    case "local-only":
-                        statusText = "仅本机直连";
-                        break;
-                    case "cdp-only":
-                        statusText = "仅服务侧连通";
-                        break;
-                    case "disabled":
-                        statusText = "已禁用";
-                        break;
-                    case "not-configured":
-                        statusText = "未配置";
-                        break;
-                    case "gateway-error":
-                        statusText = "网关异常";
-                        break;
-                    case "probe-error":
-                        statusText = "连通失败";
-                        break;
-                    default:
-                        break;
-                }
-
-                taskProgress.classList.add("hidden");
-                taskMeta.textContent = `浏览器连通性检测: ${statusText}`;
-
-                const lines = [`状态: ${statusText}`, `模式: ${mode}`];
-                if (typeof info.checkedAt === "string" && info.checkedAt) {
-                    lines.push(`检测时间: ${info.checkedAt}`);
-                }
-                if (Array.isArray(info.warnings) && info.warnings.length > 0) {
-                    lines.push("");
-                    lines.push("检测到异常，请先重启浏览器或执行环境修复。");
-                }
-
-                taskOutput.textContent = lines.join("\n");
-                taskOutput.scrollTop = taskOutput.scrollHeight;
-            }
-
             function renderTask(task) {
                 const statusTextMap = {
                     pending: "等待中",
@@ -744,12 +690,6 @@
                 renderEnvironmentReport(info);
             }
 
-            async function checkBrowserConnectivity() {
-                const data = await api("/api/system/browser/check");
-                const info = data.info || {};
-                renderBrowserConnectivity(info);
-            }
-
             async function runAction(action) {
                 switch (action) {
                     case "check-env":
@@ -757,9 +697,6 @@
                         return;
                     case "repair-env":
                         await startTask("/api/system/repair");
-                        return;
-                    case "check-browser-connectivity":
-                        await checkBrowserConnectivity();
                         return;
                     case "refresh-openclaw-backups":
                         await refreshOpenclawBackups();
