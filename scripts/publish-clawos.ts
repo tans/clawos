@@ -2,10 +2,16 @@ import { access, readFile } from "node:fs/promises";
 import { constants as fsConstants } from "node:fs";
 import { basename, resolve } from "node:path";
 
+type PublishPlatform = "windows" | "macos" | "linux";
+const VERSION_PATTERN = /(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/;
+
 interface Options {
   baseUrl: string;
   token: string;
   installerPath: string;
+  installerPathExplicit: boolean;
+  installerPlatform: PublishPlatform | null;
+  installerPathsByPlatform: Partial<Record<PublishPlatform, string>>;
   configPath: string;
   version?: string;
   skipInstaller: boolean;
@@ -24,6 +30,11 @@ function printUsage(): void {
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
   --installer <path>    安装包路径，默认 ./dist/clawos.exe
+  --installer-platform <platform>
+                        --installer 对应平台：windows/macos/linux（默认自动识别，识别失败回退 windows）
+  --installer-win <p>   Windows 安装包路径（可与其它平台一起上传）
+  --installer-macos <p> macOS 安装包路径（可与其它平台一起上传）
+  --installer-linux <p> Linux 安装包路径（可与其它平台一起上传）
   --config <path>       配置文件路径，默认 ./clawos_xiake.json
   --version <version>   安装包版本（可选）
   --skip-installer      跳过安装包上传
@@ -31,17 +42,42 @@ function printUsage(): void {
   --timeout-ms <ms>     单次上传超时，默认 600000（10 分钟）
   --heartbeat-ms <ms>   上传心跳日志间隔，默认 15000（15 秒）
   -h, --help            显示帮助
+
+环境变量（可替代部分参数）:
+  CLAWOS_PUBLISH_BASE_URL
+  CLAWOS_UPLOAD_TOKEN（或 UPLOAD_TOKEN）
+  CLAWOS_INSTALLER_PATH
+  CLAWOS_INSTALLER_WIN / CLAWOS_INSTALLER_MACOS / CLAWOS_INSTALLER_LINUX
+  CLAWOS_CONFIG_PATH
+  CLAWOS_VERSION
 `);
 }
 
+function resolvePathFromEnv(raw: string | undefined, fallbackPath: string): string {
+  const trimmed = raw?.trim();
+  if (!trimmed) {
+    return fallbackPath;
+  }
+  return resolve(process.cwd(), trimmed);
+}
+
 function parseArgs(argv: string[]): Options {
+  const installerPathFromEnv = resolvePathFromEnv(process.env.CLAWOS_INSTALLER_PATH, resolve(process.cwd(), "dist/clawos.exe"));
+  const configPathFromEnv = resolvePathFromEnv(process.env.CLAWOS_CONFIG_PATH, resolve(process.cwd(), "clawos_xiake.json"));
   const args = [...argv];
   const opts: Options = {
-    baseUrl: "https://clawos.minapp.xin",
-    token: process.env.UPLOAD_TOKEN?.trim() || "clawos",
-    installerPath: resolve(process.cwd(), "dist/clawos.exe"),
-    configPath: resolve(process.cwd(), "clawos_xiake.json"),
-    version: undefined,
+    baseUrl: process.env.CLAWOS_PUBLISH_BASE_URL?.trim().replace(/\/+$/, "") || "https://clawos.minapp.xin",
+    token: process.env.CLAWOS_UPLOAD_TOKEN?.trim() || process.env.UPLOAD_TOKEN?.trim() || "clawos",
+    installerPath: installerPathFromEnv,
+    installerPathExplicit: false,
+    installerPlatform: null,
+    installerPathsByPlatform: {
+      windows: process.env.CLAWOS_INSTALLER_WIN?.trim() ? resolve(process.cwd(), process.env.CLAWOS_INSTALLER_WIN.trim()) : undefined,
+      macos: process.env.CLAWOS_INSTALLER_MACOS?.trim() ? resolve(process.cwd(), process.env.CLAWOS_INSTALLER_MACOS.trim()) : undefined,
+      linux: process.env.CLAWOS_INSTALLER_LINUX?.trim() ? resolve(process.cwd(), process.env.CLAWOS_INSTALLER_LINUX.trim()) : undefined,
+    },
+    configPath: configPathFromEnv,
+    version: process.env.CLAWOS_VERSION?.trim() || undefined,
     skipInstaller: false,
     skipConfig: false,
     timeoutMs: Number.parseInt(process.env.UPLOAD_TIMEOUT_MS || "", 10) || 10 * 60 * 1000,
@@ -83,6 +119,19 @@ function parseArgs(argv: string[]): Options {
         break;
       case "--installer":
         opts.installerPath = resolve(process.cwd(), value);
+        opts.installerPathExplicit = true;
+        break;
+      case "--installer-platform":
+        opts.installerPlatform = parsePublishPlatform(value, "--installer-platform");
+        break;
+      case "--installer-win":
+        opts.installerPathsByPlatform.windows = resolve(process.cwd(), value);
+        break;
+      case "--installer-macos":
+        opts.installerPathsByPlatform.macos = resolve(process.cwd(), value);
+        break;
+      case "--installer-linux":
+        opts.installerPathsByPlatform.linux = resolve(process.cwd(), value);
         break;
       case "--config":
         opts.configPath = resolve(process.cwd(), value);
@@ -119,6 +168,64 @@ function parseArgs(argv: string[]): Options {
   return opts;
 }
 
+function parsePublishPlatform(raw: string, flagName: string): PublishPlatform {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "windows" || normalized === "win" || normalized === "win32") {
+    return "windows";
+  }
+  if (normalized === "macos" || normalized === "darwin" || normalized === "mac" || normalized === "osx") {
+    return "macos";
+  }
+  if (normalized === "linux") {
+    return "linux";
+  }
+  throw new Error(`${flagName} 非法值：${raw}（仅支持 windows/macos/linux）`);
+}
+
+function inferPublishPlatformFromInstallerPath(filePath: string): PublishPlatform | null {
+  const lower = basename(filePath).toLowerCase();
+  if (lower.endsWith(".exe") || lower.endsWith(".msi")) {
+    return "windows";
+  }
+  if (lower.endsWith(".dmg") || lower.endsWith(".pkg")) {
+    return "macos";
+  }
+  if (lower.endsWith(".appimage") || lower.endsWith(".deb") || lower.endsWith(".rpm") || lower.endsWith(".tar.gz")) {
+    return "linux";
+  }
+  return null;
+}
+
+type InstallerUploadSpec = {
+  platform: PublishPlatform;
+  filePath: string;
+};
+
+function setInstallerSpec(merged: Map<PublishPlatform, string>, platform: PublishPlatform, filePath: string, source: string): void {
+  const existing = merged.get(platform);
+  if (existing && existing !== filePath) {
+    throw new Error(`安装包参数冲突：平台 ${platform} 同时指向两个文件\n已设置: ${existing}\n冲突来源(${source}): ${filePath}`);
+  }
+  merged.set(platform, filePath);
+}
+
+function buildInstallerUploads(opts: Options): InstallerUploadSpec[] {
+  const merged = new Map<PublishPlatform, string>();
+  for (const platform of Object.keys(opts.installerPathsByPlatform) as PublishPlatform[]) {
+    const filePath = opts.installerPathsByPlatform[platform];
+    if (filePath) {
+      setInstallerSpec(merged, platform, filePath, `--installer-${platform}`);
+    }
+  }
+
+  if (opts.installerPathExplicit || merged.size === 0) {
+    const platform = opts.installerPlatform || inferPublishPlatformFromInstallerPath(opts.installerPath) || "windows";
+    setInstallerSpec(merged, platform, opts.installerPath, "--installer");
+  }
+
+  return Array.from(merged.entries()).map(([platform, filePath]) => ({ platform, filePath }));
+}
+
 async function assertFileReadable(filePath: string, label: string): Promise<void> {
   try {
     await access(filePath, fsConstants.R_OK);
@@ -137,12 +244,58 @@ async function detectVersionFromPackageJson(): Promise<string | undefined> {
   }
 }
 
+function detectVersionFromInstallerPath(filePath: string): string | null {
+  const name = basename(filePath);
+  const match = name.match(VERSION_PATTERN);
+  return match?.[1] ?? null;
+}
+
+function unique(items: string[]): string[] {
+  return Array.from(new Set(items));
+}
+
+async function resolvePublishVersion(opts: Options, installers: InstallerUploadSpec[]): Promise<string | undefined> {
+  if (opts.version) {
+    const target = opts.version.trim().replace(/^v/i, "");
+    if (!target) {
+      return undefined;
+    }
+    const versionsInNames = unique(
+      installers
+        .map((item) => detectVersionFromInstallerPath(item.filePath))
+        .filter((value): value is string => Boolean(value))
+        .map((value) => value.replace(/^v/i, ""))
+    );
+    const mismatch = versionsInNames.find((value) => value !== target);
+    if (mismatch) {
+      throw new Error(`版本冲突：参数 --version=${target}，但安装包文件名中检测到版本 ${mismatch}。请统一后再发布。`);
+    }
+    return target;
+  }
+
+  const versionsInNames = unique(
+    installers
+      .map((item) => detectVersionFromInstallerPath(item.filePath))
+      .filter((value): value is string => Boolean(value))
+      .map((value) => value.replace(/^v/i, ""))
+  );
+  if (versionsInNames.length > 1) {
+    throw new Error(`安装包文件名包含多个版本：${versionsInNames.join(", ")}。请用 --version 指定唯一版本。`);
+  }
+  if (versionsInNames.length === 1) {
+    return versionsInNames[0];
+  }
+
+  return await detectVersionFromPackageJson();
+}
+
 async function uploadFile(params: {
   endpoint: string;
   filePath: string;
   token: string;
   baseUrl: string;
   version?: string;
+  platform?: PublishPlatform;
   timeoutMs: number;
   heartbeatMs: number;
 }): Promise<Record<string, unknown>> {
@@ -153,8 +306,15 @@ async function uploadFile(params: {
   if (params.version) {
     form.append("version", params.version);
   }
+  if (params.platform) {
+    form.append("platform", params.platform);
+  }
 
-  const url = `${params.baseUrl}${params.endpoint}`;
+  const endpointUrl = new URL(`${params.baseUrl}${params.endpoint}`);
+  if (params.platform) {
+    endpointUrl.searchParams.set("platform", params.platform);
+  }
+  const url = endpointUrl.toString();
   console.log(`[publish] 开始上传: ${basename(params.filePath)} (${formatBytes(fileSize)}) -> ${url}`);
 
   const startedAt = Date.now();
@@ -173,6 +333,7 @@ async function uploadFile(params: {
       method: "POST",
       headers: {
         Authorization: `Bearer ${params.token}`,
+        ...(params.platform ? { "x-platform": params.platform } : {}),
       },
       body: form,
       signal: controller.signal,
@@ -237,8 +398,9 @@ function formatDuration(ms: number): string {
 
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
-  if (!opts.version && !opts.skipInstaller) {
-    opts.version = await detectVersionFromPackageJson();
+  const installerUploads = opts.skipInstaller ? [] : buildInstallerUploads(opts);
+  if (!opts.skipInstaller) {
+    opts.version = await resolvePublishVersion(opts, installerUploads);
   }
 
   console.log(`[publish] base url: ${opts.baseUrl}`);
@@ -248,20 +410,36 @@ async function main(): Promise<void> {
   if (opts.version) {
     console.log(`[publish] version: ${opts.version}`);
   }
+  const uploadedSummaries: Array<{ kind: "installer" | "config"; platform?: PublishPlatform; fileName: string; url: string }> = [];
 
   if (!opts.skipInstaller) {
-    await assertFileReadable(opts.installerPath, "安装包");
-    console.log(`[publish] 上传安装包: ${opts.installerPath}`);
-    const result = await uploadFile({
-      endpoint: "/api/upload/installer",
-      filePath: opts.installerPath,
-      token: opts.token,
-      baseUrl: opts.baseUrl,
-      version: opts.version,
-      timeoutMs: opts.timeoutMs,
-      heartbeatMs: opts.heartbeatMs,
-    });
-    console.log(`[publish] 安装包上传成功: ${String(result.fileName || "unknown")}`);
+    if (installerUploads.length === 0) {
+      throw new Error("未找到可上传的安装包，请提供 --installer 或 --installer-<platform> 参数。");
+    }
+
+    for (const item of installerUploads) {
+      await assertFileReadable(item.filePath, `${item.platform} 安装包`);
+      console.log(`[publish] 上传安装包(${item.platform}): ${item.filePath}`);
+      const result = await uploadFile({
+        endpoint: "/api/upload/installer",
+        filePath: item.filePath,
+        token: opts.token,
+        baseUrl: opts.baseUrl,
+        version: opts.version,
+        platform: item.platform,
+        timeoutMs: opts.timeoutMs,
+        heartbeatMs: opts.heartbeatMs,
+      });
+      console.log(
+        `[publish] 安装包上传成功(${item.platform}): ${String(result.fileName || "unknown")} -> ${String(result.url || "")}`
+      );
+      uploadedSummaries.push({
+        kind: "installer",
+        platform: item.platform,
+        fileName: String(result.fileName || "unknown"),
+        url: String(result.url || ""),
+      });
+    }
   }
 
   if (!opts.skipConfig) {
@@ -276,6 +454,22 @@ async function main(): Promise<void> {
       heartbeatMs: opts.heartbeatMs,
     });
     console.log(`[publish] 配置文件上传成功: ${String(result.fileName || "unknown")}`);
+    uploadedSummaries.push({
+      kind: "config",
+      fileName: String(result.fileName || "unknown"),
+      url: String(result.url || ""),
+    });
+  }
+
+  if (uploadedSummaries.length > 0) {
+    console.log("[publish] 上传汇总:");
+    for (const item of uploadedSummaries) {
+      if (item.kind === "installer") {
+        console.log(`[publish]   installer(${item.platform}): ${item.fileName} -> ${item.url}`);
+      } else {
+        console.log(`[publish]   config: ${item.fileName} -> ${item.url}`);
+      }
+    }
   }
 
   console.log("[publish] 发布完成。");

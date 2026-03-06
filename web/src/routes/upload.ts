@@ -1,6 +1,7 @@
 import { Hono, type Context } from "hono";
 import { requireUploadAuth } from "../lib/auth";
-import { storeInstaller, storeXiakeConfig } from "../lib/storage";
+import { normalizeInstallerPlatform, storeInstaller, storeXiakeConfig } from "../lib/storage";
+import type { InstallerPlatform } from "../lib/types";
 
 export const uploadRoutes = new Hono();
 
@@ -21,6 +22,7 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
   fileName: string;
   bytes: Uint8Array;
   version?: string;
+  platform?: InstallerPlatform;
 }> {
   const contentType = c.req.header("content-type") || "";
 
@@ -33,11 +35,14 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
 
     const versionField = firstValue(body.version);
     const version = typeof versionField === "string" ? versionField.trim() : undefined;
+    const platformField = firstValue(body.platform);
+    const platform = normalizeInstallerPlatform(platformField);
 
     return {
       fileName: fileField.name || defaultFileName,
       bytes: toUint8Array(await fileField.arrayBuffer()),
       version: version || undefined,
+      platform: platform || undefined,
     };
   }
 
@@ -46,12 +51,14 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
     c.req.query("fileName") ||
     defaultFileName;
   const version = c.req.header("x-version") || c.req.query("version") || undefined;
+  const platform = normalizeInstallerPlatform(c.req.header("x-platform") || c.req.query("platform") || undefined);
   const bytes = toUint8Array(await c.req.arrayBuffer());
 
   return {
     fileName,
     bytes,
     version,
+    platform: platform || undefined,
   };
 }
 
@@ -66,7 +73,8 @@ uploadRoutes.post("/api/upload/installer", async (c) => {
       size: result.asset.size,
       sha256: result.asset.sha256,
       version: result.release.version,
-      url: "/downloads/latest",
+      platform: upload.platform || null,
+      url: upload.platform ? `/downloads/latest/${upload.platform}` : "/downloads/latest",
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);

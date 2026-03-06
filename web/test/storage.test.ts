@@ -42,9 +42,26 @@ describe("release storage", () => {
     expect(result.release.version).toBe("1.2.3");
     const latest = await readLatestRelease();
     expect(latest?.installer?.name).toBe("clawos-setup-1.2.3.exe");
+    expect(latest?.installers?.windows?.name).toBe("clawos-setup-1.2.3.exe");
 
     const download = await resolveLatestInstaller();
     expect(download.asset.size).toBe(installerBytes.byteLength);
+  });
+
+  it("stores platform installer and resolves by platform", async () => {
+    const macBytes = new TextEncoder().encode("clawos-macos-installer");
+    await storeInstaller({
+      fileName: "clawos-1.2.3.dmg",
+      bytes: macBytes,
+      platform: "macos",
+    });
+
+    const latest = await readLatestRelease();
+    expect(latest?.installers?.macos?.name).toBe("clawos-1.2.3.dmg");
+
+    const download = await resolveLatestInstaller("macos");
+    expect(download.asset.name).toBe("clawos-1.2.3.dmg");
+    expect(download.asset.size).toBe(macBytes.byteLength);
   });
 
   it("stores xiake config and resolves downloadable file", async () => {
@@ -69,9 +86,9 @@ describe("release storage", () => {
   it("rejects unsupported installer extension", async () => {
     await expect(
       storeInstaller({
-        fileName: "clawos.pkg",
+        fileName: "clawos.txt",
         bytes: new TextEncoder().encode("x"),
       }),
-    ).rejects.toThrow("安装包仅支持");
+    ).rejects.toThrow("安装包扩展名与平台不匹配");
   });
 });
