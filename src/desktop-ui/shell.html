@@ -85,12 +85,9 @@
       (function setBootVersion() {
         const versionEl = document.querySelector("[data-boot-version]");
         if (!versionEl) return;
-        const params = new URLSearchParams(window.location.search || "");
-        const fromQuery = String(params.get("appVersion") || "").trim();
         const fromInline = String("__CLAWOS_APP_VERSION__").trim();
         const fallback = fromInline === "__CLAWOS_APP_VERSION__" ? "" : fromInline;
-        const version = fromQuery || fallback;
-        versionEl.textContent = version ? `v${version}` : "v-";
+        versionEl.textContent = fallback ? `v${fallback}` : "v-";
       })();
     </script>
   </body>

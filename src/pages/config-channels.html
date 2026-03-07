@@ -1,22 +1,22 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 閫氳娓犻亾</title>
+    <title>ClawOS 通讯渠道</title>
     <link rel="stylesheet" href="/styles.css" />
-</head>
+      </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
+        <div class="text-sm text-base-content/60">加载中...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">閫氳娓犻亾</h1>
+          <h1 class="text-lg font-semibold">通讯渠道</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" data-action="reload">閲嶆柊鍔犺浇</button>
+            <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
           </div>
         </header>
 
@@ -24,14 +24,14 @@
           <section class="card card-compact border border-base-200 bg-base-100" data-card-editor>
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">娓犻亾寮€鍏充笌鍙傛暟鍏ュ彛</h2>
-                <span class="text-[11px] text-base-content/60">浠呭睍绀哄綋鍓嶅父鐢ㄦ笭閬?/span>
+                <h2 class="card-title text-base">渠道开关与参数入口</h2>
+                <span class="text-[11px] text-base-content/60">仅展示当前常用渠道</span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>灏氭湭鍔犺浇</div>
+          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
         </section>
       </main>
     </div>
@@ -39,7 +39,7 @@
     <div class="toast toast-end toast-top hidden" data-loading-toast>
       <div class="alert alert-info text-xs">
         <span class="loading loading-spinner loading-xs"></span>
-        <span>鍔犺浇涓?..</span>
+        <span>加载中...</span>
       </div>
     </div>
 
@@ -47,21 +47,21 @@
       <div class="modal-box max-w-3xl">
         <div class="mb-2 flex items-start justify-between gap-3">
           <div>
-            <h3 class="text-base font-semibold" data-modal-title>娓犻亾鍙傛暟</h3>
-            <div class="text-[11px] text-base-content/60" data-modal-subtitle>浠呭睍绀哄綋鍓嶅彲缂栬緫鍙傛暟銆?/div>
+            <h3 class="text-base font-semibold" data-modal-title>渠道参数</h3>
+            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅展示当前可编辑参数。</div>
           </div>
-          <button class="btn btn-ghost btn-xs" type="button" data-modal-close>鍏抽棴</button>
+          <button class="btn btn-ghost btn-xs" type="button" data-modal-close>关闭</button>
         </div>
 
         <div class="grid gap-3" data-modal-fields></div>
 
         <div class="modal-action">
-          <button class="btn btn-ghost btn-sm" type="button" data-modal-cancel>鍙栨秷</button>
-          <button class="btn btn-primary btn-sm" type="button" data-modal-save>淇濆瓨</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-modal-cancel>取消</button>
+          <button class="btn btn-primary btn-sm" type="button" data-modal-save>保存</button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button aria-label="鍏抽棴">close</button>
+        <button aria-label="关闭">close</button>
       </form>
     </dialog>
 
@@ -82,7 +82,7 @@
       const CHANNEL_SPECS_BASE = [
         {
           key: "feishu",
-          title: "椋炰功",
+          title: "飞书",
           icon: "fa-solid fa-feather-pointed",
           fields: [
             { path: "appId", label: "appId", type: "text" },
@@ -91,7 +91,7 @@
         },
         {
           key: "wework",
-          title: "浼佷笟寰俊",
+          title: "企业微信",
           icon: "fa-brands fa-weixin",
           fields: [],
         },
@@ -122,7 +122,7 @@
 
       function ensureObject(value, field) {
         if (!isObject(value)) {
-          throw new Error(`${field} 蹇呴』鏄?JSON 瀵硅薄`);
+          throw new Error(`${field} 必须是 JSON 对象`);
         }
         return value;
       }
@@ -217,20 +217,20 @@
 
         const value = Number(text);
         if (!Number.isFinite(value)) {
-          throw new Error(`${fieldLabel} 蹇呴』鏄暟瀛梎);
+          throw new Error(`${fieldLabel} 必须是数字`);
         }
 
         const integer = field.integer !== false;
         if (integer && !Number.isInteger(value)) {
-          throw new Error(`${fieldLabel} 蹇呴』鏄暣鏁癭);
+          throw new Error(`${fieldLabel} 必须是整数`);
         }
 
         if (typeof field.min === "number" && value < field.min) {
-          throw new Error(`${fieldLabel} 涓嶈兘灏忎簬 ${field.min}`);
+          throw new Error(`${fieldLabel} 不能小于 ${field.min}`);
         }
 
         if (typeof field.max === "number" && value > field.max) {
-          throw new Error(`${fieldLabel} 涓嶈兘澶т簬 ${field.max}`);
+          throw new Error(`${fieldLabel} 不能大于 ${field.max}`);
         }
 
         return value;
@@ -255,11 +255,11 @@
       }
 
       function readEnableFlag(source) {
-        if (source.enable === true || source.enabled === true) {
-          return true;
+        if (typeof source.enabled === "boolean") {
+          return source.enabled;
         }
-        if (source.enable === false || source.enabled === false) {
-          return false;
+        if (typeof source.enable === "boolean") {
+          return source.enable;
         }
         return undefined;
       }
@@ -322,7 +322,7 @@
         if (specKey === "wework") {
           return sanitizeWeworkEntry(draft);
         }
-        throw new Error(`鏈煡娓犻亾锛?{specKey}`);
+        throw new Error(`未知渠道：${specKey}`);
       }
 
       function getChannelEntry(config, specKey) {
@@ -390,14 +390,14 @@
                     <i class="${iconClass} w-4 text-center text-base-content/70" aria-hidden="true"></i>
                     <span>${spec.title}</span>
                   </div>
-                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>鏈厤缃弬鏁?/div>
+                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参数</div>
                 </div>
                 <div class="flex items-center gap-2">
                   <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                    <span class="text-xs">寮€鍚?/span>
+                    <span class="text-xs">开启</span>
                     <input class="toggle toggle-sm" type="checkbox" data-channel-enabled data-channel-key="${spec.key}" />
                   </label>
-                  ${spec.fields.length > 0 ? `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">閰嶇疆鍙傛暟</button>` : ""}
+                  ${spec.fields.length > 0 ? `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>` : ""}
                 </div>
               </div>
             </section>
@@ -431,14 +431,14 @@
         cardEls.enabled.checked = channel.enable === true;
 
         if (spec.fields.length === 0) {
-          cardEls.summary.textContent = channel.enable === true ? "宸插紑鍚? : "宸插叧闂?;
+          cardEls.summary.textContent = channel.enable === true ? "已开启" : "已关闭";
           return;
         }
 
         if (configured > 0) {
-          cardEls.summary.textContent = `宸查厤缃?${configured} 椤瑰弬鏁癭;
+          cardEls.summary.textContent = `已配置 ${configured} 项参数`;
         } else {
-          cardEls.summary.textContent = "鏈厤缃弬鏁?;
+          cardEls.summary.textContent = "未配置参数";
         }
       }
 
@@ -451,7 +451,7 @@
       function findSpec(specKey) {
         const spec = specByKey.get(specKey);
         if (!spec) {
-          throw new Error(`鏈煡娓犻亾锛?{specKey}`);
+          throw new Error(`未知渠道：${specKey}`);
         }
         return spec;
       }
@@ -505,7 +505,7 @@
           const current = typeof value === "string" ? value : "";
           const options = (field.options || []).map((option) => {
             const selected = option === current ? "selected" : "";
-            const text = option || "榛樿";
+            const text = option || "默认";
             return `<option value="${escapeHtml(option)}" ${selected}>${escapeHtml(text)}</option>`;
           }).join("");
 
@@ -544,7 +544,7 @@
       function openChannelConfig(specKey) {
         const spec = findSpec(specKey);
         if (spec.fields.length === 0) {
-          throw new Error(`${spec.title}浠呮敮鎸佸紑鍏筹紝涓嶉渶瑕侀澶栧弬鏁癭);
+          throw new Error(`${spec.title}仅支持开关，不需要额外参数`);
         }
 
         const entry = getChannelEntry(channelsConfig, spec.key);
@@ -552,8 +552,8 @@
         activeSpec = spec;
         activeDraft = cloneObject(entry.value);
 
-        modalTitleEl.textContent = `${spec.title} 鍙傛暟閰嶇疆`;
-        modalSubtitleEl.textContent = "浠呭睍绀哄綋鍓嶅彲缂栬緫鍙傛暟銆?;
+        modalTitleEl.textContent = `${spec.title} 参数配置`;
+        modalSubtitleEl.textContent = "仅展示当前可编辑参数。";
         modalFieldsEl.innerHTML = spec.fields.map((field) => renderModalField(spec.key, field, activeDraft)).join("");
 
         showModal();
@@ -620,7 +620,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -653,7 +653,9 @@
           method: "PATCH",
           body: JSON.stringify({ data: payload }),
         });
-        const saved = sanitizeChannelDraft(specKey, data.data || payload);
+        const existing = getChannelEntry(channelsConfig, specKey).value;
+        const source = isObject(data.data) ? data.data : payload;
+        const saved = sanitizeChannelDraft(specKey, { ...existing, ...source });
         updateLocalChannelState(specKey, saved);
         return saved;
       }
@@ -665,8 +667,8 @@
           channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
           fillCardForm(channelsConfig);
           metaEl.textContent = IS_MACOS
-            ? `${SECTION} 宸插姞杞斤紙macOS 宸查殣钘忎紒涓氬井淇￠厤缃級`
-            : `${SECTION} 宸插姞杞絗;
+            ? `${SECTION} 已加载（macOS 已隐藏企业微信配置）`
+            : `${SECTION} 已加载`;
         } finally {
           setLoadingToast(false);
         }
@@ -686,7 +688,7 @@
         try {
           openChannelConfig(specKey);
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "鎵撳紑閰嶇疆澶辫触锛岃绋嶅悗閲嶈瘯銆?);
+          metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试。");
         }
       });
 
@@ -706,10 +708,10 @@
         try {
           const draft = buildEnabledDraft(specKey, Boolean(input.checked));
           await saveChannelDraft(specKey, draft);
-          metaEl.textContent = `${findSpec(specKey).title} 寮€鍏冲凡淇濆瓨`;
+          metaEl.textContent = `${findSpec(specKey).title} 开关已保存`;
         } catch (error) {
           input.checked = previousChecked;
-          metaEl.textContent = readUserErrorMessage(error, "鏇存柊寮€鍏冲け璐ワ紝璇风◢鍚庨噸璇曘€?);
+          metaEl.textContent = readUserErrorMessage(error, "更新开关失败，请稍后重试。");
         } finally {
           input.disabled = false;
         }
@@ -719,17 +721,17 @@
         modalSaveEl.disabled = true;
         try {
           if (!activeSpec) {
-            throw new Error("褰撳墠娌℃湁鍙繚瀛樼殑娓犻亾");
+            throw new Error("当前没有可保存的渠道");
           }
           const nextDraft = collectActiveModalDraft();
           if (!nextDraft) {
-            throw new Error("褰撳墠娌℃湁鍙繚瀛樼殑娓犻亾");
+            throw new Error("当前没有可保存的渠道");
           }
           await saveChannelDraft(activeSpec.key, nextDraft);
-          metaEl.textContent = `${activeSpec.title} 鍙傛暟宸蹭繚瀛榒;
+          metaEl.textContent = `${activeSpec.title} 参数已保存`;
           closeModal();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?);
+          metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
         } finally {
           modalSaveEl.disabled = false;
         }
@@ -743,23 +745,27 @@
       }
 
       document.querySelector('[data-action="reload"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
+        const button = event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null;
+        if (!button) {
+          return;
+        }
+        button.disabled = true;
         try {
           await loadSection();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "鍔犺浇澶辫触锛岃妫€鏌ユ湇鍔″悗閲嶈瘯銆?);
+          metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
         } finally {
-          event.currentTarget.disabled = false;
+          button.disabled = false;
         }
       });
 
       (async function init() {
         try {
           renderChannelCards();
-          metaEl.textContent = "鍔犺浇涓?..";
+          metaEl.textContent = "加载中...";
           await loadSection();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "鍒濆鍖栧け璐ワ紝璇峰埛鏂伴〉闈㈤噸璇曘€?);
+          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
         }
       })();
     </script>

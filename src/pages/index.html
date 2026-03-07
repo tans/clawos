@@ -1,22 +1,22 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN" data-theme="silk">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>ClawOS 鎺у埗鍙?/title>
+        <title>ClawOS 控制台</title>
         <link rel="stylesheet" href="/styles.css" />
-</head>
+            </head>
     <body class="bg-base-100 text-base-content overflow-x-auto">
         <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
             <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
+        <div class="text-sm text-base-content/60">加载中...</div>
       </aside>
 
             <main class="flex min-h-screen flex-col">
                 <header
                     class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4"
                 >
-                    <h1 class="text-lg font-semibold">鎺у埗鍙?/h1>
+                    <h1 class="text-lg font-semibold">控制台</h1>
                 </header>
 
                 <section class="flex-1 p-6">
@@ -30,20 +30,20 @@
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-openclaw-version
                                 >
-                                    鐗堟湰: 鏈煡
+                                    版本: 未知
                                 </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         class="btn btn-primary btn-sm"
                                         data-action="restart-gateway"
                                     >
-                                        閲嶅惎 openclaw
+                                        重启 openclaw
                                     </button>
                                     <button
                                         class="btn btn-warning btn-sm"
                                         data-action="update-openclaw"
                                     >
-                                        鍗囩骇 openclaw
+                                        升级 openclaw
                                     </button>
                                 </div>
                             </div>
@@ -53,25 +53,25 @@
                             class="card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
-                                <h2 class="card-title text-base">浼佸井</h2>
+                                <h2 class="card-title text-base">企微</h2>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-qw-gateway-status
                                 >
-                                    鍚姩鐘舵€? 鏈娴?
+                                    启动状态: 未检测
                                 </div>
                                 <div
                                     class="text-[11px] text-base-content/60"
                                     data-qw-gateway-status-detail
                                 >
-                                    绛夊緟鐘舵€佹洿鏂?..
+                                    等待状态更新...
                                 </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         class="btn btn-primary btn-sm"
                                         data-action="restart-qw-gateway"
                                     >
-                                        閲嶅惎浼佸井缃戝叧
+                                        重启企微网关
                                     </button>
                                 </div>
                             </div>
@@ -82,23 +82,23 @@
                         >
                             <div class="card-body gap-3">
                                 <h2 class="card-title text-base">
-                                    閰嶇疆澶囦唤鍒囨崲
+                                    配置备份切换
                                 </h2>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-openclaw-backup-summary
                                 >
-                                    姝ｅ湪鍔犺浇澶囦唤鍒楄〃...
+                                    正在加载备份列表...
                                 </div>
                                 <label class="form-control w-full gap-1.5">
                                     <span class="label-text text-xs text-base-content/70"
-                                        >澶囦唤鏂囦欢</span
+                                        >备份文件</span
                                     >
                                     <select
                                         class="select select-sm select-bordered w-full"
                                         data-openclaw-backup-select
                                     >
-                                        <option value="">姝ｅ湪鍔犺浇...</option>
+                                        <option value="">正在加载...</option>
                                     </select>
                                 </label>
                                 <div class="flex flex-wrap gap-2">
@@ -106,20 +106,20 @@
                                         class="btn btn-outline btn-sm"
                                         data-action="refresh-openclaw-backups"
                                     >
-                                        鍒锋柊澶囦唤
+                                        刷新备份
                                     </button>
                                     <button
                                         class="btn btn-warning btn-sm"
                                         data-action="rollback-openclaw-backup"
                                     >
-                                        鍒囨崲鍒拌澶囦唤
+                                        切换到该备份
                                     </button>
                                 </div>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-[11px] text-base-content/70"
                                     data-openclaw-backup-detail
                                 >
-                                    褰撳墠澶囦唤淇℃伅锛氳鍙栦腑...
+                                    当前备份信息：读取中...
                                 </div>
                             </div>
                         </section>
@@ -128,12 +128,12 @@
                             class="card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
-                                <h2 class="card-title text-base">鏃ュ織</h2>
+                                <h2 class="card-title text-base">日志</h2>
                                 <div
                                     class="text-xs text-base-content/70"
                                     data-task-meta
                                 >
-                                    鏆傛棤浠诲姟
+                                    暂无任务
                                 </div>
                                 <progress
                                     class="progress progress-neutral w-full hidden"
@@ -145,7 +145,7 @@
                                     class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
                                     data-task-output
                                 >
-绛夊緟浠诲姟鎵ц...</pre
+等待任务执行...</pre
                                 >
                             </div>
                         </section>
@@ -214,7 +214,7 @@
 
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
+                    const apiError = new Error(data.error || `请求失败: ${res.status}`);
                     apiError.isApiError = true;
                     throw apiError;
                 }
@@ -233,7 +233,7 @@
                 const disabled = state === null;
                 const ok = state === true;
                 if (labelEl) {
-                    labelEl.textContent = `${label}: ${disabled ? "宸茬鐢? : ok ? "姝ｅ父" : "寮傚父"}`;
+                    labelEl.textContent = `${label}: ${disabled ? "已禁用" : ok ? "正常" : "异常"}`;
                 }
                 if (!lightEl) return;
                 lightEl.classList.remove(
@@ -290,36 +290,36 @@
                     typeof status?.message === "string" &&
                     status.message.trim()
                         ? status.message.trim()
-                        : "鐘舵€佹湭鐭?;
+                        : "状态未知";
                 const sourceText =
                     status?.source === "startup"
-                        ? "鍚姩鑷姩浠诲姟"
+                        ? "启动自动任务"
                         : status?.source === "manual"
-                          ? "鎵嬪姩浠诲姟"
-                          : "鏈煡";
+                          ? "手动任务"
+                          : "未知";
                 const updatedAt =
                     typeof status?.updatedAt === "string" &&
                     status.updatedAt.trim()
                         ? status.updatedAt.trim()
                         : "";
 
-                let stateText = "鏈墽琛?;
-                if (state === "running") stateText = "鍚姩涓?;
-                if (state === "success") stateText = "鍚姩鎴愬姛";
-                if (state === "failed") stateText = "鍚姩澶辫触";
-                if (state === "unsupported") stateText = "绯荤粺涓嶆敮鎸?;
+                let stateText = "未执行";
+                if (state === "running") stateText = "启动中";
+                if (state === "success") stateText = "启动成功";
+                if (state === "failed") stateText = "启动失败";
+                if (state === "unsupported") stateText = "系统不支持";
 
                 if (statusBadges.qwGatewayStatus) {
-                    statusBadges.qwGatewayStatus.textContent = `鍚姩鐘舵€? ${stateText}`;
+                    statusBadges.qwGatewayStatus.textContent = `启动状态: ${stateText}`;
                     setQwGatewayStatusTone(state);
                 }
                 if (statusBadges.qwGatewayStatusDetail) {
                     const parts = [message];
                     if (state !== "idle") {
-                        parts.push(`鏉ユ簮: ${sourceText}`);
+                        parts.push(`来源: ${sourceText}`);
                     }
                     if (updatedAt) {
-                        parts.push(`鏇存柊鏃堕棿: ${updatedAt}`);
+                        parts.push(`更新时间: ${updatedAt}`);
                     }
                     statusBadges.qwGatewayStatusDetail.textContent =
                         parts.join(" | ");
@@ -346,7 +346,7 @@
                 } catch (error) {
                     if (statusBadges.qwGatewayStatusDetail) {
                         statusBadges.qwGatewayStatusDetail.textContent =
-                            readUserErrorMessage(error, "鐘舵€佽幏鍙栧け璐ワ紝璇风◢鍚庨噸璇曘€?);
+                            readUserErrorMessage(error, "状态获取失败，请稍后重试。");
                     }
                 }
             }
@@ -359,7 +359,7 @@
             }
 
             function formatBackupTime(value) {
-                if (typeof value !== "string" || !value.trim()) return "鏈煡";
+                if (typeof value !== "string" || !value.trim()) return "未知";
                 const time = new Date(value);
                 if (!Number.isFinite(time.getTime())) return value;
                 return time.toLocaleString("zh-CN", { hour12: false });
@@ -367,7 +367,7 @@
 
             function formatBackupSize(value) {
                 const size = Number(value);
-                if (!Number.isFinite(size) || size < 0) return "鏈煡";
+                if (!Number.isFinite(size) || size < 0) return "未知";
                 if (size < 1024) return `${size} B`;
                 if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
                 return `${(size / (1024 * 1024)).toFixed(2)} MB`;
@@ -391,21 +391,21 @@
                 if (!selectedBackup) {
                     if (openclawBackupUI.summary) {
                         openclawBackupUI.summary.textContent =
-                            "褰撳墠鏈彂鐜伴厤缃浠?;
+                            "当前未发现配置备份";
                     }
                     if (openclawBackupUI.detail) {
                         openclawBackupUI.detail.textContent =
-                            "璇峰厛鐢熸垚閰嶇疆澶囦唤鍚庡啀杩涜鍒囨崲銆?;
+                            "请先生成配置备份后再进行切换。";
                     }
                     return;
                 }
 
                 if (openclawBackupUI.summary) {
-                    openclawBackupUI.summary.textContent = `鍏?${openclawBackupState.backups.length} 涓浠斤紝褰撳墠閫夋嫨锛?{selectedBackup.fileName}`;
+                    openclawBackupUI.summary.textContent = `共 ${openclawBackupState.backups.length} 个备份，当前选择：${selectedBackup.fileName}`;
                 }
                 if (openclawBackupUI.detail) {
                     openclawBackupUI.detail.textContent =
-                        `鏃堕棿: ${formatBackupTime(selectedBackup.modifiedAt)} | 澶у皬: ${formatBackupSize(selectedBackup.size)}`;
+                        `时间: ${formatBackupTime(selectedBackup.modifiedAt)} | 大小: ${formatBackupSize(selectedBackup.size)}`;
                 }
             }
 
@@ -418,7 +418,7 @@
                 if (backups.length === 0) {
                     const option = document.createElement("option");
                     option.value = "";
-                    option.textContent = "鏈壘鍒板浠芥枃浠?;
+                    option.textContent = "未找到备份文件";
                     select.append(option);
                     select.disabled = true;
                     openclawBackupState.selectedPath = "";
@@ -448,7 +448,7 @@
 
             async function refreshOpenclawBackups(preferredPath = "") {
                 taskProgress.classList.add("hidden");
-                taskMeta.textContent = "姝ｅ湪璇诲彇閰嶇疆澶囦唤鍒楄〃...";
+                taskMeta.textContent = "正在读取配置备份列表...";
                 const data = await api("/api/gateway/config/backups");
                 const command =
                     typeof data.command === "string" ? data.command.trim() : "";
@@ -459,20 +459,20 @@
                 renderOpenclawBackupOptions(preferredPath);
 
                 if (openclawBackupState.backups.length === 0) {
-                    taskMeta.textContent = "鏈壘鍒伴厤缃浠?;
-                    taskOutput.textContent = "鏈壘鍒板彲鐢ㄧ殑閰嶇疆澶囦唤鏂囦欢銆?;
+                    taskMeta.textContent = "未找到配置备份";
+                    taskOutput.textContent = "未找到可用的配置备份文件。";
                     taskOutput.scrollTop = taskOutput.scrollHeight;
                     return;
                 }
 
                 const selectedBackup = getSelectedOpenclawBackup();
                 if (!selectedBackup) return;
-                taskMeta.textContent = `宸插姞杞藉浠?${openclawBackupState.backups.length} 涓猔;
+                taskMeta.textContent = `已加载备份 ${openclawBackupState.backups.length} 个`;
                 taskOutput.textContent = [
-                    command ? `鍛戒护: ${command}` : "",
-                    `褰撳墠閫夋嫨: ${selectedBackup.fileName}`,
-                    `鏃堕棿: ${formatBackupTime(selectedBackup.modifiedAt)}`,
-                    `澶у皬: ${formatBackupSize(selectedBackup.size)}`,
+                    command ? `命令: ${command}` : "",
+                    `当前选择: ${selectedBackup.fileName}`,
+                    `时间: ${formatBackupTime(selectedBackup.modifiedAt)}`,
+                    `大小: ${formatBackupSize(selectedBackup.size)}`,
                 ].filter(Boolean).join("\n");
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
@@ -480,15 +480,15 @@
             async function rollbackOpenclawBackup() {
                 const selectedBackup = getSelectedOpenclawBackup();
                 if (!selectedBackup) {
-                    throw new Error("璇峰厛閫夋嫨鍙敤澶囦唤銆?);
+                    throw new Error("请先选择可用备份。");
                 }
 
                 const confirmed = window.confirm(
-                    `灏嗗垏鎹㈠埌澶囦唤 ${selectedBackup.fileName}銆俓n姝ゆ搷浣滀細瑕嗙洊褰撳墠閰嶇疆骞堕噸鍚湇鍔★紝鏄惁缁х画锛焋,
+                    `将切换到备份 ${selectedBackup.fileName}。\n此操作会覆盖当前配置并重启服务，是否继续？`,
                 );
                 if (!confirmed) {
                     taskProgress.classList.add("hidden");
-                    taskMeta.textContent = "宸插彇娑堝浠藉垏鎹€?;
+                    taskMeta.textContent = "已取消备份切换。";
                     return;
                 }
 
@@ -499,7 +499,7 @@
             }
 
             function formatHealthState(value) {
-                return value ? "姝ｅ父" : "寮傚父";
+                return value ? "正常" : "异常";
             }
 
             function renderEnvironmentReport(info) {
@@ -509,14 +509,14 @@
                     : [];
                 taskMeta.textContent =
                     warnings.length > 0
-                        ? `鐜妫€鏌ュ畬鎴愶紙鍛婅 ${warnings.length} 鏉★級`
-                        : "鐜妫€鏌ュ畬鎴愶紙鏃犲憡璀︼級";
+                        ? `环境检查完成（告警 ${warnings.length} 条）`
+                        : "环境检查完成（无告警）";
 
                 const openclawVersion =
                     typeof info?.openclawVersion === "string" &&
                     info.openclawVersion.trim()
                         ? info.openclawVersion.trim()
-                        : "鏈煡";
+                        : "未知";
                 const openclawVersionSource =
                     typeof info?.openclawVersionSource === "string" &&
                     info.openclawVersionSource.trim()
@@ -528,31 +528,31 @@
                         ? info.gatewayReportedVersion.trim()
                         : "";
 
-                const browserMode = info?.browserMode === "local" ? "鏈湴" : "CDP";
+                const browserMode = info?.browserMode === "local" ? "本地" : "CDP";
                 const browserState =
                     info?.browserEnabled === false
-                        ? "宸茬鐢?
+                        ? "已禁用"
                         : formatHealthState(Boolean(info?.browserReady));
 
                 const lines = [
-                    `鎵ц妯″紡: ${info?.execution || "鏈煡"}`,
+                    `执行模式: ${info?.execution || "未知"}`,
                     `WSL: ${formatHealthState(Boolean(info?.wslReady))}`,
                     `openclaw: ${formatHealthState(Boolean(info?.openclawReady))}`,
-                    `openclaw 鐗堟湰: ${openclawVersion}`,
+                    `openclaw 版本: ${openclawVersion}`,
                     `gateway: ${formatHealthState(Boolean(info?.gatewayReady))}`,
-                    `娴忚鍣?${browserMode}): ${browserState}`,
+                    `浏览器(${browserMode}): ${browserState}`,
                 ];
 
                 if (openclawVersionSource) {
-                    lines.push("鐗堟湰鏉ユ簮: 绯荤粺妫€娴?);
+                    lines.push("版本来源: 系统检测");
                 }
                 if (gatewayReportedVersion) {
-                    lines.push(`鏈嶅姟涓婃姤鐗堟湰: ${gatewayReportedVersion}`);
+                    lines.push(`服务上报版本: ${gatewayReportedVersion}`);
                 }
 
                 if (warnings.length > 0) {
                     lines.push("");
-                    lines.push("妫€娴嬪埌寮傚父锛岃鍏堟墽琛屸€滅幆澧冧慨澶嶁€濆悗閲嶈瘯銆?);
+                    lines.push("检测到异常，请先执行“环境修复”后重试。");
                 }
 
                 taskOutput.textContent = lines.join("\n");
@@ -561,10 +561,10 @@
 
             function renderTask(task) {
                 const statusTextMap = {
-                    pending: "绛夊緟涓?,
-                    running: "鎵ц涓?,
-                    success: "宸插畬鎴?,
-                    failed: "澶辫触",
+                    pending: "等待中",
+                    running: "执行中",
+                    success: "已完成",
+                    failed: "失败",
                 };
                 const percent =
                     task.totalSteps > 0
@@ -575,14 +575,14 @@
                     task.status === "running" || task.status === "pending";
                 taskProgress.classList.toggle("hidden", !running);
                 const statusText =
-                    statusTextMap[task.status] || "鏈煡";
+                    statusTextMap[task.status] || "未知";
                 taskMeta.textContent = `${task.title} | ${statusText} | ${task.step}/${task.totalSteps}`;
 
                 const lines = task.logs.map(
                     (item) =>
                         `[${item.timestamp}] ${item.level.toUpperCase()} ${item.message}`,
                 );
-                taskOutput.textContent = lines.join("\n") || "鏆傛棤鏃ュ織";
+                taskOutput.textContent = lines.join("\n") || "暂无日志";
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
 
@@ -610,7 +610,7 @@
                         taskProgress.classList.add("hidden");
                         taskMeta.textContent = readUserErrorMessage(
                             error,
-                            "浠诲姟鐘舵€佸埛鏂板け璐ワ紝璇风◢鍚庨噸璇曘€?,
+                            "任务状态刷新失败，请稍后重试。",
                         );
                     }
                 };
@@ -626,12 +626,12 @@
                 });
 
                 if (!data.taskId) {
-                    throw new Error("鏈嶅姟绔湭杩斿洖浠诲姟 ID");
+                    throw new Error("服务端未返回任务 ID");
                 }
 
                 if (data.reused) {
                     taskMeta.textContent =
-                        "宸叉湁鍚岀被浠诲姟鍦ㄦ墽琛岋紝宸插垏鎹㈠埌褰撳墠浠诲姟鏃ュ織";
+                        "已有同类任务在执行，已切换到当前任务日志";
                 }
 
                 await pollTask(data.taskId);
@@ -643,7 +643,7 @@
                 const info = data.info || {};
 
                 if (statusBadges.execution) {
-                    statusBadges.execution.textContent = `鎵ц妯″紡: ${info.execution || "鏈煡"}`;
+                    statusBadges.execution.textContent = `执行模式: ${info.execution || "未知"}`;
                 }
 
                 setLight(
@@ -663,8 +663,8 @@
                         typeof info.openclawVersion === "string" &&
                         info.openclawVersion.trim()
                             ? info.openclawVersion.trim()
-                            : "鏈煡";
-                    statusBadges.openclawVersion.textContent = `鐗堟湰: ${openclawVersion}`;
+                            : "未知";
+                    statusBadges.openclawVersion.textContent = `版本: ${openclawVersion}`;
                 }
                 setLight(
                     statusBadges.gatewayLabel,
@@ -674,7 +674,7 @@
                 );
 
                 const browserMode =
-                    info.browserMode === "local" ? "鏈湴" : "CDP";
+                    info.browserMode === "local" ? "本地" : "CDP";
                 const browserState =
                     info.browserEnabled === false
                         ? null
@@ -682,7 +682,7 @@
                 setLight(
                     statusBadges.browserLabel,
                     statusBadges.browserLight,
-                    `娴忚鍣?${browserMode})`,
+                    `浏览器(${browserMode})`,
                     browserState,
                 );
 
@@ -733,7 +733,7 @@
                         });
                         return;
                     default:
-                        throw new Error("鏆備笉鏀寔璇ユ搷浣溿€?);
+                        throw new Error("暂不支持该操作。");
                 }
             }
 
@@ -748,7 +748,7 @@
                         taskProgress.classList.add("hidden");
                         taskMeta.textContent = readUserErrorMessage(
                             error,
-                            "鎿嶄綔澶辫触锛岃绋嶅悗閲嶈瘯銆?,
+                            "操作失败，请稍后重试。",
                         );
                     } finally {
                         button.disabled = false;
@@ -772,7 +772,7 @@
                     taskProgress.classList.add("hidden");
                     taskMeta.textContent = readUserErrorMessage(
                         error,
-                        "鍒濆鍖栧け璐ワ紝璇峰埛鏂伴〉闈㈤噸璇曘€?,
+                        "初始化失败，请刷新页面重试。",
                     );
                 }
                 await pollQwGatewayStatus();

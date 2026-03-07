@@ -1,47 +1,47 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 閽卞寘</title>
+    <title>ClawOS 钱包</title>
     <link rel="stylesheet" href="/styles.css" />
-</head>
+      </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
+        <div class="text-sm text-base-content/60">加载中...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">閽卞寘</h1>
+          <h1 class="text-lg font-semibold">钱包</h1>
         </header>
 
         <section class="flex-1 p-6">
           <div class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">鏈湴閽卞寘</h2>
+              <h2 class="card-title text-base">本地钱包</h2>
               <div class="flex flex-wrap gap-2">
-                <button class="btn btn-primary btn-sm" type="button" data-action="generate-wallet">鐢熸垚閽卞寘</button>
-                <button class="btn btn-outline btn-sm" type="button" data-action="reload-wallet">鍒锋柊</button>
+                <button class="btn btn-primary btn-sm" type="button" data-action="generate-wallet">生成钱包</button>
+                <button class="btn btn-outline btn-sm" type="button" data-action="reload-wallet">刷新</button>
               </div>
 
               <div class="grid gap-2 text-sm">
                 <div class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-2">
-                  <div class="text-xs text-base-content/60">閽卞寘鍦板潃</div>
+                  <div class="text-xs text-base-content/60">钱包地址</div>
                   <div class="font-mono break-all" data-wallet-address>-</div>
                 </div>
                 <div class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-2">
-                  <div class="text-xs text-base-content/60">鍒涘缓鏃堕棿</div>
+                  <div class="text-xs text-base-content/60">创建时间</div>
                   <div class="font-mono" data-wallet-created>-</div>
                 </div>
               </div>
 
               <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                <div class="mb-2 text-sm font-semibold">浣欓</div>
+                <div class="mb-2 text-sm font-semibold">余额</div>
                 <div class="grid gap-3 xl:grid-cols-3">
                   <div class="rounded-lg border border-base-200 bg-base-100 px-3 py-3">
-                    <div class="text-xs font-semibold text-base-content/80">ETH 涓荤綉</div>
+                    <div class="text-xs font-semibold text-base-content/80">ETH 主网</div>
                     <div class="mt-2 text-xs text-base-content/60">ETH</div>
                     <div class="font-mono text-sm" data-balance="eth-native">-</div>
                     <div class="mt-2 text-xs text-base-content/60">USDT</div>
@@ -67,15 +67,15 @@
                     <div class="mt-2 text-[11px] text-error/80" data-balance-error="base"></div>
                   </div>
                 </div>
-                <div class="mt-2 text-[11px] text-base-content/60" data-balance-updated>灏氭湭鏌ヨ</div>
+                <div class="mt-2 text-[11px] text-base-content/60" data-balance-updated>尚未查询</div>
               </div>
 
               <div class="hidden rounded-lg border border-warning/40 bg-warning/10 px-3 py-3" data-wallet-secret-wrap>
-                <div class="mb-1 text-xs font-semibold text-warning">鏈鐢熸垚绉侀挜锛堜粎鏈杩斿洖锛?/div>
+                <div class="mb-1 text-xs font-semibold text-warning">本次生成私钥（仅本次返回）</div>
                 <textarea class="textarea textarea-bordered h-20 w-full font-mono text-xs" readonly data-wallet-privatekey></textarea>
               </div>
 
-              <div class="text-xs text-base-content/70" data-wallet-meta>姝ｅ湪璇诲彇閽卞寘鐘舵€?..</div>
+              <div class="text-xs text-base-content/70" data-wallet-meta>正在读取钱包状态...</div>
             </div>
           </div>
         </section>
@@ -121,7 +121,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -153,7 +153,7 @@
           item.usdt.textContent = placeholder;
           item.error.textContent = "";
         });
-        balanceUpdatedEl.textContent = "灏氭湭鏌ヨ";
+        balanceUpdatedEl.textContent = "尚未查询";
       }
 
       function renderBalances(balances) {
@@ -169,27 +169,27 @@
 
           const errors = [];
           if (typeof item.nativeError === "string" && item.nativeError.length > 0) {
-            errors.push("鍘熺敓甯佷綑棰濇殏鏃舵棤娉曡幏鍙?);
+            errors.push("原生币余额暂时无法获取");
           }
           if (typeof item.usdtError === "string" && item.usdtError.length > 0) {
-            errors.push("USDT 浣欓鏆傛椂鏃犳硶鑾峰彇");
+            errors.push("USDT 余额暂时无法获取");
           }
-          balanceEls[key].error.textContent = errors.join("锛?);
+          balanceEls[key].error.textContent = errors.join("；");
         });
 
         balanceUpdatedEl.textContent = balances.updatedAt
-          ? `鏇存柊鏃堕棿: ${formatCreatedAt(balances.updatedAt)}`
-          : "鏇存柊鏃堕棿: -";
+          ? `更新时间: ${formatCreatedAt(balances.updatedAt)}`
+          : "更新时间: -";
       }
 
       function renderWallet(wallet) {
         const exists = Boolean(wallet && wallet.exists);
         walletExists = exists;
-        addressEl.textContent = exists ? wallet.address || "-" : "鏈敓鎴?;
+        addressEl.textContent = exists ? wallet.address || "-" : "未生成";
         createdEl.textContent = exists ? formatCreatedAt(wallet.createdAt) : "-";
         if (generateBtn) {
           generateBtn.disabled = exists;
-          generateBtn.textContent = exists ? "宸茬敓鎴? : "鐢熸垚閽卞寘";
+          generateBtn.textContent = exists ? "已生成" : "生成钱包";
         }
       }
 
@@ -197,10 +197,10 @@
         if (generateBtn) {
           if (walletExists) {
             generateBtn.disabled = true;
-            generateBtn.textContent = "宸茬敓鎴?;
+            generateBtn.textContent = "已生成";
           } else {
             generateBtn.disabled = running;
-            generateBtn.textContent = running ? "鐢熸垚涓?.." : "鐢熸垚閽卞寘";
+            generateBtn.textContent = running ? "生成中..." : "生成钱包";
           }
         }
         if (reloadBtn) {
@@ -214,23 +214,23 @@
       }
 
       async function loadWallet() {
-        metaEl.textContent = "姝ｅ湪璇诲彇閽卞寘鐘舵€?..";
+        metaEl.textContent = "正在读取钱包状态...";
         const data = await api("/api/local/wallet");
         const wallet = data.wallet || {};
         renderWallet(wallet);
 
         if (wallet.exists) {
           await loadBalances();
-          metaEl.textContent = "宸插瓨鍦ㄩ挶鍖咃紝宸茶鍙栦綑棰濅俊鎭€?;
+          metaEl.textContent = "已存在钱包，已读取余额信息。";
         } else {
-          resetBalances("鏈敓鎴?);
-          metaEl.textContent = "褰撳墠灏氭湭鐢熸垚閽卞寘锛岀偣鍑烩€滅敓鎴愰挶鍖呪€濆垱寤恒€?;
+          resetBalances("未生成");
+          metaEl.textContent = "当前尚未生成钱包，点击“生成钱包”创建。";
         }
       }
 
       async function generateWallet() {
         setRunning(true);
-        metaEl.textContent = "姝ｅ湪鐢熸垚閽卞寘骞朵繚瀛橀厤缃?..";
+        metaEl.textContent = "正在生成钱包并保存配置...";
 
         try {
           const data = await api("/api/local/wallet/generate", {
@@ -245,14 +245,14 @@
           }
 
           await loadBalances();
-          metaEl.textContent = "閽卞寘宸茬敓鎴愬苟淇濆瓨锛屼綑棰濆凡鏇存柊銆?;
+          metaEl.textContent = "钱包已生成并保存，余额已更新。";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          if (message.includes("宸插瓨鍦ㄩ挶鍖?)) {
+          if (message.includes("已存在钱包")) {
             await loadWallet();
-            metaEl.textContent = "宸插瓨鍦ㄩ挶鍖咃紝鏃犻渶閲嶅鐢熸垚銆?;
+            metaEl.textContent = "已存在钱包，无需重复生成。";
           } else {
-            metaEl.textContent = readUserErrorMessage(error, "鐢熸垚澶辫触锛岃绋嶅悗閲嶈瘯銆?);
+            metaEl.textContent = readUserErrorMessage(error, "生成失败，请稍后重试。");
           }
         } finally {
           setRunning(false);

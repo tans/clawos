@@ -1,36 +1,36 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 璁剧疆</title>
+    <title>ClawOS 设置</title>
     <link rel="stylesheet" href="/styles.css" />
-</head>
+      </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
+        <div class="text-sm text-base-content/60">加载中...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">璁剧疆</h1>
+          <h1 class="text-lg font-semibold">设置</h1>
           <div class="flex items-center gap-2">
-            <button class="btn btn-outline btn-xs" type="button" data-action="reload">閲嶆柊鍔犺浇</button>
-            <button class="btn btn-primary btn-xs" type="button" data-action="save">淇濆瓨璁剧疆</button>
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+            <button class="btn btn-primary btn-xs" type="button" data-action="save">保存设置</button>
           </div>
         </header>
 
         <section class="flex-1 p-6">
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">鏈嶅姟鍙傛暟</h2>
+              <h2 class="card-title text-base">服务参数</h2>
               <div class="grid gap-3">
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
                       <div class="text-sm font-medium">openclaw Token</div>
-                      <div class="text-xs text-base-content/60">榛樿鍊?xiake锛岀敤浜庝晶杈规爮鈥滄墦寮€ openclaw 鍚庡彴鈥濆叆鍙ｆ嫾鎺ヨ闂摼鎺ャ€?/div>
+                      <div class="text-xs text-base-content/60">默认值 xiake，用于侧边栏“打开 openclaw 后台”入口拼接访问链接。</div>
                     </div>
                     <input
                       class="input input-bordered input-sm w-full font-mono"
@@ -44,9 +44,9 @@
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">鎺堟潈鎺у埗鍦板潃</div>
+                      <div class="text-sm font-medium">授权控制地址</div>
                       <div class="text-xs text-base-content/60">
-                        鍙负绌恒€傚～鍐欏悗灏嗙敤浜庢巿鏉冩帶鍒跺姛鑳姐€?
+                        可为空。填写后将用于授权控制功能。
                       </div>
                     </div>
                     <input
@@ -61,17 +61,17 @@
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">寮€鏈哄悗鑷姩鍚姩 ClawOS</div>
+                      <div class="text-sm font-medium">开机后自动启动 ClawOS</div>
                       <div class="text-xs text-base-content/60">
-                        璇存槑锛氬惎鐢ㄥ悗锛岀櫥褰曠郴缁熸椂浼氳嚜鍔ㄥ惎鍔?ClawOS銆?
+                        说明：启用后，登录系统时会自动启动 ClawOS。
                       </div>
                     </div>
                     <div class="space-y-2">
                       <label class="label cursor-pointer justify-start gap-3 p-0">
                         <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
-                        <span class="label-text text-sm">鍚敤</span>
+                        <span class="label-text text-sm">启用</span>
                       </label>
-                      <div class="text-xs text-base-content/60" data-autostart-status>姝ｅ湪璇诲彇鐘舵€?..</div>
+                      <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
                     </div>
                   </div>
                 </div>
@@ -80,7 +80,7 @@
           </section>
 
           <div class="mt-4 rounded-lg border border-base-200 bg-base-100 px-4 py-3 text-xs text-base-content/70" data-meta>
-            姝ｅ湪璇诲彇璁剧疆...
+            正在读取设置...
           </div>
         </section>
       </main>
@@ -110,7 +110,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -128,7 +128,7 @@
       function setSaving(saving) {
         if (saveBtn) {
           saveBtn.disabled = saving;
-          saveBtn.textContent = saving ? "淇濆瓨涓?.." : "淇濆瓨璁剧疆";
+          saveBtn.textContent = saving ? "保存中..." : "保存设置";
         }
       }
 
@@ -153,15 +153,15 @@
             autoStartCheckbox.checked = false;
             autoStartCheckbox.disabled = true;
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = "褰撳墠绯荤粺涓嶆敮鎸佹鍔熻兘锛堜粎 Windows 鍙敤锛夈€?;
+              autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
             }
           } else {
             autoStartCheckbox.disabled = false;
             autoStartCheckbox.checked = Boolean(state.enabled);
             if (autoStartStatusEl) {
               autoStartStatusEl.textContent = state.enabled
-                ? "宸插惎鐢細寮€鏈哄悗浼氳嚜鍔ㄥ惎鍔?ClawOS銆?
-                : "鏈惎鐢細寮€鏈哄悗涓嶄細鑷姩鍚姩 ClawOS銆?;
+                ? "已启用：开机后会自动启动 ClawOS。"
+                : "未启用：开机后不会自动启动 ClawOS。";
             }
           }
         }
@@ -174,12 +174,12 @@
 
         const openclawToken = tokenInput.value.trim();
         if (!openclawToken) {
-          throw new Error("openclaw Token 涓嶈兘涓虹┖銆?);
+          throw new Error("openclaw Token 不能为空。");
         }
 
         const controllerAddress = controllerAddressInput.value.trim();
         if (controllerAddress && !/^0x[a-fA-F0-9]{40}$/.test(controllerAddress)) {
-          throw new Error("鎺堟潈鎺у埗鍦板潃鏍煎紡涓嶅悎娉曪紝蹇呴』鏄?0x 寮€澶寸殑 40 浣嶅崄鍏繘鍒跺湴鍧€銆?);
+          throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
         }
 
         await api("/api/local/settings", {
@@ -199,19 +199,19 @@
         const state = data.state || {};
         if (autoStartStatusEl) {
           autoStartStatusEl.textContent = state.enabled
-            ? "宸插惎鐢細寮€鏈哄悗浼氳嚜鍔ㄥ惎鍔?ClawOS銆?
-            : "鏈惎鐢細寮€鏈哄悗涓嶄細鑷姩鍚姩 ClawOS銆?;
+            ? "已启用：开机后会自动启动 ClawOS。"
+            : "未启用：开机后不会自动启动 ClawOS。";
         }
       }
 
       if (reloadBtn) {
         reloadBtn.addEventListener("click", async () => {
           try {
-            setMeta("姝ｅ湪璇诲彇璁剧疆...");
+            setMeta("正在读取设置...");
             await loadSettings();
-            setMeta("璁剧疆宸插埛鏂般€?);
+            setMeta("设置已刷新。");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "璇诲彇澶辫触锛岃妫€鏌ユ湇鍔＄姸鎬佸悗閲嶈瘯銆?));
+            setMeta(readUserErrorMessage(error, "读取失败，请检查服务状态后重试。"));
           }
         });
       }
@@ -220,11 +220,11 @@
         saveBtn.addEventListener("click", async () => {
           try {
             setSaving(true);
-            setMeta("姝ｅ湪淇濆瓨璁剧疆...");
+            setMeta("正在保存设置...");
             await saveSettings();
-            setMeta("璁剧疆宸蹭繚瀛樸€俹penclaw Token 涓庢巿鏉冩帶鍒跺湴鍧€浼氱珛鍗崇敤浜庡悗缁繛鎺ャ€?);
+            setMeta("设置已保存。openclaw Token 与授权控制地址会立即用于后续连接。");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?));
+            setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
           } finally {
             setSaving(false);
           }
@@ -236,15 +236,15 @@
           const next = autoStartCheckbox.checked;
           autoStartCheckbox.disabled = true;
           if (autoStartStatusEl) {
-            autoStartStatusEl.textContent = "姝ｅ湪淇濆瓨寮€鏈鸿嚜鍚姩鐘舵€?..";
+            autoStartStatusEl.textContent = "正在保存开机自启动状态...";
           }
           try {
             await saveAutoStart(next);
-            setMeta("寮€鏈鸿嚜鍚姩鐘舵€佸凡鏇存柊銆?);
+            setMeta("开机自启动状态已更新。");
           } catch (error) {
             autoStartCheckbox.checked = !next;
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = readUserErrorMessage(error, "淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?);
+              autoStartStatusEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
             }
           } finally {
             autoStartCheckbox.disabled = false;
@@ -255,9 +255,9 @@
       (async function init() {
         try {
           await loadSettings();
-          setMeta("璁剧疆宸插姞杞姐€傚彲浠ヤ慨鏀瑰悗鐐瑰嚮鈥滀繚瀛樿缃€濄€?);
+          setMeta("设置已加载。可以修改后点击“保存设置”。");
         } catch (error) {
-          setMeta(readUserErrorMessage(error, "鍒濆鍖栧け璐ワ紝璇峰埛鏂伴〉闈㈤噸璇曘€?));
+          setMeta(readUserErrorMessage(error, "初始化失败，请刷新页面重试。"));
         }
       })();
     </script>
