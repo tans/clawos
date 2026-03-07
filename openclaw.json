@@ -17,8 +17,8 @@
   },
   "auth": {
     "profiles": {
-      "minimax:default": {
-        "provider": "minimax",
+      "minimax-cn:default": {
+        "provider": "minimax-cn",
         "mode": "api_key"
       },
       "kimi-coding:default": {
@@ -30,13 +30,13 @@
   "models": {
     "mode": "merge",
     "providers": {
-      "minimax": {
+      "minimax-cn": {
         "baseUrl": "https://api.minimaxi.com/anthropic",
         "api": "anthropic-messages",
         "models": [
           {
-            "id": "MiniMax-M2.1",
-            "name": "MiniMax M2.1",
+            "id": "MiniMax-M2.5",
+            "name": "MiniMax M2.5",
             "reasoning": false,
             "input": [
               "text"
@@ -83,7 +83,7 @@
         "primary": "kimi-coding/k2p5"
       },
       "models": {
-        "minimax/MiniMax-M2.1": {
+        "minimax-cn/MiniMax-M2.5": {
           "alias": "Minimax"
         },
         "kimi-coding/k2p5": {
