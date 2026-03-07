@@ -31,57 +31,33 @@ const PAGES: Record<string, string> = {
 };
 
 function resolveSidebarActive(path: string): SidebarNavId | null {
-  if (path === "/" || path === "/index") {
-    return "dashboard";
-  }
-
-  if (path.startsWith("/config/channels")) {
-    return "channels";
-  }
-
-  if (path.startsWith("/config/agents")) {
-    return "agents";
-  }
-
-  if (path.startsWith("/config/skills")) {
-    return "skills";
-  }
-
-  if (path.startsWith("/config/browser")) {
-    return "browser";
-  }
-
-  if (path.startsWith("/config/wallet")) {
-    return "wallet";
-  }
-
-  if (path.startsWith("/config/settings")) {
-    return "settings";
-  }
-
-  if (path.startsWith("/sessions")) {
-    return "sessions";
-  }
-
+  if (path === "/" || path === "/index") return "dashboard";
+  if (path.startsWith("/config/channels")) return "channels";
+  if (path.startsWith("/config/agents")) return "agents";
+  if (path.startsWith("/config/skills")) return "skills";
+  if (path.startsWith("/config/browser")) return "browser";
+  if (path.startsWith("/config/wallet")) return "wallet";
+  if (path.startsWith("/config/settings")) return "settings";
+  if (path.startsWith("/sessions")) return "sessions";
   return null;
 }
 
 function renderSidebar(active: SidebarNavId | null): string {
-  const items: Array<{ id: SidebarNavId; href: string; icon: string; label: string }> = [
-    { id: "dashboard", href: "/", icon: "fa-gauge-high", label: "控制台" },
-    { id: "channels", href: "/config/channels", icon: "fa-comments", label: "通讯渠道" },
-    { id: "agents", href: "/config/agents", icon: "fa-brain", label: "大模型" },
-    { id: "skills", href: "/config/skills", icon: "fa-graduation-cap", label: "功能" },
-    { id: "browser", href: "/config/browser", icon: "fa-globe", label: "浏览器" },
-    { id: "wallet", href: "/config/wallet", icon: "fa-wallet", label: "钱包" },
-    { id: "settings", href: "/config/settings", icon: "fa-gear", label: "设置" },
+  const items: Array<{ id: SidebarNavId; href: string; label: string; marker: string }> = [
+    { id: "dashboard", href: "/", label: "控制台", marker: "D" },
+    { id: "channels", href: "/config/channels", label: "通讯渠道", marker: "C" },
+    { id: "agents", href: "/config/agents", label: "大模型", marker: "A" },
+    { id: "skills", href: "/config/skills", label: "功能", marker: "S" },
+    { id: "browser", href: "/config/browser", label: "浏览器", marker: "B" },
+    { id: "wallet", href: "/config/wallet", label: "钱包", marker: "W" },
+    { id: "settings", href: "/config/settings", label: "设置", marker: "G" },
   ];
 
   const nav = items
     .map((item) => {
       const className =
         item.id === active ? "btn btn-primary btn-sm justify-start gap-2" : "btn btn-ghost btn-sm justify-start gap-2";
-      return `<a class="${className}" href="${item.href}"><i class="fa-solid ${item.icon} w-4 text-center" aria-hidden="true"></i><span>${item.label}</span></a>`;
+      return `<a class="${className}" href="${item.href}"><span class="inline-flex h-4 w-4 items-center justify-center rounded bg-base-300 text-[10px]">${item.marker}</span><span>${item.label}</span></a>`;
     })
     .join("");
 
@@ -105,13 +81,13 @@ function renderSidebar(active: SidebarNavId | null): string {
         <div class="flex flex-col gap-3 pt-1">
           <div data-app-update-widget>
             <div class="text-xs text-base-content/70">
-              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> · 版本：<span data-app-version>v-</span>
+              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> | 版本：<span data-app-version>v-</span>
             </div>
             <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
           </div>
 
           <button class="btn btn-outline btn-sm justify-start gap-2" type="button" data-openclaw-entry>
-            <i class="fa-solid fa-arrow-up-right-from-square w-4 text-center" aria-hidden="true"></i>
+            <span class="inline-flex h-4 w-4 items-center justify-center rounded bg-base-300 text-[10px]">O</span>
             <span>打开 openclaw 后台</span>
           </button>
         </div>

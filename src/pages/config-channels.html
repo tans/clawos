@@ -1,16 +1,15 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClawOS 通讯渠道</title>
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
   </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">加载�?..</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
@@ -26,7 +25,7 @@
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="card-title text-base">渠道开关与参数入口</h2>
-                <span class="text-[11px] text-base-content/60">仅展示当前常用渠道</span>
+                <span class="text-[11px] text-base-content/60">仅展示当前常用渠�?/span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
             </div>
@@ -40,7 +39,7 @@
     <div class="toast toast-end toast-top hidden" data-loading-toast>
       <div class="alert alert-info text-xs">
         <span class="loading loading-spinner loading-xs"></span>
-        <span>加载中...</span>
+        <span>加载�?..</span>
       </div>
     </div>
 
@@ -49,7 +48,7 @@
         <div class="mb-2 flex items-start justify-between gap-3">
           <div>
             <h3 class="text-base font-semibold" data-modal-title>渠道参数</h3>
-            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅展示当前可编辑参数。</div>
+            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅展示当前可编辑参数�?/div>
           </div>
           <button class="btn btn-ghost btn-xs" type="button" data-modal-close>关闭</button>
         </div>
@@ -123,7 +122,7 @@
 
       function ensureObject(value, field) {
         if (!isObject(value)) {
-          throw new Error(`${field} 必须是 JSON 对象`);
+          throw new Error(`${field} 必须�?JSON 对象`);
         }
         return value;
       }
@@ -323,7 +322,7 @@
         if (specKey === "wework") {
           return sanitizeWeworkEntry(draft);
         }
-        throw new Error(`未知渠道：${specKey}`);
+        throw new Error(`未知渠道�?{specKey}`);
       }
 
       function getChannelEntry(config, specKey) {
@@ -391,11 +390,11 @@
                     <i class="${iconClass} w-4 text-center text-base-content/70" aria-hidden="true"></i>
                     <span>${spec.title}</span>
                   </div>
-                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参数</div>
+                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参�?/div>
                 </div>
                 <div class="flex items-center gap-2">
                   <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                    <span class="text-xs">开启</span>
+                    <span class="text-xs">开�?/span>
                     <input class="toggle toggle-sm" type="checkbox" data-channel-enabled data-channel-key="${spec.key}" />
                   </label>
                   ${spec.fields.length > 0 ? `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>` : ""}
@@ -432,14 +431,14 @@
         cardEls.enabled.checked = channel.enable === true;
 
         if (spec.fields.length === 0) {
-          cardEls.summary.textContent = channel.enable === true ? "已开启" : "已关闭";
+          cardEls.summary.textContent = channel.enable === true ? "已开�? : "已关�?;
           return;
         }
 
         if (configured > 0) {
-          cardEls.summary.textContent = `已配置 ${configured} 项参数`;
+          cardEls.summary.textContent = `已配�?${configured} 项参数`;
         } else {
-          cardEls.summary.textContent = "未配置参数";
+          cardEls.summary.textContent = "未配置参�?;
         }
       }
 
@@ -452,7 +451,7 @@
       function findSpec(specKey) {
         const spec = specByKey.get(specKey);
         if (!spec) {
-          throw new Error(`未知渠道：${specKey}`);
+          throw new Error(`未知渠道�?{specKey}`);
         }
         return spec;
       }
@@ -554,7 +553,7 @@
         activeDraft = cloneObject(entry.value);
 
         modalTitleEl.textContent = `${spec.title} 参数配置`;
-        modalSubtitleEl.textContent = "仅展示当前可编辑参数。";
+        modalSubtitleEl.textContent = "仅展示当前可编辑参数�?;
         modalFieldsEl.innerHTML = spec.fields.map((field) => renderModalField(spec.key, field, activeDraft)).join("");
 
         showModal();
@@ -689,7 +688,7 @@
         try {
           openChannelConfig(specKey);
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试�?);
         }
       });
 
@@ -712,7 +711,7 @@
           metaEl.textContent = `${findSpec(specKey).title} 开关已保存`;
         } catch (error) {
           input.checked = previousChecked;
-          metaEl.textContent = readUserErrorMessage(error, "更新开关失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "更新开关失败，请稍后重试�?);
         } finally {
           input.disabled = false;
         }
@@ -732,7 +731,7 @@
           metaEl.textContent = `${activeSpec.title} 参数已保存`;
           closeModal();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试�?);
         } finally {
           modalSaveEl.disabled = false;
         }
@@ -754,7 +753,7 @@
         try {
           await loadSection();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试�?);
         } finally {
           button.disabled = false;
         }
@@ -763,10 +762,10 @@
       (async function init() {
         try {
           renderChannelCards();
-          metaEl.textContent = "加载中...";
+          metaEl.textContent = "加载�?..";
           await loadSection();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
+          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试�?);
         }
       })();
     </script>

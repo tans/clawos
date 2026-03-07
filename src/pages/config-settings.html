@@ -1,16 +1,15 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClawOS 设置</title>
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
   </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">加载�?..</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
@@ -31,7 +30,7 @@
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
                       <div class="text-sm font-medium">openclaw Token</div>
-                      <div class="text-xs text-base-content/60">默认值 xiake，用于侧边栏“打开 openclaw 后台”入口拼接访问链接。</div>
+                      <div class="text-xs text-base-content/60">默认�?xiake，用于侧边栏“打开 openclaw 后台”入口拼接访问链接�?/div>
                     </div>
                     <input
                       class="input input-bordered input-sm w-full font-mono"
@@ -47,7 +46,7 @@
                     <div class="space-y-1">
                       <div class="text-sm font-medium">授权控制地址</div>
                       <div class="text-xs text-base-content/60">
-                        可为空。填写后将用于授权控制功能。
+                        可为空。填写后将用于授权控制功能�?
                       </div>
                     </div>
                     <input
@@ -64,7 +63,7 @@
                     <div class="space-y-1">
                       <div class="text-sm font-medium">开机后自动启动 ClawOS</div>
                       <div class="text-xs text-base-content/60">
-                        说明：启用后，登录系统时会自动启动 ClawOS。
+                        说明：启用后，登录系统时会自动启�?ClawOS�?
                       </div>
                     </div>
                     <div class="space-y-2">
@@ -72,7 +71,7 @@
                         <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
                         <span class="label-text text-sm">启用</span>
                       </label>
-                      <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
+                      <div class="text-xs text-base-content/60" data-autostart-status>正在读取状�?..</div>
                     </div>
                   </div>
                 </div>
@@ -129,7 +128,7 @@
       function setSaving(saving) {
         if (saveBtn) {
           saveBtn.disabled = saving;
-          saveBtn.textContent = saving ? "保存中..." : "保存设置";
+          saveBtn.textContent = saving ? "保存�?.." : "保存设置";
         }
       }
 
@@ -154,15 +153,15 @@
             autoStartCheckbox.checked = false;
             autoStartCheckbox.disabled = true;
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
+              autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）�?;
             }
           } else {
             autoStartCheckbox.disabled = false;
             autoStartCheckbox.checked = Boolean(state.enabled);
             if (autoStartStatusEl) {
               autoStartStatusEl.textContent = state.enabled
-                ? "已启用：开机后会自动启动 ClawOS。"
-                : "未启用：开机后不会自动启动 ClawOS。";
+                ? "已启用：开机后会自动启�?ClawOS�?
+                : "未启用：开机后不会自动启动 ClawOS�?;
             }
           }
         }
@@ -175,12 +174,12 @@
 
         const openclawToken = tokenInput.value.trim();
         if (!openclawToken) {
-          throw new Error("openclaw Token 不能为空。");
+          throw new Error("openclaw Token 不能为空�?);
         }
 
         const controllerAddress = controllerAddressInput.value.trim();
         if (controllerAddress && !/^0x[a-fA-F0-9]{40}$/.test(controllerAddress)) {
-          throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
+          throw new Error("授权控制地址格式不合法，必须�?0x 开头的 40 位十六进制地址�?);
         }
 
         await api("/api/local/settings", {
@@ -200,8 +199,8 @@
         const state = data.state || {};
         if (autoStartStatusEl) {
           autoStartStatusEl.textContent = state.enabled
-            ? "已启用：开机后会自动启动 ClawOS。"
-            : "未启用：开机后不会自动启动 ClawOS。";
+            ? "已启用：开机后会自动启�?ClawOS�?
+            : "未启用：开机后不会自动启动 ClawOS�?;
         }
       }
 
@@ -210,9 +209,9 @@
           try {
             setMeta("正在读取设置...");
             await loadSettings();
-            setMeta("设置已刷新。");
+            setMeta("设置已刷新�?);
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "读取失败，请检查服务状态后重试。"));
+            setMeta(readUserErrorMessage(error, "读取失败，请检查服务状态后重试�?));
           }
         });
       }
@@ -223,9 +222,9 @@
             setSaving(true);
             setMeta("正在保存设置...");
             await saveSettings();
-            setMeta("设置已保存。openclaw Token 与授权控制地址会立即用于后续连接。");
+            setMeta("设置已保存。openclaw Token 与授权控制地址会立即用于后续连接�?);
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
+            setMeta(readUserErrorMessage(error, "保存失败，请稍后重试�?));
           } finally {
             setSaving(false);
           }
@@ -237,15 +236,15 @@
           const next = autoStartCheckbox.checked;
           autoStartCheckbox.disabled = true;
           if (autoStartStatusEl) {
-            autoStartStatusEl.textContent = "正在保存开机自启动状态...";
+            autoStartStatusEl.textContent = "正在保存开机自启动状�?..";
           }
           try {
             await saveAutoStart(next);
-            setMeta("开机自启动状态已更新。");
+            setMeta("开机自启动状态已更新�?);
           } catch (error) {
             autoStartCheckbox.checked = !next;
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
+              autoStartStatusEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试�?);
             }
           } finally {
             autoStartCheckbox.disabled = false;
@@ -256,9 +255,9 @@
       (async function init() {
         try {
           await loadSettings();
-          setMeta("设置已加载。可以修改后点击“保存设置”。");
+          setMeta("设置已加载。可以修改后点击“保存设置”�?);
         } catch (error) {
-          setMeta(readUserErrorMessage(error, "初始化失败，请刷新页面重试。"));
+          setMeta(readUserErrorMessage(error, "初始化失败，请刷新页面重试�?));
         }
       })();
     </script>

@@ -1,26 +1,22 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>ClawOS 控制台</title>
+        <title>ClawOS 控制�?/title>
         <link rel="stylesheet" href="/styles.css" />
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css"
-        />
     </head>
     <body class="bg-base-100 text-base-content overflow-x-auto">
         <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
             <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">加载�?..</div>
       </aside>
 
             <main class="flex min-h-screen flex-col">
                 <header
                     class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4"
                 >
-                    <h1 class="text-lg font-semibold">控制台</h1>
+                    <h1 class="text-lg font-semibold">控制�?/h1>
                 </header>
 
                 <section class="flex-1 p-6">
@@ -62,13 +58,13 @@
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-qw-gateway-status
                                 >
-                                    启动状态: 未检测
+                                    启动状�? 未检�?
                                 </div>
                                 <div
                                     class="text-[11px] text-base-content/60"
                                     data-qw-gateway-status-detail
                                 >
-                                    等待状态更新...
+                                    等待状态更�?..
                                 </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
@@ -237,7 +233,7 @@
                 const disabled = state === null;
                 const ok = state === true;
                 if (labelEl) {
-                    labelEl.textContent = `${label}: ${disabled ? "已禁用" : ok ? "正常" : "异常"}`;
+                    labelEl.textContent = `${label}: ${disabled ? "已禁�? : ok ? "正常" : "异常"}`;
                 }
                 if (!lightEl) return;
                 lightEl.classList.remove(
@@ -294,7 +290,7 @@
                     typeof status?.message === "string" &&
                     status.message.trim()
                         ? status.message.trim()
-                        : "状态未知";
+                        : "状态未�?;
                 const sourceText =
                     status?.source === "startup"
                         ? "启动自动任务"
@@ -307,14 +303,14 @@
                         ? status.updatedAt.trim()
                         : "";
 
-                let stateText = "未执行";
-                if (state === "running") stateText = "启动中";
+                let stateText = "未执�?;
+                if (state === "running") stateText = "启动�?;
                 if (state === "success") stateText = "启动成功";
                 if (state === "failed") stateText = "启动失败";
-                if (state === "unsupported") stateText = "系统不支持";
+                if (state === "unsupported") stateText = "系统不支�?;
 
                 if (statusBadges.qwGatewayStatus) {
-                    statusBadges.qwGatewayStatus.textContent = `启动状态: ${stateText}`;
+                    statusBadges.qwGatewayStatus.textContent = `启动状�? ${stateText}`;
                     setQwGatewayStatusTone(state);
                 }
                 if (statusBadges.qwGatewayStatusDetail) {
@@ -350,7 +346,7 @@
                 } catch (error) {
                     if (statusBadges.qwGatewayStatusDetail) {
                         statusBadges.qwGatewayStatusDetail.textContent =
-                            readUserErrorMessage(error, "状态获取失败，请稍后重试。");
+                            readUserErrorMessage(error, "状态获取失败，请稍后重试�?);
                     }
                 }
             }
@@ -395,17 +391,17 @@
                 if (!selectedBackup) {
                     if (openclawBackupUI.summary) {
                         openclawBackupUI.summary.textContent =
-                            "当前未发现配置备份";
+                            "当前未发现配置备�?;
                     }
                     if (openclawBackupUI.detail) {
                         openclawBackupUI.detail.textContent =
-                            "请先生成配置备份后再进行切换。";
+                            "请先生成配置备份后再进行切换�?;
                     }
                     return;
                 }
 
                 if (openclawBackupUI.summary) {
-                    openclawBackupUI.summary.textContent = `共 ${openclawBackupState.backups.length} 个备份，当前选择：${selectedBackup.fileName}`;
+                    openclawBackupUI.summary.textContent = `�?${openclawBackupState.backups.length} 个备份，当前选择�?{selectedBackup.fileName}`;
                 }
                 if (openclawBackupUI.detail) {
                     openclawBackupUI.detail.textContent =
@@ -422,7 +418,7 @@
                 if (backups.length === 0) {
                     const option = document.createElement("option");
                     option.value = "";
-                    option.textContent = "未找到备份文件";
+                    option.textContent = "未找到备份文�?;
                     select.append(option);
                     select.disabled = true;
                     openclawBackupState.selectedPath = "";
@@ -463,15 +459,15 @@
                 renderOpenclawBackupOptions(preferredPath);
 
                 if (openclawBackupState.backups.length === 0) {
-                    taskMeta.textContent = "未找到配置备份";
-                    taskOutput.textContent = "未找到可用的配置备份文件。";
+                    taskMeta.textContent = "未找到配置备�?;
+                    taskOutput.textContent = "未找到可用的配置备份文件�?;
                     taskOutput.scrollTop = taskOutput.scrollHeight;
                     return;
                 }
 
                 const selectedBackup = getSelectedOpenclawBackup();
                 if (!selectedBackup) return;
-                taskMeta.textContent = `已加载备份 ${openclawBackupState.backups.length} 个`;
+                taskMeta.textContent = `已加载备�?${openclawBackupState.backups.length} 个`;
                 taskOutput.textContent = [
                     command ? `命令: ${command}` : "",
                     `当前选择: ${selectedBackup.fileName}`,
@@ -484,7 +480,7 @@
             async function rollbackOpenclawBackup() {
                 const selectedBackup = getSelectedOpenclawBackup();
                 if (!selectedBackup) {
-                    throw new Error("请先选择可用备份。");
+                    throw new Error("请先选择可用备份�?);
                 }
 
                 const confirmed = window.confirm(
@@ -492,7 +488,7 @@
                 );
                 if (!confirmed) {
                     taskProgress.classList.add("hidden");
-                    taskMeta.textContent = "已取消备份切换。";
+                    taskMeta.textContent = "已取消备份切换�?;
                     return;
                 }
 
@@ -535,7 +531,7 @@
                 const browserMode = info?.browserMode === "local" ? "本地" : "CDP";
                 const browserState =
                     info?.browserEnabled === false
-                        ? "已禁用"
+                        ? "已禁�?
                         : formatHealthState(Boolean(info?.browserReady));
 
                 const lines = [
@@ -544,11 +540,11 @@
                     `openclaw: ${formatHealthState(Boolean(info?.openclawReady))}`,
                     `openclaw 版本: ${openclawVersion}`,
                     `gateway: ${formatHealthState(Boolean(info?.gatewayReady))}`,
-                    `浏览器(${browserMode}): ${browserState}`,
+                    `浏览�?${browserMode}): ${browserState}`,
                 ];
 
                 if (openclawVersionSource) {
-                    lines.push("版本来源: 系统检测");
+                    lines.push("版本来源: 系统检�?);
                 }
                 if (gatewayReportedVersion) {
                     lines.push(`服务上报版本: ${gatewayReportedVersion}`);
@@ -556,7 +552,7 @@
 
                 if (warnings.length > 0) {
                     lines.push("");
-                    lines.push("检测到异常，请先执行“环境修复”后重试。");
+                    lines.push("检测到异常，请先执行“环境修复”后重试�?);
                 }
 
                 taskOutput.textContent = lines.join("\n");
@@ -565,9 +561,9 @@
 
             function renderTask(task) {
                 const statusTextMap = {
-                    pending: "等待中",
-                    running: "执行中",
-                    success: "已完成",
+                    pending: "等待�?,
+                    running: "执行�?,
+                    success: "已完�?,
                     failed: "失败",
                 };
                 const percent =
@@ -614,7 +610,7 @@
                         taskProgress.classList.add("hidden");
                         taskMeta.textContent = readUserErrorMessage(
                             error,
-                            "任务状态刷新失败，请稍后重试。",
+                            "任务状态刷新失败，请稍后重试�?,
                         );
                     }
                 };
@@ -686,7 +682,7 @@
                 setLight(
                     statusBadges.browserLabel,
                     statusBadges.browserLight,
-                    `浏览器(${browserMode})`,
+                    `浏览�?${browserMode})`,
                     browserState,
                 );
 
@@ -737,7 +733,7 @@
                         });
                         return;
                     default:
-                        throw new Error("暂不支持该操作。");
+                        throw new Error("暂不支持该操作�?);
                 }
             }
 
@@ -752,7 +748,7 @@
                         taskProgress.classList.add("hidden");
                         taskMeta.textContent = readUserErrorMessage(
                             error,
-                            "操作失败，请稍后重试。",
+                            "操作失败，请稍后重试�?,
                         );
                     } finally {
                         button.disabled = false;
@@ -776,7 +772,7 @@
                     taskProgress.classList.add("hidden");
                     taskMeta.textContent = readUserErrorMessage(
                         error,
-                        "初始化失败，请刷新页面重试。",
+                        "初始化失败，请刷新页面重试�?,
                     );
                 }
                 await pollQwGatewayStatus();

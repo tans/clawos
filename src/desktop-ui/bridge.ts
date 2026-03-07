@@ -12,7 +12,10 @@ const ALLOWED_PAGE_PATHS = new Set([
   "/config/settings",
   "/sessions",
 ]);
+
 const BOOT_SCREEN_MIN_DURATION_MS = 2000;
+const PAGE_RENDER_TIMEOUT_MS = 15_000;
+const API_PROXY_TIMEOUT_MS = 20_000;
 
 const rpc = Electroview.defineRPC<DesktopRpcSchema>({
   maxRequestTime: 60_000,
@@ -23,6 +26,20 @@ new Electroview({ rpc });
 
 const nativeFetch = window.fetch.bind(window);
 let runtimeErrorRendered = false;
+let navigationToken = 0;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+  let timer: ReturnType<typeof window.setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = window.setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timer !== null) {
+      window.clearTimeout(timer);
+    }
+  }) as Promise<T>;
+}
 
 function normalizePagePath(rawPath: string): string {
   const raw = String(rawPath || "").trim();
@@ -40,15 +57,12 @@ function normalizePagePath(rawPath: string): string {
 
   const withLeadingSlash = decoded.startsWith("/") ? decoded : `/${decoded}`;
   const pathOnly = withLeadingSlash.split("?")[0] || "/";
-
   if (ALLOWED_PAGE_PATHS.has(pathOnly)) {
     return pathOnly;
   }
-
   if (pathOnly.endsWith("/") && ALLOWED_PAGE_PATHS.has(pathOnly.slice(0, -1))) {
     return pathOnly.slice(0, -1);
   }
-
   return "/";
 }
 
@@ -73,6 +87,15 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+function formatRuntimeError(error: unknown): string {
+  if (error instanceof Error) {
+    const text = error.stack?.trim() || error.message.trim();
+    return text || "Unknown runtime error";
+  }
+  const text = String(error || "").trim();
+  return text || "Unknown runtime error";
+}
+
 function renderDesktopError(message: string): void {
   if (runtimeErrorRendered) {
     return;
@@ -86,18 +109,12 @@ function renderDesktopError(message: string): void {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 页面加载失败</title>
+    <title>ClawOS - Page Load Failed</title>
     <script src="views://clawos/bridge.js"></script>
     <style>
       body {
         margin: 0;
-        font-family:
-          "Microsoft YaHei UI",
-          "Microsoft YaHei",
-          "PingFang SC",
-          "Noto Sans CJK SC",
-          "Segoe UI",
-          sans-serif;
+        font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
         background: #f6f8fb;
         color: #111827;
       }
@@ -130,8 +147,8 @@ function renderDesktopError(message: string): void {
   </head>
   <body>
     <main>
-      <h1>ClawOS 页面加载失败</h1>
-      <p>请稍后重试，或重启客户端。</p>
+      <h1>ClawOS Page Load Failed</h1>
+      <p>Please refresh or restart the app.</p>
       <code>${escapeHtml(message)}</code>
     </main>
   </body>
@@ -140,39 +157,39 @@ function renderDesktopError(message: string): void {
   document.close();
 }
 
-function formatRuntimeError(error: unknown): string {
-  if (error instanceof Error) {
-    const message = error.stack?.trim() || error.message.trim();
-    return message || "未知异常";
-  }
-
-  const text = String(error || "").trim();
-  return text || "未知异常";
-}
-
 function installGlobalErrorHandlers(): void {
   window.addEventListener("error", (event) => {
-    const reason = event.error || event.message || "页面脚本异常";
-    renderDesktopError(`页面脚本异常: ${formatRuntimeError(reason)}`);
+    const reason = event.error || event.message || "Page script error";
+    renderDesktopError(`Page script error: ${formatRuntimeError(reason)}`);
   });
 
   window.addEventListener("unhandledrejection", (event) => {
-    renderDesktopError(`未处理的异步异常: ${formatRuntimeError(event.reason)}`);
+    renderDesktopError(`Unhandled async error: ${formatRuntimeError(event.reason)}`);
   });
 }
 
-async function navigateToRoute(route: string): Promise<void> {
-  const normalizedRoute = normalizePagePath(route);
-
+async function renderRoute(normalizedRoute: string, fallbackToHome: boolean): Promise<void> {
+  const token = ++navigationToken;
   try {
-    const page = await rpc.request.renderPage({ path: normalizedRoute });
-    if (page.status >= 400) {
-      renderDesktopError(`页面返回异常状态码: ${page.status}`);
+    const page = await withTimeout(
+      rpc.request.renderPage({ path: normalizedRoute }),
+      PAGE_RENDER_TIMEOUT_MS,
+      `Page render timeout (>${Math.floor(PAGE_RENDER_TIMEOUT_MS / 1000)}s)`
+    );
+
+    if (token !== navigationToken) {
       return;
     }
 
-    if (typeof page.html !== "string" || !page.html.trim()) {
-      renderDesktopError("页面内容为空，无法渲染。");
+    if (page.status >= 400 || typeof page.html !== "string" || !page.html.trim()) {
+      if (fallbackToHome && normalizedRoute !== "/") {
+        await renderRoute("/", false);
+        return;
+      }
+
+      const reason =
+        page.status >= 400 ? `Page returned status ${page.status}` : "Page content is empty and cannot be rendered.";
+      renderDesktopError(reason);
       return;
     }
 
@@ -180,9 +197,17 @@ async function navigateToRoute(route: string): Promise<void> {
     document.write(page.html);
     document.close();
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    renderDesktopError(message);
+    if (fallbackToHome && normalizedRoute !== "/") {
+      await renderRoute("/", false);
+      return;
+    }
+    renderDesktopError(formatRuntimeError(error));
   }
+}
+
+async function navigateToRoute(route: string): Promise<void> {
+  const normalizedRoute = normalizePagePath(route);
+  await renderRoute(normalizedRoute, true);
 }
 
 function shouldInterceptLink(target: HTMLAnchorElement): boolean {
@@ -190,11 +215,9 @@ function shouldInterceptLink(target: HTMLAnchorElement): boolean {
   if (!href || href.startsWith("#")) {
     return false;
   }
-
   if (target.target && target.target !== "_self") {
     return false;
   }
-
   if (
     href.startsWith("http://") ||
     href.startsWith("https://") ||
@@ -203,7 +226,6 @@ function shouldInterceptLink(target: HTMLAnchorElement): boolean {
   ) {
     return false;
   }
-
   return href.startsWith("/");
 }
 
@@ -211,20 +233,12 @@ function installNavigationInterceptor(): void {
   document.addEventListener(
     "click",
     (event) => {
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      if (!(event.target instanceof Element)) {
+      if (event.defaultPrevented || !(event.target instanceof Element)) {
         return;
       }
 
       const link = event.target.closest("a[href]");
-      if (!(link instanceof HTMLAnchorElement)) {
-        return;
-      }
-
-      if (!shouldInterceptLink(link)) {
+      if (!(link instanceof HTMLAnchorElement) || !shouldInterceptLink(link)) {
         return;
       }
 
@@ -236,7 +250,6 @@ function installNavigationInterceptor(): void {
         window.location.hash = nextHash;
         return;
       }
-
       void navigateToRoute(route);
     },
     true
@@ -257,12 +270,16 @@ async function proxyApiRequest(request: Request): Promise<Response> {
   const headers = Object.fromEntries(request.headers.entries());
   const body = method === "GET" || method === "HEAD" ? null : await request.text();
 
-  const result: DesktopApiResponse = await rpc.request.api({
-    path: `${requestUrl.pathname}${requestUrl.search}`,
-    method,
-    headers,
-    body,
-  });
+  const result: DesktopApiResponse = await withTimeout(
+    rpc.request.api({
+      path: `${requestUrl.pathname}${requestUrl.search}`,
+      method,
+      headers,
+      body,
+    }),
+    API_PROXY_TIMEOUT_MS,
+    `API proxy timeout (>${Math.floor(API_PROXY_TIMEOUT_MS / 1000)}s)`
+  );
 
   return new Response(result.body, {
     status: result.status,
@@ -274,12 +291,19 @@ function installFetchShim(): void {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = input instanceof Request ? new Request(input, init) : new Request(input, init);
     const requestUrl = new URL(request.url, window.location.href);
-
     if (!isApiRequest(requestUrl)) {
       return nativeFetch(input, init);
     }
 
-    return await proxyApiRequest(request);
+    try {
+      return await proxyApiRequest(request);
+    } catch (error) {
+      const message = formatRuntimeError(error);
+      return new Response(JSON.stringify({ ok: false, error: message }), {
+        status: 502,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
   };
 }
 
@@ -301,5 +325,5 @@ function startDesktopBridge(): void {
 try {
   startDesktopBridge();
 } catch (error) {
-  renderDesktopError(`桌面桥接启动失败: ${formatRuntimeError(error)}`);
+  renderDesktopError(`Desktop bridge startup failed: ${formatRuntimeError(error)}`);
 }

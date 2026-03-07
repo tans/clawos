@@ -1,4 +1,4 @@
-(function initClawosSidebar() {
+﻿(function initClawosSidebar() {
   function resolveViewportHeightPx() {
     const visualHeight =
       typeof window.visualViewport?.height === "number" && Number.isFinite(window.visualViewport.height)
@@ -166,7 +166,7 @@
       const status = data?.status || {};
 
       if (status.error || !status.supported) {
-        metaEl.textContent = "版本信息暂不可用。";
+        metaEl.textContent = "版本信息暂不可用�?;
         return;
       }
 
@@ -174,17 +174,17 @@
         typeof status.remoteVersion === "string" && status.remoteVersion.trim() ? status.remoteVersion.trim() : "";
       const hasUpdate = status.hasUpdate === true && !!remoteVersion;
       if (hasUpdate) {
-        renderGotoHomeLink(`发现新版本 v${remoteVersion}`);
+        renderGotoHomeLink(`发现新版�?v${remoteVersion}`);
         return;
       }
 
       if (currentVersion) {
-        metaEl.textContent = `当前已是最新版本 v${currentVersion}`;
+        metaEl.textContent = `当前已是最新版�?v${currentVersion}`;
       } else {
-        metaEl.textContent = "当前已是最新版本。";
+        metaEl.textContent = "当前已是最新版本�?;
       }
     } catch (error) {
-      metaEl.textContent = "版本信息暂不可用。";
+      metaEl.textContent = "版本信息暂不可用�?;
     } finally {
       refreshing = false;
     }
