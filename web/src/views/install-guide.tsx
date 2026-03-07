@@ -12,9 +12,9 @@ function InstallGuidePage() {
         <link rel="icon" type="image/png" href="/public/logo.png" />
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body id="top" class="min-h-screen bg-base-200/40 text-base-content">
+      <body id="top" class="min-h-screen text-base-content">
         <main class="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-12 lg:py-16">
-          <header class="page-fade rounded-[1.5rem] border border-base-content/10 bg-base-100/85 px-6 py-5 backdrop-blur sm:px-8">
+          <header class="page-fade surface-wash rounded-[2rem] px-6 py-5 sm:px-8">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center gap-3">
                 <img src="/public/logo.png" alt="ClawOS Logo" class="size-9 rounded-md object-contain" />
@@ -25,46 +25,46 @@ function InstallGuidePage() {
               </div>
 
               <nav class="flex flex-wrap gap-2 text-sm" aria-label="站点导航">
-                <a class="btn btn-ghost btn-sm" href="/">
+                <a class="btn btn-ghost btn-sm border border-base-content/15" href="/">
                   首页
                 </a>
-                <a class="btn btn-ghost btn-sm" href="/downloads/latest">
+                <a class="btn btn-ghost btn-sm border border-base-content/15" href="/downloads/latest">
                   下载
                 </a>
-                <a class="btn btn-ghost btn-sm" href="#windows-install">
+                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#windows-install">
                   安装
                 </a>
-                <a class="btn btn-ghost btn-sm" href="#upgrade">
+                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#upgrade">
                   更新
                 </a>
               </nav>
             </div>
           </header>
 
-          <section class="page-fade page-fade-delay-1 mt-8 border-t border-base-content/10 pt-6">
+          <section class="page-fade page-fade-delay-1 mt-8 pt-6">
             <div class="flex flex-wrap gap-3 text-sm">
-              <a class="btn btn-outline btn-sm" href="#windows-install">
+              <a class="btn btn-ghost btn-sm border border-base-content/15 bg-base-100/60" href="#windows-install">
                 Windows 安装
               </a>
-              <a class="btn btn-outline btn-sm" href="#upgrade">
+              <a class="btn btn-ghost btn-sm border border-base-content/15 bg-base-100/60" href="#upgrade">
                 更新方式
               </a>
-              <a class="btn btn-outline btn-sm" href="#after-install">
+              <a class="btn btn-ghost btn-sm border border-base-content/15 bg-base-100/60" href="#after-install">
                 安装后检查
               </a>
-              <a class="btn btn-outline btn-sm" href="/">
+              <a class="btn btn-ghost btn-sm border border-base-content/15 bg-base-100/60" href="/">
                 返回首页
               </a>
             </div>
           </section>
 
-          <section id="windows-install" class="page-fade page-fade-delay-1 mt-10 scroll-mt-24 border-t border-base-content/10 pt-8">
+          <section id="windows-install" class="page-fade page-fade-delay-1 mt-10 scroll-mt-24 pt-8">
             <div class="flex items-start justify-between gap-4">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Step 01</div>
                 <h2 class="mt-2 text-xl font-semibold">Windows 安装</h2>
               </div>
-              <a class="btn btn-ghost btn-xs" href="#top">
+              <a class="btn btn-ghost btn-xs border border-base-content/15" href="#top">
                 回到顶部
               </a>
             </div>
@@ -76,13 +76,13 @@ function InstallGuidePage() {
             </ul>
           </section>
 
-          <section id="upgrade" class="page-fade page-fade-delay-2 mt-8 scroll-mt-24 border-t border-base-content/10 pt-8">
+          <section id="upgrade" class="page-fade page-fade-delay-2 mt-8 scroll-mt-24 pt-8">
             <div class="flex items-start justify-between gap-4">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Step 02</div>
                 <h2 class="mt-2 text-xl font-semibold">更新方式</h2>
               </div>
-              <a class="btn btn-ghost btn-xs" href="#top">
+              <a class="btn btn-ghost btn-xs border border-base-content/15" href="#top">
                 回到顶部
               </a>
             </div>
@@ -93,13 +93,13 @@ function InstallGuidePage() {
             </ul>
           </section>
 
-          <section id="after-install" class="page-fade page-fade-delay-3 mt-8 scroll-mt-24 border-t border-base-content/10 pt-8">
+          <section id="after-install" class="page-fade page-fade-delay-3 mt-8 scroll-mt-24 pt-8">
             <div class="flex items-start justify-between gap-4">
               <div>
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">Step 03</div>
                 <h2 class="mt-2 text-xl font-semibold">安装后检查</h2>
               </div>
-              <a class="btn btn-ghost btn-xs" href="#top">
+              <a class="btn btn-ghost btn-xs border border-base-content/15" href="#top">
                 回到顶部
               </a>
             </div>
@@ -114,7 +114,7 @@ function InstallGuidePage() {
             <a class="btn btn-primary btn-sm" href="/downloads/latest">
               下载最新安装包
             </a>
-            <a class="btn btn-ghost btn-sm" href="/">
+            <a class="btn btn-ghost btn-sm border border-base-content/15" href="/">
               返回首页
             </a>
           </div>

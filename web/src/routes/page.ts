@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { readLatestRelease } from "../lib/storage";
+import { renderAgentPage } from "../views/agent";
 import { renderHomePage } from "../views/home";
 import { renderInstallGuidePage } from "../views/install-guide";
 
@@ -24,4 +25,8 @@ pageRoutes.get("/downloads", async (c) => {
 
 pageRoutes.get("/install-guide", (c) => {
   return c.html(renderInstallGuidePage());
+});
+
+pageRoutes.get("/to-agent", (c) => {
+  return c.html(renderAgentPage());
 });
