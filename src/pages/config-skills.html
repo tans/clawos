@@ -27,7 +27,7 @@
                 <div>
                   <h2 class="card-title text-base">Tools 设置</h2>
                   <div class="mt-1 text-xs text-base-content/60">
-                    上面是工具 tools 的设置（保存到 <code>gateway.tools</code>）。
+                    上面是工具 tools 的设置（保存到根级 <code>tools</code>）。
                     <a
                       class="link link-hover"
                       href="https://docs.openclaw.ai/tools"
@@ -492,7 +492,6 @@
       const clawhubStatusEl = document.querySelector("[data-clawhub-status]");
       const clawhubResultsEl = document.querySelector("[data-clawhub-results]");
 
-      let gatewayConfig = {};
       let loadedToolsConfig = {};
       let loadedSkillsConfig = {};
       let providerRows = [];
@@ -1170,9 +1169,8 @@
       }
 
       async function loadConfig() {
-        const [gatewayData, skillsData] = await Promise.all([api("/api/config/gateway"), api("/api/config/skills")]);
-        gatewayConfig = isObject(gatewayData.data) ? cloneObject(gatewayData.data) : {};
-        loadedToolsConfig = isObject(gatewayConfig.tools) ? cloneObject(gatewayConfig.tools) : {};
+        const [toolsData, skillsData] = await Promise.all([api("/api/config/tools"), api("/api/config/skills")]);
+        loadedToolsConfig = isObject(toolsData.data) ? cloneObject(toolsData.data) : {};
         loadedSkillsConfig = isObject(skillsData.data) ? cloneObject(skillsData.data) : {};
 
         fillToolsForm(loadedToolsConfig);
@@ -1187,16 +1185,14 @@
       }
 
       async function saveTools(toolsConfig) {
-        const nextGateway = cloneObject(gatewayConfig);
-        nextGateway.tools = isObject(toolsConfig) ? toolsConfig : {};
+        const nextTools = isObject(toolsConfig) ? toolsConfig : {};
 
-        const result = await api("/api/config/gateway", {
+        const result = await api("/api/config/tools", {
           method: "PUT",
-          body: JSON.stringify({ data: nextGateway }),
+          body: JSON.stringify({ data: nextTools }),
         });
 
-        gatewayConfig = isObject(result.data) ? cloneObject(result.data) : nextGateway;
-        loadedToolsConfig = isObject(gatewayConfig.tools) ? cloneObject(gatewayConfig.tools) : {};
+        loadedToolsConfig = isObject(result.data) ? cloneObject(result.data) : nextTools;
         fillToolsForm(loadedToolsConfig);
         if (toolsRawInput) {
           toolsRawInput.value = formatJson(loadedToolsConfig);

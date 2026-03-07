@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
-import { ensureChannelPluginsForEnabledChannels } from "../../src/gateway/config";
+import { ALLOWED_CONFIG_SECTIONS, configTemplate, ensureChannelPluginsForEnabledChannels } from "../../src/gateway/config";
 
 describe("ensureChannelPluginsForEnabledChannels", () => {
+  it("includes tools as a root-level configurable section", () => {
+    expect(ALLOWED_CONFIG_SECTIONS.has("tools")).toBe(true);
+    expect(configTemplate()).toHaveProperty("tools");
+  });
+
   it("adds wework and feishu plugin blocks when both channels are enabled", () => {
     const config: Record<string, unknown> = {
       channels: {

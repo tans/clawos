@@ -16,6 +16,7 @@ type Options = {
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const APP_CONSTANTS_PATH = resolve(process.cwd(), "src/app.constants.ts");
 const XIAKE_CONFIG_PATH = resolve(process.cwd(), "clawos_xiake.json");
+const SHELL_HTML_PATH = resolve(process.cwd(), "src/desktop-ui/shell.html");
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
 function parseEnv(raw: string | undefined): BuildEnv {
@@ -35,9 +36,9 @@ function printUsage(): void {
 选项:
   --env <env>        构建环境: dev/canary/stable，默认 stable
   --skip-build       跳过构建，仅执行发布
-  --skip-publish     仅构建不发布
+  --skip-publish     仅构建，不发布
   --no-bump-patch    不自动递增 patch 版本号
-  --version <ver>    指定发布版本（x.y.z），会写入 package.json / app.constants / clawos_xiake.json
+  --version <ver>    指定发布版本 (x.y.z)
   -h, --help         显示帮助
 
 示例:
@@ -127,7 +128,7 @@ function parseArgs(argv: string[]): Options {
 function normalizeSemver(value: string): string {
   const normalized = value.trim().replace(/^v/i, "");
   if (!SEMVER_PATTERN.test(normalized)) {
-    throw new Error(`版本号格式不合法：${value}（期望 x.y.z）`);
+    throw new Error(`版本号格式不合法: ${value}，期望 x.y.z`);
   }
   return normalized;
 }
@@ -145,7 +146,7 @@ async function readCurrentVersion(): Promise<string> {
   const pkgRaw = await readFile(PACKAGE_JSON_PATH, "utf-8");
   const pkg = JSON.parse(pkgRaw) as { version?: unknown };
   if (typeof pkg.version !== "string" || !pkg.version.trim()) {
-    throw new Error("package.json 缺少合法 version 字段。");
+    throw new Error("package.json 缺少合法 version 字段");
   }
   return normalizeSemver(pkg.version);
 }
@@ -155,7 +156,7 @@ async function readAppConstantsVersion(): Promise<string> {
   const versionLinePattern = /^export const VERSION = "([^"]+)";$/m;
   const match = source.match(versionLinePattern);
   if (!match) {
-    throw new Error(`未在 ${APP_CONSTANTS_PATH} 找到 VERSION 常量。`);
+    throw new Error(`未在 ${APP_CONSTANTS_PATH} 找到 VERSION 常量`);
   }
   return normalizeSemver(match[1]);
 }
@@ -164,9 +165,18 @@ async function readXiakeConfigVersion(): Promise<string> {
   const source = await readFile(XIAKE_CONFIG_PATH, "utf-8");
   const parsed = JSON.parse(source) as { version?: unknown };
   if (typeof parsed.version !== "string" || !parsed.version.trim()) {
-    throw new Error(`${XIAKE_CONFIG_PATH} 缺少合法 version 字段。`);
+    throw new Error(`${XIAKE_CONFIG_PATH} 缺少合法 version 字段`);
   }
   return normalizeSemver(parsed.version);
+}
+
+async function readShellHtmlVersion(): Promise<string> {
+  const source = await readFile(SHELL_HTML_PATH, "utf-8");
+  const match = source.match(/<p class="version" data-boot-version>v([^<]+)<\/p>/);
+  if (!match) {
+    throw new Error(`未在 ${SHELL_HTML_PATH} 找到启动页版本号`);
+  }
+  return normalizeSemver(match[1]);
 }
 
 async function writePackageVersion(nextVersion: string): Promise<void> {
@@ -181,7 +191,7 @@ async function writeAppConstantsVersion(nextVersion: string): Promise<void> {
   const versionLinePattern = /^export const VERSION = "([^"]+)";$/m;
   const match = source.match(versionLinePattern);
   if (!match) {
-    throw new Error(`未在 ${APP_CONSTANTS_PATH} 找到 VERSION 常量。`);
+    throw new Error(`未在 ${APP_CONSTANTS_PATH} 找到 VERSION 常量`);
   }
 
   const replaced = source.replace(versionLinePattern, `export const VERSION = "${nextVersion}";`);
@@ -195,13 +205,32 @@ async function writeXiakeConfigVersion(nextVersion: string): Promise<void> {
   await writeFile(XIAKE_CONFIG_PATH, `${JSON.stringify(parsed, null, 2)}\n`, "utf-8");
 }
 
+async function writeShellHtmlVersion(nextVersion: string): Promise<void> {
+  const source = await readFile(SHELL_HTML_PATH, "utf-8");
+  const replaced = source.replace(
+    /<p class="version" data-boot-version>v[^<]+<\/p>/,
+    `<p class="version" data-boot-version>v${nextVersion}</p>`
+  );
+  if (replaced === source) {
+    throw new Error(`未在 ${SHELL_HTML_PATH} 找到可替换的启动页版本号`);
+  }
+  await writeFile(SHELL_HTML_PATH, replaced, "utf-8");
+}
+
 async function hasVersionDrift(targetVersion: string): Promise<boolean> {
-  const [pkgVersion, appVersion, xiakeVersion] = await Promise.all([
+  const [pkgVersion, appVersion, xiakeVersion, shellVersion] = await Promise.all([
     readCurrentVersion(),
     readAppConstantsVersion(),
     readXiakeConfigVersion(),
+    readShellHtmlVersion(),
   ]);
-  return pkgVersion !== targetVersion || appVersion !== targetVersion || xiakeVersion !== targetVersion;
+
+  return (
+    pkgVersion !== targetVersion ||
+    appVersion !== targetVersion ||
+    xiakeVersion !== targetVersion ||
+    shellVersion !== targetVersion
+  );
 }
 
 async function syncVersionFiles(nextVersion: string): Promise<void> {
@@ -209,6 +238,7 @@ async function syncVersionFiles(nextVersion: string): Promise<void> {
     writePackageVersion(nextVersion),
     writeAppConstantsVersion(nextVersion),
     writeXiakeConfigVersion(nextVersion),
+    writeShellHtmlVersion(nextVersion),
   ]);
 }
 
@@ -221,7 +251,7 @@ async function resolveReleaseVersion(options: Options): Promise<{ version: strin
       console.log(`[release] --skip-build 已启用，忽略 --version=${fixed}，使用现有版本 ${currentVersion}`);
     }
     if (options.bumpPatch) {
-      console.log(`[release] --skip-build 已启用，不执行自动 patch 递增，使用现有版本 ${currentVersion}`);
+      console.log(`[release] --skip-build 已启用，不执行 patch 递增，使用现有版本 ${currentVersion}`);
     }
     return { version: currentVersion, changed: false };
   }
@@ -252,7 +282,7 @@ async function runStep(name: string, cmd: string[]): Promise<void> {
   console.log(`[release] ${name}`);
   console.log(`[release] cmd: ${cmd.join(" ")}`);
 
-  await new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolvePromise, reject) => {
     const child = spawn(cmd[0], cmd.slice(1), {
       cwd: process.cwd(),
       env: process.env,
@@ -265,7 +295,7 @@ async function runStep(name: string, cmd: string[]): Promise<void> {
 
     child.on("exit", (code) => {
       if (code === 0) {
-        resolve();
+        resolvePromise();
         return;
       }
       reject(new Error(`${name} 失败，退出码 ${code}`));
@@ -280,7 +310,7 @@ async function main(): Promise<void> {
   console.log(`[release] build env: ${options.env}`);
   console.log(`[release] release version: ${releaseVersion.version}`);
   if (releaseVersion.changed) {
-    console.log("[release] version files updated: package.json + src/app.constants.ts + clawos_xiake.json");
+    console.log("[release] version files updated: package.json + src/app.constants.ts + clawos_xiake.json + src/desktop-ui/shell.html");
   }
   if (options.skipBuild) {
     console.log("[release] 跳过构建 (--skip-build)");
@@ -306,7 +336,7 @@ async function main(): Promise<void> {
     await runStep("发布安装包、配置和更新产物", publishCmd);
   }
 
-  console.log("[release] 完成。");
+  console.log("[release] 完成");
 }
 
 main().catch((error) => {

@@ -9,7 +9,7 @@ import {
   type WriteOpenclawConfigFromWslResult,
 } from "../config/openclaw-wsl";
 
-export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "browser", "gateway", "models"]);
+export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "tools", "browser", "gateway", "models"]);
 const FILE_BACKED_CONFIG_SECTIONS = new Set(["channels", "agents", "models"]);
 const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
 const CHANNEL_PLUGIN_PATHS: Record<"wework" | "feishu", string> = {
@@ -22,6 +22,7 @@ export function configTemplate(): Record<string, unknown> {
     channels: {},
     agents: {},
     skills: {},
+    tools: {},
     browser: {},
     gateway: {},
   };

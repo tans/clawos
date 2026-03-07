@@ -90,18 +90,13 @@
           ></path>
         </svg>
         <h1 class="name">ClawOS</h1>
-        <p class="version" data-boot-version>v-</p>
+        <p class="version" data-boot-version>v0.9.14</p>
         <p class="status" data-boot-status>正在启动桌面界面...</p>
       </section>
     </main>
     <script>
       (function bootstrapShell() {
-        const versionEl = document.querySelector("[data-boot-version]");
         const statusEl = document.querySelector("[data-boot-status]");
-        if (!versionEl) return;
-        const fromInline = String("__CLAWOS_APP_VERSION__").trim();
-        const fallback = fromInline === "__CLAWOS_APP_VERSION__" ? "" : fromInline;
-        versionEl.textContent = fallback ? `v${fallback}` : "v-";
 
         const setStatus = (message, state) => {
           if (!statusEl) return;

@@ -9,7 +9,6 @@ import shellHtml from "../desktop-ui/shell.html" with { type: "text" };
 import { VERSION } from "../app.constants";
 
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
-const SHELL_HTML_VERSION_PLACEHOLDER = "__CLAWOS_APP_VERSION__";
 // Electrobun's flat-file views loader resolves the URL as a file path on Windows.
 // Query strings break that resolution, so the views entry must stay path-only.
 const SHELL_VIEW_URL = "views://clawos/shell.html";
@@ -22,10 +21,6 @@ const SHOULD_OPEN_DEVTOOLS = ["1", "true", "yes", "on"].includes(
 
 let desktopWindow: BrowserWindow | null = null;
 const APP_WINDOW_TITLE = `ClawOS v${VERSION}`;
-
-function withShellVersion(html: string): string {
-  return html.split(SHELL_HTML_VERSION_PLACEHOLDER).join(VERSION);
-}
 
 function resolveUseInlineShellHtml(): boolean {
   const raw = (process.env.CLAWOS_DESKTOP_INLINE_HTML || "").trim().toLowerCase();
@@ -216,7 +211,7 @@ async function main(): Promise<void> {
   });
 
   try {
-    const windowContent = useInlineShellHtml ? { html: withShellVersion(shellHtml) } : { url: SHELL_VIEW_URL };
+    const windowContent = useInlineShellHtml ? { html: shellHtml } : { url: SHELL_VIEW_URL };
     desktopWindow = new BrowserWindow({
       title: APP_WINDOW_TITLE,
       frame: { x: 120, y: 80, width: 1360, height: 900 },
