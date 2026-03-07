@@ -1,3 +1,5 @@
+import llmsTxt from "../../llms.txt" with { type: "text" };
+
 type ChatMessage = {
   role?: string;
   content?: unknown;
@@ -14,8 +16,8 @@ type ResponsesBody = {
   input?: unknown;
 };
 
-const PORT = Number(process.env.PORT || process.env.FREE_PROVIDER_PORT || "18765");
-const MODEL_ID = process.env.FREE_PROVIDER_MODEL_ID || "free-echo";
+const PORT = Number(process.env.PORT || process.env.FREEGPT_PROVIDER_PORT || process.env.FREE_PROVIDER_PORT || "18765");
+const MODEL_ID = process.env.FREEGPT_PROVIDER_MODEL_ID || process.env.FREE_PROVIDER_MODEL_ID || "freegpt-echo";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
@@ -28,6 +30,17 @@ function json(data: unknown, status = 200, extraHeaders: Record<string, string> 
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
+      ...CORS_HEADERS,
+      ...extraHeaders,
+    },
+  });
+}
+
+function text(content: string, status = 200, extraHeaders: Record<string, string> = {}): Response {
+  return new Response(content, {
+    status,
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
       ...CORS_HEADERS,
       ...extraHeaders,
     },
@@ -133,7 +146,7 @@ function buildCompletion(body: ChatCompletionsBody): Record<string, unknown> {
   const nowSec = Math.floor(Date.now() / 1000);
   const content = pickEchoText(body.messages);
   return {
-    id: `chatcmpl-free-${Date.now()}`,
+    id: `chatcmpl-freegpt-${Date.now()}`,
     object: "chat.completion",
     created: nowSec,
     model: body.model || MODEL_ID,
@@ -159,7 +172,7 @@ function buildStream(body: ChatCompletionsBody): Response {
   const nowSec = Math.floor(Date.now() / 1000);
   const content = pickEchoText(body.messages);
   const model = body.model || MODEL_ID;
-  const id = `chatcmpl-free-${Date.now()}`;
+  const id = `chatcmpl-freegpt-${Date.now()}`;
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
@@ -192,14 +205,14 @@ function buildStream(body: ChatCompletionsBody): Response {
 function buildResponses(body: ResponsesBody): Record<string, unknown> {
   const content = normalizeResponseInput(body.input);
   return {
-    id: `resp-free-${Date.now()}`,
+    id: `resp-freegpt-${Date.now()}`,
     object: "response",
     model: body.model || MODEL_ID,
     status: "completed",
     output_text: content,
     output: [
       {
-        id: `msg-free-${Date.now()}`,
+        id: `msg-freegpt-${Date.now()}`,
         type: "message",
         role: "assistant",
         content: [{ type: "output_text", text: content }],
@@ -220,7 +233,7 @@ const server = Bun.serve({
     if (url.pathname === "/" && req.method === "GET") {
       return json({
         ok: true,
-        service: "clawos-free-provider",
+        service: "clawos-freegpt-provider",
         docs: ["/health", "/v1/models", "/v1/chat/completions", "/v1/responses"],
       });
     }
@@ -228,10 +241,16 @@ const server = Bun.serve({
     if (url.pathname === "/health" && req.method === "GET") {
       return json({
         ok: true,
-        service: "clawos-free-provider",
+        service: "clawos-freegpt-provider",
         model: MODEL_ID,
         port: PORT,
         ts: Date.now(),
+      });
+    }
+
+    if (url.pathname === "/llms.txt" && req.method === "GET") {
+      return text(llmsTxt, 200, {
+        "cache-control": "public, max-age=300",
       });
     }
 
@@ -265,4 +284,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`[free-provider] listening on http://127.0.0.1:${server.port}`);
+console.log(`[freegpt-provider] listening on http://127.0.0.1:${server.port}`);
