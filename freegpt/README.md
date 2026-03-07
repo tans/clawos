@@ -1,11 +1,11 @@
-# clawos-free-provider
+# clawos-freegpt-provider
 
 本地免费测试接口（回显服务），用于 ClawOS 自定义模型 Provider 联调。
 
 ## 运行
 
 ```bash
-bun run free:dev
+bun run freegpt:dev
 ```
 
 默认端口：`18765`
@@ -15,6 +15,7 @@ bun run free:dev
 ## 接口
 
 - `GET /health`
+- `GET /llms.txt`
 - `GET /v1/models`
 - `POST /v1/chat/completions`（回显最后一条 user 消息）
 - `POST /v1/responses`（回显最后一条 user input）
@@ -24,4 +25,4 @@ bun run free:dev
 - 域名：`freegpt.minapp.xin`
 - Provider Base URL：`https://freegpt.minapp.xin/v1`
 - Provider API：`openai-completions`
-- Model：`free-echo`
+- Model：`freegpt-echo`

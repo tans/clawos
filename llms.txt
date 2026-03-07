@@ -1,0 +1,45 @@
+# ClawOS / LLM Agent Context
+
+本文件供其他 agent 快速理解并操作本仓库。
+
+## 项目定位
+- 项目名: clawos
+- 目标用户: 中文 Windows 用户
+- 技术栈: Windows + Bun + WSL
+- 作用: 提供本机 `http://127.0.0.1:8080` 管理界面，管理 openclaw gateway
+
+## 关键目录
+- `src/`: clawos 主程序（桌面 UI、任务、系统调用）
+- `freegpt/`: 本地测试 Provider（回显服务）
+- `web/`: Web 站点与下载页
+- `router/`, `farm/`: 辅助服务
+
+## free -> freegpt 约定
+- 子项目目录: `freegpt/`
+- 根脚本:
+  - `bun run freegpt:dev`
+  - `bun run freegpt:start`
+- Provider key: `freegpt`
+- 兼容旧配置: `free` 会被映射到 `freegpt`
+- 默认模型: `freegpt-echo`
+
+## 常用命令
+- 开发桌面: `bun run dev`
+- 构建桌面: `bun run build`
+- 运行测试: `bun test`
+- 启动 freegpt provider: `bun run freegpt:dev`
+
+## openclaw 在 WSL 的标准更新流程
+在 `/data/openclaw` 顺序执行，失败即中止:
+1. `git pull -X theirs`
+2. `nrm use tencent`
+3. `pnpm install`
+4. `pnpm run build`
+5. `pnpm run ui:build`
+6. `openclaw gateway restart`
+
+## Windows 侧错误排查重点
+- WSL 未启动
+- 8080 端口占用
+- 权限不足（执行命令/访问目录）
+- openclaw 目录或配置缺失（`/data/openclaw`, `/root/.openclaw`）
