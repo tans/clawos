@@ -74,7 +74,7 @@
         {
           key: "free",
           title: "Free Echo",
-          baseUrl: "http://127.0.0.1:8765/v1",
+          baseUrl: "http://127.0.0.1:18765/v1",
           api: "openai-completions",
           modelId: "free-echo",
         },
@@ -439,10 +439,13 @@
           const providerKey = readOptionalText(card.getAttribute("data-provider-key"));
           const origin = providerDrafts.find((item) => item.providerKey === providerKey);
           const modelIdInput = card.querySelector('[data-field="model-id"]');
+          const baseUrlInput = card.querySelector('[data-field="base-url"]');
+          const apiInput = card.querySelector('[data-field="api"]');
           const apiKeyInput = card.querySelector('[data-field="api-key"]');
           const fallbackInput = card.querySelector('[data-field="fallback"]');
           const primaryInput = card.querySelector('input[name="primary-model"]');
-          const selectedModelId = readOptionalText(modelIdInput?.value);`r`n          const selectedModelName = selectedModelId;
+          const selectedModelId = readOptionalText(modelIdInput?.value);
+          const selectedModelName = selectedModelId;
 
           return {
             providerKey,
@@ -452,8 +455,8 @@
             modelName: selectedModelName,
             modelOptions: origin ? cloneObject(origin.modelOptions || []) : [],
             apiKey: readOptionalText(apiKeyInput?.value),
-            baseUrl: origin ? origin.baseUrl : "",
-            api: origin ? origin.api : "",
+            baseUrl: readOptionalText(baseUrlInput?.value) || (origin ? origin.baseUrl : ""),
+            api: readOptionalText(apiInput?.value) || (origin ? origin.api : ""),
             fallback: Boolean(fallbackInput?.checked),
             primary: Boolean(primaryInput?.checked),
           };
