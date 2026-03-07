@@ -43,21 +43,21 @@ function resolveSidebarActive(path: string): SidebarNavId | null {
 }
 
 function renderSidebar(active: SidebarNavId | null): string {
-  const items: Array<{ id: SidebarNavId; href: string; label: string; marker: string }> = [
-    { id: "dashboard", href: "/", label: "Dashboard", marker: "D" },
-    { id: "channels", href: "/config/channels", label: "Channels", marker: "C" },
-    { id: "agents", href: "/config/agents", label: "Agents", marker: "A" },
-    { id: "skills", href: "/config/skills", label: "Skills", marker: "S" },
-    { id: "browser", href: "/config/browser", label: "Browser", marker: "B" },
-    { id: "wallet", href: "/config/wallet", label: "Wallet", marker: "W" },
-    { id: "settings", href: "/config/settings", label: "Settings", marker: "G" },
+  const items: Array<{ id: SidebarNavId; href: string; label: string }> = [
+    { id: "dashboard", href: "/", label: "Dashboard" },
+    { id: "channels", href: "/config/channels", label: "Channels" },
+    { id: "agents", href: "/config/agents", label: "Agents" },
+    { id: "skills", href: "/config/skills", label: "Skills" },
+    { id: "browser", href: "/config/browser", label: "Browser" },
+    { id: "wallet", href: "/config/wallet", label: "Wallet" },
+    { id: "settings", href: "/config/settings", label: "Settings" },
   ];
 
   const nav = items
     .map((item) => {
       const className =
         item.id === active ? "btn btn-primary btn-sm justify-start gap-2" : "btn btn-ghost btn-sm justify-start gap-2";
-      return `<a class="${className}" href="${item.href}"><span class="inline-flex h-4 w-4 items-center justify-center rounded bg-base-300 text-[10px]">${item.marker}</span><span>${item.label}</span></a>`;
+      return `<a class="${className}" href="${item.href}"><span>${item.label}</span></a>`;
     })
     .join("");
 
@@ -87,7 +87,6 @@ function renderSidebar(active: SidebarNavId | null): string {
           </div>
 
           <button class="btn btn-outline btn-sm justify-start gap-2" type="button" data-openclaw-entry>
-            <span class="inline-flex h-4 w-4 items-center justify-center rounded bg-base-300 text-[10px]">O</span>
             <span>Open openclaw Console</span>
           </button>
         </div>
