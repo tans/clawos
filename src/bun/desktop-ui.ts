@@ -97,6 +97,11 @@ function wrapDesktopInlineScripts(html: string): string {
 function appendDesktopBridge(html: string): string {
   let output = html;
 
+  output = output.replace(
+    /<link[^>]+href=["']https:\/\/cdn\.jsdelivr\.net\/npm\/@fortawesome\/fontawesome-free@6\.7\.2\/css\/all\.min\.css["'][^>]*>\s*/gi,
+    ""
+  );
+
   output = output
     .replace(/href="\/styles\.css"/g, `href="${DESKTOP_STYLES_URL}"`)
     .replace(/href='\/styles\.css'/g, `href='${DESKTOP_STYLES_URL}'`)

@@ -44,13 +44,13 @@ function resolveSidebarActive(path: string): SidebarNavId | null {
 
 function renderSidebar(active: SidebarNavId | null): string {
   const items: Array<{ id: SidebarNavId; href: string; label: string; marker: string }> = [
-    { id: "dashboard", href: "/", label: "控制台", marker: "D" },
-    { id: "channels", href: "/config/channels", label: "通讯渠道", marker: "C" },
-    { id: "agents", href: "/config/agents", label: "大模型", marker: "A" },
-    { id: "skills", href: "/config/skills", label: "功能", marker: "S" },
-    { id: "browser", href: "/config/browser", label: "浏览器", marker: "B" },
-    { id: "wallet", href: "/config/wallet", label: "钱包", marker: "W" },
-    { id: "settings", href: "/config/settings", label: "设置", marker: "G" },
+    { id: "dashboard", href: "/", label: "Dashboard", marker: "D" },
+    { id: "channels", href: "/config/channels", label: "Channels", marker: "C" },
+    { id: "agents", href: "/config/agents", label: "Agents", marker: "A" },
+    { id: "skills", href: "/config/skills", label: "Skills", marker: "S" },
+    { id: "browser", href: "/config/browser", label: "Browser", marker: "B" },
+    { id: "wallet", href: "/config/wallet", label: "Wallet", marker: "W" },
+    { id: "settings", href: "/config/settings", label: "Settings", marker: "G" },
   ];
 
   const nav = items
@@ -81,14 +81,14 @@ function renderSidebar(active: SidebarNavId | null): string {
         <div class="flex flex-col gap-3 pt-1">
           <div data-app-update-widget>
             <div class="text-xs text-base-content/70">
-              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> | 版本：<span data-app-version>v-</span>
+              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> | Version: <span data-app-version>v-</span>
             </div>
-            <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>正在检查更新...</div>
+            <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>Checking updates...</div>
           </div>
 
           <button class="btn btn-outline btn-sm justify-start gap-2" type="button" data-openclaw-entry>
             <span class="inline-flex h-4 w-4 items-center justify-center rounded bg-base-300 text-[10px]">O</span>
-            <span>打开 openclaw 后台</span>
+            <span>Open openclaw Console</span>
           </button>
         </div>
       </aside>`;
