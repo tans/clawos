@@ -10,7 +10,9 @@ import { VERSION } from "../app.constants";
 
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
 const SHELL_HTML_VERSION_PLACEHOLDER = "__CLAWOS_APP_VERSION__";
-const SHELL_VIEW_URL = `views://clawos/shell.html?appVersion=${encodeURIComponent(VERSION)}`;
+// Electrobun's flat-file views loader resolves the URL as a file path on Windows.
+// Query strings break that resolution, so the views entry must stay path-only.
+const SHELL_VIEW_URL = "views://clawos/shell.html";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
 );
@@ -31,11 +33,7 @@ function resolveUseInlineShellHtml(): boolean {
     return ["1", "true", "yes", "on"].includes(raw);
   }
 
-  if (IS_DESKTOP_DEV) {
-    return false;
-  }
-
-  return process.platform === "win32";
+  return false;
 }
 
 function focusDesktopWindow(): void {

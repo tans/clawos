@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClawOS</title>
-    <script src="views://clawos/bridge.js"></script>
     <style>
       :root {
         color-scheme: light;
@@ -13,6 +12,8 @@
         --boot-border: #dbe2ea;
         --boot-text: #0f172a;
         --boot-muted: #64748b;
+        --boot-warn: #b45309;
+        --boot-error: #b91c1c;
       }
       body {
         margin: 0;
@@ -59,6 +60,17 @@
         font-size: 14px;
         font-weight: 500;
       }
+      .status {
+        margin: 0;
+        color: var(--boot-muted);
+        font-size: 13px;
+      }
+      .status[data-state="warning"] {
+        color: var(--boot-warn);
+      }
+      .status[data-state="error"] {
+        color: var(--boot-error);
+      }
     </style>
   </head>
   <body>
@@ -79,18 +91,35 @@
         </svg>
         <h1 class="name">ClawOS</h1>
         <p class="version" data-boot-version>v-</p>
+        <p class="status" data-boot-status>正在启动桌面界面...</p>
       </section>
     </main>
     <script>
-      (function setBootVersion() {
+      (function bootstrapShell() {
         const versionEl = document.querySelector("[data-boot-version]");
+        const statusEl = document.querySelector("[data-boot-status]");
         if (!versionEl) return;
-        const params = new URLSearchParams(window.location.search || "");
-        const fromQuery = String(params.get("appVersion") || "").trim();
         const fromInline = String("__CLAWOS_APP_VERSION__").trim();
         const fallback = fromInline === "__CLAWOS_APP_VERSION__" ? "" : fromInline;
-        const version = fromQuery || fallback;
-        versionEl.textContent = version ? `v${version}` : "v-";
+        versionEl.textContent = fallback ? `v${fallback}` : "v-";
+
+        const setStatus = (message, state) => {
+          if (!statusEl) return;
+          statusEl.textContent = message;
+          statusEl.dataset.state = state || "";
+        };
+
+        window.setTimeout(() => {
+          setStatus("正在连接桌面服务...", "warning");
+        }, 2500);
+
+        const bridgeScript = document.createElement("script");
+        bridgeScript.src = "views://clawos/bridge.js";
+        bridgeScript.async = true;
+        bridgeScript.onerror = () => {
+          setStatus("桌面桥接加载失败，请重启应用。", "error");
+        };
+        document.body.appendChild(bridgeScript);
       })();
     </script>
   </body>

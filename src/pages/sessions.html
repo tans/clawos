@@ -1,15 +1,15 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClawOS 会话</title>
     <link rel="stylesheet" href="/styles.css" />
-  </head>
+      </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载�?..</div>
+        <div class="text-sm text-base-content/60">加载中...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
@@ -22,7 +22,7 @@
           <div class="grid gap-4 lg:grid-cols-[300px_1fr]">
             <div class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
-                <div class="text-xs uppercase tracking-[0.18em] text-base-content/50">所有会�?/div>
+                <div class="text-xs uppercase tracking-[0.18em] text-base-content/50">所有会话</div>
                 <div class="text-xs text-base-content/70" data-list-meta>尚未加载</div>
                 <div class="flex flex-col gap-2" data-session-list></div>
               </div>
@@ -116,11 +116,11 @@
           empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
           empty.textContent = "暂无会话数据";
           sessionListEl.appendChild(empty);
-          listMetaEl.textContent = "�?0 �?;
+          listMetaEl.textContent = "共 0 条";
           return;
         }
 
-        listMetaEl.textContent = `�?${sessions.length} 条`;
+        listMetaEl.textContent = `共 ${sessions.length} 条`;
 
         sessions.forEach((session) => {
           const btn = document.createElement("button");
@@ -163,7 +163,7 @@
         if (!Array.isArray(history) || history.length === 0) {
           const empty = document.createElement("div");
           empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
-          empty.textContent = "该会话暂无历史消�?;
+          empty.textContent = "该会话暂无历史消息";
           messageListEl.appendChild(empty);
           return;
         }
@@ -225,10 +225,10 @@
         try {
           const data = await api(`/api/sessions/${encodeURIComponent(sessionKey)}/history?limit=300`);
           const history = Array.isArray(data.history) ? data.history : [];
-          detailMetaEl.textContent = `�?${history.length} 条消息`;
+          detailMetaEl.textContent = `共 ${history.length} 条消息`;
           renderMessageList(history);
         } catch (error) {
-          detailMetaEl.textContent = readUserErrorMessage(error, "加载失败，请稍后重试�?);
+          detailMetaEl.textContent = readUserErrorMessage(error, "加载失败，请稍后重试。");
           renderMessageList([]);
         }
       }
@@ -243,7 +243,7 @@
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = readUserErrorMessage(error, "刷新失败，请稍后重试�?);
+          listMetaEl.textContent = readUserErrorMessage(error, "刷新失败，请稍后重试。");
           clearChildren(sessionListEl);
         } finally {
           button.disabled = false;
@@ -254,10 +254,10 @@
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试�?);
+          listMetaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
           clearChildren(sessionListEl);
           titleEl.textContent = "未选择会话";
-          detailMetaEl.textContent = "请先检查服务连接状�?;
+          detailMetaEl.textContent = "请先检查服务连接状态";
           renderMessageList([]);
         }
       })();

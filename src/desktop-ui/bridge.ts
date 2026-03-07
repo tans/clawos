@@ -110,7 +110,6 @@ function renderDesktopError(message: string): void {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClawOS - Page Load Failed</title>
-    <script src="views://clawos/bridge.js"></script>
     <style>
       body {
         margin: 0;
