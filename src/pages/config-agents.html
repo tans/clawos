@@ -58,11 +58,11 @@
           modelId: "k2p5",
         },
         {
-          key: "minimax",
-          title: "MiniMax",
+          key: "minimax-cn",
+          title: "minimax-cn",
           baseUrl: "https://api.minimaxi.com/anthropic",
           api: "anthropic-messages",
-          modelId: "MiniMax-M2.1",
+          modelId: "MiniMax-M2.5",
         },
         {
           key: "custom",
@@ -82,6 +82,7 @@
       const PROVIDER_API_OPTIONS = ["openai-completions", "anthropic-messages", "openai-responses"];
       const PROVIDER_ALIASES = {
         free: "freegpt",
+        minimax: "minimax-cn",
       };
       const FREEGPT_DEFAULTS = {
         baseUrl: "https://freegpt.minapp.xin/v1",

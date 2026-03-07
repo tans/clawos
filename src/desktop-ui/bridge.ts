@@ -16,6 +16,7 @@ const ALLOWED_PAGE_PATHS = new Set([
 const BOOT_SCREEN_MIN_DURATION_MS = 2000;
 const PAGE_RENDER_TIMEOUT_MS = 15_000;
 const API_PROXY_TIMEOUT_MS = 20_000;
+const OPEN_EXTERNAL_TIMEOUT_MS = 10_000;
 
 const rpc = Electroview.defineRPC<DesktopRpcSchema>({
   maxRequestTime: 60_000,
@@ -286,6 +287,14 @@ async function proxyApiRequest(request: Request): Promise<Response> {
   });
 }
 
+async function openExternalUrl(url: string): Promise<void> {
+  await withTimeout(
+    rpc.request.openExternalUrl({ url }),
+    OPEN_EXTERNAL_TIMEOUT_MS,
+    `Open external url timeout (>${Math.floor(OPEN_EXTERNAL_TIMEOUT_MS / 1000)}s)`
+  );
+}
+
 function installFetchShim(): void {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const request = input instanceof Request ? new Request(input, init) : new Request(input, init);
@@ -306,10 +315,24 @@ function installFetchShim(): void {
   };
 }
 
+function exposeDesktopHelpers(): void {
+  const helpers = {
+    openExternalUrl,
+  };
+
+  Object.defineProperty(window, "__clawosDesktop", {
+    configurable: true,
+    enumerable: false,
+    writable: false,
+    value: helpers,
+  });
+}
+
 function startDesktopBridge(): void {
   installGlobalErrorHandlers();
   installFetchShim();
   installNavigationInterceptor();
+  exposeDesktopHelpers();
 
   const alreadyRenderedPage = document.documentElement.hasAttribute("data-clawos-desktop-page");
   if (alreadyRenderedPage) {

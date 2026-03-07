@@ -100,13 +100,31 @@
     }
   }
 
-  const openclawEntryButton = document.querySelector("[data-openclaw-entry]");
-  if (openclawEntryButton instanceof HTMLButtonElement) {
+  async function openOpenclawConsole(url) {
+    const nativeOpen = window.__clawosDesktop?.openExternalUrl;
+    if (typeof nativeOpen === "function") {
+      try {
+        await nativeOpen(url);
+        return;
+      } catch {
+        // Fallback to browser-side open when native bridge is unavailable.
+      }
+    }
+    window.open(url, "_blank", "noopener");
+  }
+
+  const openclawEntryButtons = Array.from(document.querySelectorAll("[data-openclaw-entry]"));
+  if (openclawEntryButtons.length > 0) {
     void (async () => {
       const openclawConsoleUrl = await loadOpenclawConsoleUrl();
-      openclawEntryButton.addEventListener("click", () => {
-        window.open(openclawConsoleUrl, "_blank", "noopener");
-      });
+      for (const button of openclawEntryButtons) {
+        if (!(button instanceof HTMLButtonElement)) {
+          continue;
+        }
+        button.addEventListener("click", () => {
+          void openOpenclawConsole(openclawConsoleUrl);
+        });
+      }
     })();
   }
 

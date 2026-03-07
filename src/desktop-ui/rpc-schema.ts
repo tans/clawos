@@ -22,6 +22,14 @@ export type DesktopPageResponse = {
   html: string;
 };
 
+export type DesktopOpenExternalRequest = {
+  url: string;
+};
+
+export type DesktopOpenExternalResponse = {
+  ok: boolean;
+};
+
 export type DesktopRpcSchema = ElectrobunRPCSchema & {
   bun: {
     requests: {
@@ -32,6 +40,10 @@ export type DesktopRpcSchema = ElectrobunRPCSchema & {
       renderPage: {
         params: DesktopPageRequest;
         response: DesktopPageResponse;
+      };
+      openExternalUrl: {
+        params: DesktopOpenExternalRequest;
+        response: DesktopOpenExternalResponse;
       };
     };
     messages: {};
