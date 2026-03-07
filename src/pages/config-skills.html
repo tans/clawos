@@ -422,6 +422,7 @@
                     data-field="clawhub-search-query"
                     placeholder="输入关键词，例如：calendar / github / feishu"
                   />
+                  <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-install">安装 ClawHub</button>
                   <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-search">搜索</button>
                 </div>
                 <div class="mt-2 text-xs text-base-content/70" data-clawhub-status>输入关键词后点击搜索。</div>
@@ -487,6 +488,7 @@
       const skillsWatchDebounceInput = document.querySelector('[data-field="skills-load-watch-debounce-ms"]');
       const skillsRawInput = document.querySelector('[data-field="skills-json-raw"]');
       const clawhubSearchQueryInput = document.querySelector('[data-field="clawhub-search-query"]');
+      const clawhubInstallBtn = document.querySelector('[data-action="clawhub-install"]');
       const clawhubSearchBtn = document.querySelector('[data-action="clawhub-search"]');
       const clawhubStatusEl = document.querySelector("[data-clawhub-status]");
       const clawhubResultsEl = document.querySelector("[data-clawhub-results]");
@@ -1252,6 +1254,19 @@
         setClawhubStatus(`激活成功：${skillId}`);
       }
 
+      async function installClawhub() {
+        setClawhubStatus("正在安装 ClawHub ...");
+        const result = await api("/api/skills/clawhub/install", {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        if (result.installed === true) {
+          setClawhubStatus("ClawHub 已安装，可直接搜索并激活技能。");
+          return;
+        }
+        setClawhubStatus("ClawHub 安装状态未知，请稍后重试。");
+      }
+
       if (providerRowsEl) {
         providerRowsEl.addEventListener("click", (event) => {
           const target = event.target instanceof Element ? event.target.closest('[data-action="remove-provider-row"]') : null;
@@ -1279,6 +1294,20 @@
             setClawhubStatus(`搜索失败: ${message}`);
           } finally {
             setButtonBusy(clawhubSearchBtn, false, "搜索中...", "搜索");
+          }
+        });
+      }
+
+      if (clawhubInstallBtn) {
+        clawhubInstallBtn.addEventListener("click", async () => {
+          try {
+            setButtonBusy(clawhubInstallBtn, true, "安装中...", "安装 ClawHub");
+            await installClawhub();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setClawhubStatus(`安装失败: ${message}`);
+          } finally {
+            setButtonBusy(clawhubInstallBtn, false, "安装中...", "安装 ClawHub");
           }
         });
       }

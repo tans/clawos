@@ -74,7 +74,7 @@
         {
           key: "free",
           title: "Free Echo",
-          baseUrl: "http://127.0.0.1:18765/v1",
+          baseUrl: "https://freegpt.minapp.xin/v1",
           api: "openai-completions",
           modelId: "free-echo",
         },
@@ -200,7 +200,7 @@
         if (preset && readOptionalText(preset.title)) {
           return preset.title;
         }
-        return providerKey || "鏈懡鍚?;
+        return providerKey || "Unnamed";
       }
 
       function isPresetProvider(providerKey) {
@@ -386,7 +386,7 @@
                   <div class="min-w-0">
                     <div class="text-sm font-medium">${escapeHtml(item.title)}</div>
                     <div class="text-[11px] text-base-content/60 font-mono">${escapeHtml(item.providerKey)}</div>
-                    ${item.providerKey === "free" ? '<div class="mt-1 text-[11px] text-base-content/60">run `bun run free:dev` to start local test provider</div>' : ""}
+                    ${item.providerKey === "free" ? '<div class="mt-1 text-[11px] text-base-content/60">run bun run free:dev to start local test provider</div>' : ""}
                   </div>
                   <div class="flex items-center gap-2 flex-wrap justify-end">
                     <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
@@ -553,7 +553,7 @@
         const modelId = readOptionalText(draft.modelId);
 
         if (!providerKey || !modelId) {
-          throw new Error(`${resolveTitle(providerKey || draft.providerKey)} 鐨勬ā鍨嬩笉鑳戒负绌篳);
+          throw new Error(`${resolveTitle(providerKey || draft.providerKey)} model id cannot be empty`);
         }
 
         const targetKey = `${providerKey}/${modelId}`;
@@ -629,7 +629,7 @@
         const drafts = readProviderDraftsFromDom();
         const targetDraft = drafts.find((item) => normalizeProviderKey(item.providerKey) === normalizeProviderKey(providerKey));
         if (!targetDraft) {
-          throw new Error(`鏈壘鍒?provider锛?{providerKey}`);
+          throw new Error(`provider not found: ${providerKey}`);
         }
 
         const nextModels = buildNextModelsConfig(modelsConfig, [targetDraft]);
@@ -648,7 +648,7 @@
         agentsConfig = nextAgents;
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} 宸蹭繚瀛榒;
+        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} 已保存`;
       }
 
       if (modelListEl) {
@@ -683,10 +683,10 @@
           try {
             await saveSingleProvider(providerKey);
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?);
+            metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
           } finally {
             button.disabled = false;
-            button.textContent = originalText || "淇濆瓨姝ゅ崱鐗?;
+            button.textContent = originalText || "保存此卡片";
           }
         });
       }
@@ -697,7 +697,7 @@
           try {
             await loadSections();
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "鍔犺浇澶辫触锛岃妫€鏌ユ湇鍔″悗閲嶈瘯銆?);
+            metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
           } finally {
             reloadBtn.disabled = false;
           }
@@ -708,7 +708,7 @@
         try {
           await loadSections();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "鍒濆鍖栧け璐ワ紝璇峰埛鏂伴〉闈㈤噸璇曘€?);
+          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
         }
       })();
     </script>

@@ -9,17 +9,27 @@ type ChatCompletionsBody = {
   messages?: ChatMessage[];
 };
 
-const PORT = Number(process.env.FREE_PROVIDER_PORT || "18765");
+type ResponsesBody = {
+  model?: string;
+  input?: unknown;
+};
+
+const PORT = Number(process.env.PORT || process.env.FREE_PROVIDER_PORT || "18765");
 const MODEL_ID = process.env.FREE_PROVIDER_MODEL_ID || "free-echo";
 
-function json(data: unknown, status = 200): Response {
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "content-type,authorization",
+  "access-control-allow-methods": "GET,POST,OPTIONS",
+};
+
+function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
-      "access-control-allow-origin": "*",
-      "access-control-allow-headers": "content-type,authorization",
-      "access-control-allow-methods": "GET,POST,OPTIONS",
+      ...CORS_HEADERS,
+      ...extraHeaders,
     },
   });
 }
@@ -30,9 +40,7 @@ function sse(body: ReadableStream<Uint8Array>): Response {
       "content-type": "text/event-stream; charset=utf-8",
       "cache-control": "no-cache",
       connection: "keep-alive",
-      "access-control-allow-origin": "*",
-      "access-control-allow-headers": "content-type,authorization",
-      "access-control-allow-methods": "GET,POST,OPTIONS",
+      ...CORS_HEADERS,
     },
   });
 }
@@ -78,6 +86,46 @@ function pickEchoText(messages: ChatMessage[] | undefined): string {
     }
   }
 
+  return "";
+}
+
+function normalizeResponseInput(input: unknown): string {
+  if (typeof input === "string") {
+    return input.trim();
+  }
+  if (!Array.isArray(input)) {
+    return "";
+  }
+
+  for (let i = input.length - 1; i >= 0; i -= 1) {
+    const item = input[i];
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+    const asObj = item as Record<string, unknown>;
+    const role = typeof asObj.role === "string" ? asObj.role : "";
+    if (role !== "user") {
+      continue;
+    }
+    const content = asObj.content;
+    if (typeof content === "string") {
+      const text = content.trim();
+      if (text) {
+        return text;
+      }
+      continue;
+    }
+    const maybeArray = Array.isArray(content) ? content : [];
+    for (const part of maybeArray) {
+      if (!part || typeof part !== "object") {
+        continue;
+      }
+      const p = part as Record<string, unknown>;
+      if (typeof p.text === "string" && p.text.trim()) {
+        return p.text.trim();
+      }
+    }
+  }
   return "";
 }
 
@@ -141,13 +189,40 @@ function buildStream(body: ChatCompletionsBody): Response {
   return sse(stream);
 }
 
+function buildResponses(body: ResponsesBody): Record<string, unknown> {
+  const content = normalizeResponseInput(body.input);
+  return {
+    id: `resp-free-${Date.now()}`,
+    object: "response",
+    model: body.model || MODEL_ID,
+    status: "completed",
+    output_text: content,
+    output: [
+      {
+        id: `msg-free-${Date.now()}`,
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: content }],
+      },
+    ],
+  };
+}
+
 const server = Bun.serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
 
     if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: { "access-control-allow-origin": "*" } });
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    if (url.pathname === "/" && req.method === "GET") {
+      return json({
+        ok: true,
+        service: "clawos-free-provider",
+        docs: ["/health", "/v1/models", "/v1/chat/completions", "/v1/responses"],
+      });
     }
 
     if (url.pathname === "/health" && req.method === "GET") {
@@ -176,6 +251,14 @@ const server = Bun.serve({
         return buildStream(body);
       }
       return json(buildCompletion(body));
+    }
+
+    if (url.pathname === "/v1/responses" && req.method === "POST") {
+      const body = (await req.json().catch(() => null)) as ResponsesBody | null;
+      if (!body || typeof body !== "object") {
+        return json({ error: { message: "Invalid JSON body." } }, 400);
+      }
+      return json(buildResponses(body));
     }
 
     return json({ error: { message: `Not found: ${url.pathname}` } }, 404);

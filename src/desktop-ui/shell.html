@@ -8,6 +8,11 @@
     <style>
       :root {
         color-scheme: light;
+        --boot-bg: #f8fafc;
+        --boot-panel: #ffffff;
+        --boot-border: #dbe2ea;
+        --boot-text: #0f172a;
+        --boot-muted: #64748b;
       }
       body {
         margin: 0;
@@ -18,8 +23,8 @@
           "Noto Sans CJK SC",
           "Segoe UI",
           sans-serif;
-        background: #f8fafc;
-        color: #0f172a;
+        background: radial-gradient(1200px 700px at 50% -120px, #e2e8f0 0%, var(--boot-bg) 58%);
+        color: var(--boot-text);
       }
       .boot {
         min-height: 100vh;
@@ -27,29 +32,53 @@
         place-items: center;
       }
       .card {
-        width: min(540px, calc(100vw - 40px));
-        border-radius: 12px;
-        border: 1px solid #dbe2ea;
-        background: #fff;
-        padding: 20px;
+        width: min(360px, calc(100vw - 40px));
+        border-radius: 16px;
+        border: 1px solid var(--boot-border);
+        background: color-mix(in srgb, var(--boot-panel) 88%, transparent);
+        backdrop-filter: blur(8px);
+        padding: 28px 24px;
+        display: grid;
+        justify-items: center;
+        gap: 14px;
       }
-      .title {
-        margin: 0 0 8px;
-        font-size: 18px;
-        font-weight: 600;
+      .logo {
+        width: 54px;
+        height: 54px;
+        display: block;
       }
-      .desc {
+      .name {
         margin: 0;
-        color: #475569;
-        font-size: 13px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .version {
+        margin: 0;
+        color: var(--boot-muted);
+        font-size: 14px;
+        font-weight: 500;
       }
     </style>
   </head>
   <body>
     <main class="boot">
       <section class="card">
-        <h1 class="title">ClawOS &#27491;&#22312;&#21551;&#21160;...</h1>
-        <p class="desc">&#27491;&#22312;&#21152;&#36733;&#26700;&#38754;&#30028;&#38754;&#65292;&#35831;&#31245;&#20505;&#12290;</p>
+        <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="clawos-boot-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2563eb"></stop>
+              <stop offset="100%" stop-color="#0ea5e9"></stop>
+            </linearGradient>
+          </defs>
+          <rect x="5" y="5" width="54" height="54" rx="14" fill="url(#clawos-boot-gradient)"></rect>
+          <path
+            d="M41.2 20.5H31.3c-7.1 0-12.1 4.7-12.1 11.4 0 7 5.2 11.6 12.9 11.6h8.8v-6.1h-8.5c-3.9 0-6.3-2.2-6.3-5.7 0-3.4 2.3-5.5 6.1-5.5h9z"
+            fill="#ffffff"
+          ></path>
+        </svg>
+        <h1 class="name">ClawOS</h1>
+        <p class="version">v0.9.8</p>
       </section>
     </main>
   </body>

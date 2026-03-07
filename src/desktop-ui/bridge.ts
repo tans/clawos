@@ -12,6 +12,7 @@ const ALLOWED_PAGE_PATHS = new Set([
   "/config/settings",
   "/sessions",
 ]);
+const BOOT_SCREEN_MIN_DURATION_MS = 2000;
 
 const rpc = Electroview.defineRPC<DesktopRpcSchema>({
   maxRequestTime: 60_000,
@@ -76,6 +77,7 @@ function renderDesktopError(message: string): void {
   if (runtimeErrorRendered) {
     return;
   }
+
   runtimeErrorRendered = true;
   document.open();
   document.write(`
@@ -107,8 +109,14 @@ function renderDesktopError(message: string): void {
         border: 1px solid #dbe2ea;
         background: #fff;
       }
-      h1 { margin: 0 0 12px; font-size: 22px; }
-      p { margin: 8px 0; line-height: 1.6; }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 22px;
+      }
+      p {
+        margin: 8px 0;
+        line-height: 1.6;
+      }
       code {
         display: block;
         margin-top: 8px;
@@ -137,6 +145,7 @@ function formatRuntimeError(error: unknown): string {
     const message = error.stack?.trim() || error.message.trim();
     return message || "未知异常";
   }
+
   const text = String(error || "").trim();
   return text || "未知异常";
 }
@@ -144,11 +153,11 @@ function formatRuntimeError(error: unknown): string {
 function installGlobalErrorHandlers(): void {
   window.addEventListener("error", (event) => {
     const reason = event.error || event.message || "页面脚本异常";
-    renderDesktopError(`页面脚本异常：${formatRuntimeError(reason)}`);
+    renderDesktopError(`页面脚本异常: ${formatRuntimeError(reason)}`);
   });
 
   window.addEventListener("unhandledrejection", (event) => {
-    renderDesktopError(`未处理的异步异常：${formatRuntimeError(event.reason)}`);
+    renderDesktopError(`未处理的异步异常: ${formatRuntimeError(event.reason)}`);
   });
 }
 
@@ -161,6 +170,7 @@ async function navigateToRoute(route: string): Promise<void> {
       renderDesktopError(`页面返回异常状态码: ${page.status}`);
       return;
     }
+
     if (typeof page.html !== "string" || !page.html.trim()) {
       renderDesktopError("页面内容为空，无法渲染。");
       return;
@@ -185,7 +195,12 @@ function shouldInterceptLink(target: HTMLAnchorElement): boolean {
     return false;
   }
 
-  if (href.startsWith("http://") || href.startsWith("https://") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+  if (
+    href.startsWith("http://") ||
+    href.startsWith("https://") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:")
+  ) {
     return false;
   }
 
@@ -278,11 +293,13 @@ function startDesktopBridge(): void {
     return;
   }
 
-  void navigateToRoute(readRouteFromHash());
+  window.setTimeout(() => {
+    void navigateToRoute(readRouteFromHash());
+  }, BOOT_SCREEN_MIN_DURATION_MS);
 }
 
 try {
   startDesktopBridge();
 } catch (error) {
-  renderDesktopError(`桌面桥接启动失败：${formatRuntimeError(error)}`);
+  renderDesktopError(`桌面桥接启动失败: ${formatRuntimeError(error)}`);
 }

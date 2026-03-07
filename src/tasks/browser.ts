@@ -9,7 +9,7 @@ const IS_WINDOWS = process.platform === "win32";
 
 export const BROWSER_CDP_PORT = 9222;
 export const BROWSER_CDP_PROXY_PORT = 9223;
-export const BROWSER_BOOT_URL = "http://localhost:8888";
+export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "http://localhost:8080";
 const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/version`;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
@@ -430,7 +430,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       await runProcessStep(task, {
         step: 2,
         totalSteps,
-        name: "启动 Chrome（CDP:9222，打开 http://localhost:8888）",
+        name: `启动 Chrome（CDP:9222，打开 ${BROWSER_BOOT_URL}）`,
         command: `powershell.exe ... ${buildChromeStartCommand(chromeExePath, chromeWorkingDirectory)}`,
         args: buildChromeStartArgs(chromeExePath, chromeWorkingDirectory),
       });

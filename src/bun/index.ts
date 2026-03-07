@@ -6,6 +6,7 @@ import { invokeDesktopApi, renderDesktopPage } from "./desktop-ui";
 import { computeDesktopControlPort } from "./single-instance";
 import { detectAndPersistOpenclawExecutionEnvironment } from "../system/openclaw-execution";
 import shellHtml from "../desktop-ui/shell.html" with { type: "text" };
+import { VERSION } from "../app.constants";
 
 const SINGLE_INSTANCE_HOST = "127.0.0.1";
 const SHELL_VIEW_URL = "views://clawos/shell.html";
@@ -17,6 +18,7 @@ const SHOULD_OPEN_DEVTOOLS = ["1", "true", "yes", "on"].includes(
 );
 
 let desktopWindow: BrowserWindow | null = null;
+const APP_WINDOW_TITLE = `ClawOS v${VERSION}`;
 
 function resolveUseInlineShellHtml(): boolean {
   const raw = (process.env.CLAWOS_DESKTOP_INLINE_HTML || "").trim().toLowerCase();
@@ -213,7 +215,7 @@ async function main(): Promise<void> {
   try {
     const windowContent = useInlineShellHtml ? { html: shellHtml } : { url: SHELL_VIEW_URL };
     desktopWindow = new BrowserWindow({
-      title: "ClawOS",
+      title: APP_WINDOW_TITLE,
       frame: { x: 120, y: 80, width: 1360, height: 900 },
       rpc: createDesktopRpc(),
       ...windowContent,
@@ -231,7 +233,7 @@ async function main(): Promise<void> {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[desktop] failed to bootstrap desktop UI: ${message}`);
     desktopWindow = new BrowserWindow({
-      title: "ClawOS (启动失败)",
+      title: `${APP_WINDOW_TITLE} (启动失败)`,
       frame: { x: 120, y: 80, width: 980, height: 700 },
       html: renderStartupErrorHtml(message),
     });
@@ -243,3 +245,4 @@ main().catch((error) => {
   console.error(`[desktop] fatal startup error: ${message}`);
   process.exit(1);
 });
+

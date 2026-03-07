@@ -262,6 +262,12 @@ function dedupeClawhubItems(items: ClawhubSearchItem[], limit: number): ClawhubS
 
 async function runClawhubSearch(query: string, limit: number): Promise<{ items: ClawhubSearchItem[]; command: string }> {
   const script = `set -e
+if ! command -v clawhub >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
+  PNPM_BIN="$(pnpm bin -g 2>/dev/null || true)"
+  if [ -n "$PNPM_BIN" ] && [ -x "$PNPM_BIN/clawhub" ]; then
+    export PATH="$PNPM_BIN:$PATH"
+  fi
+fi
 if ! command -v clawhub >/dev/null 2>&1; then
   echo "clawhub 命令不存在，请先在 WSL 中安装 clawhub。" >&2
   exit 127
@@ -279,7 +285,7 @@ fi
 cat /tmp/clawhub-search.err >&2
 exit 1`;
 
-  const result = await runWslScript(script, { shellMode: "clean" });
+  const result = await runWslScript(script, { shellMode: "login" });
   if (!result.ok) {
     const tips = troubleshootingTips(result.stderr);
     const hint = tips.length > 0 ? ` ${tips.join(" ")}` : "";
@@ -309,12 +315,18 @@ exit 1`;
 
 async function activateClawhubSkill(skillRef: string): Promise<{ command: string; output: string[] }> {
   const script = `set -e
+if ! command -v clawhub >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
+  PNPM_BIN="$(pnpm bin -g 2>/dev/null || true)"
+  if [ -n "$PNPM_BIN" ] && [ -x "$PNPM_BIN/clawhub" ]; then
+    export PATH="$PNPM_BIN:$PATH"
+  fi
+fi
 if ! command -v clawhub >/dev/null 2>&1; then
   echo "clawhub 命令不存在，请先在 WSL 中安装 clawhub。" >&2
   exit 127
 fi
 clawhub install ${shellQuote(skillRef)}`;
-  const result = await runWslScript(script, { shellMode: "clean" });
+  const result = await runWslScript(script, { shellMode: "login" });
   if (!result.ok) {
     const tips = troubleshootingTips(result.stderr);
     const hint = tips.length > 0 ? ` ${tips.join(" ")}` : "";
@@ -323,6 +335,58 @@ clawhub install ${shellQuote(skillRef)}`;
   return {
     command: result.command,
     output: normalizeOutput(result.stdout).slice(-80),
+  };
+}
+
+async function installClawhubCli(): Promise<{ installed: boolean; command: string; output: string[] }> {
+  const script = `set -e
+if ! command -v clawhub >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
+  PNPM_BIN="$(pnpm bin -g 2>/dev/null || true)"
+  if [ -n "$PNPM_BIN" ] && [ -x "$PNPM_BIN/clawhub" ]; then
+    export PATH="$PNPM_BIN:$PATH"
+  fi
+fi
+if command -v clawhub >/dev/null 2>&1; then
+  clawhub --version >/tmp/clawhub-version.txt 2>/dev/null || true
+  echo "__CLAWOS_INSTALLED__=1"
+  cat /tmp/clawhub-version.txt 2>/dev/null || true
+  exit 0
+fi
+
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm add -g clawhub >/tmp/clawhub-install.out 2>/tmp/clawhub-install.err || pnpm add -g @openclaw/clawhub >/tmp/clawhub-install.out 2>/tmp/clawhub-install.err || true
+fi
+
+if ! command -v clawhub >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+  npm install -g clawhub >/tmp/clawhub-install.out 2>/tmp/clawhub-install.err || npm install -g @openclaw/clawhub >/tmp/clawhub-install.out 2>/tmp/clawhub-install.err || true
+fi
+
+if command -v clawhub >/dev/null 2>&1; then
+  echo "__CLAWOS_INSTALLED__=1"
+  clawhub --version 2>/dev/null || true
+  cat /tmp/clawhub-install.out 2>/dev/null || true
+  exit 0
+fi
+
+echo "__CLAWOS_INSTALLED__=0"
+cat /tmp/clawhub-install.err 2>/dev/null || true
+echo "安装失败：未找到可用的安装方式（需 pnpm 或 npm）。" >&2
+exit 1`;
+
+  const result = await runWslScript(script, { shellMode: "login" });
+  const stdoutLines = result.stdout.split(/\r?\n/g);
+  const marker = stdoutLines.shift()?.trim();
+  const installed = marker === "__CLAWOS_INSTALLED__=1";
+  if (!result.ok || !installed) {
+    const tips = troubleshootingTips(result.stderr);
+    const hint = tips.length > 0 ? ` ${tips.join(" ")}` : "";
+    throw new HttpError(500, `安装 ClawHub 失败：${result.stderr || `退出码 ${result.code}`}${hint}`);
+  }
+
+  return {
+    installed,
+    command: result.command,
+    output: normalizeOutput(stdoutLines.join("\n")).slice(-120),
   };
 }
 
@@ -359,6 +423,15 @@ async function handleClawhubSkillActivate(req: Request): Promise<Response> {
     save,
     install,
     data: nextSkills,
+  });
+}
+
+async function handleClawhubInstall(req: Request): Promise<Response> {
+  void req;
+  const result = await installClawhubCli();
+  return jsonResponse({
+    ok: true,
+    ...result,
   });
 }
 
@@ -725,6 +798,10 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
     if (path === "/api/skills/clawhub/activate" && req.method === "POST") {
       return await handleClawhubSkillActivate(req);
+    }
+
+    if (path === "/api/skills/clawhub/install" && req.method === "POST") {
+      return await handleClawhubInstall(req);
     }
 
     const channelPatchMatch = path.match(/^\/api\/config\/channels\/channel\/([a-zA-Z0-9_.-]{1,64})\/?$/);
