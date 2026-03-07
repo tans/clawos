@@ -33,7 +33,7 @@ function resolveUseInlineShellHtml(): boolean {
     return ["1", "true", "yes", "on"].includes(raw);
   }
 
-  return process.platform === "win32";
+  return false;
 }
 
 function focusDesktopWindow(): void {
