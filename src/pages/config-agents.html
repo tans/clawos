@@ -41,6 +41,7 @@
     <script>
       const MODEL_SECTION = "models";
       const AGENT_SECTION = "agents";
+      const FREEGPT_PROVIDER_KEY = "freegpt";
       const PROVIDER_PRESETS = [
         {
           key: "kimi",
@@ -59,7 +60,7 @@
         {
           key: "minimax",
           title: "MiniMax",
-          baseUrl: "https://api.minimax.io/anthropic",
+          baseUrl: "https://api.minimaxi.com/anthropic",
           api: "anthropic-messages",
           modelId: "MiniMax-M2.1",
         },
@@ -81,6 +82,12 @@
       const PROVIDER_API_OPTIONS = ["openai-completions", "anthropic-messages", "openai-responses"];
       const PROVIDER_ALIASES = {
         free: "freegpt",
+      };
+      const FREEGPT_DEFAULTS = {
+        baseUrl: "https://freegpt.minapp.xin/v1",
+        api: "openai-completions",
+        apiKey: "free",
+        modelId: "freegpt-echo",
       };
 
       const presetByProviderKey = new Map(PROVIDER_PRESETS.map((item) => [item.key, item]));
@@ -206,6 +213,10 @@
 
       function isPresetProvider(providerKey) {
         return presetByProviderKey.has(providerKey);
+      }
+
+      function isFreeGptProvider(providerKey) {
+        return normalizeProviderKey(providerKey) === FREEGPT_PROVIDER_KEY;
       }
 
       function resolveProviderEntry(providers, providerKey) {
@@ -335,17 +346,31 @@
             modelOptions,
             primary: routing.primaryRef ? routing.primaryRef.provider === providerKey : false,
             fallback: routing.fallbackProviderSet.has(providerKey),
+            enabled:
+              providerKey === FREEGPT_PROVIDER_KEY
+                ? routing.fallbackProviderSet.has(providerKey) || (isObject(provider) && Object.keys(provider).length > 0)
+                : true,
           };
         });
 
+        const freeGptDraft = drafts.find((item) => item.providerKey === FREEGPT_PROVIDER_KEY);
+        if (freeGptDraft) {
+          freeGptDraft.primary = false;
+        }
+
         const hasPrimary = drafts.some((item) => item.primary);
         if (!hasPrimary && drafts.length > 0) {
-          drafts[0].primary = true;
+          const nextPrimary = drafts.find((item) => item.providerKey !== FREEGPT_PROVIDER_KEY) || drafts[0];
+          nextPrimary.primary = true;
         }
 
         for (const item of drafts) {
           if (item.primary) {
             item.fallback = false;
+          }
+          if (item.providerKey === FREEGPT_PROVIDER_KEY) {
+            item.primary = false;
+            item.fallback = Boolean(item.enabled);
           }
         }
 
@@ -378,6 +403,7 @@
 
         modelListEl.innerHTML = providerDrafts
           .map((item) => {
+            const isFreeGpt = isFreeGptProvider(item.providerKey);
             const primaryChecked = item.primary ? "checked" : "";
             const fallbackChecked = item.primary ? "" : item.fallback ? "checked" : "";
             const fallbackDisabled = item.primary ? "disabled" : "";
@@ -387,45 +413,58 @@
                   <div class="min-w-0">
                     <div class="text-sm font-medium">${escapeHtml(item.title)}</div>
                     <div class="text-[11px] text-base-content/60 font-mono">${escapeHtml(item.providerKey)}</div>
-                    ${item.providerKey === "freegpt" ? '<div class="mt-1 text-[11px] text-base-content/60">run bun run freegpt:dev to start local test provider</div>' : ""}
+                    ${item.providerKey === FREEGPT_PROVIDER_KEY ? '<div class="mt-1 text-[11px] text-base-content/60">启用后自动作为 fallback，默认 API Key 为 free</div>' : ""}
                   </div>
                   <div class="flex items-center gap-2 flex-wrap justify-end">
-                    <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                      <span class="text-xs">主模型</span>
-                      <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
-                    </label>
-                    <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                      <span class="text-xs">备用</span>
-                      <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
-                    </label>
+                    ${
+                      isFreeGpt
+                        ? `<label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
+                            <span class="text-xs">启用</span>
+                            <input class="checkbox checkbox-xs" type="checkbox" data-field="enabled" ${item.enabled ? "checked" : ""} />
+                          </label>`
+                        : `<label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
+                            <span class="text-xs">主模型</span>
+                            <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
+                          </label>
+                          <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
+                            <span class="text-xs">备用</span>
+                            <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
+                          </label>`
+                    }
                     <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">保存此卡片</button>
                   </div>
                 </div>
 
-                <div class="mt-3 grid gap-3">
-                  <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">Base URL</span>
-                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="base-url" value="${escapeHtml(item.baseUrl)}" placeholder="https://api.example.com/v1" />
-                  </label>
+                ${
+                  isFreeGpt
+                    ? `<div class="mt-3 rounded-lg border border-dashed border-base-300 px-3 py-2 text-xs text-base-content/70">
+                        启用后自动写入默认参数：fallback、API Key=free、模型=${escapeHtml(FREEGPT_DEFAULTS.modelId)}
+                      </div>`
+                    : `<div class="mt-3 grid gap-3">
+                        <label class="form-control w-full gap-1">
+                          <span class="text-xs text-base-content/70">Base URL</span>
+                          <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="base-url" value="${escapeHtml(item.baseUrl)}" placeholder="https://api.example.com/v1" />
+                        </label>
 
-                  <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">API</span>
-                    <select class="select select-bordered select-sm w-full font-mono" data-field="api">
-                      ${renderApiOptions(item.api)}
-                    </select>
-                  </label>
+                        <label class="form-control w-full gap-1">
+                          <span class="text-xs text-base-content/70">API</span>
+                          <select class="select select-bordered select-sm w-full font-mono" data-field="api">
+                            ${renderApiOptions(item.api)}
+                          </select>
+                        </label>
 
-                  <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">当前模型</span>
-                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="model-id" list="model-suggest-${escapeHtml(item.providerKey)}" />
-                    <datalist id="model-suggest-${escapeHtml(item.providerKey)}">${renderModelSuggestion(item.modelOptions || [])}</datalist>
-                  </label>
+                        <label class="form-control w-full gap-1">
+                          <span class="text-xs text-base-content/70">当前模型</span>
+                          <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="model-id" list="model-suggest-${escapeHtml(item.providerKey)}" />
+                          <datalist id="model-suggest-${escapeHtml(item.providerKey)}">${renderModelSuggestion(item.modelOptions || [])}</datalist>
+                        </label>
 
-                  <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">API Key</span>
-                    <input class="input input-bordered input-sm font-mono" type="password" data-field="api-key" value="${escapeHtml(item.apiKey)}" placeholder="sk-..." />
-                  </label>
-                </div>
+                        <label class="form-control w-full gap-1">
+                          <span class="text-xs text-base-content/70">API Key</span>
+                          <input class="input input-bordered input-sm font-mono" type="password" data-field="api-key" value="${escapeHtml(item.apiKey)}" placeholder="sk-..." />
+                        </label>
+                      </div>`
+                }
               </section>
             `;
           })
@@ -439,13 +478,20 @@
         return cards.map((card) => {
           const providerKey = readOptionalText(card.getAttribute("data-provider-key"));
           const origin = providerDrafts.find((item) => item.providerKey === providerKey);
+          const isFreeGpt = isFreeGptProvider(providerKey);
           const modelIdInput = card.querySelector('[data-field="model-id"]');
           const baseUrlInput = card.querySelector('[data-field="base-url"]');
           const apiInput = card.querySelector('[data-field="api"]');
           const apiKeyInput = card.querySelector('[data-field="api-key"]');
           const fallbackInput = card.querySelector('[data-field="fallback"]');
+          const enabledInput = card.querySelector('[data-field="enabled"]');
           const primaryInput = card.querySelector('input[name="primary-model"]');
-          const selectedModelId = readOptionalText(modelIdInput?.value);
+          const enabled = isFreeGpt ? Boolean(enabledInput?.checked) : true;
+          const selectedModelId = isFreeGpt
+            ? enabled
+              ? FREEGPT_DEFAULTS.modelId
+              : ""
+            : readOptionalText(modelIdInput?.value);
           const selectedModelName = selectedModelId;
 
           return {
@@ -455,11 +501,20 @@
             modelId: selectedModelId,
             modelName: selectedModelName,
             modelOptions: origin ? cloneObject(origin.modelOptions || []) : [],
-            apiKey: readOptionalText(apiKeyInput?.value),
-            baseUrl: readOptionalText(baseUrlInput?.value) || (origin ? origin.baseUrl : ""),
-            api: readOptionalText(apiInput?.value) || (origin ? origin.api : ""),
-            fallback: Boolean(fallbackInput?.checked),
-            primary: Boolean(primaryInput?.checked),
+            apiKey: isFreeGpt ? (enabled ? FREEGPT_DEFAULTS.apiKey : "") : readOptionalText(apiKeyInput?.value),
+            baseUrl: isFreeGpt
+              ? enabled
+                ? FREEGPT_DEFAULTS.baseUrl
+                : ""
+              : readOptionalText(baseUrlInput?.value) || (origin ? origin.baseUrl : ""),
+            api: isFreeGpt
+              ? enabled
+                ? FREEGPT_DEFAULTS.api
+                : ""
+              : readOptionalText(apiInput?.value) || (origin ? origin.api : ""),
+            fallback: isFreeGpt ? enabled : Boolean(fallbackInput?.checked),
+            primary: isFreeGpt ? false : Boolean(primaryInput?.checked),
+            enabled,
           };
         });
       }
@@ -492,6 +547,16 @@
         for (const draft of drafts) {
           const providerKey = normalizeProviderKey(draft.providerKey);
           if (!providerKey) {
+            continue;
+          }
+
+          if (isFreeGptProvider(providerKey) && draft.enabled === false) {
+            delete providers[providerKey];
+            for (const [aliasKey, normalizedKey] of Object.entries(PROVIDER_ALIASES)) {
+              if (normalizedKey === providerKey && aliasKey !== providerKey && Object.prototype.hasOwnProperty.call(providers, aliasKey)) {
+                delete providers[aliasKey];
+              }
+            }
             continue;
           }
 
@@ -546,12 +611,40 @@
         return next;
       }
 
-      function buildNextAgentsConfigForProvider(baseConfig, draft) {
+      function buildNextAgentsConfigForProvider(baseConfig, draft, selectedPrimaryDraft) {
         const next = ensureObject(cloneObject(baseConfig || {}), AGENT_SECTION);
         const defaults = isObject(next.defaults) ? cloneObject(next.defaults) : {};
         const model = isObject(defaults.model) ? cloneObject(defaults.model) : {};
         const providerKey = normalizeProviderKey(draft.providerKey);
         const modelId = readOptionalText(draft.modelId);
+        const selectedPrimaryProviderKey = normalizeProviderKey(selectedPrimaryDraft?.providerKey);
+        const selectedPrimaryModelId = readOptionalText(selectedPrimaryDraft?.modelId);
+        const selectedPrimaryTargetKey =
+          selectedPrimaryProviderKey && selectedPrimaryModelId ? `${selectedPrimaryProviderKey}/${selectedPrimaryModelId}` : "";
+
+        if (isFreeGptProvider(providerKey) && draft.enabled === false) {
+          const currentPrimaryRef = parseProviderModel(model.primary);
+          if (currentPrimaryRef && currentPrimaryRef.provider === providerKey) {
+            if (!selectedPrimaryTargetKey) {
+              throw new Error("请先选择一个主模型，再关闭 FreeGPT。");
+            }
+            model.primary = selectedPrimaryTargetKey;
+          }
+
+          const nextFallbacks = [];
+          const sourceFallbacks = Array.isArray(model.fallbacks) ? model.fallbacks : [];
+          for (const raw of sourceFallbacks) {
+            const parsed = parseProviderModel(raw);
+            if (!parsed || parsed.provider === providerKey || parsed.key === model.primary) {
+              continue;
+            }
+            nextFallbacks.push(parsed.key);
+          }
+          model.fallbacks = Array.from(new Set(nextFallbacks));
+          defaults.model = model;
+          next.defaults = defaults;
+          return next;
+        }
 
         if (!providerKey || !modelId) {
           throw new Error(`${resolveTitle(providerKey || draft.providerKey)} model id cannot be empty`);
@@ -563,7 +656,9 @@
         if (draft.primary) {
           model.primary = targetKey;
         } else if (currentPrimaryRef && currentPrimaryRef.provider === providerKey) {
-          model.primary = targetKey;
+          model.primary = selectedPrimaryTargetKey || targetKey;
+        } else if (currentPrimaryRef && currentPrimaryRef.provider === FREEGPT_PROVIDER_KEY && selectedPrimaryTargetKey) {
+          model.primary = selectedPrimaryTargetKey;
         }
 
         const nextFallbacks = [];
@@ -629,12 +724,13 @@
       async function saveSingleProvider(providerKey) {
         const drafts = readProviderDraftsFromDom();
         const targetDraft = drafts.find((item) => normalizeProviderKey(item.providerKey) === normalizeProviderKey(providerKey));
+        const selectedPrimaryDraft = drafts.find((item) => item.primary);
         if (!targetDraft) {
           throw new Error(`provider not found: ${providerKey}`);
         }
 
         const nextModels = buildNextModelsConfig(modelsConfig, [targetDraft]);
-        const nextAgents = buildNextAgentsConfigForProvider(agentsConfig, targetDraft);
+        const nextAgents = buildNextAgentsConfigForProvider(agentsConfig, targetDraft, selectedPrimaryDraft);
 
         await api(`/api/config/${MODEL_SECTION}`, {
           method: "PUT",

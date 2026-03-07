@@ -53,6 +53,40 @@
                             class="card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
+                                <h2 class="card-title text-base">ClawOS</h2>
+                                <div
+                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
+                                    data-clawos-version
+                                >
+                                    版本: 未知
+                                </div>
+                                <div
+                                    class="text-[11px] text-base-content/60"
+                                    data-clawos-update-status
+                                >
+                                    正在检查更新...
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button
+                                        class="btn btn-outline btn-sm"
+                                        data-action="refresh-clawos-update"
+                                    >
+                                        检查新版本
+                                    </button>
+                                    <button
+                                        class="btn btn-primary btn-sm"
+                                        data-action="update-clawos"
+                                    >
+                                        更新并重启
+                                    </button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section
+                            class="card card-compact border border-base-200 bg-base-100"
+                        >
+                            <div class="card-body gap-3">
                                 <h2 class="card-title text-base">企微</h2>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
@@ -159,6 +193,12 @@
         <script>
             const statusBadges = {
                 execution: document.querySelector('[data-status="execution"]'),
+                clawosVersion: document.querySelector(
+                    "[data-clawos-version]",
+                ),
+                clawosUpdateStatus: document.querySelector(
+                    "[data-clawos-update-status]",
+                ),
                 openclawVersion: document.querySelector(
                     "[data-openclaw-version]",
                 ),
@@ -202,6 +242,7 @@
                 backups: [],
                 selectedPath: "",
             };
+            const ACTIVE_TASK_STORAGE_KEY = "clawos.activeTaskId";
 
             let pollTimer = null;
             let qwGatewayStatusTimer = null;
@@ -559,6 +600,113 @@
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
 
+            function setActiveTaskId(taskId) {
+                try {
+                    if (typeof taskId === "string" && taskId.trim()) {
+                        window.sessionStorage.setItem(
+                            ACTIVE_TASK_STORAGE_KEY,
+                            taskId.trim(),
+                        );
+                    }
+                } catch {
+                    // ignore storage errors
+                }
+            }
+
+            function readActiveTaskId() {
+                try {
+                    const value = window.sessionStorage.getItem(
+                        ACTIVE_TASK_STORAGE_KEY,
+                    );
+                    return typeof value === "string" && value.trim()
+                        ? value.trim()
+                        : "";
+                } catch {
+                    return "";
+                }
+            }
+
+            function clearActiveTaskId(taskId = "") {
+                try {
+                    const current = window.sessionStorage.getItem(
+                        ACTIVE_TASK_STORAGE_KEY,
+                    );
+                    if (!taskId || current === taskId) {
+                        window.sessionStorage.removeItem(
+                            ACTIVE_TASK_STORAGE_KEY,
+                        );
+                    }
+                } catch {
+                    // ignore storage errors
+                }
+            }
+
+            async function refreshClawosUpdateStatus() {
+                const versionEl = statusBadges.clawosVersion;
+                const statusEl = statusBadges.clawosUpdateStatus;
+                if (versionEl) {
+                    versionEl.textContent = "版本: 检查中...";
+                }
+                if (statusEl) {
+                    statusEl.textContent = "正在检查更新...";
+                }
+
+                try {
+                    const data = await api("/api/app/update/status");
+                    const status = data.status || {};
+                    const currentVersion =
+                        typeof status.currentVersion === "string" &&
+                        status.currentVersion.trim()
+                            ? status.currentVersion.trim()
+                            : "未知";
+                    const remoteVersion =
+                        typeof status.remoteVersion === "string" &&
+                        status.remoteVersion.trim()
+                            ? status.remoteVersion.trim()
+                            : "";
+
+                    if (versionEl) {
+                        versionEl.textContent = `版本: ${currentVersion}`;
+                    }
+
+                    if (!statusEl) {
+                        return;
+                    }
+
+                    if (status.error) {
+                        statusEl.textContent = `更新检查失败: ${status.error}`;
+                        return;
+                    }
+
+                    if (status.supported === false) {
+                        statusEl.textContent =
+                            typeof status.reason === "string" &&
+                            status.reason.trim()
+                                ? status.reason.trim()
+                                : "当前环境不支持自动更新";
+                        return;
+                    }
+
+                    if (status.hasUpdate === true && remoteVersion) {
+                        statusEl.textContent = `发现新版本 v${remoteVersion}，可直接更新并重启`;
+                        return;
+                    }
+
+                    statusEl.textContent = `当前已是最新版本 v${currentVersion}`;
+                } catch (error) {
+                    const message =
+                        error instanceof Error && error.message.trim()
+                            ? error.message.trim()
+                            : "版本信息暂不可用";
+                    if (versionEl) {
+                        versionEl.textContent = "版本: 未知";
+                    }
+                    if (statusEl) {
+                        statusEl.textContent = message;
+                    }
+                }
+            }
+
             function renderTask(task) {
                 const statusTextMap = {
                     pending: "等待中",
@@ -591,6 +739,7 @@
                     clearInterval(pollTimer);
                     pollTimer = null;
                 }
+                setActiveTaskId(taskId);
 
                 const tick = async () => {
                     try {
@@ -601,10 +750,13 @@
                             task.status === "success" ||
                             task.status === "failed"
                         ) {
+                            clearActiveTaskId(taskId);
                             clearInterval(pollTimer);
                             pollTimer = null;
+                            await refreshClawosUpdateStatus();
                         }
                     } catch (error) {
+                        clearActiveTaskId(taskId);
                         clearInterval(pollTimer);
                         pollTimer = null;
                         taskProgress.classList.add("hidden");
@@ -634,6 +786,7 @@
                         "已有同类任务在执行，已切换到当前任务日志";
                 }
 
+                setActiveTaskId(data.taskId);
                 await pollTask(data.taskId);
             }
 
@@ -706,6 +859,15 @@
                     case "update-openclaw":
                         await startTask("/api/gateway/update");
                         return;
+                    case "refresh-clawos-update":
+                        await refreshClawosUpdateStatus();
+                        return;
+                    case "update-clawos":
+                        await startTask("/api/app/update/run", {
+                            trigger: "manual",
+                            autoRestart: true,
+                        });
+                        return;
                     case "restart-gateway":
                         await startTask("/api/gateway/action", {
                             action: "restart",
@@ -764,9 +926,17 @@
                 });
             }
 
+            window.addEventListener("clawos:self-update-started", (event) => {
+                const taskId = event?.detail?.taskId;
+                if (typeof taskId === "string" && taskId.trim()) {
+                    void pollTask(taskId.trim());
+                }
+            });
+
             (async function init() {
                 try {
                     await checkEnvironment();
+                    await refreshClawosUpdateStatus();
                     await refreshOpenclawBackups();
                 } catch (error) {
                     taskProgress.classList.add("hidden");
@@ -774,6 +944,10 @@
                         error,
                         "初始化失败，请刷新页面重试。",
                     );
+                }
+                const activeTaskId = readActiveTaskId();
+                if (activeTaskId) {
+                    await pollTask(activeTaskId);
                 }
                 await pollQwGatewayStatus();
             })();

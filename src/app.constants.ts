@@ -1,2 +1,2 @@
 export const DEFAULT_OPENCLAW_TOKEN = "xiake";
-export const VERSION = "0.9.14";
+export const VERSION = "0.9.15";

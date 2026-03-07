@@ -32,12 +32,11 @@
 
   const DEFAULT_OPENCLAW_CONSOLE_URL = "http://127.0.0.1:18789";
   const DEFAULT_OPENCLAW_TOKEN = "xiake";
+  const ACTIVE_TASK_STORAGE_KEY = "clawos.activeTaskId";
 
   function withOpenclawToken(rawUrl, token) {
     const finalToken =
-      typeof token === "string" && token.trim().length > 0
-        ? token.trim()
-        : DEFAULT_OPENCLAW_TOKEN;
+      typeof token === "string" && token.trim().length > 0 ? token.trim() : DEFAULT_OPENCLAW_TOKEN;
     try {
       const parsed = new URL(rawUrl);
       parsed.searchParams.set("token", finalToken);
@@ -116,15 +115,52 @@
     return;
   }
 
-  const CLAWOS_DOWNLOAD_URL = "https://clawos.cc";
   const versionEl = root.querySelector("[data-app-version]");
   const metaEl = root.querySelector("[data-app-update-meta]");
+  const actionsEl = root.querySelector("[data-app-update-actions]");
+  const runUpdateButton = root.querySelector("[data-app-update-run]");
 
-  if (!(versionEl instanceof HTMLElement) || !(metaEl instanceof HTMLElement)) {
+  if (
+    !(versionEl instanceof HTMLElement) ||
+    !(metaEl instanceof HTMLElement) ||
+    !(actionsEl instanceof HTMLElement) ||
+    !(runUpdateButton instanceof HTMLButtonElement)
+  ) {
     return;
   }
 
   let refreshing = false;
+  let runningUpdate = false;
+
+  function setMetaText(text) {
+    metaEl.textContent = text;
+  }
+
+  function hideUpdateAction() {
+    actionsEl.classList.add("hidden");
+    runUpdateButton.disabled = false;
+  }
+
+  function showUpdateAction(remoteVersion) {
+    runUpdateButton.textContent = remoteVersion ? `更新到 v${remoteVersion}` : "更新并重启";
+    actionsEl.classList.remove("hidden");
+  }
+
+  function storeActiveTaskId(taskId) {
+    try {
+      if (typeof taskId === "string" && taskId.trim()) {
+        window.sessionStorage.setItem(ACTIVE_TASK_STORAGE_KEY, taskId.trim());
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  function goToDashboard() {
+    if (window.location.hash !== "#/" && window.location.hash !== "#/index") {
+      window.location.hash = "#/";
+    }
+  }
 
   async function refreshLocalVersion() {
     try {
@@ -138,19 +174,48 @@
     }
   }
 
-  function renderGotoHomeLink(prefixText) {
-    metaEl.textContent = "";
-    if (prefixText) {
-      metaEl.append(document.createTextNode(`${prefixText} `));
+  async function startAppUpdate() {
+    if (runningUpdate) {
+      return;
     }
-    const link = document.createElement("a");
-    link.className = "link link-primary";
-    link.href = CLAWOS_DOWNLOAD_URL;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "clawos.cc";
-    metaEl.append(link);
+
+    runningUpdate = true;
+    runUpdateButton.disabled = true;
+    setMetaText("正在启动更新任务...");
+
+    try {
+      const data = await api("/api/app/update/run", {
+        method: "POST",
+        body: JSON.stringify({
+          trigger: "manual",
+          autoRestart: true,
+        }),
+      });
+      const taskId = typeof data?.taskId === "string" ? data.taskId.trim() : "";
+      if (!taskId) {
+        throw new Error("服务端未返回更新任务 ID");
+      }
+
+      storeActiveTaskId(taskId);
+      setMetaText("更新任务已启动，正在打开控制台...");
+      window.dispatchEvent(
+        new CustomEvent("clawos:self-update-started", {
+          detail: { taskId },
+        })
+      );
+      goToDashboard();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "启动更新失败";
+      setMetaText(message || "启动更新失败");
+      runUpdateButton.disabled = false;
+    } finally {
+      runningUpdate = false;
+    }
   }
+
+  runUpdateButton.addEventListener("click", () => {
+    void startAppUpdate();
+  });
 
   async function refreshReleaseHint(silent) {
     if (refreshing) {
@@ -159,14 +224,15 @@
     refreshing = true;
     try {
       if (!silent) {
-        metaEl.textContent = "正在获取版本信息...";
+        setMetaText("正在获取版本信息...");
       }
       const currentVersion = await refreshLocalVersion();
       const data = await api("/api/app/update/status");
       const status = data?.status || {};
 
       if (status.error || !status.supported) {
-        metaEl.textContent = "版本信息暂不可用。";
+        hideUpdateAction();
+        setMetaText("版本信息暂不可用。");
         return;
       }
 
@@ -174,17 +240,20 @@
         typeof status.remoteVersion === "string" && status.remoteVersion.trim() ? status.remoteVersion.trim() : "";
       const hasUpdate = status.hasUpdate === true && !!remoteVersion;
       if (hasUpdate) {
-        renderGotoHomeLink(`发现新版本 v${remoteVersion}`);
+        setMetaText(`发现新版本 v${remoteVersion}`);
+        showUpdateAction(remoteVersion);
         return;
       }
 
+      hideUpdateAction();
       if (currentVersion) {
-        metaEl.textContent = `当前已是最新版本 v${currentVersion}`;
+        setMetaText(`当前已是最新版本 v${currentVersion}`);
       } else {
-        metaEl.textContent = "当前已是最新版本。";
+        setMetaText("当前已是最新版本。");
       }
-    } catch (error) {
-      metaEl.textContent = "版本信息暂不可用。";
+    } catch {
+      hideUpdateAction();
+      setMetaText("版本信息暂不可用。");
     } finally {
       refreshing = false;
     }
