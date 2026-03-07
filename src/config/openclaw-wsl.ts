@@ -1,4 +1,4 @@
-import JSON5 from "json5";
+﻿import JSON5 from "json5";
 import { asObject } from "../lib/value";
 import { runWslScript } from "../tasks/shell";
 import { resolveOpenclawConfigPath } from "./local";

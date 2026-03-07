@@ -235,7 +235,11 @@
       }
 
       reloadBtn.addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
+        const button = event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null;
+        if (!button) {
+          return;
+        }
+        button.disabled = true;
         listMetaEl.textContent = "正在刷新...";
         try {
           await loadSessions();
@@ -243,7 +247,7 @@
           listMetaEl.textContent = readUserErrorMessage(error, "刷新失败，请稍后重试。");
           clearChildren(sessionListEl);
         } finally {
-          event.currentTarget.disabled = false;
+          button.disabled = false;
         }
       });
 

@@ -60,6 +60,29 @@ describe("runWslScript shell mode", () => {
     ]);
   });
 
+  it("uses stdin script mode in windows path when preferStdin is true", () => {
+    const args = buildWslProcessArgs("openclaw --version", {
+      isWindows: true,
+      distro: "Ubuntu",
+      wslBin: "wsl.exe",
+      preferStdin: true,
+    });
+
+    expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "-lis"]);
+  });
+
+  it("uses clean stdin script mode in windows path when preferStdin is true", () => {
+    const args = buildWslProcessArgs("openclaw --version", {
+      isWindows: true,
+      distro: "Ubuntu",
+      wslBin: "wsl.exe",
+      shellMode: "clean",
+      preferStdin: true,
+    });
+
+    expect(args).toEqual(["wsl.exe", "-d", "Ubuntu", "--", "bash", "--noprofile", "--norc", "-s"]);
+  });
+
   it("uses non-interactive bash in non-windows path", () => {
     const args = buildWslProcessArgs("openclaw --version", {
       isWindows: false,

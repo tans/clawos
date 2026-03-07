@@ -43,6 +43,16 @@
               </div>
 
               <section class="rounded-lg border border-base-200 p-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-semibold">开放所有权限</div>
+                    <div class="mt-1 text-xs text-base-content/60">开启后将使用全权限策略（tools.profile = full）。</div>
+                  </div>
+                  <input type="checkbox" class="toggle toggle-primary" data-field="tools-permission-all" />
+                </div>
+              </section>
+
+              <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="text-sm font-semibold">1) 策略与权限</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
@@ -101,7 +111,7 @@
                 </div>
               </section>
 
-              <section class="rounded-lg border border-base-200 p-3">
+              <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="text-sm font-semibold">2) Web 工具</div>
 
                 <div class="mt-3 rounded-lg border border-base-200 p-3">
@@ -240,7 +250,7 @@
                 </div>
               </section>
 
-              <section class="rounded-lg border border-base-200 p-3">
+              <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="text-sm font-semibold">3) Exec 执行工具</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
@@ -320,7 +330,7 @@
                 </div>
               </section>
 
-              <section class="rounded-lg border border-base-200 p-3">
+              <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="text-sm font-semibold">4) Message 跨上下文</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
@@ -374,7 +384,7 @@
                 </div>
               </section>
 
-              <section class="rounded-lg border border-base-200 p-3">
+              <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <div class="text-sm font-semibold">5) Tools 高级 JSON</div>
                   <div class="flex flex-wrap items-center gap-2">
@@ -401,6 +411,22 @@
                 </div>
                 <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存 Skills</button>
               </div>
+
+              <section class="rounded-lg border border-base-200 p-3">
+                <div class="text-sm font-semibold">ClawHub 技能</div>
+                <div class="mt-1 text-xs text-base-content/60">搜索 ClawHub 技能并一键激活（安装并启用）。</div>
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    class="input input-bordered input-sm w-full max-w-xl"
+                    type="text"
+                    data-field="clawhub-search-query"
+                    placeholder="输入关键词，例如：calendar / github / feishu"
+                  />
+                  <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-search">搜索</button>
+                </div>
+                <div class="mt-2 text-xs text-base-content/70" data-clawhub-status>输入关键词后点击搜索。</div>
+                <div class="mt-3 grid gap-2" data-clawhub-results></div>
+              </section>
 
               <section class="rounded-lg border border-base-200 p-3">
                 <div class="text-sm font-semibold">1) Skills 快捷项</div>
@@ -449,6 +475,7 @@
       const saveToolsBtn = document.querySelector('[data-action="save-tools"]');
       const saveSkillsBtn = document.querySelector('[data-action="save-skills"]');
       const providerRowsEl = document.querySelector("[data-provider-rows]");
+      const toolsPermissionAllInput = document.querySelector('[data-field="tools-permission-all"]');
 
       const toolsProfileInput = document.querySelector('[data-field="tools-profile"]');
       const toolsAllowInput = document.querySelector('[data-field="tools-allow"]');
@@ -459,11 +486,22 @@
       const skillsWatchInput = document.querySelector('[data-field="skills-load-watch"]');
       const skillsWatchDebounceInput = document.querySelector('[data-field="skills-load-watch-debounce-ms"]');
       const skillsRawInput = document.querySelector('[data-field="skills-json-raw"]');
+      const clawhubSearchQueryInput = document.querySelector('[data-field="clawhub-search-query"]');
+      const clawhubSearchBtn = document.querySelector('[data-action="clawhub-search"]');
+      const clawhubStatusEl = document.querySelector("[data-clawhub-status]");
+      const clawhubResultsEl = document.querySelector("[data-clawhub-results]");
 
       let gatewayConfig = {};
       let loadedToolsConfig = {};
       let loadedSkillsConfig = {};
       let providerRows = [];
+      let clawhubSearchItems = [];
+      const FULL_PERMISSION_TOOLS_CONFIG = Object.freeze({
+        profile: "full",
+      });
+      document.querySelectorAll("[data-advanced-tools]").forEach((section) => {
+        section.classList.add("hidden");
+      });
 
       function setMeta(text) {
         if (metaEl) {
@@ -600,6 +638,66 @@
           .replaceAll(">", "&gt;")
           .replaceAll('"', "&quot;")
           .replaceAll("'", "&#39;");
+      }
+
+      function setClawhubStatus(text) {
+        if (clawhubStatusEl) {
+          clawhubStatusEl.textContent = text;
+        }
+      }
+
+      function readEnabledSkillKeys(skillsConfig) {
+        const skills = isObject(skillsConfig) ? skillsConfig : {};
+        const entries = isObject(skills.entries) ? skills.entries : {};
+        const enabled = new Set();
+        for (const [key, entry] of Object.entries(entries)) {
+          if (!key) {
+            continue;
+          }
+          if (isObject(entry) && entry.enabled === false) {
+            continue;
+          }
+          enabled.add(key);
+        }
+        return enabled;
+      }
+
+      function renderClawhubResults() {
+        if (!clawhubResultsEl) {
+          return;
+        }
+
+        if (!Array.isArray(clawhubSearchItems) || clawhubSearchItems.length === 0) {
+          clawhubResultsEl.innerHTML =
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">暂无结果。</div>';
+          return;
+        }
+
+        const enabledSkills = readEnabledSkillKeys(loadedSkillsConfig);
+        clawhubResultsEl.innerHTML = clawhubSearchItems
+          .map((item) => {
+            const id = String(item?.id || "").trim();
+            const title = String(item?.title || id).trim();
+            const summary = String(item?.summary || "").trim();
+            const active = enabledSkills.has(id);
+            return `
+              <div class="rounded-lg border border-base-200 px-3 py-3">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="text-sm font-semibold break-all">${escapeHtml(title)}</div>
+                    <div class="mt-1 font-mono text-[11px] text-base-content/70 break-all">${escapeHtml(id)}</div>
+                    ${summary ? `<div class="mt-1 text-xs text-base-content/70">${escapeHtml(summary)}</div>` : ""}
+                  </div>
+                  <button class="btn btn-primary btn-xs" type="button" data-action="clawhub-activate" data-skill="${escapeHtml(id)}" ${
+                    active ? "disabled" : ""
+                  }>
+                    ${active ? "已激活" : "一键激活"}
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
       }
 
       function getPath(source, path) {
@@ -809,6 +907,9 @@
 
       function fillToolsForm(config) {
         const tools = isObject(config) ? config : {};
+        if (toolsPermissionAllInput instanceof HTMLInputElement) {
+          toolsPermissionAllInput.checked = readOptionalText(tools.profile) === "full";
+        }
 
         if (toolsProfileInput) {
           toolsProfileInput.value = readOptionalText(tools.profile) || "";
@@ -898,6 +999,7 @@
           const debounce = getPath(skills, "load.watchDebounceMs");
           skillsWatchDebounceInput.value = Number.isFinite(debounce) ? String(debounce) : "";
         }
+        renderClawhubResults();
       }
 
       function collectToolsPathValues() {
@@ -1038,14 +1140,12 @@
         return operations;
       }
 
-      function buildToolsConfigFromForm(baseConfig) {
-        const next = cloneObject(baseConfig);
-        const operations = collectToolsPathValues();
-        for (const [path, value] of operations) {
-          applyPathValue(next, path, value);
+      function buildToolsConfigFromForm(_baseConfig) {
+        const enabled = toolsPermissionAllInput instanceof HTMLInputElement ? toolsPermissionAllInput.checked : false;
+        if (enabled) {
+          return cloneObject(FULL_PERMISSION_TOOLS_CONFIG);
         }
-        const pruned = pruneEmptyObjects(next);
-        return isObject(pruned) ? pruned : {};
+        return {};
       }
 
       function collectSkillsPathValues() {
@@ -1115,6 +1215,43 @@
         }
       }
 
+      async function searchClawhubSkills() {
+        const query = String(clawhubSearchQueryInput?.value || "").trim();
+        if (!query) {
+          setClawhubStatus("请输入搜索关键词。");
+          return;
+        }
+
+        setClawhubStatus(`正在搜索 ClawHub：${query} ...`);
+        const data = await api(`/api/skills/clawhub/search?q=${encodeURIComponent(query)}&limit=30`);
+        clawhubSearchItems = Array.isArray(data.items) ? data.items : [];
+        if (clawhubSearchItems.length === 0) {
+          setClawhubStatus(`未搜索到技能：${query}`);
+        } else {
+          setClawhubStatus(`共找到 ${clawhubSearchItems.length} 个技能。`);
+        }
+        renderClawhubResults();
+      }
+
+      async function activateClawhubSkill(skill) {
+        const skillId = String(skill || "").trim();
+        if (!skillId) {
+          throw new Error("skill 不能为空。");
+        }
+        setClawhubStatus(`正在激活：${skillId} ...`);
+        const result = await api("/api/skills/clawhub/activate", {
+          method: "POST",
+          body: JSON.stringify({ skill: skillId }),
+        });
+        loadedSkillsConfig = isObject(result.data) ? cloneObject(result.data) : {};
+        fillSkillsForm(loadedSkillsConfig);
+        if (skillsRawInput) {
+          skillsRawInput.value = formatJson(loadedSkillsConfig);
+        }
+        renderClawhubResults();
+        setClawhubStatus(`激活成功：${skillId}`);
+      }
+
       if (providerRowsEl) {
         providerRowsEl.addEventListener("click", (event) => {
           const target = event.target instanceof Element ? event.target.closest('[data-action="remove-provider-row"]') : null;
@@ -1129,6 +1266,60 @@
           }
           providerRows.splice(index, 1);
           renderProviderRows();
+        });
+      }
+
+      if (clawhubSearchBtn) {
+        clawhubSearchBtn.addEventListener("click", async () => {
+          try {
+            setButtonBusy(clawhubSearchBtn, true, "搜索中...", "搜索");
+            await searchClawhubSkills();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setClawhubStatus(`搜索失败: ${message}`);
+          } finally {
+            setButtonBusy(clawhubSearchBtn, false, "搜索中...", "搜索");
+          }
+        });
+      }
+
+      if (clawhubSearchQueryInput) {
+        clawhubSearchQueryInput.addEventListener("keydown", async (event) => {
+          if (event.key !== "Enter") {
+            return;
+          }
+          event.preventDefault();
+          if (clawhubSearchBtn instanceof HTMLButtonElement) {
+            clawhubSearchBtn.click();
+            return;
+          }
+          try {
+            await searchClawhubSkills();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setClawhubStatus(`搜索失败: ${message}`);
+          }
+        });
+      }
+
+      if (clawhubResultsEl) {
+        clawhubResultsEl.addEventListener("click", async (event) => {
+          const target = event.target instanceof Element ? event.target.closest('[data-action="clawhub-activate"]') : null;
+          if (!target) {
+            return;
+          }
+          const skill = String(target.getAttribute("data-skill") || "").trim();
+          if (!skill) {
+            return;
+          }
+          target.setAttribute("disabled", "disabled");
+          try {
+            await activateClawhubSkill(skill);
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setClawhubStatus(`激活失败: ${message}`);
+            target.removeAttribute("disabled");
+          }
         });
       }
 

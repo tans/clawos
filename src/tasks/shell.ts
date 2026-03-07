@@ -16,6 +16,9 @@ export type CommandResult = {
   stderr: string;
   command: string;
 };
+type RunProcessOptions = {
+  stdinText?: string;
+};
 
 export type WslShellMode = "login" | "interactive" | "non-login" | "clean";
 
@@ -126,9 +129,11 @@ export function buildWslProcessArgs(
     wslBin?: string;
     loginShell?: boolean;
     shellMode?: WslShellMode;
+    preferStdin?: boolean;
   }
 ): string[] {
   const shellMode = options.shellMode || (options.loginShell === false ? "non-login" : "login");
+  const preferStdin = options.preferStdin === true;
 
   if (!options.isWindows) {
     if (shellMode === "interactive") {
@@ -142,6 +147,18 @@ export function buildWslProcessArgs(
 
   const wslBin = options.wslBin?.trim() || "wsl.exe";
   const distro = options.distro?.trim();
+  if (preferStdin) {
+    if (shellMode === "interactive") {
+      return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-is"];
+    }
+    if (shellMode === "clean") {
+      return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "--noprofile", "--norc", "-s"];
+    }
+
+    const shellFlag = shellMode === "non-login" ? "-s" : "-lis";
+    return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", shellFlag];
+  }
+
   if (shellMode === "interactive") {
     return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-ic", script];
   }
@@ -204,11 +221,16 @@ async function autoDetectWslDistro(wslBin: string): Promise<string | undefined> 
   }
 }
 
-export async function runProcess(args: string[]): Promise<CommandResult> {
-  const proc = Bun.spawn(args, {
+export async function runProcess(args: string[], options: RunProcessOptions = {}): Promise<CommandResult> {
+  const spawnOptions: Bun.SpawnOptions.OptionsObject<string> = {
     stdout: "pipe",
     stderr: "pipe",
-  });
+  };
+  if (typeof options.stdinText === "string") {
+    spawnOptions.stdin = new TextEncoder().encode(options.stdinText);
+  }
+
+  const proc = Bun.spawn(args, spawnOptions);
 
   const [stdoutBuffer, stderrBuffer, code] = await Promise.all([
     new Response(proc.stdout).arrayBuffer(),
@@ -240,12 +262,14 @@ export async function runWslScript(
     process.env.CLAWOS_WSL_BIN?.trim() || readNonEmptyString(wslConfig?.wslBin) || "wsl.exe";
   const distro = configuredDistro || (IS_WINDOWS ? await autoDetectWslDistro(wslBin) : undefined);
 
+  const useStdinScript = IS_WINDOWS;
   const args = buildWslProcessArgs(script, {
     isWindows: IS_WINDOWS,
     distro,
     wslBin,
     loginShell: options.loginShell,
     shellMode: options.shellMode,
+    preferStdin: useStdinScript,
   });
   const commandText = formatProcessCommand(args);
   if (
@@ -257,7 +281,9 @@ export async function runWslScript(
   }
 
   try {
-    return await runProcess(args);
+    return await runProcess(args, {
+      stdinText: useStdinScript ? script : undefined,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {

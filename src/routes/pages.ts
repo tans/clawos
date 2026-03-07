@@ -75,7 +75,6 @@ function renderSidebar(active: SidebarNavId | null): string {
     { id: "browser", href: "/config/browser", icon: "fa-globe", label: "浏览器" },
     { id: "wallet", href: "/config/wallet", icon: "fa-wallet", label: "钱包" },
     { id: "settings", href: "/config/settings", icon: "fa-gear", label: "设置" },
-    { id: "sessions", href: "/sessions", icon: "fa-message", label: "会话" },
   ];
 
   const nav = items

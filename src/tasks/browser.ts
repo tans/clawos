@@ -42,6 +42,86 @@ function isPortProxyDeleteNotFoundResult(result: CommandResult): boolean {
   );
 }
 
+function isElevationRequiredResult(result: CommandResult): boolean {
+  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  return (
+    text.includes("requires elevation") ||
+    text.includes("run as administrator") ||
+    text.includes("需要提升") ||
+    text.includes("管理员权限")
+  );
+}
+
+function isElevationCanceledResult(result: CommandResult): boolean {
+  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  return (
+    result.code === 1223 ||
+    text.includes("canceled by the user") ||
+    text.includes("operation was canceled") ||
+    text.includes("已取消") ||
+    text.includes("拒绝")
+  );
+}
+
+function escapePowerShellLiteral(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+async function runElevatedProcess(args: string[]): Promise<CommandResult> {
+  if (!IS_WINDOWS) {
+    return {
+      ok: false,
+      code: 1,
+      stdout: "",
+      stderr: "elevation is only supported on Windows",
+      command: args.join(" "),
+    };
+  }
+  if (args.length === 0) {
+    return {
+      ok: false,
+      code: 1,
+      stdout: "",
+      stderr: "empty command",
+      command: "",
+    };
+  }
+
+  const filePath = args[0];
+  const argList = args.slice(1);
+  const quotedArgList = argList.map((item) => `'${escapePowerShellLiteral(item)}'`).join(", ");
+  const script = [
+    "$ErrorActionPreference = 'Stop'",
+    `$exe = '${escapePowerShellLiteral(filePath)}'`,
+    `$argList = @(${quotedArgList})`,
+    "try {",
+    "  $proc = Start-Process -FilePath $exe -ArgumentList $argList -Verb RunAs -Wait -PassThru",
+    "  if ($null -eq $proc) {",
+    "    [Console]::Error.WriteLine('Start-Process returned null process handle')",
+    "    exit 1",
+    "  }",
+    "  exit [int]$proc.ExitCode",
+    "} catch {",
+    "  $msg = $_.Exception.Message",
+    "  if ($msg) { [Console]::Error.WriteLine($msg) }",
+    "  if ($msg -match 'canceled by the user|operation was canceled|已取消|拒绝') {",
+    "    exit 1223",
+    "  }",
+    "  exit 1",
+    "}",
+  ].join("\n");
+
+  return await runProcess([
+    "powershell.exe",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    script,
+  ]);
+}
+
 async function runProcessStep(
   task: Task,
   params: {
@@ -52,6 +132,7 @@ async function runProcessStep(
     args: string[];
     allowExitCodes?: number[];
     allowFailureResult?: (result: CommandResult) => boolean;
+    allowElevation?: boolean;
   }
 ): Promise<void> {
   task.step = params.step;
@@ -64,6 +145,22 @@ async function runProcessStep(
   const treatedAsSuccess = result.ok || allowedExitCodes.has(result.code) || allowedFailure;
   appendProcessLogs(task, result, treatedAsSuccess);
   if (!treatedAsSuccess) {
+    if (params.allowElevation && isElevationRequiredResult(result)) {
+      appendTaskLog(task, "检测到需要管理员权限，正在请求 UAC 授权后重试。");
+      const elevated = await runElevatedProcess(params.args);
+      appendProcessLogs(task, elevated, elevated.ok);
+      if (elevated.ok) {
+        appendTaskLog(task, "管理员提权执行成功。");
+        return;
+      }
+      if (isElevationCanceledResult(elevated)) {
+        throw new Error(`${params.name} 执行失败：你已取消 UAC 授权。请允许管理员权限后重试。`);
+      }
+      throw new Error(`${params.name} 执行失败：管理员提权后仍失败（退出码 ${elevated.code}）。`);
+    }
+    if (isElevationRequiredResult(result)) {
+      throw new Error(`${params.name} 执行失败：需要管理员权限。请以管理员身份运行 ClawOS 后重试。`);
+    }
     throw new Error(`${params.name} 执行失败（退出码 ${result.code}）`);
   }
 }
@@ -353,6 +450,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
           `listenport=${BROWSER_CDP_PROXY_PORT}`,
         ],
         allowFailureResult: isPortProxyDeleteNotFoundResult,
+        allowElevation: true,
       });
 
       await runProcessStep(task, {
@@ -371,6 +469,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
           "connectaddress=127.0.0.1",
           `connectport=${BROWSER_CDP_PORT}`,
         ],
+        allowElevation: true,
       });
 
       task.step = 5;
@@ -404,7 +503,7 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 3;
+  const totalSteps = 4;
   const task = createTask("browser-cdp-reset-config", "重置 browser 配置为 Remote CDP", totalSteps);
   task.status = "running";
 
@@ -416,17 +515,48 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
 
       const prepared = await prepareRemoteCdp(task, 1, totalSteps);
 
-      task.step = 2;
-      appendTaskLog(task, `步骤 2/${totalSteps}：校验端口转发命令`);
-      appendTaskLog(
-        task,
-        `建议命令：netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=${BROWSER_CDP_PROXY_PORT} connectaddress=127.0.0.1 connectport=${BROWSER_CDP_PORT}`
-      );
+      await runProcessStep(task, {
+        step: 2,
+        totalSteps,
+        name: "删除旧端口转发（9223）",
+        command: "netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=9223",
+        args: [
+          "netsh",
+          "interface",
+          "portproxy",
+          "delete",
+          "v4tov4",
+          "listenaddress=0.0.0.0",
+          `listenport=${BROWSER_CDP_PROXY_PORT}`,
+        ],
+        allowFailureResult: isPortProxyDeleteNotFoundResult,
+        allowElevation: true,
+      });
+
+      await runProcessStep(task, {
+        step: 3,
+        totalSteps,
+        name: "创建端口转发（9223 -> 127.0.0.1:9222）",
+        command: "netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=9223 connectaddress=127.0.0.1 connectport=9222",
+        args: [
+          "netsh",
+          "interface",
+          "portproxy",
+          "add",
+          "v4tov4",
+          "listenaddress=0.0.0.0",
+          `listenport=${BROWSER_CDP_PROXY_PORT}`,
+          "connectaddress=127.0.0.1",
+          `connectport=${BROWSER_CDP_PORT}`,
+        ],
+        allowElevation: true,
+      });
+
       appendTaskLog(task, `当前 nameserver：${prepared.nameserver}`);
       appendTaskLog(task, `本机 CDP：${prepared.localWebSocketDebuggerUrl}`);
 
-      task.step = 3;
-      appendTaskLog(task, `步骤 3/${totalSteps}：写入 openclaw browser 配置`);
+      task.step = 4;
+      appendTaskLog(task, `步骤 4/${totalSteps}：写入 openclaw browser 配置`);
       appendTaskLog(task, "执行命令：openclaw gateway call config.apply (browser)");
       await resetOpenclawBrowserConfig(task, prepared.remoteCdpUrl);
 

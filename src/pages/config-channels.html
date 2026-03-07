@@ -256,11 +256,11 @@
       }
 
       function readEnableFlag(source) {
-        if (source.enable === true || source.enabled === true) {
-          return true;
+        if (typeof source.enabled === "boolean") {
+          return source.enabled;
         }
-        if (source.enable === false || source.enabled === false) {
-          return false;
+        if (typeof source.enable === "boolean") {
+          return source.enable;
         }
         return undefined;
       }
@@ -654,7 +654,9 @@
           method: "PATCH",
           body: JSON.stringify({ data: payload }),
         });
-        const saved = sanitizeChannelDraft(specKey, data.data || payload);
+        const existing = getChannelEntry(channelsConfig, specKey).value;
+        const source = isObject(data.data) ? data.data : payload;
+        const saved = sanitizeChannelDraft(specKey, { ...existing, ...source });
         updateLocalChannelState(specKey, saved);
         return saved;
       }
@@ -744,13 +746,17 @@
       }
 
       document.querySelector('[data-action="reload"]').addEventListener("click", async (event) => {
-        event.currentTarget.disabled = true;
+        const button = event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null;
+        if (!button) {
+          return;
+        }
+        button.disabled = true;
         try {
           await loadSection();
         } catch (error) {
           metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
         } finally {
-          event.currentTarget.disabled = false;
+          button.disabled = false;
         }
       });
 

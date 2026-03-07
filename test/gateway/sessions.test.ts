@@ -13,9 +13,10 @@ let originalOpenclawBin = "";
 function installFakeOpenclaw(): void {
   tempDir = mkdtempSync(path.join(os.tmpdir(), "clawos-openclaw-cli-test-"));
   logPath = path.join(tempDir, "openclaw-args.log");
-  fakeOpenclawPath = path.join(tempDir, "openclaw");
+  const isWindows = process.platform === "win32";
+  fakeOpenclawPath = path.join(tempDir, isWindows ? "openclaw.cmd" : "openclaw");
 
-  const script = `#!/usr/bin/env node
+  const nodeScript = `#!/usr/bin/env node
 const fs = require("node:fs");
 const args = process.argv.slice(2);
 fs.appendFileSync(${JSON.stringify(logPath)}, JSON.stringify(args) + "\\n");
@@ -58,8 +59,15 @@ process.stderr.write("unexpected args: " + JSON.stringify(args));
 process.exit(2);
 `;
 
-  writeFileSync(fakeOpenclawPath, script, "utf-8");
-  chmodSync(fakeOpenclawPath, 0o755);
+  if (isWindows) {
+    const jsPath = path.join(tempDir, "openclaw.js");
+    const cmdScript = `@echo off\r\nbun \"%~dp0openclaw.js\" %*\r\n`;
+    writeFileSync(jsPath, nodeScript, "utf-8");
+    writeFileSync(fakeOpenclawPath, cmdScript, "utf-8");
+  } else {
+    writeFileSync(fakeOpenclawPath, nodeScript, "utf-8");
+    chmodSync(fakeOpenclawPath, 0o755);
+  }
 }
 
 function readLoggedCommands(): string[][] {

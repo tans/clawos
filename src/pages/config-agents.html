@@ -1,23 +1,23 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 大模型</title>
+    <title>ClawOS 澶фā鍨?/title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.7.2/css/all.min.css" />
   </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">大模型</h1>
+          <h1 class="text-lg font-semibold">澶фā鍨?/h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">閲嶆柊鍔犺浇</button>
           </div>
         </header>
 
@@ -25,14 +25,14 @@
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-3">
               <div class="flex items-center justify-between gap-2">
-                <h2 class="card-title text-base">模型路由</h2>
-                <span class="text-[11px] text-base-content/60">主模型只能选一个，备用模型可多选。</span>
+                <h2 class="card-title text-base">妯″瀷璺敱</h2>
+                <span class="text-[11px] text-base-content/60">涓绘ā鍨嬪彧鑳介€変竴涓紝澶囩敤妯″瀷鍙閫夈€?/span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-model-list></div>
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
+          <div class="mt-3 text-xs text-base-content/70" data-meta>灏氭湭鍔犺浇</div>
         </section>
       </main>
     </div>
@@ -64,7 +64,22 @@
           api: "anthropic-messages",
           modelId: "MiniMax-M2.1",
         },
+        {
+          key: "custom",
+          title: "Custom Provider",
+          baseUrl: "",
+          api: "openai-completions",
+          modelId: "",
+        },
+        {
+          key: "free",
+          title: "Free Echo",
+          baseUrl: "http://127.0.0.1:8765/v1",
+          api: "openai-completions",
+          modelId: "free-echo",
+        },
       ];
+      const PROVIDER_API_OPTIONS = ["openai-completions", "anthropic-messages", "openai-responses"];
       const PROVIDER_ALIASES = {};
 
       const presetByProviderKey = new Map(PROVIDER_PRESETS.map((item) => [item.key, item]));
@@ -83,7 +98,7 @@
 
       function ensureObject(value, field) {
         if (!isObject(value)) {
-          throw new Error(`${field} 必须是 JSON 对象`);
+          throw new Error(`${field} 蹇呴』鏄?JSON 瀵硅薄`);
         }
         return value;
       }
@@ -185,7 +200,7 @@
         if (preset && readOptionalText(preset.title)) {
           return preset.title;
         }
-        return providerKey || "未命名";
+        return providerKey || "鏈懡鍚?;
       }
 
       function isPresetProvider(providerKey) {
@@ -341,16 +356,22 @@
           return;
         }
 
-        function renderModelOptions(options, selectedModelId) {
-          const selectedId = readOptionalText(selectedModelId);
+        function renderApiOptions(selectedApi) {
+          const selected = readOptionalText(selectedApi);
+          const all = new Set(PROVIDER_API_OPTIONS);
+          if (selected) {
+            all.add(selected);
+          }
+          return Array.from(all)
+            .map((api) => `<option value="${escapeHtml(api)}" ${api === selected ? "selected" : ""}>${escapeHtml(api)}</option>`)
+            .join("");
+        }
+
+        function renderModelSuggestion(options) {
           return options
-            .map((option) => {
-              const id = readOptionalText(option?.id);
-              const name = readOptionalText(option?.name) || id;
-              const selected = id === selectedId ? "selected" : "";
-              const label = name === id ? id : `${name} (${id})`;
-              return `<option value="${escapeHtml(id)}" data-model-name="${escapeHtml(name)}" ${selected}>${escapeHtml(label)}</option>`;
-            })
+            .map((option) => readOptionalText(option?.id))
+            .filter(Boolean)
+            .map((id) => `<option value="${escapeHtml(id)}"></option>`)
             .join("");
         }
 
@@ -365,26 +386,38 @@
                   <div class="min-w-0">
                     <div class="text-sm font-medium">${escapeHtml(item.title)}</div>
                     <div class="text-[11px] text-base-content/60 font-mono">${escapeHtml(item.providerKey)}</div>
+                    ${item.providerKey === "free" ? '<div class="mt-1 text-[11px] text-base-content/60">run `bun run free:dev` to start local test provider</div>' : ""}
                   </div>
                   <div class="flex items-center gap-2 flex-wrap justify-end">
                     <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                      <span class="text-xs">主模型</span>
+                      <span class="text-xs">涓绘ā鍨?/span>
                       <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
                     </label>
                     <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                      <span class="text-xs">备用</span>
+                      <span class="text-xs">澶囩敤</span>
                       <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
                     </label>
-                    <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">保存此卡片</button>
+                    <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">淇濆瓨姝ゅ崱鐗?/button>
                   </div>
                 </div>
 
                 <div class="mt-3 grid gap-3">
                   <label class="form-control w-full gap-1">
-                    <span class="text-xs text-base-content/70">当前模型</span>
-                    <select class="select select-bordered select-sm w-full font-mono" data-field="model-id">
-                      ${renderModelOptions(item.modelOptions || [], item.modelId)}
+                    <span class="text-xs text-base-content/70">Base URL</span>
+                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="base-url" value="${escapeHtml(item.baseUrl)}" placeholder="https://api.example.com/v1" />
+                  </label>
+
+                  <label class="form-control w-full gap-1">
+                    <span class="text-xs text-base-content/70">API</span>
+                    <select class="select select-bordered select-sm w-full font-mono" data-field="api">
+                      ${renderApiOptions(item.api)}
                     </select>
+                  </label>
+
+                  <label class="form-control w-full gap-1">
+                    <span class="text-xs text-base-content/70">褰撳墠妯″瀷</span>
+                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="model-id" list="model-suggest-${escapeHtml(item.providerKey)}" />
+                    <datalist id="model-suggest-${escapeHtml(item.providerKey)}">${renderModelSuggestion(item.modelOptions || [])}</datalist>
                   </label>
 
                   <label class="form-control w-full gap-1">
@@ -409,15 +442,7 @@
           const apiKeyInput = card.querySelector('[data-field="api-key"]');
           const fallbackInput = card.querySelector('[data-field="fallback"]');
           const primaryInput = card.querySelector('input[name="primary-model"]');
-          const selectedOption =
-            modelIdInput instanceof HTMLSelectElement && modelIdInput.selectedIndex >= 0
-              ? modelIdInput.options[modelIdInput.selectedIndex]
-              : null;
-          const selectedModelId = readOptionalText(modelIdInput?.value);
-          const selectedModelName =
-            readOptionalText(selectedOption?.getAttribute("data-model-name")) ||
-            readOptionalText(selectedOption?.textContent) ||
-            selectedModelId;
+          const selectedModelId = readOptionalText(modelIdInput?.value);`r`n          const selectedModelName = selectedModelId;
 
           return {
             providerKey,
@@ -476,12 +501,12 @@
           const currentModels = readProviderModels(currentProvider);
           const modelId = readOptionalText(draft.modelId);
           if (!modelId) {
-            throw new Error(`${resolveTitle(providerKey)} 的模型 ID 不能为空`);
+            throw new Error(`${resolveTitle(providerKey)} 鐨勬ā鍨?ID 涓嶈兘涓虹┖`);
           }
 
           const baseUrl = readOptionalText(draft.baseUrl) || readOptionalText(currentProvider.baseUrl) || readOptionalText(preset?.baseUrl);
           if (!baseUrl) {
-            throw new Error(`${resolveTitle(providerKey)} 的 Base URL 不能为空`);
+            throw new Error(`${resolveTitle(providerKey)} 鐨?Base URL 涓嶈兘涓虹┖`);
           }
 
           const existingModel = currentModels.find((item) => readOptionalText(item.id) === modelId);
@@ -525,7 +550,7 @@
         const modelId = readOptionalText(draft.modelId);
 
         if (!providerKey || !modelId) {
-          throw new Error(`${resolveTitle(providerKey || draft.providerKey)} 的模型不能为空`);
+          throw new Error(`${resolveTitle(providerKey || draft.providerKey)} 鐨勬ā鍨嬩笉鑳戒负绌篳);
         }
 
         const targetKey = `${providerKey}/${modelId}`;
@@ -572,7 +597,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -594,14 +619,14 @@
         agentsConfig = ensureObject(agentsData.data || {}, AGENT_SECTION);
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = "大模型配置已加载";
+        metaEl.textContent = "澶фā鍨嬮厤缃凡鍔犺浇";
       }
 
       async function saveSingleProvider(providerKey) {
         const drafts = readProviderDraftsFromDom();
         const targetDraft = drafts.find((item) => normalizeProviderKey(item.providerKey) === normalizeProviderKey(providerKey));
         if (!targetDraft) {
-          throw new Error(`未找到 provider：${providerKey}`);
+          throw new Error(`鏈壘鍒?provider锛?{providerKey}`);
         }
 
         const nextModels = buildNextModelsConfig(modelsConfig, [targetDraft]);
@@ -620,7 +645,7 @@
         agentsConfig = nextAgents;
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} 已保存`;
+        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} 宸蹭繚瀛榒;
       }
 
       if (modelListEl) {
@@ -651,14 +676,14 @@
 
           button.disabled = true;
           const originalText = button.textContent;
-          button.textContent = "保存中...";
+          button.textContent = "淇濆瓨涓?..";
           try {
             await saveSingleProvider(providerKey);
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
+            metaEl.textContent = readUserErrorMessage(error, "淇濆瓨澶辫触锛岃绋嶅悗閲嶈瘯銆?);
           } finally {
             button.disabled = false;
-            button.textContent = originalText || "保存此卡片";
+            button.textContent = originalText || "淇濆瓨姝ゅ崱鐗?;
           }
         });
       }
@@ -669,7 +694,7 @@
           try {
             await loadSections();
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
+            metaEl.textContent = readUserErrorMessage(error, "鍔犺浇澶辫触锛岃妫€鏌ユ湇鍔″悗閲嶈瘯銆?);
           } finally {
             reloadBtn.disabled = false;
           }
@@ -680,9 +705,11 @@
         try {
           await loadSections();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
+          metaEl.textContent = readUserErrorMessage(error, "鍒濆鍖栧け璐ワ紝璇峰埛鏂伴〉闈㈤噸璇曘€?);
         }
       })();
     </script>
   </body>
 </html>
+
+

@@ -77,6 +77,10 @@ async function runOpenclawCliInMode(
 ): Promise<OpenclawCliResult> {
   if (mode === "direct") {
     const binary = resolveOpenclawBinaryForDirectMode();
+    if (IS_WINDOWS && /\.(cmd|bat)$/i.test(binary)) {
+      const directViaCmd = await runProcess(["cmd.exe", "/d", "/c", binary, ...args.map((arg) => String(arg))]);
+      return { ...directViaCmd, mode };
+    }
     const direct = await runProcess([binary, ...args]);
     return { ...direct, mode };
   }
@@ -99,9 +103,10 @@ export async function runOpenclawCli(
   args: string[],
   options: { cwd?: string; loginShell?: boolean; shellMode?: WslShellMode } = {}
 ): Promise<OpenclawCliResult> {
-  const preferredMode = resolveOpenclawCliMode();
+  const forcedMode = extractExecModeFromEnv();
+  const preferredMode = forcedMode || resolveOpenclawCliMode();
   const first = await runOpenclawCliInMode(preferredMode, args, options);
-  if (first.ok || !IS_WINDOWS || !shouldFallbackMode(first)) {
+  if (first.ok || !IS_WINDOWS || forcedMode || !shouldFallbackMode(first)) {
     return first;
   }
 

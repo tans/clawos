@@ -1,4 +1,4 @@
-import { callGatewayMethodViaCli, type GatewayCliCallResult } from "../openclaw/gateway-cli";
+﻿import { callGatewayMethodViaCli, type GatewayCliCallResult } from "../openclaw/gateway-cli";
 import { readNonEmptyString } from "../lib/value";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 import { openclawCliTroubleshootingTips, runOpenclawCli } from "../openclaw/cli";
@@ -50,6 +50,36 @@ export type OpenclawConfigBackupListResult = {
   backups: OpenclawConfigBackup[];
   command: string;
 };
+
+export function resolveOpenclawBackupSearchConfigPaths(
+  configPath: string,
+  options: { isWindows?: boolean } = {}
+): string[] {
+  const raw = configPath.trim();
+  if (!raw) {
+    return [];
+  }
+
+  const isWindows = options.isWindows ?? IS_WINDOWS;
+  const candidates: string[] = [raw];
+  if (!isWindows) {
+    return candidates;
+  }
+
+  if (raw.startsWith("~/.openclaw/")) {
+    const rootPath = `/root/${raw.slice(2)}`;
+    if (!candidates.includes(rootPath)) {
+      candidates.push(rootPath);
+    }
+  }
+
+  const windowsDefaultPath = "/root/.openclaw/openclaw.json";
+  if (!candidates.includes(windowsDefaultPath)) {
+    candidates.push(windowsDefaultPath);
+  }
+
+  return candidates;
+}
 
 const qwGatewayStartupStatus: QwGatewayStartupStatus = {
   state: "idle",
@@ -305,62 +335,47 @@ function escapeDoubleQuotedShell(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
 }
 
+function shellSingleQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function renderBackupDirLiteral(configDir: string): string {
+  if (configDir === "~" || configDir.startsWith("~/")) {
+    return configDir;
+  }
+  return shellSingleQuote(configDir);
+}
+
 export function buildOpenclawConfigBackupListScript(configPath: string): string {
-  const safeConfigPath = escapeDoubleQuotedShell(configPath);
+  const configDir = path.posix.dirname(configPath);
+  const configBase = path.posix.basename(configPath);
+  const dirLiteral = renderBackupDirLiteral(configDir);
+  const names = [
+    `${configBase}*.bak`,
+    `${configBase}*.bak.*`,
+    `${configBase}*.backup`,
+    `${configBase}*.backup.*`,
+    `${configBase}*.old`,
+    `${configBase}*.old.*`,
+  ];
+  const findNameExpr = names.map((name) => `-name ${shellSingleQuote(name)}`).join(" -o ");
+
   return [
     "set -euo pipefail",
-    `config_path_raw="${safeConfigPath}"`,
-    'case "$config_path_raw" in',
-    '  "~") config_path="$HOME" ;;',
-    '  "~/"*) config_path="$HOME/${config_path_raw:2}" ;;',
-    '  *) config_path="$config_path_raw" ;;',
-    "esac",
-    'config_dir="$(dirname "$config_path")"',
-    'if [ ! -d "$config_dir" ]; then',
+    `if [ ! -d ${dirLiteral} ]; then`,
     "  exit 0",
     "fi",
-    "shopt -s nullglob",
-    'config_base="$(basename "$config_path")"',
-    "files=(",
-    '  "$config_dir"/"$config_base"*.bak',
-    '  "$config_dir"/"$config_base"*.bak.*',
-    '  "$config_dir"/"$config_base"*.backup',
-    '  "$config_dir"/"$config_base"*.backup.*',
-    '  "$config_dir"/"$config_base"*.old',
-    '  "$config_dir"/"$config_base"*.old.*',
-    ")",
-    'if [ "${#files[@]}" -eq 0 ]; then',
-    "  exit 0",
-    "fi",
-    'for file in "${files[@]}"; do',
-    '  if [ -f "$file" ]; then',
-    '    stat_out=""',
-    '    if stat_out="$(stat -c "%Y %s" "$file" 2>/dev/null)"; then',
-    "      :",
-    '    elif stat_out="$(stat -f "%m %z" "$file" 2>/dev/null)"; then',
-    "      :",
-    "    else",
-    '      echo "读取备份文件元数据失败：$file" >&2',
-    "      continue",
-    "    fi",
-    '    mtime="$(printf "%s" "$stat_out" | awk \'{print $1}\')"',
-    '    size="$(printf "%s" "$stat_out" | awk \'{print $2}\')"',
-    '    if [ -z "$mtime" ] || [ -z "$size" ]; then',
-    "      continue",
-    "    fi",
-    '    printf "%s\\t%s\\t%s\\n" "$mtime" "$size" "$file"',
-    "  fi",
-    'done | sort -rn -k1,1',
+    `find ${dirLiteral} -maxdepth 1 -type f \\( ${findNameExpr} \\) -printf '%T@\\t%s\\t%p\\n' 2>/dev/null | sort -rn -k1,1`,
   ].join("\n");
 }
 
 export function parseOpenclawConfigBackupLine(line: string): OpenclawConfigBackup | null {
-  const match = line.match(/^(\d+)\t(\d+)\t(.+)$/);
+  const match = line.match(/^(\d+(?:\.\d+)?)\t(\d+)\t(.+)$/);
   if (!match) {
     return null;
   }
 
-  const modifiedAtEpoch = Number(match[1]);
+  const modifiedAtEpoch = Math.floor(Number(match[1]));
   const size = Number(match[2]);
   const backupPath = match[3].trim();
   if (!Number.isFinite(modifiedAtEpoch) || !Number.isFinite(size) || !backupPath) {
@@ -384,15 +399,37 @@ function parseOpenclawConfigBackupsOutput(stdout: string): OpenclawConfigBackup[
 
 export async function listOpenclawConfigBackups(): Promise<OpenclawConfigBackupListResult> {
   const configPath = resolveOpenclawConfigPath();
-  const script = buildOpenclawConfigBackupListScript(configPath);
-  const result = await runWslScript(script, { shellMode: "clean", loginShell: false });
-  if (!result.ok) {
-    throw new Error(`读取 openclaw 配置备份失败（退出码 ${result.code}）\n目标配置：${configPath}\n命令：${result.command}`);
+  const candidates = resolveOpenclawBackupSearchConfigPaths(configPath);
+  const commands: string[] = [];
+  const failures: string[] = [];
+  const backupMap = new Map<string, OpenclawConfigBackup>();
+
+  for (const candidatePath of candidates) {
+    const script = buildOpenclawConfigBackupListScript(candidatePath);
+    const result = await runWslScript(script, { shellMode: "clean", loginShell: false });
+    commands.push(result.command);
+
+    if (!result.ok) {
+      failures.push(`${candidatePath} (exit ${result.code})`);
+      continue;
+    }
+
+    const parsed = parseOpenclawConfigBackupsOutput(result.stdout);
+    for (const backup of parsed) {
+      backupMap.set(backup.path, backup);
+    }
   }
 
+  if (backupMap.size === 0 && failures.length === candidates.length) {
+    throw new Error(
+      `读取 openclaw 配置备份失败：所有候选路径均执行失败\n目标配置：${configPath}\n候选路径：${candidates.join(", ")}\n失败详情：${failures.join("; ")}`
+    );
+  }
+
+  const backups = Array.from(backupMap.values()).sort((a, b) => b.modifiedAtEpoch - a.modifiedAtEpoch);
   return {
-    backups: parseOpenclawConfigBackupsOutput(result.stdout),
-    command: result.command,
+    backups,
+    command: commands.join(" || "),
   };
 }
 

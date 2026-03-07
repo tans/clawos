@@ -37,6 +37,7 @@ import {
 import { startSelfUpdateTask } from "../tasks/self-update";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
+import { normalizeOutput, runWslScript, troubleshootingTips } from "../tasks/shell";
 
 const CHANNEL_PATCH_KEYS = new Set(["feishu", "wework"]);
 const OPENCLAW_REDACTED = "__OPENCLAW_REDACTED__";
@@ -137,6 +138,228 @@ function readLimit(raw: string | null, fallback: number, field: string): number 
     throw new HttpError(400, `${field} 必须在 1-1000 之间。`);
   }
   return Math.floor(value);
+}
+
+function readSearchQuery(raw: string | null): string {
+  const text = String(raw || "").trim();
+  if (!text) {
+    throw new HttpError(400, "q 不能为空。");
+  }
+  if (text.length > 80) {
+    throw new HttpError(400, "q 最长 80 个字符。");
+  }
+  return text;
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`;
+}
+
+function sanitizeSkillReference(value: unknown, field = "skill"): string {
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${field} 必须是字符串。`);
+  }
+  const text = value.trim();
+  if (!text) {
+    throw new HttpError(400, `${field} 不能为空。`);
+  }
+  if (!/^[a-zA-Z0-9._/@-]{1,128}$/.test(text)) {
+    throw new HttpError(400, `${field} 格式不合法。`);
+  }
+  return text;
+}
+
+type ClawhubSearchItem = {
+  id: string;
+  title: string;
+  summary?: string;
+  author?: string;
+  version?: string;
+  source: "json" | "text";
+};
+
+function readStringField(source: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return undefined;
+}
+
+function parseClawhubJsonItems(raw: string): ClawhubSearchItem[] {
+  const parsed = JSON.parse(raw);
+  const array = Array.isArray(parsed)
+    ? parsed
+    : Array.isArray((parsed as Record<string, unknown>)?.items)
+      ? ((parsed as Record<string, unknown>).items as unknown[])
+      : [];
+
+  const list: ClawhubSearchItem[] = [];
+  for (const item of array) {
+    const obj = asObject(item);
+    if (!obj) {
+      continue;
+    }
+    const id = readStringField(obj, ["id", "slug", "name", "skill", "package", "identifier", "ref"]);
+    if (!id) {
+      continue;
+    }
+    list.push({
+      id,
+      title: readStringField(obj, ["title", "displayName", "name", "label"]) || id,
+      summary: readStringField(obj, ["summary", "description", "desc"]),
+      author: readStringField(obj, ["author", "owner", "publisher"]),
+      version: readStringField(obj, ["version", "latestVersion"]),
+      source: "json",
+    });
+  }
+  return list;
+}
+
+function parseClawhubTextItems(raw: string): ClawhubSearchItem[] {
+  const lines = normalizeOutput(raw);
+  const refs = new Map<string, string>();
+  const refRegex = /([a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+(?:@[a-zA-Z0-9._-]+)?)/g;
+
+  for (const line of lines) {
+    const plain = line.replace(/\x1b\[[0-9;]*m/g, "").trim();
+    if (!plain) {
+      continue;
+    }
+    let match: RegExpExecArray | null = null;
+    while ((match = refRegex.exec(plain)) !== null) {
+      const ref = match[1];
+      if (!refs.has(ref)) {
+        refs.set(ref, plain);
+      }
+    }
+  }
+
+  return Array.from(refs.entries()).map(([id, line]) => ({
+    id,
+    title: id,
+    summary: line,
+    source: "text",
+  }));
+}
+
+function dedupeClawhubItems(items: ClawhubSearchItem[], limit: number): ClawhubSearchItem[] {
+  const map = new Map<string, ClawhubSearchItem>();
+  for (const item of items) {
+    const key = item.id.trim();
+    if (!key || map.has(key)) {
+      continue;
+    }
+    map.set(key, { ...item, id: key });
+    if (map.size >= limit) {
+      break;
+    }
+  }
+  return Array.from(map.values());
+}
+
+async function runClawhubSearch(query: string, limit: number): Promise<{ items: ClawhubSearchItem[]; command: string }> {
+  const script = `set -e
+if ! command -v clawhub >/dev/null 2>&1; then
+  echo "clawhub 命令不存在，请先在 WSL 中安装 clawhub。" >&2
+  exit 127
+fi
+if clawhub search ${shellQuote(query)} --limit ${limit} --json >/tmp/clawhub-search.json 2>/tmp/clawhub-search.err; then
+  echo "__CLAWOS_FORMAT__=json"
+  cat /tmp/clawhub-search.json
+  exit 0
+fi
+if clawhub search ${shellQuote(query)} --limit ${limit} >/tmp/clawhub-search.txt 2>/tmp/clawhub-search.err; then
+  echo "__CLAWOS_FORMAT__=text"
+  cat /tmp/clawhub-search.txt
+  exit 0
+fi
+cat /tmp/clawhub-search.err >&2
+exit 1`;
+
+  const result = await runWslScript(script, { shellMode: "clean" });
+  if (!result.ok) {
+    const tips = troubleshootingTips(result.stderr);
+    const hint = tips.length > 0 ? ` ${tips.join(" ")}` : "";
+    throw new HttpError(500, `ClawHub 搜索失败：${result.stderr || `退出码 ${result.code}`}${hint}`);
+  }
+
+  const lines = result.stdout.split(/\r?\n/g);
+  const marker = lines.shift()?.trim();
+  const payload = lines.join("\n").trim();
+  const format = marker === "__CLAWOS_FORMAT__=json" ? "json" : "text";
+  let parsed: ClawhubSearchItem[] = [];
+  if (format === "json") {
+    try {
+      parsed = parseClawhubJsonItems(payload);
+    } catch {
+      parsed = [];
+    }
+  } else {
+    parsed = parseClawhubTextItems(payload);
+  }
+  if (parsed.length === 0 && format === "json") {
+    const fallback = parseClawhubTextItems(payload);
+    return { items: dedupeClawhubItems(fallback, limit), command: result.command };
+  }
+  return { items: dedupeClawhubItems(parsed, limit), command: result.command };
+}
+
+async function activateClawhubSkill(skillRef: string): Promise<{ command: string; output: string[] }> {
+  const script = `set -e
+if ! command -v clawhub >/dev/null 2>&1; then
+  echo "clawhub 命令不存在，请先在 WSL 中安装 clawhub。" >&2
+  exit 127
+fi
+clawhub install ${shellQuote(skillRef)}`;
+  const result = await runWslScript(script, { shellMode: "clean" });
+  if (!result.ok) {
+    const tips = troubleshootingTips(result.stderr);
+    const hint = tips.length > 0 ? ` ${tips.join(" ")}` : "";
+    throw new HttpError(500, `ClawHub 激活失败：${result.stderr || `退出码 ${result.code}`}${hint}`);
+  }
+  return {
+    command: result.command,
+    output: normalizeOutput(result.stdout).slice(-80),
+  };
+}
+
+async function handleClawhubSkillsSearch(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const q = readSearchQuery(url.searchParams.get("q"));
+  const limit = readLimit(url.searchParams.get("limit"), 20, "limit");
+  const { items, command } = await runClawhubSearch(q, limit);
+  return jsonResponse({ ok: true, q, items, command });
+}
+
+async function handleClawhubSkillActivate(req: Request): Promise<Response> {
+  const body = await parseJsonBody(req);
+  const skill = sanitizeSkillReference(body.skill);
+
+  const install = await activateClawhubSkill(skill);
+  const config = await readOpenclawConfigForSection("skills");
+  const skills = asObject(config.skills) || {};
+  const entries = { ...(asObject(skills.entries) || {}) };
+  const existing = asObject(entries[skill]) || {};
+  entries[skill] = {
+    ...existing,
+    enabled: true,
+  };
+  const nextSkills = {
+    ...skills,
+    entries,
+  };
+  const save = await saveConfigSection("skills", nextSkills);
+
+  return jsonResponse({
+    ok: true,
+    skill,
+    save,
+    install,
+    data: nextSkills,
+  });
 }
 
 function assertAllowedSection(section: string): string {
@@ -286,19 +509,27 @@ async function handleSingleChannelPatch(req: Request, channelKeyRaw: string): Pr
     const existing = asObject(sectionData.wework) || {};
     const normalized = buildWeworkChannelData(data, existing);
     nextChannels.wework = normalized;
+    const saveResult = await saveConfigSection("channels", nextChannels);
+    return jsonResponse({
+      ok: true,
+      section: "channels",
+      channel: channelKey,
+      data: normalized,
+      save: saveResult,
+    });
   } else {
     const existing = asObject(sectionData.feishu) || {};
-    nextChannels.feishu = buildFeishuChannelData(data, existing);
+    const normalized = buildFeishuChannelData(data, existing);
+    nextChannels.feishu = normalized;
+    const saveResult = await saveConfigSection("channels", nextChannels);
+    return jsonResponse({
+      ok: true,
+      section: "channels",
+      channel: channelKey,
+      data: normalized,
+      save: saveResult,
+    });
   }
-
-  const saveResult = await saveConfigSection("channels", nextChannels);
-  return jsonResponse({
-    ok: true,
-    section: "channels",
-    channel: channelKey,
-    data,
-    save: saveResult,
-  });
 }
 
 async function handleGatewayAction(req: Request): Promise<Response> {
@@ -486,6 +717,14 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
     if (path === "/api/config/section" && req.method === "PUT") {
       return await handleConfigSectionSave(req);
+    }
+
+    if (path === "/api/skills/clawhub/search" && req.method === "GET") {
+      return await handleClawhubSkillsSearch(req);
+    }
+
+    if (path === "/api/skills/clawhub/activate" && req.method === "POST") {
+      return await handleClawhubSkillActivate(req);
     }
 
     const channelPatchMatch = path.match(/^\/api\/config\/channels\/channel\/([a-zA-Z0-9_.-]{1,64})\/?$/);
