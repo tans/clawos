@@ -3,35 +3,35 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 会话</title>
+    <title>ClawOS 浼氳瘽</title>
     <link rel="stylesheet" href="/styles.css" />
-  </head>
+</head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载�?..</div>
+        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">会话</h1>
-          <button class="btn btn-outline btn-xs" data-action="reload">刷新</button>
+          <h1 class="text-lg font-semibold">浼氳瘽</h1>
+          <button class="btn btn-outline btn-xs" data-action="reload">鍒锋柊</button>
         </header>
 
         <section class="flex-1 p-6">
           <div class="grid gap-4 lg:grid-cols-[300px_1fr]">
             <div class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
-                <div class="text-xs uppercase tracking-[0.18em] text-base-content/50">所有会�?/div>
-                <div class="text-xs text-base-content/70" data-list-meta>尚未加载</div>
+                <div class="text-xs uppercase tracking-[0.18em] text-base-content/50">鎵€鏈変細璇?/div>
+                <div class="text-xs text-base-content/70" data-list-meta>灏氭湭鍔犺浇</div>
                 <div class="flex flex-col gap-2" data-session-list></div>
               </div>
             </div>
 
             <div class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
-                <h2 class="text-base font-semibold" data-session-title>未选择会话</h2>
-                <div class="text-xs text-base-content/70" data-detail-meta>请选择左侧会话查看历史消息</div>
+                <h2 class="text-base font-semibold" data-session-title>鏈€夋嫨浼氳瘽</h2>
+                <div class="text-xs text-base-content/70" data-detail-meta>璇烽€夋嫨宸︿晶浼氳瘽鏌ョ湅鍘嗗彶娑堟伅</div>
                 <div class="flex flex-col gap-2" data-message-list></div>
               </div>
             </div>
@@ -61,7 +61,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -96,10 +96,10 @@
 
       function roleLabel(role) {
         const key = String(role || "unknown").toLowerCase();
-        if (["user", "human"].includes(key)) return "用户";
-        if (["assistant", "ai", "bot", "agent"].includes(key)) return "助手";
-        if (["system"].includes(key)) return "系统";
-        return "其他";
+        if (["user", "human"].includes(key)) return "鐢ㄦ埛";
+        if (["assistant", "ai", "bot", "agent"].includes(key)) return "鍔╂墜";
+        if (["system"].includes(key)) return "绯荤粺";
+        return "鍏朵粬";
       }
 
       function clearChildren(el) {
@@ -114,13 +114,13 @@
         if (!Array.isArray(sessions) || sessions.length === 0) {
           const empty = document.createElement("div");
           empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
-          empty.textContent = "暂无会话数据";
+          empty.textContent = "鏆傛棤浼氳瘽鏁版嵁";
           sessionListEl.appendChild(empty);
-          listMetaEl.textContent = "�?0 �?;
+          listMetaEl.textContent = "鍏?0 鏉?;
           return;
         }
 
-        listMetaEl.textContent = `�?${sessions.length} 条`;
+        listMetaEl.textContent = `鍏?${sessions.length} 鏉;
 
         sessions.forEach((session) => {
           const btn = document.createElement("button");
@@ -163,7 +163,7 @@
         if (!Array.isArray(history) || history.length === 0) {
           const empty = document.createElement("div");
           empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
-          empty.textContent = "该会话暂无历史消�?;
+          empty.textContent = "璇ヤ細璇濇殏鏃犲巻鍙叉秷鎭?;
           messageListEl.appendChild(empty);
           return;
         }
@@ -208,8 +208,8 @@
           const active = sessions.find((item) => item.key === activeSessionKey);
           await selectSession(activeSessionKey, active?.title || activeSessionKey, false);
         } else {
-          titleEl.textContent = "未选择会话";
-          detailMetaEl.textContent = "请选择左侧会话查看历史消息";
+          titleEl.textContent = "鏈€夋嫨浼氳瘽";
+          detailMetaEl.textContent = "璇烽€夋嫨宸︿晶浼氳瘽鏌ョ湅鍘嗗彶娑堟伅";
           renderMessageList([]);
         }
       }
@@ -217,7 +217,7 @@
       async function selectSession(sessionKey, title, rerender = true) {
         activeSessionKey = sessionKey;
         titleEl.textContent = title;
-        detailMetaEl.textContent = "正在加载历史消息...";
+        detailMetaEl.textContent = "姝ｅ湪鍔犺浇鍘嗗彶娑堟伅...";
         if (rerender) {
           renderSessionList();
         }
@@ -225,28 +225,24 @@
         try {
           const data = await api(`/api/sessions/${encodeURIComponent(sessionKey)}/history?limit=300`);
           const history = Array.isArray(data.history) ? data.history : [];
-          detailMetaEl.textContent = `�?${history.length} 条消息`;
+          detailMetaEl.textContent = `鍏?${history.length} 鏉℃秷鎭痐;
           renderMessageList(history);
         } catch (error) {
-          detailMetaEl.textContent = readUserErrorMessage(error, "加载失败，请稍后重试�?);
+          detailMetaEl.textContent = readUserErrorMessage(error, "鍔犺浇澶辫触锛岃绋嶅悗閲嶈瘯銆?);
           renderMessageList([]);
         }
       }
 
       reloadBtn.addEventListener("click", async (event) => {
-        const button = event.currentTarget instanceof HTMLButtonElement ? event.currentTarget : null;
-        if (!button) {
-          return;
-        }
-        button.disabled = true;
-        listMetaEl.textContent = "正在刷新...";
+        event.currentTarget.disabled = true;
+        listMetaEl.textContent = "姝ｅ湪鍒锋柊...";
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = readUserErrorMessage(error, "刷新失败，请稍后重试�?);
+          listMetaEl.textContent = readUserErrorMessage(error, "鍒锋柊澶辫触锛岃绋嶅悗閲嶈瘯銆?);
           clearChildren(sessionListEl);
         } finally {
-          button.disabled = false;
+          event.currentTarget.disabled = false;
         }
       });
 
@@ -254,10 +250,10 @@
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试�?);
+          listMetaEl.textContent = readUserErrorMessage(error, "鍒濆鍖栧け璐ワ紝璇峰埛鏂伴〉闈㈤噸璇曘€?);
           clearChildren(sessionListEl);
-          titleEl.textContent = "未选择会话";
-          detailMetaEl.textContent = "请先检查服务连接状�?;
+          titleEl.textContent = "鏈€夋嫨浼氳瘽";
+          detailMetaEl.textContent = "璇峰厛妫€鏌ユ湇鍔¤繛鎺ョ姸鎬?;
           renderMessageList([]);
         }
       })();

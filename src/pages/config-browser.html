@@ -3,55 +3,55 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 浏览�?/title>
+    <title>ClawOS 娴忚鍣?/title>
     <link rel="stylesheet" href="/styles.css" />
-  </head>
+</head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载�?..</div>
+        <div class="text-sm text-base-content/60">鍔犺浇涓?..</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">浏览器修�?/h1>
+          <h1 class="text-lg font-semibold">娴忚鍣ㄤ慨澶?/h1>
         </header>
 
         <section class="flex-1 p-6">
           <div class="grid gap-4">
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">浏览器连通�?/h2>
-              <div class="text-xs text-base-content/70">检测本机与 WSL 对浏览器 CDP 的连通情况，便于定位“浏览器不可用”问题�?/div>
+              <h2 class="card-title text-base">娴忚鍣ㄨ繛閫氭€?/h2>
+              <div class="text-xs text-base-content/70">妫€娴嬫湰鏈轰笌 WSL 瀵规祻瑙堝櫒 CDP 鐨勮繛閫氭儏鍐碉紝渚夸簬瀹氫綅鈥滄祻瑙堝櫒涓嶅彲鐢ㄢ€濋棶棰樸€?/div>
 
               <div class="flex flex-wrap gap-2">
-                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>检查浏览器连通�?/button>
+                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>妫€鏌ユ祻瑙堝櫒杩為€氭€?/button>
               </div>
 
               <div class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2" data-browser-connectivity-status>
-                等待检�?..
+                绛夊緟妫€娴?..
               </div>
-              <pre class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-connectivity-output>检测详情会显示在这�?..</pre>
+              <pre class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-connectivity-output>妫€娴嬭鎯呬細鏄剧ず鍦ㄨ繖閲?..</pre>
             </div>
           </section>
 
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">常用操作</h2>
-              <div class="text-xs text-base-content/70">遇到浏览器问题时，先点“重启浏览器”，仍不行再点“重置浏览器设置”�?/div>
+              <h2 class="card-title text-base">甯哥敤鎿嶄綔</h2>
+              <div class="text-xs text-base-content/70">閬囧埌娴忚鍣ㄩ棶棰樻椂锛屽厛鐐光€滈噸鍚祻瑙堝櫒鈥濓紝浠嶄笉琛屽啀鐐光€滈噸缃祻瑙堝櫒璁剧疆鈥濄€?/div>
 
               <div class="flex flex-wrap gap-2">
-                <button class="btn btn-primary btn-sm" data-browser-action="restart-browser">重启浏览�?/button>
-                <button class="btn btn-outline btn-sm" data-browser-action="reset-config">重置浏览器设�?/button>
+                <button class="btn btn-primary btn-sm" data-browser-action="restart-browser">閲嶅惎娴忚鍣?/button>
+                <button class="btn btn-outline btn-sm" data-browser-action="reset-config">閲嶇疆娴忚鍣ㄨ缃?/button>
               </div>
 
               <div class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2" data-browser-op-status>
-                等待执行...
+                绛夊緟鎵ц...
               </div>
 
-              <div class="text-xs text-base-content/70" data-browser-task-meta>当前无任�?/div>
+              <div class="text-xs text-base-content/70" data-browser-task-meta>褰撳墠鏃犱换鍔?/div>
               <progress class="progress progress-neutral w-full hidden" value="0" max="100" data-browser-task-progress></progress>
-              <pre class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-task-output>操作记录会显示在这里...</pre>
+              <pre class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-task-output>鎿嶄綔璁板綍浼氭樉绀哄湪杩欓噷...</pre>
             </div>
           </section>
           </div>
@@ -79,7 +79,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -115,21 +115,21 @@
       function connectivityStatusText(status) {
         switch (status) {
           case "ok":
-            return "正常";
+            return "姝ｅ父";
           case "local-only":
-            return "仅本机直�?;
+            return "浠呮湰鏈虹洿杩?;
           case "cdp-only":
-            return "仅服务侧连�?;
+            return "浠呮湇鍔′晶杩為€?;
           case "disabled":
-            return "已禁�?;
+            return "宸茬鐢?;
           case "not-configured":
-            return "未配�?;
+            return "鏈厤缃?;
           case "gateway-error":
-            return "网关异常";
+            return "缃戝叧寮傚父";
           case "probe-error":
-            return "连通失�?;
+            return "杩為€氬け璐?;
           default:
-            return "未知";
+            return "鏈煡";
         }
       }
 
@@ -138,20 +138,20 @@
           return;
         }
 
-        const mode = info?.mode === "local" ? "本地" : "CDP";
+        const mode = info?.mode === "local" ? "鏈湴" : "CDP";
         const statusText = connectivityStatusText(info?.status);
-        browserConnectivityStatusEl.textContent = `连通状�? ${statusText}（模�? ${mode}）`;
+        browserConnectivityStatusEl.textContent = `杩為€氱姸鎬? ${statusText}锛堟ā寮? ${mode}锛塦;
 
         const lines = [
-          `状�? ${statusText}`,
-          `模式: ${mode}`,
-          `启用: ${info?.enabled === false ? "�? : "�?}`,
-          `已配�? ${info?.configured === true ? "�? : "�?}`,
+          `鐘舵€? ${statusText}`,
+          `妯″紡: ${mode}`,
+          `鍚敤: ${info?.enabled === false ? "鍚? : "鏄?}`,
+          `宸查厤缃? ${info?.configured === true ? "鏄? : "鍚?}`,
         ];
 
         const checkedAt = formatCheckTime(info?.checkedAt);
         if (checkedAt) {
-          lines.push(`检测时�? ${checkedAt}`);
+          lines.push(`妫€娴嬫椂闂? ${checkedAt}`);
         }
 
         if (info?.cdpUrl) {
@@ -160,22 +160,22 @@
 
         if (info?.direct127 && typeof info.direct127 === "object") {
           lines.push(
-            `本机127检�? ${info.direct127.ok === true ? "成功" : "失败"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
+            `鏈満127妫€娴? ${info.direct127.ok === true ? "鎴愬姛" : "澶辫触"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
           );
         }
 
         if (info?.wslCdp && typeof info.wslCdp === "object") {
           lines.push(
-            `WSL检�? ${info.wslCdp.ok === true ? "成功" : "失败"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
+            `WSL妫€娴? ${info.wslCdp.ok === true ? "鎴愬姛" : "澶辫触"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
           );
           if (typeof info.wslCdp.command === "string" && info.wslCdp.command.trim()) {
-            lines.push(`WSL命令: ${info.wslCdp.command}`);
+            lines.push(`WSL鍛戒护: ${info.wslCdp.command}`);
           }
         }
 
         if (Array.isArray(info?.warnings) && info.warnings.length > 0) {
           lines.push("");
-          lines.push("告警:");
+          lines.push("鍛婅:");
           for (const warning of info.warnings) {
             if (typeof warning === "string" && warning.trim()) {
               lines.push(`- ${warning.trim()}`);
@@ -193,8 +193,8 @@
         }
 
         if (!silent) {
-          browserConnectivityStatusEl.textContent = "连通状�? 检测中...";
-          browserConnectivityOutputEl.textContent = "正在检测浏览器连通�?..";
+          browserConnectivityStatusEl.textContent = "杩為€氱姸鎬? 妫€娴嬩腑...";
+          browserConnectivityOutputEl.textContent = "姝ｅ湪妫€娴嬫祻瑙堝櫒杩為€氭€?..";
         }
 
         const data = await api("/api/system/browser/check");
@@ -208,23 +208,23 @@
         const totalSteps = Number.isFinite(task?.totalSteps) ? task.totalSteps : 0;
         const percent = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
         const status = typeof task?.status === "string" ? task.status : "unknown";
-        const title = typeof task?.title === "string" ? task.title : "未知任务";
+        const title = typeof task?.title === "string" ? task.title : "鏈煡浠诲姟";
         const running = status === "running" || status === "pending";
         const statusText =
           status === "running" || status === "pending"
-            ? "执行�?
+            ? "鎵ц涓?
             : status === "success"
-              ? "已完�?
+              ? "宸插畬鎴?
               : status === "failed"
-                ? "失败"
-                : "未知";
+                ? "澶辫触"
+                : "鏈煡";
 
         browserTaskProgressEl.value = percent;
         browserTaskProgressEl.classList.toggle("hidden", !running);
-        browserTaskMetaEl.textContent = `${title}�?{statusText}）`;
+        browserTaskMetaEl.textContent = `${title}锛?{statusText}锛塦;
 
         const lines = logs.map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
-        browserTaskOutputEl.textContent = lines.join("\n") || "暂无日志";
+        browserTaskOutputEl.textContent = lines.join("\n") || "鏆傛棤鏃ュ織";
         browserTaskOutputEl.scrollTop = browserTaskOutputEl.scrollHeight;
       }
 
@@ -240,16 +240,16 @@
             if (task.status === "success" || task.status === "failed") {
               stopTaskPolling();
               if (task.status === "success") {
-                browserOpStatusEl.textContent = "操作完成�?;
+                browserOpStatusEl.textContent = "鎿嶄綔瀹屾垚銆?;
               } else {
-                browserOpStatusEl.textContent = "操作未完成，请稍后重试�?;
+                browserOpStatusEl.textContent = "鎿嶄綔鏈畬鎴愶紝璇风◢鍚庨噸璇曘€?;
               }
             }
           } catch (error) {
             stopTaskPolling();
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = readUserErrorMessage(error, "状态刷新失败，请稍后重试�?);
-            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试�?);
+            browserTaskMetaEl.textContent = readUserErrorMessage(error, "鐘舵€佸埛鏂板け璐ワ紝璇风◢鍚庨噸璇曘€?);
+            browserOpStatusEl.textContent = readUserErrorMessage(error, "鎿嶄綔澶辫触锛岃绋嶅悗閲嶈瘯銆?);
           }
         };
 
@@ -258,10 +258,10 @@
       }
 
       async function runBrowserAction(action) {
-        const label = action === "restart-browser" ? "重启浏览�? : "重置浏览器设�?;
-        browserOpStatusEl.textContent = `正在执行�?{label}`;
-        browserTaskOutputEl.textContent = "任务启动�?..";
-        browserTaskMetaEl.textContent = "任务启动�?..";
+        const label = action === "restart-browser" ? "閲嶅惎娴忚鍣? : "閲嶇疆娴忚鍣ㄨ缃?;
+        browserOpStatusEl.textContent = `姝ｅ湪鎵ц锛?{label}`;
+        browserTaskOutputEl.textContent = "浠诲姟鍚姩涓?..";
+        browserTaskMetaEl.textContent = "浠诲姟鍚姩涓?..";
         browserTaskProgressEl.classList.remove("hidden");
         browserTaskProgressEl.value = 0;
 
@@ -271,11 +271,11 @@
         });
 
         if (!data.taskId) {
-          throw new Error("服务端未返回任务 ID");
+          throw new Error("鏈嶅姟绔湭杩斿洖浠诲姟 ID");
         }
 
         if (data.reused) {
-          browserOpStatusEl.textContent = `检测到同类任务在执行，已切换日志：${label}`;
+          browserOpStatusEl.textContent = `妫€娴嬪埌鍚岀被浠诲姟鍦ㄦ墽琛岋紝宸插垏鎹㈡棩蹇楋細${label}`;
         }
 
         await pollTask(data.taskId);
@@ -293,8 +293,8 @@
             await runBrowserAction(action);
           } catch (error) {
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试�?);
-            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试�?);
+            browserTaskMetaEl.textContent = readUserErrorMessage(error, "鎿嶄綔澶辫触锛岃绋嶅悗閲嶈瘯銆?);
+            browserOpStatusEl.textContent = readUserErrorMessage(error, "鎿嶄綔澶辫触锛岃绋嶅悗閲嶈瘯銆?);
           } finally {
             button.disabled = false;
           }
@@ -308,7 +308,7 @@
             await checkBrowserConnectivity(false);
           } catch (error) {
             if (browserConnectivityStatusEl instanceof HTMLElement) {
-              browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "连通性检测失败，请稍后重试�?);
+              browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "杩為€氭€ф娴嬪け璐ワ紝璇风◢鍚庨噸璇曘€?);
             }
           } finally {
             browserConnectivityCheckBtn.disabled = false;
@@ -318,7 +318,7 @@
 
       void checkBrowserConnectivity(true).catch((error) => {
         if (browserConnectivityStatusEl instanceof HTMLElement) {
-          browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "初始化连通性检测失败�?);
+          browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "鍒濆鍖栬繛閫氭€ф娴嬪け璐ャ€?);
         }
       });
     </script>
