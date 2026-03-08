@@ -12,6 +12,30 @@ function DownloadIcon() {
   );
 }
 
+function SunIcon() {
+  return (
+    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 15.5A8.5 8.5 0 1 1 8.5 4 6.5 6.5 0 0 0 20 15.5z" />
+    </svg>
+  );
+}
+
 function SectionTitle({ eyebrow, title, desc }: { eyebrow: string; title: string; desc: string }) {
   return (
     <div class="max-w-3xl space-y-3">
@@ -52,7 +76,7 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                 <img src="/public/logo.png" alt="ClawOS Logo" class="size-9 rounded-lg object-contain" />
                 <span>ClawOS</span>
               </div>
-              <nav class="flex flex-wrap gap-2 text-sm" aria-label="页面导航">
+              <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="页面导航">
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="#overview">
                   介绍
                 </a>
@@ -65,9 +89,16 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="/install-guide">
                   安装
                 </a>
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="/to-agent">
-                  To Agent
-                </a>
+                <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                  <a class="inline-flex items-center gap-2 rounded-full bg-warning/18 px-3 py-2 text-xs font-semibold text-base-content" href="/" aria-current="page">
+                    <SunIcon />
+                    Human
+                  </a>
+                  <a class="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-base-content/58 transition-colors hover:text-base-content" href="/to-agent">
+                    <MoonIcon />
+                    Agent
+                  </a>
+                </div>
               </nav>
             </div>
           </header>
@@ -79,7 +110,16 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
             <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
               <div class="max-w-2xl">
                 <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">兼容多平台 / 可视化管理 / 行业定制</div>
-                <h1 class="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">可定制的 openclaw</h1>
+                <h1 class="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                  可定制的{" "}
+                  <span class="text-rotate text-primary" style="--duration: 9s;">
+                    <span>
+                      <span>openclaw</span>
+                      <span>Gateway 面板</span>
+                      <span>Windows 工作台</span>
+                    </span>
+                  </span>
+                </h1>
                 <p class="mt-6 max-w-xl text-base leading-8 text-base-content/72 sm:text-lg">
                   像普通软件一样使用 openclaw。
                   <br />

@@ -2,6 +2,30 @@
 
 import { renderToString } from "hono/jsx/dom/server";
 
+function SunIcon() {
+  return (
+    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 15.5A8.5 8.5 0 1 1 8.5 4 6.5 6.5 0 0 0 20 15.5z" />
+    </svg>
+  );
+}
+
 export function renderAgentPage(): string {
   const agentPitch = [
     "我是你的交付机器人，我负责把 openclaw 变成可运行、可维护、可解释的产品。",
@@ -34,16 +58,20 @@ export function renderAgentPage(): string {
                 <img src="/public/logo.png" alt="ClawOS Logo" class="size-9 rounded-lg object-contain" />
                 <span>ClawOS / To Agent</span>
               </div>
-              <nav class="flex flex-wrap gap-2 text-sm" aria-label="页面导航">
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="/">
-                  To Human
-                </a>
-                <a class="btn btn-ghost btn-sm btn-active border border-base-content/15" href="/to-agent">
-                  To Agent
-                </a>
+              <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="页面导航">
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="/install-guide">
                   安装
                 </a>
+                <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                  <a class="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-base-content/58 transition-colors hover:text-base-content" href="/">
+                    <SunIcon />
+                    Human
+                  </a>
+                  <a class="inline-flex items-center gap-2 rounded-full bg-neutral px-3 py-2 text-xs font-semibold text-neutral-content" href="/to-agent" aria-current="page">
+                    <MoonIcon />
+                    Agent
+                  </a>
+                </div>
               </nav>
             </div>
           </header>
