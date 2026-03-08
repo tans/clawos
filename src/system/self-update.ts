@@ -66,6 +66,7 @@ export type SelfUpdateRunResult = {
 };
 
 let cachedStatus: { expiresAt: number; value: SelfUpdateStatus } | null = null;
+let updaterOperationQueue: Promise<void> = Promise.resolve();
 
 function normalizeText(value: unknown, fallback = ""): string {
   if (typeof value !== "string") {
@@ -80,7 +81,7 @@ function getErrorMessage(error: unknown): string {
     return error.message.trim();
   }
   const text = String(error || "").trim();
-  return text || "未知错误";
+  return text || "\u672a\u77e5\u9519\u8bef";
 }
 
 function readLastStatusEntry(updater: UpdaterApi): ElectrobunUpdateStatusEntry | null {
@@ -183,6 +184,24 @@ export function clearSelfUpdateStatusCache(): void {
   cachedStatus = null;
 }
 
+async function runExclusiveUpdaterOperation<T>(operation: () => Promise<T>): Promise<T> {
+  let release: (() => void) | null = null;
+  const waitForTurn = updaterOperationQueue;
+  updaterOperationQueue = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await waitForTurn.catch(() => {
+    // keep the queue moving even if a previous updater run failed
+  });
+
+  try {
+    return await operation();
+  } finally {
+    release?.();
+  }
+}
+
 export async function getSelfUpdateStatus(refresh = false): Promise<SelfUpdateStatus> {
   const now = Date.now();
   if (!refresh && cachedStatus && now < cachedStatus.expiresAt) {
@@ -195,7 +214,7 @@ export async function getSelfUpdateStatus(refresh = false): Promise<SelfUpdateSt
     const unsupported: SelfUpdateStatus = {
       ...base,
       supported: false,
-      reason: "当前运行环境不支持 Electrobun Updater。",
+      reason: "\u5f53\u524d\u8fd0\u884c\u73af\u5883\u4e0d\u652f\u6301 Electrobun Updater\u3002",
       checkedAt: new Date().toISOString(),
     };
     cachedStatus = { expiresAt: now + STATUS_CACHE_TTL_MS, value: unsupported };
@@ -209,7 +228,7 @@ export async function getSelfUpdateStatus(refresh = false): Promise<SelfUpdateSt
     const unsupported: SelfUpdateStatus = {
       ...base,
       supported: false,
-      reason: `读取本地更新信息失败：${getErrorMessage(error)}`,
+      reason: `\u8bfb\u53d6\u672c\u5730\u66f4\u65b0\u4fe1\u606f\u5931\u8d25\uff1a${getErrorMessage(error)}`,
       checkedAt: new Date().toISOString(),
     };
     cachedStatus = { expiresAt: now + STATUS_CACHE_TTL_MS, value: unsupported };
@@ -264,81 +283,87 @@ export async function getSelfUpdateStatus(refresh = false): Promise<SelfUpdateSt
 }
 
 export async function runSelfUpdate(options: RunSelfUpdateOptions = {}): Promise<SelfUpdateRunResult> {
-  const updater = await resolveUpdaterApi();
-  if (!updater) {
-    throw new Error("当前运行环境不支持 Electrobun Updater。请使用 Electrobun 打包版本运行。");
-  }
-
-  if (typeof updater.clearStatusHistory === "function") {
-    updater.clearStatusHistory();
-  }
-
-  const onStatus = options.onStatus;
-  if (onStatus && typeof updater.onStatusChange === "function") {
-    updater.onStatusChange((entry) => {
-      try {
-        onStatus(entry);
-      } catch {
-        // ignore callback errors
-      }
-    });
-  }
-
-  try {
-    const check = await updater.checkForUpdate();
-    if (normalizeText(check.error)) {
-      throw new Error(check.error);
+  return await runExclusiveUpdaterOperation(async () => {
+    const updater = await resolveUpdaterApi();
+    if (!updater) {
+      throw new Error(
+        "\u5f53\u524d\u8fd0\u884c\u73af\u5883\u4e0d\u652f\u6301 Electrobun Updater\u3002\u8bf7\u4f7f\u7528 Electrobun \u6253\u5305\u7248\u672c\u8fd0\u884c\u3002"
+      );
     }
 
-    if (!check.updateAvailable) {
-      clearSelfUpdateStatusCache();
-      return {
-        updateAvailable: false,
-        readyToApply: check.updateReady === true,
-        applied: false,
-        check,
-      };
+    if (typeof updater.clearStatusHistory === "function") {
+      updater.clearStatusHistory();
     }
 
-    await updater.downloadUpdate();
-    const postDownload = updater.updateInfo();
-
-    if (normalizeText(postDownload.error)) {
-      throw new Error(postDownload.error);
-    }
-
-    const readyToApply = postDownload.updateReady === true;
-    if (options.applyUpdate === false) {
-      clearSelfUpdateStatusCache();
-      return {
-        updateAvailable: true,
-        readyToApply,
-        applied: false,
-        check: postDownload,
-      };
-    }
-
-    if (!readyToApply) {
-      throw new Error("更新文件已下载，但尚未进入可应用状态。请稍后重试。");
+    const onStatus = options.onStatus;
+    if (onStatus && typeof updater.onStatusChange === "function") {
+      updater.onStatusChange((entry) => {
+        try {
+          onStatus(entry);
+        } catch {
+          // ignore callback errors
+        }
+      });
     }
 
     try {
-      options.beforeApply?.();
-    } catch {
-      // ignore pre-apply callback errors
-    }
+      const check = await updater.checkForUpdate();
+      if (normalizeText(check.error)) {
+        throw new Error(check.error);
+      }
 
-    await updater.applyUpdate();
-    clearSelfUpdateStatusCache();
-    return {
-      updateAvailable: true,
-      readyToApply: true,
-      applied: true,
-      check: postDownload,
-    };
-  } finally {
-    if (typeof updater.onStatusChange === "function") {
-      updater.onStatusChange(null);
+      if (!check.updateAvailable) {
+        clearSelfUpdateStatusCache();
+        return {
+          updateAvailable: false,
+          readyToApply: check.updateReady === true,
+          applied: false,
+          check,
+        };
+      }
+
+      await updater.downloadUpdate();
+      const postDownload = updater.updateInfo();
+
+      if (normalizeText(postDownload.error)) {
+        throw new Error(postDownload.error);
+      }
+
+      const readyToApply = postDownload.updateReady === true;
+      if (options.applyUpdate === false) {
+        clearSelfUpdateStatusCache();
+        return {
+          updateAvailable: true,
+          readyToApply,
+          applied: false,
+          check: postDownload,
+        };
+      }
+
+      if (!readyToApply) {
+        throw new Error(
+          "\u66f4\u65b0\u6587\u4ef6\u5df2\u4e0b\u8f7d\uff0c\u4f46\u5c1a\u672a\u8fdb\u5165\u53ef\u5e94\u7528\u72b6\u6001\u3002\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002"
+        );
+      }
+
+      try {
+        options.beforeApply?.();
+      } catch {
+        // ignore pre-apply callback errors
+      }
+
+      await updater.applyUpdate();
+      clearSelfUpdateStatusCache();
+      return {
+        updateAvailable: true,
+        readyToApply: true,
+        applied: true,
+        check: postDownload,
+      };
+    } finally {
+      if (typeof updater.onStatusChange === "function") {
+        updater.onStatusChange(null);
+      }
     }
-  }
+  });
 }

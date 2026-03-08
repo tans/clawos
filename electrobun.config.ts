@@ -79,6 +79,7 @@ const config: ElectrobunConfig = {
       "src/desktop-ui/shell.html": "views/clawos/shell.html",
       "src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
       "dist/output.css": "views/clawos/styles.css",
+      "web/public/logo.png": "views/clawos/logo.png",
     },
     watch: ["src", "dist"],
     watchIgnore: [
@@ -95,7 +96,7 @@ const config: ElectrobunConfig = {
     win: useWindowsIcon && resolvedWindowsIconPath ? { icon: resolvedWindowsIconPath } : {},
   },
   runtime: {
-    exitOnLastWindowClosed: true,
+    exitOnLastWindowClosed: false,
   },
   release: {
     baseUrl: releaseBaseUrl,
