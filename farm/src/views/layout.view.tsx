@@ -21,7 +21,7 @@ const LayoutRoot: FC<{ title: string; user?: ConsoleUser; children: Child }> = (
           {user ? (
             <div class="navbar bg-base-100 rounded-box shadow-sm mb-4 border border-base-300">
               <div class="flex-1 text-sm">
-                账号：{user.mobile}（钱包：<span class="font-mono">{user.walletAddress}</span>）
+                账号：{user.mobile}（绑定标识：<span class="font-mono">{user.walletAddress}</span>）
               </div>
               <div class="flex-none">
                 <a class="btn btn-sm btn-outline" href="/console/logout">

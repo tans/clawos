@@ -7,7 +7,6 @@ const HOST_OFFLINE_THRESHOLD_MS = 30 * 1000;
 
 type RegisterPayload = {
   mobile?: string;
-  walletAddress?: string;
 };
 
 function formatDateTime(ms: number | null): string {
@@ -86,7 +85,7 @@ export function renderRegisterPage(error = "", payload?: RegisterPayload): strin
     <div class="card bg-base-100 border border-base-300 shadow-xl max-w-lg mx-auto mt-10">
       <div class="card-body">
         <h1 class="card-title text-2xl">注册控制台账号</h1>
-        <p class="text-base-content/70">注册后使用手机号 + 密码登录，钱包地址用于匹配你能控制的主机。</p>
+        <p class="text-base-content/70">注册后使用手机号 + 密码登录。当前版本无需填写钱包地址。</p>
         {error ? (
           <div class="alert alert-error mb-3">
             <span>{error}</span>
@@ -98,17 +97,6 @@ export function renderRegisterPage(error = "", payload?: RegisterPayload): strin
               <span class="label-text">手机号</span>
             </div>
             <input class="input input-bordered w-full" name="mobile" value={payload?.mobile || ""} />
-          </label>
-          <label class="form-control w-full mt-2">
-            <div class="label">
-              <span class="label-text">钱包地址（控制人地址）</span>
-            </div>
-            <input
-              class="input input-bordered w-full"
-              name="walletAddress"
-              value={payload?.walletAddress || ""}
-              placeholder="0x..."
-            />
           </label>
           <label class="form-control w-full mt-2">
             <div class="label">
@@ -141,7 +129,7 @@ export function renderHostListPage(user: ConsoleUser, message: string, hosts: Ho
     <div class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body">
         <h1 class="card-title">主机列表</h1>
-        <p class="text-base-content/70">只展示 controllerAddress 与你账号钱包地址一致的主机。</p>
+        <p class="text-base-content/70">只展示 controllerAddress 与你账号绑定标识一致的主机。</p>
 
         {message ? (
           <div class="alert alert-success mb-3">
@@ -186,7 +174,7 @@ export function renderHostListPage(user: ConsoleUser, message: string, hosts: Ho
           </div>
         ) : (
           <p class="text-base-content/70">
-            当前没有可控制主机。请在设备端将 <span class="font-mono">controllerAddress</span> 设置为你的钱包地址：
+            当前没有可控制主机。请在设备端将 <span class="font-mono">controllerAddress</span> 设置为你的绑定标识：
             {user.walletAddress}
           </p>
         )}
