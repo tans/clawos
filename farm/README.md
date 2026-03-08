@@ -5,6 +5,7 @@
 ## 文档
 - 配置与启动文档：[/Users/ke/code/clawos/farm/CONFIG_AND_START.md](/Users/ke/code/clawos/farm/CONFIG_AND_START.md)
 - 协议文档：[/Users/ke/code/clawos/cloud-remote-control-protocol.md](/Users/ke/code/clawos/cloud-remote-control-protocol.md)
+- HTTP 实现补充：[`farm/AGENT_HTTP_PROTOCOL.md`](./AGENT_HTTP_PROTOCOL.md)
 
 ## 已实现能力
 - 控制台账号：手机号 + 密码登录。

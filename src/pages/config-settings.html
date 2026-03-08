@@ -78,64 +78,26 @@
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
               <h2 class="card-title text-base">寄养虾场</h2>
-              <p class="text-xs text-base-content/60">绑定你的养虾场账号后，可快速跳转展示页（token 消耗）和管理页（状态/配置/更新）。</p>
+              <p class="text-xs text-base-content/60">仅需配置养虾场通讯地址（含 farm ID，可选加入密码），保存后可快速跳转。</p>
               <div class="grid gap-3">
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">养虾场地址（farm）</div>
-                      <div class="text-xs text-base-content/60">例如 https://farm.clawos.cc</div>
+                      <div class="text-sm font-medium">养虾场通讯地址</div>
+                      <div class="text-xs text-base-content/60">包含 farm ID，可选带 4 位加入密码，例如 https://farm.clawos.cc/join/abc123?pwd=1234</div>
                     </div>
-                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="farm-base-url" placeholder="https://farm.clawos.cc" />
+                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="farm-address" placeholder="https://farm.clawos.cc/join/abc123?pwd=1234" />
                   </div>
                 </div>
 
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
-                    <div class="space-y-1">
-                      <div class="text-sm font-medium">手机</div>
-                      <div class="text-xs text-base-content/60">寄养虾场登录手机号。</div>
-                    </div>
-                    <input class="input input-bordered input-sm w-full" type="text" data-field="farm-mobile" placeholder="例如 13800138000" />
-                  </div>
-                </div>
-
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
-                    <div class="space-y-1">
-                      <div class="text-sm font-medium">密码</div>
-                      <div class="text-xs text-base-content/60">寄养虾场登录密码（本地保存）。</div>
-                    </div>
-                    <input class="input input-bordered input-sm w-full" type="password" data-field="farm-password" placeholder="输入养虾场密码" />
-                  </div>
-                </div>
-
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
-                    <div class="space-y-1">
-                      <div class="text-sm font-medium">短 ID</div>
-                      <div class="text-xs text-base-content/60">用于拼接页面：/id 和 /id/manage（仅字母、数字、下划线、中划线）。</div>
-                    </div>
-                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="farm-short-id" placeholder="例如 demo001" />
-                  </div>
-                </div>
 
                 <div class="rounded-lg border border-base-200 bg-base-100 p-3 text-xs">
                   <div class="mb-2 text-base-content/70">页面入口</div>
-                  <div class="space-y-2">
-                    <div>
-                      <div class="mb-1 text-base-content/60">展示页面（查看 token 消耗）</div>
-                      <div class="flex items-center gap-2">
-                        <a class="link link-primary font-mono" href="#" target="_blank" rel="noreferrer" data-link="farm-display">未配置</a>
-                        <button class="btn btn-outline btn-xs" type="button" data-action="open-display">打开</button>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="mb-1 text-base-content/60">管理页面（查看状态、修改配置、更新）</div>
-                      <div class="flex items-center gap-2">
-                        <a class="link link-primary font-mono" href="#" target="_blank" rel="noreferrer" data-link="farm-manage">未配置</a>
-                        <button class="btn btn-outline btn-xs" type="button" data-action="open-manage">打开</button>
-                      </div>
+                  <div>
+                    <div class="mb-1 text-base-content/60">养虾场入口</div>
+                    <div class="flex items-center gap-2">
+                      <a class="link link-primary font-mono" href="#" target="_blank" rel="noreferrer" data-link="farm-home">未配置</a>
+                      <button class="btn btn-outline btn-xs" type="button" data-action="open-farm-home">打开</button>
                     </div>
                   </div>
                 </div>
@@ -156,18 +118,13 @@
       const metaEl = document.querySelector("[data-meta]");
       const reloadBtn = document.querySelector('[data-action="reload"]');
       const saveBtn = document.querySelector('[data-action="save"]');
-      const openDisplayBtn = document.querySelector('[data-action="open-display"]');
-      const openManageBtn = document.querySelector('[data-action="open-manage"]');
-      const displayLinkEl = document.querySelector('[data-link="farm-display"]');
-      const manageLinkEl = document.querySelector('[data-link="farm-manage"]');
+      const openFarmHomeBtn = document.querySelector('[data-action="open-farm-home"]');
+      const farmHomeLinkEl = document.querySelector('[data-link="farm-home"]');
 
       const tokenInput = document.querySelector('[data-field="openclaw-token"]');
       const controllerAddressInput = document.querySelector('[data-field="controller-address"]');
-      const farmBaseUrlInput = document.querySelector('[data-field="farm-base-url"]');
-      const farmMobileInput = document.querySelector('[data-field="farm-mobile"]');
-      const farmPasswordInput = document.querySelector('[data-field="farm-password"]');
-      const farmShortIdInput = document.querySelector('[data-field="farm-short-id"]');
-
+      const farmAddressInput = document.querySelector('[data-field="farm-address"]');
+      
       const autoStartCheckbox = document.querySelector("#clawos-autostart");
       const autoStartStatusEl = document.querySelector("[data-autostart-status]");
 
@@ -206,55 +163,22 @@
         }
       }
 
-      function normalizeFarmBaseUrl(raw) {
-        let value = String(raw || "").trim();
-        if (!value) {
-          throw new Error("养虾场地址不能为空。");
-        }
-        if (!/^https?:\/\//i.test(value)) {
-          value = `https://${value}`;
-        }
-        let parsed;
-        try {
-          parsed = new URL(value);
-        } catch {
-          throw new Error("养虾场地址格式不合法，请输入有效的 http(s) 地址。");
-        }
-        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-          throw new Error("养虾场地址必须是 http 或 https。");
-        }
-        return parsed.origin;
-      }
 
-      function buildFarmUrls() {
-        const baseUrl = farmBaseUrlInput ? String(farmBaseUrlInput.value || "").trim() : "";
-        const shortId = farmShortIdInput ? String(farmShortIdInput.value || "").trim() : "";
-        if (!baseUrl || !shortId) {
+      function buildFarmHomeUrl() {
+        const farmAddress = farmAddressInput ? String(farmAddressInput.value || '').trim() : '';
+        if (!farmAddress) {
           return null;
         }
-        if (!/^[a-zA-Z0-9_-]{1,64}$/.test(shortId)) {
-          return null;
-        }
-        const normalizedBaseUrl = normalizeFarmBaseUrl(baseUrl);
-        const encodedId = encodeURIComponent(shortId);
-        return {
-          display: `${normalizedBaseUrl}/${encodedId}`,
-          manage: `${normalizedBaseUrl}/${encodedId}/manage`,
-        };
+        return farmAddress;
       }
 
       function updateFarmLinks() {
-        const urls = buildFarmUrls();
-        const display = urls ? urls.display : "未配置";
-        const manage = urls ? urls.manage : "未配置";
+        const farmHomeUrl = buildFarmHomeUrl();
+        const display = farmHomeUrl || '未配置';
 
-        if (displayLinkEl) {
-          displayLinkEl.textContent = display;
-          displayLinkEl.href = urls ? urls.display : "#";
-        }
-        if (manageLinkEl) {
-          manageLinkEl.textContent = manage;
-          manageLinkEl.href = urls ? urls.manage : "#";
+        if (farmHomeLinkEl) {
+          farmHomeLinkEl.textContent = display;
+          farmHomeLinkEl.href = farmHomeUrl || '#';
         }
       }
 
@@ -273,17 +197,9 @@
             typeof settings.controllerAddress === "string" ? settings.controllerAddress : "";
         }
 
-        if (farmBaseUrlInput) {
-          farmBaseUrlInput.value = typeof settings.farmBaseUrl === "string" ? settings.farmBaseUrl : "https://farm.clawos.cc";
-        }
-        if (farmMobileInput) {
-          farmMobileInput.value = typeof settings.farmMobile === "string" ? settings.farmMobile : "";
-        }
-        if (farmPasswordInput) {
-          farmPasswordInput.value = typeof settings.farmPassword === "string" ? settings.farmPassword : "";
-        }
-        if (farmShortIdInput) {
-          farmShortIdInput.value = typeof settings.farmShortId === "string" ? settings.farmShortId : "";
+        if (farmAddressInput) {
+          const legacyFarmBaseUrl = typeof settings.farmBaseUrl === "string" ? settings.farmBaseUrl : "";
+          farmAddressInput.value = typeof settings.farmAddress === "string" ? settings.farmAddress : legacyFarmBaseUrl;
         }
         updateFarmLinks();
 
@@ -308,7 +224,7 @@
       }
 
       async function saveSettings() {
-        if (!tokenInput || !controllerAddressInput || !farmBaseUrlInput || !farmMobileInput || !farmPasswordInput || !farmShortIdInput) {
+        if (!tokenInput || !controllerAddressInput || !farmAddressInput) {
           return;
         }
 
@@ -322,24 +238,13 @@
           throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
         }
 
-        const farmBaseUrl = normalizeFarmBaseUrl(farmBaseUrlInput.value);
-        const farmMobile = farmMobileInput.value.trim();
-        const farmPassword = farmPasswordInput.value.trim();
-        const farmShortId = farmShortIdInput.value.trim();
-
-        if (farmShortId && !/^[a-zA-Z0-9_-]{1,64}$/.test(farmShortId)) {
-          throw new Error("短 ID 格式不合法，仅支持字母、数字、下划线和中划线。");
-        }
-
+        const farmAddress = farmAddressInput.value.trim();
         await api("/api/local/settings", {
           method: "PUT",
           body: JSON.stringify({
             openclawToken,
             controllerAddress,
-            farmBaseUrl,
-            farmMobile,
-            farmPassword,
-            farmShortId,
+            farmAddress,
           }),
         });
       }
@@ -357,32 +262,18 @@
         }
       }
 
-      if (farmBaseUrlInput) {
-        farmBaseUrlInput.addEventListener("input", updateFarmLinks);
-      }
-      if (farmShortIdInput) {
-        farmShortIdInput.addEventListener("input", updateFarmLinks);
+      if (farmAddressInput) {
+        farmAddressInput.addEventListener("input", updateFarmLinks);
       }
 
-      if (openDisplayBtn) {
-        openDisplayBtn.addEventListener("click", () => {
-          const urls = buildFarmUrls();
-          if (!urls) {
-            setMeta("请先填写养虾场地址和短 ID。保存后可直接打开页面。");
+      if (openFarmHomeBtn) {
+        openFarmHomeBtn.addEventListener("click", () => {
+          const farmHomeUrl = buildFarmHomeUrl();
+          if (!farmHomeUrl) {
+            setMeta("请先填写养虾场通讯地址。保存后可直接打开页面。");
             return;
           }
-          window.open(urls.display, "_blank", "noopener,noreferrer");
-        });
-      }
-
-      if (openManageBtn) {
-        openManageBtn.addEventListener("click", () => {
-          const urls = buildFarmUrls();
-          if (!urls) {
-            setMeta("请先填写养虾场地址和短 ID。保存后可直接打开页面。");
-            return;
-          }
-          window.open(urls.manage, "_blank", "noopener,noreferrer");
+          window.open(farmHomeUrl, "_blank", "noopener,noreferrer");
         });
       }
 
@@ -405,7 +296,7 @@
             setMeta("正在保存设置...");
             await saveSettings();
             updateFarmLinks();
-            setMeta("设置已保存。openclaw Token、授权控制地址与寄养虾场参数已更新。");
+            setMeta("设置已保存。openclaw Token、授权控制地址与养虾场通讯地址已更新。");
           } catch (error) {
             setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
           } finally {
