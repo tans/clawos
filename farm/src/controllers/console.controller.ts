@@ -20,11 +20,11 @@ import { normalizeHostId, normalizeMobile, normalizeWalletAddress } from "../uti
 import {
   renderConsoleMessagePage,
   renderHostDetailPage,
-  renderHomePage,
   renderHostListPage,
   renderLoginPage,
   renderRegisterPage,
 } from "../views/console.view";
+import { renderHomePage } from "../views/home.view";
 
 const CONSOLE_SESSION_COOKIE = "clawos_console_session";
 const CONSOLE_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
