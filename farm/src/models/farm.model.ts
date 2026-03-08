@@ -69,10 +69,8 @@ export function getConsoleCredentialByMobile(mobile: string): ConsoleCredentialR
     .get(mobile) as ConsoleCredentialRow | null;
 }
 
-export function existsConsoleUserByMobileOrWallet(mobile: string, walletAddress: string): boolean {
-  const row = db
-    .query("SELECT id FROM console_users WHERE mobile = ? OR wallet_address = ?")
-    .get(mobile, walletAddress) as { id: number } | null;
+export function existsConsoleUserByMobile(mobile: string): boolean {
+  const row = db.query("SELECT id FROM console_users WHERE mobile = ?").get(mobile) as { id: number } | null;
   return Boolean(row);
 }
 
