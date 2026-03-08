@@ -3,9 +3,13 @@ import type { Child, FC } from "hono/jsx";
 import { renderToString } from "hono/jsx/dom/server";
 import type { ConsoleUser } from "../types";
 
-const LayoutRoot: FC<{ title: string; user?: ConsoleUser; children: Child }> = ({ title, user, children }) => {
+const LayoutRoot: FC<{
+  title: string;
+  user?: ConsoleUser;
+  children: Child;
+}> = ({ title, user, children }) => {
   return (
-    <html lang="zh-CN" data-theme="emerald">
+    <html lang="zh-CN" data-theme="silk">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,7 +25,8 @@ const LayoutRoot: FC<{ title: string; user?: ConsoleUser; children: Child }> = (
           {user ? (
             <div class="navbar bg-base-100 rounded-box shadow-sm mb-4 border border-base-300">
               <div class="flex-1 text-sm">
-                账号：{user.mobile}（绑定标识：<span class="font-mono">{user.walletAddress}</span>）
+                账号：{user.mobile}（绑定标识：
+                <span class="font-mono">{user.walletAddress}</span>）
               </div>
               <div class="flex-none">
                 <a class="btn btn-sm btn-outline" href="/console/logout">
@@ -37,6 +42,14 @@ const LayoutRoot: FC<{ title: string; user?: ConsoleUser; children: Child }> = (
   );
 };
 
-export function renderPageShell(content: Child, user?: ConsoleUser, title = "龙虾养殖场"): string {
-  return `<!doctype html>${renderToString(<LayoutRoot title={title} user={user}>{content}</LayoutRoot>)}`;
+export function renderPageShell(
+  content: Child,
+  user?: ConsoleUser,
+  title = "龙虾养殖场",
+): string {
+  return `<!doctype html>${renderToString(
+    <LayoutRoot title={title} user={user}>
+      {content}
+    </LayoutRoot>,
+  )}`;
 }
