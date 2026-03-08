@@ -28,8 +28,16 @@ export type LocalWalletConfig = {
   createdAt?: string;
 };
 
+export type LocalFarmConfig = {
+  baseUrl?: string;
+  mobile?: string;
+  password?: string;
+  shortId?: string;
+};
+
 export type LocalAppConfig = {
   openclawToken?: string;
+  farm?: LocalFarmConfig;
 };
 
 export type LocalClawosConfig = {
@@ -79,6 +87,10 @@ export type GeneratedLocalWallet = {
 export type LocalAppSettings = {
   openclawToken: string;
   controllerAddress: string;
+  farmBaseUrl: string;
+  farmMobile: string;
+  farmPassword: string;
+  farmShortId: string;
 };
 
 export type LocalOpenclawExecutionEnvironment = {
@@ -100,6 +112,12 @@ export function localConfigTemplate(): LocalClawosConfig {
     controllerAddress: "",
     app: {
       openclawToken: DEFAULT_OPENCLAW_TOKEN,
+      farm: {
+        baseUrl: "https://farm.clawos.cc",
+        mobile: "",
+        password: "",
+        shortId: "",
+      },
     },
     gateway: {
       url: "ws://127.0.0.1:18789",
@@ -202,6 +220,12 @@ function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): Loca
     controllerAddress: pickString(cfg.controllerAddress, defaults.controllerAddress || ""),
     app: {
       openclawToken: pickString(cfg.app?.openclawToken, defaults.app?.openclawToken || DEFAULT_OPENCLAW_TOKEN),
+      farm: {
+        baseUrl: pickString(cfg.app?.farm?.baseUrl, defaults.app?.farm?.baseUrl || "https://farm.clawos.cc"),
+        mobile: pickString(cfg.app?.farm?.mobile, defaults.app?.farm?.mobile || ""),
+        password: pickString(cfg.app?.farm?.password, defaults.app?.farm?.password || ""),
+        shortId: pickString(cfg.app?.farm?.shortId, defaults.app?.farm?.shortId || ""),
+      },
     },
     gateway: {
       url: pickString(cfg.gateway?.url, defaults.gateway?.url || ""),
@@ -338,6 +362,10 @@ export function readLocalAppSettings(): LocalAppSettings {
   return {
     openclawToken: pickString(localConfig.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
     controllerAddress: pickString(localConfig.controllerAddress, ""),
+    farmBaseUrl: pickString(localConfig.app?.farm?.baseUrl, "https://farm.clawos.cc"),
+    farmMobile: pickString(localConfig.app?.farm?.mobile, ""),
+    farmPassword: pickString(localConfig.app?.farm?.password, ""),
+    farmShortId: pickString(localConfig.app?.farm?.shortId, ""),
   };
 }
 
@@ -350,6 +378,24 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
       typeof patch.openclawToken === "string"
         ? pickString(patch.openclawToken, currentSettings.openclawToken)
         : currentSettings.openclawToken,
+    farm: {
+      baseUrl:
+        typeof patch.farmBaseUrl === "string"
+          ? patch.farmBaseUrl.trim()
+          : currentSettings.farmBaseUrl,
+      mobile:
+        typeof patch.farmMobile === "string"
+          ? patch.farmMobile.trim()
+          : currentSettings.farmMobile,
+      password:
+        typeof patch.farmPassword === "string"
+          ? patch.farmPassword.trim()
+          : currentSettings.farmPassword,
+      shortId:
+        typeof patch.farmShortId === "string"
+          ? patch.farmShortId.trim()
+          : currentSettings.farmShortId,
+    },
   };
 
   const next = normalizeLocalConfig({
@@ -371,6 +417,10 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
   return {
     openclawToken: pickString(next.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
     controllerAddress: pickString(next.controllerAddress, ""),
+    farmBaseUrl: pickString(next.app?.farm?.baseUrl, "https://farm.clawos.cc"),
+    farmMobile: pickString(next.app?.farm?.mobile, ""),
+    farmPassword: pickString(next.app?.farm?.password, ""),
+    farmShortId: pickString(next.app?.farm?.shortId, ""),
   };
 }
 

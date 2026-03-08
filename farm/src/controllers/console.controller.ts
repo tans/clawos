@@ -7,7 +7,7 @@ import {
   createConsoleUser,
   createPendingCommand,
   deleteConsoleSession,
-  existsConsoleUserByMobileOrWallet,
+  existsConsoleUserByMobile,
   getConsoleCredentialByMobile,
   getConsoleUserBySessionToken,
   getHostOwnedBy,
@@ -16,7 +16,7 @@ import {
 } from "../models/farm.model";
 import type { AppEnv, ConsoleUser } from "../types";
 import { readFormText } from "../utils/request";
-import { normalizeHostId, normalizeMobile, normalizeWalletAddress } from "../utils/validators";
+import { normalizeHostId, normalizeMobile } from "../utils/validators";
 import {
   renderConsoleMessagePage,
   renderHostDetailPage,
@@ -24,6 +24,7 @@ import {
   renderLoginPage,
   renderRegisterPage,
 } from "../views/console.view";
+import { renderHomePage } from "../views/home.view";
 
 const CONSOLE_SESSION_COOKIE = "clawos_console_session";
 const CONSOLE_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -69,10 +70,7 @@ async function requireConsoleAuth(c: Context<AppEnv>, next: Next) {
 export function createConsoleController(): Hono<AppEnv> {
   const controller = new Hono<AppEnv>();
 
-  controller.get("/", async (c) => {
-    const user = await readConsoleUserByCookie(c);
-    return c.redirect(user ? "/console" : "/console/login");
-  });
+  controller.get("/", (c) => c.html(renderHomePage()));
 
   controller.get("/health", (c) => {
     clearExpiredConsoleSessions();
@@ -116,34 +114,30 @@ export function createConsoleController(): Hono<AppEnv> {
   controller.post("/console/register", async (c) => {
     const body = (await c.req.parseBody()) as Record<string, string | File | (string | File)[]>;
     const mobileRaw = readFormText(body, "mobile");
-    const walletRaw = readFormText(body, "walletAddress");
     const password = readFormText(body, "password");
     const confirmPassword = readFormText(body, "confirmPassword");
 
     const mobile = normalizeMobile(mobileRaw);
-    const walletAddress = normalizeWalletAddress(walletRaw);
 
     if (!mobile) {
-      return c.html(renderRegisterPage("手机号格式不合法。", { mobile: mobileRaw, walletAddress: walletRaw }), 400);
-    }
-    if (!walletAddress) {
-      return c.html(renderRegisterPage("钱包地址格式不合法。", { mobile, walletAddress: walletRaw }), 400);
+      return c.html(renderRegisterPage("手机号格式不合法。", { mobile: mobileRaw }), 400);
     }
     if (password.length < 8) {
-      return c.html(renderRegisterPage("密码至少 8 位。", { mobile, walletAddress }), 400);
+      return c.html(renderRegisterPage("密码至少 8 位。", { mobile }), 400);
     }
     if (password !== confirmPassword) {
-      return c.html(renderRegisterPage("两次密码不一致。", { mobile, walletAddress }), 400);
+      return c.html(renderRegisterPage("两次密码不一致。", { mobile }), 400);
     }
 
-    if (existsConsoleUserByMobileOrWallet(mobile, walletAddress)) {
-      return c.html(renderRegisterPage("手机号或钱包地址已被注册。", { mobile, walletAddress }), 409);
+    if (existsConsoleUserByMobile(mobile)) {
+      return c.html(renderRegisterPage("手机号已被注册。", { mobile }), 409);
     }
 
     const passwordHash = await Bun.password.hash(password);
-    createConsoleUser(mobile, passwordHash, walletAddress);
+    const systemWallet = `mobile:${mobile}`;
+    createConsoleUser(mobile, passwordHash, systemWallet);
 
-    auditLog({ actor: `console:${mobile}`, action: "console_register", controllerAddress: walletAddress });
+    auditLog({ actor: `console:${mobile}`, action: "console_register", controllerAddress: systemWallet });
     return c.redirect("/console/login");
   });
 
