@@ -86,6 +86,20 @@ export function renderConsoleMessagePage(user: ConsoleUser, message: string): st
   );
 }
 
+export function renderHomePage(): string {
+  return pageShell(`<section class="card" style="max-width:880px;margin:40px auto;">
+      <h1 class="title" style="font-size:34px;">openclaw aka 龙虾</h1>
+      <h2 style="margin:0 0 14px; font-size:24px; color:#0f766e;">养虾场：在线 openclaw 集群管理平台</h2>
+      <p class="muted" style="font-size:16px; line-height:1.8;">每个人和每个企业都可以建立自己的养虾场。</p>
+      <p class="muted" style="font-size:16px; line-height:1.8;">方便批量管理集群，编排任务，更新和修复 openclaw，查看 token 使用量。</p>
+      <p style="font-size:18px; font-weight:700; margin-top:20px;">让你的龙虾健康成长。</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+        <a href="/console/login" style="display:inline-block;background:#0f766e;color:#fff;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:600;">进入控制台</a>
+        <a href="/console/register" style="display:inline-block;background:#ffffff;color:#0f766e;border:1px solid #99f6e4;text-decoration:none;padding:10px 14px;border-radius:10px;font-weight:600;">注册账号</a>
+      </div>
+    </section>`);
+}
+
 export function renderLoginPage(error = "", mobile = ""): string {
   const errorHtml = error ? `<div class="error">${escapeHtml(error)}</div>` : "";
   return pageShell(`<section class="card" style="max-width:480px;margin:40px auto;">

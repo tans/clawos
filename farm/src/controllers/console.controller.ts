@@ -20,6 +20,7 @@ import { normalizeHostId, normalizeMobile, normalizeWalletAddress } from "../uti
 import {
   renderConsoleMessagePage,
   renderHostDetailPage,
+  renderHomePage,
   renderHostListPage,
   renderLoginPage,
   renderRegisterPage,
@@ -69,10 +70,7 @@ async function requireConsoleAuth(c: Context<AppEnv>, next: Next) {
 export function createConsoleController(): Hono<AppEnv> {
   const controller = new Hono<AppEnv>();
 
-  controller.get("/", async (c) => {
-    const user = await readConsoleUserByCookie(c);
-    return c.redirect(user ? "/console" : "/console/login");
-  });
+  controller.get("/", (c) => c.html(renderHomePage()));
 
   controller.get("/health", (c) => {
     clearExpiredConsoleSessions();
