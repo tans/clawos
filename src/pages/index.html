@@ -60,40 +60,6 @@
                             class="card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
-                                <h2 class="card-title text-base">ClawOS</h2>
-                                <div
-                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
-                                    data-clawos-version
-                                >
-                                    版本: 未知
-                                </div>
-                                <div
-                                    class="text-[11px] text-base-content/60"
-                                    data-clawos-update-status
-                                >
-                                    正在检查更新...
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button
-                                        class="btn btn-outline btn-sm"
-                                        data-action="refresh-clawos-update"
-                                    >
-                                        检查新版本
-                                    </button>
-                                    <button
-                                        class="btn btn-primary btn-sm"
-                                        data-action="update-clawos"
-                                    >
-                                        更新并重启
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section
-                            class="card card-compact border border-base-200 bg-base-100"
-                        >
-                            <div class="card-body gap-3">
                                 <h2 class="card-title text-base">企微</h2>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
@@ -200,12 +166,6 @@
         <script>
             const statusBadges = {
                 execution: document.querySelector('[data-status="execution"]'),
-                clawosVersion: document.querySelector(
-                    "[data-clawos-version]",
-                ),
-                clawosUpdateStatus: document.querySelector(
-                    "[data-clawos-update-status]",
-                ),
                 openclawVersion: document.querySelector(
                     "[data-openclaw-version]",
                 ),
@@ -648,72 +608,6 @@
                 }
             }
 
-            async function refreshClawosUpdateStatus() {
-                const versionEl = statusBadges.clawosVersion;
-                const statusEl = statusBadges.clawosUpdateStatus;
-                if (versionEl) {
-                    versionEl.textContent = "版本: 检查中...";
-                }
-                if (statusEl) {
-                    statusEl.textContent = "正在检查更新...";
-                }
-
-                try {
-                    const data = await api("/api/app/update/status");
-                    const status = data.status || {};
-                    const currentVersion =
-                        typeof status.currentVersion === "string" &&
-                        status.currentVersion.trim()
-                            ? status.currentVersion.trim()
-                            : "未知";
-                    const remoteVersion =
-                        typeof status.remoteVersion === "string" &&
-                        status.remoteVersion.trim()
-                            ? status.remoteVersion.trim()
-                            : "";
-
-                    if (versionEl) {
-                        versionEl.textContent = `版本: ${currentVersion}`;
-                    }
-
-                    if (!statusEl) {
-                        return;
-                    }
-
-                    if (status.error) {
-                        statusEl.textContent = `更新检查失败: ${status.error}`;
-                        return;
-                    }
-
-                    if (status.supported === false) {
-                        statusEl.textContent =
-                            typeof status.reason === "string" &&
-                            status.reason.trim()
-                                ? status.reason.trim()
-                                : "当前环境不支持自动更新";
-                        return;
-                    }
-
-                    if (status.hasUpdate === true && remoteVersion) {
-                        statusEl.textContent = `发现新版本 v${remoteVersion}，可直接更新并重启`;
-                        return;
-                    }
-
-                    statusEl.textContent = `当前已是最新版本 v${currentVersion}`;
-                } catch (error) {
-                    const message =
-                        error instanceof Error && error.message.trim()
-                            ? error.message.trim()
-                            : "版本信息暂不可用";
-                    if (versionEl) {
-                        versionEl.textContent = "版本: 未知";
-                    }
-                    if (statusEl) {
-                        statusEl.textContent = message;
-                    }
-                }
-            }
-
             function renderTask(task) {
                 const statusTextMap = {
                     pending: "等待中",
@@ -760,7 +654,6 @@
                             clearActiveTaskId(taskId);
                             clearInterval(pollTimer);
                             pollTimer = null;
-                            await refreshClawosUpdateStatus();
                         }
                     } catch (error) {
                         clearActiveTaskId(taskId);
@@ -866,15 +759,6 @@
                     case "update-openclaw":
                         await startTask("/api/gateway/update");
                         return;
-                    case "refresh-clawos-update":
-                        await refreshClawosUpdateStatus();
-                        return;
-                    case "update-clawos":
-                        await startTask("/api/app/update/run", {
-                            trigger: "manual",
-                            autoRestart: true,
-                        });
-                        return;
                     case "restart-gateway":
                         await startTask("/api/gateway/action", {
                             action: "restart",
@@ -943,7 +827,6 @@
             (async function init() {
                 try {
                     await checkEnvironment();
-                    await refreshClawosUpdateStatus();
                     await refreshOpenclawBackups();
                 } catch (error) {
                     taskProgress.classList.add("hidden");
