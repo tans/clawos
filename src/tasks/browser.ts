@@ -14,6 +14,11 @@ const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/versi
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
 
+type BrowserForwardClient = Bun.SocketHandler<unknown>["open"] extends (socket: infer T) => void ? T : never;
+
+let browserCdpForwardServer: Bun.Server | null = null;
+const browserCdpUpstreamMap = new WeakMap<BrowserForwardClient, Bun.Socket<unknown>>();
+
 export const DEFAULT_CHROME_EXE_PATHS = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
@@ -32,96 +37,6 @@ function appendProcessLogs(task: Task, result: CommandResult, treatAsSuccess: bo
   }
 }
 
-function isPortProxyDeleteNotFoundResult(result: CommandResult): boolean {
-  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
-  return (
-    text.includes("cannot find") ||
-    text.includes("not found") ||
-    text.includes("找不到") ||
-    text.includes("没有找到")
-  );
-}
-
-function isElevationRequiredResult(result: CommandResult): boolean {
-  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
-  return (
-    text.includes("requires elevation") ||
-    text.includes("run as administrator") ||
-    text.includes("需要提升") ||
-    text.includes("管理员权限")
-  );
-}
-
-function isElevationCanceledResult(result: CommandResult): boolean {
-  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
-  return (
-    result.code === 1223 ||
-    text.includes("canceled by the user") ||
-    text.includes("operation was canceled") ||
-    text.includes("已取消") ||
-    text.includes("拒绝")
-  );
-}
-
-function escapePowerShellLiteral(value: string): string {
-  return value.replace(/'/g, "''");
-}
-
-async function runElevatedProcess(args: string[]): Promise<CommandResult> {
-  if (!IS_WINDOWS) {
-    return {
-      ok: false,
-      code: 1,
-      stdout: "",
-      stderr: "elevation is only supported on Windows",
-      command: args.join(" "),
-    };
-  }
-  if (args.length === 0) {
-    return {
-      ok: false,
-      code: 1,
-      stdout: "",
-      stderr: "empty command",
-      command: "",
-    };
-  }
-
-  const filePath = args[0];
-  const argList = args.slice(1);
-  const quotedArgList = argList.map((item) => `'${escapePowerShellLiteral(item)}'`).join(", ");
-  const script = [
-    "$ErrorActionPreference = 'Stop'",
-    `$exe = '${escapePowerShellLiteral(filePath)}'`,
-    `$argList = @(${quotedArgList})`,
-    "try {",
-    "  $proc = Start-Process -FilePath $exe -ArgumentList $argList -Verb RunAs -Wait -PassThru",
-    "  if ($null -eq $proc) {",
-    "    [Console]::Error.WriteLine('Start-Process returned null process handle')",
-    "    exit 1",
-    "  }",
-    "  exit [int]$proc.ExitCode",
-    "} catch {",
-    "  $msg = $_.Exception.Message",
-    "  if ($msg) { [Console]::Error.WriteLine($msg) }",
-    "  if ($msg -match 'canceled by the user|operation was canceled|已取消|拒绝') {",
-    "    exit 1223",
-    "  }",
-    "  exit 1",
-    "}",
-  ].join("\n");
-
-  return await runProcess([
-    "powershell.exe",
-    "-NoProfile",
-    "-NonInteractive",
-    "-ExecutionPolicy",
-    "Bypass",
-    "-Command",
-    script,
-  ]);
-}
-
 async function runProcessStep(
   task: Task,
   params: {
@@ -132,7 +47,6 @@ async function runProcessStep(
     args: string[];
     allowExitCodes?: number[];
     allowFailureResult?: (result: CommandResult) => boolean;
-    allowElevation?: boolean;
   }
 ): Promise<void> {
   task.step = params.step;
@@ -145,24 +59,57 @@ async function runProcessStep(
   const treatedAsSuccess = result.ok || allowedExitCodes.has(result.code) || allowedFailure;
   appendProcessLogs(task, result, treatedAsSuccess);
   if (!treatedAsSuccess) {
-    if (params.allowElevation && isElevationRequiredResult(result)) {
-      appendTaskLog(task, "检测到需要管理员权限，正在请求 UAC 授权后重试。");
-      const elevated = await runElevatedProcess(params.args);
-      appendProcessLogs(task, elevated, elevated.ok);
-      if (elevated.ok) {
-        appendTaskLog(task, "管理员提权执行成功。");
-        return;
-      }
-      if (isElevationCanceledResult(elevated)) {
-        throw new Error(`${params.name} 执行失败：你已取消 UAC 授权。请允许管理员权限后重试。`);
-      }
-      throw new Error(`${params.name} 执行失败：管理员提权后仍失败（退出码 ${elevated.code}）。`);
-    }
-    if (isElevationRequiredResult(result)) {
-      throw new Error(`${params.name} 执行失败：需要管理员权限。请以管理员身份运行 ClawOS 后重试。`);
-    }
     throw new Error(`${params.name} 执行失败（退出码 ${result.code}）`);
   }
+}
+
+function stopBrowserForwarder(): void {
+  browserCdpForwardServer?.stop(true);
+  browserCdpForwardServer = null;
+}
+
+function ensureBrowserForwarder(task: Task, step: number, totalSteps: number): void {
+  task.step = step;
+  appendTaskLog(task, `步骤 ${step}/${totalSteps}：启动 Bun 端口转发（${BROWSER_CDP_PROXY_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}）`);
+
+  stopBrowserForwarder();
+  browserCdpForwardServer = Bun.listen({
+    hostname: "0.0.0.0",
+    port: BROWSER_CDP_PROXY_PORT,
+    socket: {
+      open(client) {
+        const upstream = Bun.connect({
+          hostname: "127.0.0.1",
+          port: BROWSER_CDP_PORT,
+          socket: {
+            data(_upstream, data) {
+              client.write(data);
+            },
+            close() {
+              client.end();
+            },
+            error() {
+              client.end();
+            },
+          },
+        });
+        browserCdpUpstreamMap.set(client, upstream);
+      },
+      data(client, data) {
+        browserCdpUpstreamMap.get(client)?.write(data);
+      },
+      close(client) {
+        browserCdpUpstreamMap.get(client)?.end();
+        browserCdpUpstreamMap.delete(client);
+      },
+      error(client) {
+        browserCdpUpstreamMap.get(client)?.end();
+        browserCdpUpstreamMap.delete(client);
+      },
+    },
+  });
+
+  appendTaskLog(task, `已启用 Bun 转发：0.0.0.0:${BROWSER_CDP_PROXY_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
 }
 
 async function runWslStep(
@@ -402,7 +349,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 5;
+  const totalSteps = 4;
   const task = createTask("browser-cdp-restart", "重启浏览器（开启 CDP 与端口转发）", totalSteps);
   task.status = "running";
 
@@ -435,45 +382,10 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
         args: buildChromeStartArgs(chromeExePath, chromeWorkingDirectory),
       });
 
-      await runProcessStep(task, {
-        step: 3,
-        totalSteps,
-        name: "删除旧端口转发（9223）",
-        command: "netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=9223",
-        args: [
-          "netsh",
-          "interface",
-          "portproxy",
-          "delete",
-          "v4tov4",
-          "listenaddress=0.0.0.0",
-          `listenport=${BROWSER_CDP_PROXY_PORT}`,
-        ],
-        allowFailureResult: isPortProxyDeleteNotFoundResult,
-        allowElevation: true,
-      });
+      ensureBrowserForwarder(task, 3, totalSteps);
 
-      await runProcessStep(task, {
-        step: 4,
-        totalSteps,
-        name: "创建端口转发（9223 -> 127.0.0.1:9222）",
-        command: "netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=9223 connectaddress=127.0.0.1 connectport=9222",
-        args: [
-          "netsh",
-          "interface",
-          "portproxy",
-          "add",
-          "v4tov4",
-          "listenaddress=0.0.0.0",
-          `listenport=${BROWSER_CDP_PROXY_PORT}`,
-          "connectaddress=127.0.0.1",
-          `connectport=${BROWSER_CDP_PORT}`,
-        ],
-        allowElevation: true,
-      });
-
-      task.step = 5;
-      appendTaskLog(task, `步骤 5/${totalSteps}：校验 CDP 端口就绪`);
+      task.step = 4;
+      appendTaskLog(task, `步骤 4/${totalSteps}：校验 CDP 端口就绪`);
       appendTaskLog(task, `执行命令：GET ${BROWSER_CDP_VERSION_URL}`);
       await waitForCdpVersion(task);
 
@@ -503,7 +415,7 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 4;
+  const totalSteps = 3;
   const task = createTask("browser-cdp-reset-config", "重置 browser 配置为 Remote CDP", totalSteps);
   task.status = "running";
 
@@ -515,48 +427,13 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
 
       const prepared = await prepareRemoteCdp(task, 1, totalSteps);
 
-      await runProcessStep(task, {
-        step: 2,
-        totalSteps,
-        name: "删除旧端口转发（9223）",
-        command: "netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=9223",
-        args: [
-          "netsh",
-          "interface",
-          "portproxy",
-          "delete",
-          "v4tov4",
-          "listenaddress=0.0.0.0",
-          `listenport=${BROWSER_CDP_PROXY_PORT}`,
-        ],
-        allowFailureResult: isPortProxyDeleteNotFoundResult,
-        allowElevation: true,
-      });
-
-      await runProcessStep(task, {
-        step: 3,
-        totalSteps,
-        name: "创建端口转发（9223 -> 127.0.0.1:9222）",
-        command: "netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=9223 connectaddress=127.0.0.1 connectport=9222",
-        args: [
-          "netsh",
-          "interface",
-          "portproxy",
-          "add",
-          "v4tov4",
-          "listenaddress=0.0.0.0",
-          `listenport=${BROWSER_CDP_PROXY_PORT}`,
-          "connectaddress=127.0.0.1",
-          `connectport=${BROWSER_CDP_PORT}`,
-        ],
-        allowElevation: true,
-      });
+      ensureBrowserForwarder(task, 2, totalSteps);
 
       appendTaskLog(task, `当前 nameserver：${prepared.nameserver}`);
       appendTaskLog(task, `本机 CDP：${prepared.localWebSocketDebuggerUrl}`);
 
-      task.step = 4;
-      appendTaskLog(task, `步骤 4/${totalSteps}：写入 openclaw browser 配置`);
+      task.step = 3;
+      appendTaskLog(task, `步骤 3/${totalSteps}：写入 openclaw browser 配置`);
       appendTaskLog(task, "执行命令：openclaw gateway call config.apply (browser)");
       await resetOpenclawBrowserConfig(task, prepared.remoteCdpUrl);
 
