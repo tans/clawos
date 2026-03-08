@@ -38,9 +38,7 @@
             "id": "MiniMax-M2.5",
             "name": "MiniMax M2.5",
             "reasoning": false,
-            "input": [
-              "text"
-            ],
+            "input": ["text"],
             "cost": {
               "input": 15,
               "output": 60,
@@ -60,10 +58,7 @@
             "id": "k2p5",
             "name": "Kimi for Coding",
             "reasoning": true,
-            "input": [
-              "text",
-              "image"
-            ],
+            "input": ["text", "image"],
             "cost": {
               "input": 0,
               "output": 0,
@@ -117,9 +112,7 @@
   "channels": {
     "wework": {
       "accounts": {},
-      "allowFrom": [
-        "*"
-      ],
+      "allowFrom": ["*"],
       "enabled": true,
       "defaultAccount": "1688855037478047",
       "mediaDownloadDir": "\\\\wsl.localhost\\Ubuntu\\root\\.openclaw\\media",
@@ -128,19 +121,15 @@
     },
     "feishu": {
       "enabled": true,
-      "appId": "cli_a92c901d04f9dbc9",
-      "appSecret": "2OhRguZtH6YvyS33eE70HdhrKtUI5Ibz",
+      "appId": "",
+      "appSecret": "",
       "domain": "feishu",
       "groupPolicy": "open",
       "dmPolicy": "open",
-      "allowFrom": [
-        "*"
-      ],
+      "allowFrom": ["*"],
       "streaming": false,
       "blockStreaming": false,
-      "groupAllowFrom": [
-        "*"
-      ]
+      "groupAllowFrom": ["*"]
     }
   },
   "gateway": {
@@ -173,4 +162,3 @@
     }
   }
 }
-
