@@ -518,6 +518,59 @@ function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalApp
     patch.controllerAddress = trimmed;
   }
 
+  if (Object.prototype.hasOwnProperty.call(body, "farmBaseUrl")) {
+    const rawFarmBaseUrl = body.farmBaseUrl;
+    if (typeof rawFarmBaseUrl !== "string") {
+      throw new HttpError(400, "farmBaseUrl 必须是字符串。");
+    }
+    const trimmed = rawFarmBaseUrl.trim();
+    if (!trimmed) {
+      throw new HttpError(400, "farmBaseUrl 不能为空。");
+    }
+    let normalized = trimmed;
+    if (!/^https?:\/\//i.test(normalized)) {
+      normalized = `https://${normalized}`;
+    }
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+        throw new Error("invalid protocol");
+      }
+      normalized = parsed.origin;
+    } catch {
+      throw new HttpError(400, "farmBaseUrl 格式不合法，必须是有效的 http(s) 地址。");
+    }
+    patch.farmBaseUrl = normalized;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "farmMobile")) {
+    const rawFarmMobile = body.farmMobile;
+    if (typeof rawFarmMobile !== "string") {
+      throw new HttpError(400, "farmMobile 必须是字符串。");
+    }
+    patch.farmMobile = rawFarmMobile.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "farmPassword")) {
+    const rawFarmPassword = body.farmPassword;
+    if (typeof rawFarmPassword !== "string") {
+      throw new HttpError(400, "farmPassword 必须是字符串。");
+    }
+    patch.farmPassword = rawFarmPassword.trim();
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, "farmShortId")) {
+    const rawFarmShortId = body.farmShortId;
+    if (typeof rawFarmShortId !== "string") {
+      throw new HttpError(400, "farmShortId 必须是字符串。");
+    }
+    const trimmed = rawFarmShortId.trim();
+    if (trimmed && !/^[a-zA-Z0-9_-]{1,64}$/.test(trimmed)) {
+      throw new HttpError(400, "farmShortId 格式不合法，仅支持字母、数字、下划线和中划线。");
+    }
+    patch.farmShortId = trimmed;
+  }
+
   return patch;
 }
 
