@@ -24,6 +24,7 @@ import {
   renderLoginPage,
   renderRegisterPage,
 } from "../views/console.view";
+import { renderHomePage } from "../views/home.view";
 
 const CONSOLE_SESSION_COOKIE = "clawos_console_session";
 const CONSOLE_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -69,10 +70,7 @@ async function requireConsoleAuth(c: Context<AppEnv>, next: Next) {
 export function createConsoleController(): Hono<AppEnv> {
   const controller = new Hono<AppEnv>();
 
-  controller.get("/", async (c) => {
-    const user = await readConsoleUserByCookie(c);
-    return c.redirect(user ? "/console" : "/console/login");
-  });
+  controller.get("/", (c) => c.html(renderHomePage()));
 
   controller.get("/health", (c) => {
     clearExpiredConsoleSessions();
