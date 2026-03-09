@@ -37,9 +37,47 @@ function InstallGuidePage() {
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="#upgrade">
                   更新
                 </a>
+                <a
+                  class="btn btn-primary btn-sm"
+                  href="https://gx50d0q123.feishu.cn/drive/folder/W2LOfFVGGlKMCqdkMEIcsPL6nWb?from=from_copylink"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  详细手册
+                </a>
               </nav>
             </div>
           </header>
+
+          <section class="page-fade page-fade-delay-1 mt-6">
+            <a
+              class="group relative block overflow-hidden rounded-[1.75rem] border border-primary/20 bg-gradient-to-r from-primary/18 via-warning/12 to-base-100/92 px-6 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.10)] transition-transform duration-300 hover:-translate-y-0.5"
+              href="https://gx50d0q123.feishu.cn/drive/folder/W2LOfFVGGlKMCqdkMEIcsPL6nWb?from=from_copylink"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <div class="absolute -right-10 -top-10 size-32 rounded-full bg-warning/15 blur-3xl" aria-hidden="true" />
+              <div class="absolute -bottom-12 left-8 size-36 rounded-full bg-primary/15 blur-3xl" aria-hidden="true" />
+              <div class="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div class="text-xs font-semibold uppercase tracking-[0.28em] text-primary/80">Detailed Manual</div>
+                  <h2 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">查看详细手册说明</h2>
+                  <p class="mt-3 max-w-2xl text-sm leading-7 text-base-content/72 sm:text-base">
+                    如果你需要更完整的安装、配置、更新和排障说明，请直接打开详细手册。
+                  </p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <span class="hidden rounded-full border border-base-content/10 bg-base-100/70 px-3 py-2 text-xs font-medium text-base-content/70 sm:inline-flex">
+                    飞书文档
+                  </span>
+                  <span class="btn btn-primary btn-wide">
+                    打开详细手册
+                  </span>
+                </div>
+              </div>
+            </a>
+          </section>
 
           <section class="page-fade page-fade-delay-1 mt-8 pt-6">
             <div class="flex flex-wrap gap-3 text-sm">
@@ -51,6 +89,14 @@ function InstallGuidePage() {
               </a>
               <a class="btn btn-ghost btn-sm border border-base-content/15 bg-base-100/60" href="#after-install">
                 安装后检查
+              </a>
+              <a
+                class="btn btn-ghost btn-sm border border-primary/20 bg-primary/8 text-primary"
+                href="https://gx50d0q123.feishu.cn/drive/folder/W2LOfFVGGlKMCqdkMEIcsPL6nWb?from=from_copylink"
+                target="_blank"
+                rel="noreferrer"
+              >
+                详细手册说明
               </a>
               <a class="btn btn-ghost btn-sm border border-base-content/15 bg-base-100/60" href="/">
                 返回首页
