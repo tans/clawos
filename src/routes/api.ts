@@ -140,6 +140,107 @@ function readLimit(raw: string | null, fallback: number, field: string): number 
   return Math.floor(value);
 }
 
+function toNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function pickTokenUsage(value: unknown): number | null {
+  const obj = asObject(value);
+  if (!obj) {
+    return null;
+  }
+
+  const usageObj = asObject(obj.usage) || obj;
+  const direct =
+    toNumber(usageObj.totalTokens) ??
+    toNumber(usageObj.total_tokens) ??
+    toNumber(usageObj.tokens) ??
+    toNumber(usageObj.tokenCount) ??
+    toNumber(usageObj.token_count);
+
+  if (typeof direct === "number" && direct > 0) {
+    return Math.floor(direct);
+  }
+
+  const promptTokens = toNumber(usageObj.promptTokens) ?? toNumber(usageObj.prompt_tokens) ?? 0;
+  const completionTokens = toNumber(usageObj.completionTokens) ?? toNumber(usageObj.completion_tokens) ?? 0;
+  const sum = promptTokens + completionTokens;
+  if (sum > 0) {
+    return Math.floor(sum);
+  }
+
+  return null;
+}
+
+async function readTokenUsageDaily(days = 7): Promise<Array<{ date: string; tokens: number; sessions: number }>> {
+  const sessions = await listGatewaySessions(60);
+  const dayMap = new Map<string, { date: string; tokens: number; sessions: number }>();
+  const safeDays = Math.min(30, Math.max(1, Math.floor(days)));
+  const sinceMs = Date.now() - safeDays * 24 * 60 * 60 * 1000;
+
+  for (const session of sessions.slice(0, 20)) {
+    const history = await listGatewaySessionHistory(session.key, 80).catch(() => []);
+    const daySeen = new Set<string>();
+
+    for (const item of history) {
+      const timestamp = typeof item.ts === "number" && item.ts > 0 ? item.ts : session.updatedAtMs || Date.now();
+      if (timestamp < sinceMs) {
+        continue;
+      }
+      const date = new Date(timestamp).toISOString().slice(0, 10);
+      const current = dayMap.get(date) || { date, tokens: 0, sessions: 0 };
+      const tokens = pickTokenUsage(item) ?? Math.max(1, Math.ceil(item.text.length / 4));
+      current.tokens += tokens;
+      if (!daySeen.has(date)) {
+        current.sessions += 1;
+        daySeen.add(date);
+      }
+      dayMap.set(date, current);
+    }
+  }
+
+  return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function deepHasTruthyFlag(value: unknown, keys: string[]): boolean {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => deepHasTruthyFlag(item, keys));
+  }
+
+  const obj = value as Record<string, unknown>;
+  for (const [key, nested] of Object.entries(obj)) {
+    if (keys.includes(key.toLowerCase())) {
+      if (nested === true) {
+        return true;
+      }
+      if (typeof nested === "string" && ["true", "running", "processing", "thinking"].includes(nested.toLowerCase())) {
+        return true;
+      }
+      if (typeof nested === "number" && nested > 0) {
+        return true;
+      }
+    }
+    if (deepHasTruthyFlag(nested, keys)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function readSearchQuery(raw: string | null): string {
   const text = String(raw || "").trim();
   if (!text) {
@@ -698,6 +799,31 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     if (path === "/api/system/check" && req.method === "GET") {
       const info = await checkEnvironment();
       return jsonResponse({ ok: true, info });
+    }
+
+    if (path === "/api/console/runtime-status" && req.method === "GET") {
+      const info = await checkEnvironment();
+      const statusPayload = asObject(info);
+      const gatewayStatusRaw = typeof statusPayload.gatewayStatus === "string" ? statusPayload.gatewayStatus : "";
+      const thinking =
+        deepHasTruthyFlag(statusPayload, ["thinking", "processing", "inprogress", "isthinking", "pendingrequests"]) ||
+        /thinking|processing|pending/i.test(gatewayStatusRaw);
+      return jsonResponse({
+        ok: true,
+        status: {
+          openclawRunning: statusPayload.openclawReady === true,
+          gatewayRunning: statusPayload.gatewayReady === true,
+          thinking,
+          checkedAt: Date.now(),
+        },
+      });
+    }
+
+    if (path === "/api/console/token-usage/daily" && req.method === "GET") {
+      const url = new URL(req.url);
+      const days = readLimit(url.searchParams.get("days"), 7, "days");
+      const stats = await readTokenUsageDaily(days);
+      return jsonResponse({ ok: true, days, stats, updatedAt: new Date().toISOString() });
     }
 
     if (path === "/api/system/browser/check" && req.method === "GET") {
