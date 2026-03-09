@@ -89,7 +89,7 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="/install-guide">
                   安装
                 </a>
-                <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1">
                   <a class="inline-flex items-center gap-2 rounded-full bg-warning/18 px-3 py-2 text-xs font-semibold text-base-content" href="/" aria-current="page">
                     <SunIcon />
                     Human
@@ -166,7 +166,7 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                 </div>
               </div>
 
-              <aside class="float-gentle overflow-hidden bg-base-100/35 shadow-[0_28px_80px_rgba(15,23,42,0.08)]">
+              <aside class="float-gentle overflow-hidden bg-base-100/35">
                 <img
                   src="/public/clawos.png"
                   alt="ClawOS 产品截图"

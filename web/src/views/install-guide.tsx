@@ -51,7 +51,7 @@ function InstallGuidePage() {
 
           <section class="page-fade page-fade-delay-1 mt-6">
             <a
-              class="group relative block overflow-hidden rounded-[1.75rem] border border-primary/20 bg-gradient-to-r from-primary/18 via-warning/12 to-base-100/92 px-6 py-6 shadow-[0_24px_80px_rgba(15,23,42,0.10)] transition-transform duration-300 hover:-translate-y-0.5"
+              class="group relative block overflow-hidden rounded-[1.75rem] border border-primary/20 bg-gradient-to-r from-primary/18 via-warning/12 to-base-100/92 px-6 py-6 transition-transform duration-300 hover:-translate-y-0.5"
               href="https://gx50d0q123.feishu.cn/drive/folder/W2LOfFVGGlKMCqdkMEIcsPL6nWb?from=from_copylink"
               target="_blank"
               rel="noreferrer"

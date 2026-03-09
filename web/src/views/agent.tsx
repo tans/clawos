@@ -62,7 +62,7 @@ export function renderAgentPage(): string {
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="/install-guide">
                   安装
                 </a>
-                <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+                <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1">
                   <a class="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-base-content/58 transition-colors hover:text-base-content" href="/">
                     <SunIcon />
                     Human
@@ -77,7 +77,7 @@ export function renderAgentPage(): string {
           </header>
 
           <section class="page-fade page-fade-delay-1 ambient-shell mt-8 pt-8 sm:mt-10 sm:pt-10">
-            <div class="mx-auto max-w-5xl overflow-hidden bg-neutral/92 text-neutral-content shadow-[0_28px_80px_rgba(15,23,42,0.18)]">
+            <div class="mx-auto max-w-5xl overflow-hidden bg-neutral/92 text-neutral-content">
               <div class="flex items-center gap-2 px-4 py-3 font-mono text-[12px] text-white/50">
                 <span class="size-2 rounded-full bg-error/80" />
                 <span class="size-2 rounded-full bg-warning/80" />
@@ -115,7 +115,7 @@ export function renderAgentPage(): string {
           </section>
 
           <section class="page-fade page-fade-delay-2 mt-14 pt-8">
-            <div class="mx-auto max-w-5xl overflow-hidden bg-neutral/92 text-neutral-content shadow-[0_28px_80px_rgba(15,23,42,0.16)]">
+            <div class="mx-auto max-w-5xl overflow-hidden bg-neutral/92 text-neutral-content">
               <div class="px-4 py-3 font-mono text-[12px] text-white/50 sm:px-6">template://agent/human_intro.txt</div>
               <div class="space-y-2 px-4 py-5 font-mono text-[13px] leading-7 text-white/76 sm:px-6 sm:text-[14px]">
                 <p>&gt; 你好，人类。</p>
@@ -129,7 +129,7 @@ export function renderAgentPage(): string {
           </section>
 
           <section class="page-fade page-fade-delay-3 mt-14 pt-8">
-            <div class="mx-auto max-w-5xl overflow-hidden bg-neutral/92 text-neutral-content shadow-[0_28px_80px_rgba(15,23,42,0.16)]">
+            <div class="mx-auto max-w-5xl overflow-hidden bg-neutral/92 text-neutral-content">
               <div class="px-4 py-3 font-mono text-[12px] text-white/50 sm:px-6">oem://clawos/custom_delivery.log</div>
               <div class="space-y-6 px-4 py-5 font-mono text-[13px] leading-7 sm:px-6 sm:text-[14px]">
                 <div class="text-white/45">$ explain oem-capability --for human</div>
