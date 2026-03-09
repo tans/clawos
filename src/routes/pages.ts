@@ -44,13 +44,13 @@ function resolveSidebarActive(path: string): SidebarNavId | null {
 
 function renderSidebar(active: SidebarNavId | null): string {
   const items: Array<{ id: SidebarNavId; href: string; label: string }> = [
-    { id: "dashboard", href: "/", label: "Dashboard" },
-    { id: "channels", href: "/config/channels", label: "Channels" },
-    { id: "agents", href: "/config/agents", label: "Agents" },
+    { id: "dashboard", href: "/", label: "\u63a7\u5236\u53f0" },
+    { id: "channels", href: "/config/channels", label: "\u6e20\u9053\u914d\u7f6e" },
+    { id: "agents", href: "/config/agents", label: "\u4ee3\u7406\u914d\u7f6e" },
     { id: "skills", href: "/config/skills", label: "Skills" },
-    { id: "browser", href: "/config/browser", label: "Browser" },
-    { id: "wallet", href: "/config/wallet", label: "Wallet" },
-    { id: "settings", href: "/config/settings", label: "Settings" },
+    { id: "browser", href: "/config/browser", label: "\u6d4f\u89c8\u5668" },
+    { id: "wallet", href: "/config/wallet", label: "\u94b1\u5305" },
+    { id: "settings", href: "/config/settings", label: "\u5e38\u89c4\u8bbe\u7f6e" },
   ];
 
   const nav = items
@@ -81,9 +81,9 @@ function renderSidebar(active: SidebarNavId | null): string {
         <div class="flex flex-col gap-3 pt-1">
           <div data-app-update-widget>
             <div class="text-xs text-base-content/70">
-              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> | Version: <span data-app-version>v-</span>
+              <a href="https://clawos.cc" target="_blank" rel="noopener noreferrer">clawos.cc</a> | \u7248\u672c: <span data-app-version>v-</span>
             </div>
-            <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>Checking updates...</div>
+            <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>\u68c0\u67e5\u66f4\u65b0\u4e2d...</div>
             <div class="mt-2 hidden" data-app-update-actions>
               <button class="btn btn-primary btn-xs w-full" type="button" data-app-update-run>
                 更新并重启 ClawOS
@@ -92,7 +92,7 @@ function renderSidebar(active: SidebarNavId | null): string {
           </div>
 
           <button class="btn btn-outline btn-sm justify-start gap-2" type="button" data-openclaw-entry>
-            <span>Open openclaw Console</span>
+            <span>\u6253\u5f00 openclaw \u63a7\u5236\u53f0</span>
           </button>
         </div>
       </aside>`;
