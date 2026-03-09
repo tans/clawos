@@ -18,8 +18,8 @@ export default {
   },
   plugins: [daisyui],
   daisyui: {
-    themes: ["silk", "light", "dark"],
-    darkTheme: "dark",
+    themes: ["silk"],
+    darkTheme: "silk",
     base: true,
     styled: true,
     utils: true,
