@@ -27,6 +27,14 @@ function stopChild(child: ChildProcessHandle): void {
     return;
   }
   try {
+    if (process.platform === "win32" && typeof child.proc.pid === "number") {
+      runBestEffortCommand(`stop ${child.name} process tree`, [
+        "cmd",
+        "/c",
+        `taskkill /PID ${child.proc.pid} /T /F`,
+      ]);
+      return;
+    }
     child.proc.kill();
   } catch {
     // Ignore stop failures during shutdown.
@@ -34,22 +42,27 @@ function stopChild(child: ChildProcessHandle): void {
 }
 
 function runBestEffortCommand(name: string, cmd: string[]): void {
-  const result = Bun.spawnSync({
-    cmd,
-    cwd: process.cwd(),
-    env: process.env,
-    stdin: "ignore",
-    stdout: "ignore",
-    stderr: "pipe",
-  });
-  if (result.exitCode !== 0 && result.exitCode !== null) {
-    const stderrText =
-      result.stderr && result.stderr.length > 0
-        ? new TextDecoder().decode(result.stderr).trim()
-        : "";
-    if (stderrText) {
-      console.warn(`[desktop-dev] ${name} returned ${result.exitCode}: ${stderrText}`);
+  try {
+    const result = Bun.spawnSync({
+      cmd,
+      cwd: process.cwd(),
+      env: process.env,
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+    if (result.exitCode !== 0 && result.exitCode !== null) {
+      const stderrText =
+        result.stderr && result.stderr.length > 0
+          ? new TextDecoder().decode(result.stderr).trim()
+          : "";
+      if (stderrText) {
+        console.warn(`[desktop-dev] ${name} returned ${result.exitCode}: ${stderrText}`);
+      }
     }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[desktop-dev] ${name} skipped: ${message}`);
   }
 }
 
@@ -62,17 +75,39 @@ async function cleanupWindowsDevBuild(): Promise<void> {
   const killScript =
     "$ErrorActionPreference='SilentlyContinue'; " +
     "Get-CimInstance Win32_Process | " +
-    "Where-Object { $_.ExecutablePath -and ($_.ExecutablePath -like '*\\build\\dev-win-x64\\ClawOS-dev\\bin\\launcher.exe' -or $_.ExecutablePath -like '*\\build\\dev-win-x64\\ClawOS-dev\\bin\\ClawOS-dev.exe') } | " +
+    "Where-Object { $_.ExecutablePath -and ($_.ExecutablePath -like '*\\build\\dev-win-x64\\ClawOS-dev\\bin\\launcher.exe' -or $_.ExecutablePath -like '*\\build\\dev-win-x64\\ClawOS-dev\\bin\\ClawOS-dev.exe' -or $_.ExecutablePath -like '*\\build\\dev-win-x64\\ClawOS-dev\\bin\\bun.exe') } | " +
     "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }";
 
   runBestEffortCommand("cleanup stale ClawOS-dev processes", [
-    "powershell",
+    "powershell.exe",
     "-NoProfile",
     "-NonInteractive",
     "-ExecutionPolicy",
     "Bypass",
     "-Command",
     killScript,
+  ]);
+  runBestEffortCommand("cleanup stale ClawOS-dev.exe", [
+    "cmd",
+    "/c",
+    "taskkill /F /IM ClawOS-dev.exe /T",
+  ]);
+  runBestEffortCommand("cleanup stale launcher.exe", [
+    "cmd",
+    "/c",
+    "taskkill /F /IM launcher.exe /T",
+  ]);
+  runBestEffortCommand("cleanup stale dev bun.exe", [
+    "powershell.exe",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    "$ErrorActionPreference='SilentlyContinue'; " +
+      "Get-CimInstance Win32_Process | " +
+      "Where-Object { $_.ExecutablePath -and $_.ExecutablePath -like '*\\build\\dev-win-x64\\ClawOS-dev\\bin\\bun.exe' } | " +
+      "ForEach-Object { Stop-Process -Id $_.ProcessId -Force }",
   ]);
 
   if (!existsSync(devBuildDir)) {

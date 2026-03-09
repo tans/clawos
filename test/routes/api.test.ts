@@ -39,6 +39,23 @@ describe("api routes", () => {
     expect(task.type).toBe("browser-cdp-restart");
   });
 
+  it("supports browser reset action alias", async () => {
+    const req = new Request("http://clawos.desktop/api/browser/action", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "reset" }),
+    });
+
+    const response = await handleApiRequest(req, "/api/browser/action");
+    expect(response).not.toBeNull();
+    expect(response?.status).toBe(200);
+
+    const payload = await parseJson(response as Response);
+    expect(payload.ok).toBe(true);
+    const task = payload.task as Record<string, unknown>;
+    expect(task.type).toBe("browser-cdp-reset-config");
+  });
+
   it("ignores wework channel patch on macOS", async () => {
     if (process.platform !== "darwin") {
       return;

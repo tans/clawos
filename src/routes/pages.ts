@@ -1,29 +1,29 @@
 import indexHtml from "../pages/index.html" with { type: "text" };
 import sessionsHtml from "../pages/sessions.html" with { type: "text" };
-import configChannelsHtml from "../pages/config-channels.html" with { type: "text" };
 import configAgentsHtml from "../pages/config-agents.html" with { type: "text" };
 import configSkillsHtml from "../pages/config-skills.html" with { type: "text" };
-import configBrowserHtml from "../pages/config-browser.html" with { type: "text" };
-import configWalletHtml from "../pages/config-wallet.html" with { type: "text" };
+import configComponentsHtml from "../pages/config-components.html" with { type: "text" };
 import configSettingsHtml from "../pages/config-settings.html" with { type: "text" };
 import sidebarUpdateJs from "../pages/sidebar-update.js" with { type: "text" };
 import cssContent from "../../dist/output.css" with { type: "text" };
 
-type SidebarNavId = "dashboard" | "channels" | "agents" | "skills" | "browser" | "wallet" | "settings" | "sessions";
+type SidebarNavId = "dashboard" | "components" | "agents" | "skills" | "sessions";
 
 const PAGES: Record<string, string> = {
   "/": indexHtml,
   "/index": indexHtml,
-  "/config/channels": configChannelsHtml,
-  "/config/channels/": configChannelsHtml,
+  "/config/components": configComponentsHtml,
+  "/config/components/": configComponentsHtml,
+  "/config/channels": configComponentsHtml,
+  "/config/channels/": configComponentsHtml,
   "/config/agents": configAgentsHtml,
   "/config/agents/": configAgentsHtml,
   "/config/skills": configSkillsHtml,
   "/config/skills/": configSkillsHtml,
-  "/config/browser": configBrowserHtml,
-  "/config/browser/": configBrowserHtml,
-  "/config/wallet": configWalletHtml,
-  "/config/wallet/": configWalletHtml,
+  "/config/browser": configComponentsHtml,
+  "/config/browser/": configComponentsHtml,
+  "/config/wallet": configComponentsHtml,
+  "/config/wallet/": configComponentsHtml,
   "/config/settings": configSettingsHtml,
   "/config/settings/": configSettingsHtml,
   "/sessions": sessionsHtml,
@@ -32,12 +32,12 @@ const PAGES: Record<string, string> = {
 
 function resolveSidebarActive(path: string): SidebarNavId | null {
   if (path === "/" || path === "/index") return "dashboard";
-  if (path.startsWith("/config/channels")) return "channels";
+  if (path.startsWith("/config/components")) return "components";
+  if (path.startsWith("/config/channels")) return "components";
   if (path.startsWith("/config/agents")) return "agents";
   if (path.startsWith("/config/skills")) return "skills";
-  if (path.startsWith("/config/browser")) return "browser";
-  if (path.startsWith("/config/wallet")) return "wallet";
-  if (path.startsWith("/config/settings")) return "settings";
+  if (path.startsWith("/config/browser")) return "components";
+  if (path.startsWith("/config/wallet")) return "components";
   if (path.startsWith("/sessions")) return "sessions";
   return null;
 }
@@ -45,12 +45,9 @@ function resolveSidebarActive(path: string): SidebarNavId | null {
 function renderSidebar(active: SidebarNavId | null): string {
   const items: Array<{ id: SidebarNavId; href: string; label: string }> = [
     { id: "dashboard", href: "/", label: "\u63a7\u5236\u53f0" },
-    { id: "channels", href: "/config/channels", label: "\u6e20\u9053\u914d\u7f6e" },
-    { id: "agents", href: "/config/agents", label: "\u4ee3\u7406\u914d\u7f6e" },
+    { id: "components", href: "/config/components", label: "\u589e\u52a0\u7ec4\u4ef6" },
+    { id: "agents", href: "/config/agents", label: "\u6a21\u578b\u914d\u7f6e" },
     { id: "skills", href: "/config/skills", label: "Skills" },
-    { id: "browser", href: "/config/browser", label: "\u6d4f\u89c8\u5668" },
-    { id: "wallet", href: "/config/wallet", label: "\u94b1\u5305" },
-    { id: "settings", href: "/config/settings", label: "\u5e38\u89c4\u8bbe\u7f6e" },
   ];
 
   const nav = items

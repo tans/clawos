@@ -57,7 +57,7 @@
                         </section>
 
                         <section
-                            class="card card-compact border border-base-200 bg-base-100"
+                            class="hidden card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
                                 <h2 class="card-title text-base">企微</h2>
@@ -223,12 +223,6 @@
                 browserLight: document.querySelector(
                     '[data-status-light="browser"]',
                 ),
-                qwGatewayStatus: document.querySelector(
-                    "[data-qw-gateway-status]",
-                ),
-                qwGatewayStatusDetail: document.querySelector(
-                    "[data-qw-gateway-status-detail]",
-                ),
                 openclawRunningLight: document.querySelector("[data-openclaw-running-light]"),
                 openclawRunningText: document.querySelector("[data-openclaw-running-text]"),
                 openclawThinkingSpinner: document.querySelector("[data-openclaw-thinking-spinner]"),
@@ -252,7 +246,6 @@
             const ACTIVE_TASK_STORAGE_KEY = "clawos.activeTaskId";
 
             let pollTimer = null;
-            let qwGatewayStatusTimer = null;
             let tokenUsageTimer = null;
             let runtimeStatusTimer = null;
 
@@ -856,12 +849,6 @@
                             action: "restart",
                         });
                         return;
-                    case "restart-qw-gateway":
-                        await startTask("/api/gateway/action", {
-                            action: "restart-qw-gateway",
-                        });
-                        await pollQwGatewayStatus();
-                        return;
                     case "gateway-status":
                         await startTask("/api/gateway/action", {
                             action: "status",
@@ -931,7 +918,6 @@
                 if (activeTaskId) {
                     await pollTask(activeTaskId);
                 }
-                await pollQwGatewayStatus();
                 await refreshRuntimeStatus().catch(() => null);
                 runtimeStatusTimer = setInterval(() => {
                     void refreshRuntimeStatus().catch(() => null);

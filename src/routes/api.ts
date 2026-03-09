@@ -20,7 +20,6 @@ import { listGatewaySessionHistory, listGatewaySessions } from "../gateway/sessi
 import { HttpError, jsonResponse } from "../lib/http";
 import { asObject } from "../lib/value";
 import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/autostart";
-import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { checkEnvironment } from "../system/environment";
 import { getSelfUpdateStatus } from "../system/self-update";
 import { readWalletBalances } from "../system/wallet-balance";
@@ -824,11 +823,6 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
       const days = readLimit(url.searchParams.get("days"), 7, "days");
       const stats = await readTokenUsageDaily(days);
       return jsonResponse({ ok: true, days, stats, updatedAt: new Date().toISOString() });
-    }
-
-    if (path === "/api/system/browser/check" && req.method === "GET") {
-      const info = await checkBrowserConnectivity();
-      return jsonResponse({ ok: true, info });
     }
 
     if (path === "/api/system/repair" && req.method === "POST") {

@@ -96,7 +96,7 @@ const config: ElectrobunConfig = {
     win: useWindowsIcon && resolvedWindowsIconPath ? { icon: resolvedWindowsIconPath } : {},
   },
   runtime: {
-    exitOnLastWindowClosed: false,
+    exitOnLastWindowClosed: true,
   },
   release: {
     baseUrl: releaseBaseUrl,

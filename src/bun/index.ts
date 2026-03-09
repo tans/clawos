@@ -1,4 +1,4 @@
-import Electrobun, { BrowserView, BrowserWindow, Tray, type MenuItemConfig } from "electrobun";
+import Electrobun, { BrowserView, BrowserWindow } from "electrobun";
 import { createConnection, createServer, type Server } from "node:net";
 import { ensureLocalConfigTemplateFile } from "../config/local";
 import type { DesktopRpcSchema } from "../desktop-ui/rpc-schema";
@@ -11,7 +11,6 @@ import {
   type ElectrobunUpdateStatusEntry,
   type SelfUpdateStatus,
 } from "../system/self-update";
-import { startGatewayControlTask } from "../tasks/gateway";
 import shellHtml from "../desktop-ui/shell.html" with { type: "text" };
 import { VERSION } from "../app.constants";
 
@@ -19,7 +18,6 @@ const SINGLE_INSTANCE_HOST = "127.0.0.1";
 // Electrobun's flat-file views loader resolves the URL as a file path on Windows.
 // Query strings break that resolution, so the views entry must stay path-only.
 const SHELL_VIEW_URL = "views://clawos/shell.html";
-const TRAY_ICON_URL = "views://clawos/logo.png";
 const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_DEV || "").trim().toLowerCase()
 );
@@ -33,15 +31,9 @@ const SHOULD_BACKGROUND_DOWNLOAD_UPDATES = !["0", "false", "no", "off"].includes
   (process.env.CLAWOS_BACKGROUND_UPDATE_DOWNLOAD || "").trim().toLowerCase()
 );
 
-type UpdateTrayPhase = "idle" | "checking" | "available" | "downloading" | "ready" | "applying" | "error";
-type TrayClickEvent = {
-  data?: {
-    action?: string;
-    data?: unknown;
-  };
-};
-type UpdateTrayState = {
-  phase: UpdateTrayPhase;
+type UpdatePhase = "idle" | "checking" | "available" | "downloading" | "ready" | "applying" | "error";
+type UpdateState = {
+  phase: UpdatePhase;
   hasUpdate: boolean;
   readyToApply: boolean;
   message: string;
@@ -52,10 +44,9 @@ type UpdateTrayState = {
 };
 
 let desktopWindow: BrowserWindow | null = null;
-let appTray: Tray | null = null;
 let updateActionPromise: Promise<void> | null = null;
 const APP_WINDOW_TITLE = `ClawOS v${VERSION}`;
-const updateTrayState: UpdateTrayState = {
+const updateState: UpdateState = {
   phase: "idle",
   hasUpdate: false,
   readyToApply: false,
@@ -90,30 +81,13 @@ function focusDesktopWindow(): void {
   }
 }
 
-function formatCheckedTime(isoTime: string | null): string | null {
-  if (!isoTime) {
-    return null;
-  }
-
-  const value = new Date(isoTime);
-  if (Number.isNaN(value.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value);
+function updateStatePatch(patch: Partial<UpdateState>): void {
+  Object.assign(updateState, patch);
 }
 
-function updateTrayStatePatch(patch: Partial<UpdateTrayState>): void {
-  Object.assign(updateTrayState, patch);
-  refreshTrayMenu();
-}
-
-function syncTrayStateFromSelfUpdateStatus(status: SelfUpdateStatus): void {
+function syncUpdateStateFromSelfUpdateStatus(status: SelfUpdateStatus): void {
   if (!status.supported) {
-    updateTrayStatePatch({
+    updateStatePatch({
       phase: "error",
       hasUpdate: false,
       readyToApply: false,
@@ -127,7 +101,7 @@ function syncTrayStateFromSelfUpdateStatus(status: SelfUpdateStatus): void {
   }
 
   if (status.error) {
-    updateTrayStatePatch({
+    updateStatePatch({
       phase: "error",
       hasUpdate: Boolean(status.hasUpdate),
       readyToApply: Boolean(status.updateReady),
@@ -140,7 +114,7 @@ function syncTrayStateFromSelfUpdateStatus(status: SelfUpdateStatus): void {
     return;
   }
 
-  const phase: UpdateTrayPhase = status.updateReady
+  const phase: UpdatePhase = status.updateReady
     ? "ready"
     : status.hasUpdate
       ? "available"
@@ -151,7 +125,7 @@ function syncTrayStateFromSelfUpdateStatus(status: SelfUpdateStatus): void {
       ? `\u53d1\u73b0\u65b0\u7248\u672c\uff1a${status.remoteVersion || "\u53ef\u66f4\u65b0"}`
       : "\u5f53\u524d\u5df2\u662f\u6700\u65b0\u7248\u672c";
 
-  updateTrayStatePatch({
+  updateStatePatch({
     phase,
     hasUpdate: Boolean(status.hasUpdate),
     readyToApply: Boolean(status.updateReady),
@@ -163,17 +137,17 @@ function syncTrayStateFromSelfUpdateStatus(status: SelfUpdateStatus): void {
   });
 }
 
-function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): void {
+function syncUpdateStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): void {
   switch (entry.status) {
     case "checking":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "checking",
         message: "\u6b63\u5728\u68c0\u67e5\u66f4\u65b0...",
         error: null,
       });
       break;
     case "update-available":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "available",
         hasUpdate: true,
         readyToApply: false,
@@ -197,7 +171,7 @@ function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): voi
     case "patch-chain-complete":
     case "patch-applied":
     case "applying-patch":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "downloading",
         hasUpdate: true,
         readyToApply: false,
@@ -209,7 +183,7 @@ function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): voi
     case "extracting":
     case "replacing-app":
     case "launching-new-version":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "applying",
         hasUpdate: true,
         readyToApply: true,
@@ -218,7 +192,7 @@ function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): voi
       });
       break;
     case "complete":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "ready",
         hasUpdate: true,
         readyToApply: true,
@@ -228,7 +202,7 @@ function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): voi
       });
       break;
     case "no-update":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "idle",
         hasUpdate: false,
         readyToApply: false,
@@ -238,7 +212,7 @@ function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): voi
       });
       break;
     case "error":
-      updateTrayStatePatch({
+      updateStatePatch({
         phase: "error",
         message: entry.message || "\u68c0\u67e5\u66f4\u65b0\u5931\u8d25",
         error: entry.message || "\u68c0\u67e5\u66f4\u65b0\u5931\u8d25",
@@ -248,86 +222,6 @@ function syncTrayStateFromUpdaterStatus(entry: ElectrobunUpdateStatusEntry): voi
     default:
       break;
   }
-}
-
-function getUpdateStatusLine(): string {
-  const checkedTime = formatCheckedTime(updateTrayState.checkedAt);
-  if (updateTrayState.phase === "ready") {
-    return `\u66f4\u65b0\uff1a\u53ef\u91cd\u542f\u5b89\u88c5${updateTrayState.remoteVersion ? ` (${updateTrayState.remoteVersion})` : ""}`;
-  }
-  if (updateTrayState.phase === "downloading") {
-    return "\u66f4\u65b0\uff1a\u540e\u53f0\u4e0b\u8f7d\u4e2d";
-  }
-  if (updateTrayState.phase === "checking") {
-    return "\u66f4\u65b0\uff1a\u68c0\u67e5\u4e2d";
-  }
-  if (updateTrayState.phase === "error") {
-    return "\u66f4\u65b0\uff1a\u68c0\u67e5\u5931\u8d25";
-  }
-  if (updateTrayState.hasUpdate) {
-    return `\u66f4\u65b0\uff1a\u53d1\u73b0\u65b0\u7248\u672c${updateTrayState.remoteVersion ? ` (${updateTrayState.remoteVersion})` : ""}`;
-  }
-  if (checkedTime) {
-    return `\u66f4\u65b0\uff1a\u5df2\u662f\u6700\u65b0 (${checkedTime})`;
-  }
-  return "\u66f4\u65b0\uff1a\u5c1a\u672a\u68c0\u67e5";
-}
-
-function buildTrayMenu(): MenuItemConfig[] {
-  const menu: MenuItemConfig[] = [
-    {
-      label: desktopWindow ? "\u663e\u793a\u4e3b\u7a97\u53e3" : "\u6253\u5f00 ClawOS",
-      action: "open-main",
-    },
-    {
-      label: getUpdateStatusLine(),
-      action: "noop",
-      enabled: false,
-    },
-  ];
-
-  if (updateTrayState.readyToApply) {
-    menu.push({
-      label: updateTrayState.remoteVersion
-        ? `\u91cd\u542f\u5b89\u88c5 ${updateTrayState.remoteVersion}`
-        : "\u91cd\u542f\u5b89\u88c5\u66f4\u65b0",
-      action: "apply-update",
-      enabled: updateTrayState.phase !== "applying",
-    });
-  } else if (updateTrayState.hasUpdate) {
-    menu.push({
-      label: "\u540e\u53f0\u4e0b\u8f7d\u66f4\u65b0",
-      action: "download-update",
-      enabled: updateTrayState.phase !== "downloading",
-    });
-  } else {
-    menu.push({
-      label: "\u68c0\u67e5\u66f4\u65b0",
-      action: "check-update",
-      enabled: updateTrayState.phase !== "checking",
-    });
-  }
-
-  menu.push(
-    {
-      label: "\u91cd\u542f Gateway",
-      action: "restart-gateway",
-    },
-    { type: "divider" },
-    {
-      label: "\u9000\u51fa",
-      action: "quit-app",
-    }
-  );
-
-  return menu;
-}
-
-function refreshTrayMenu(): void {
-  if (!appTray) {
-    return;
-  }
-  appTray.setMenu(buildTrayMenu());
 }
 
 function showDesktopNotification(title: string, body: string): void {
@@ -350,26 +244,22 @@ function handleUpdateAction(operation: () => Promise<void>): void {
 
   updateActionPromise = operation().finally(() => {
     updateActionPromise = null;
-    refreshTrayMenu();
   });
 }
 
 async function checkForUpdates(options: {
-  trigger: "startup" | "tray";
+  trigger: "startup";
   downloadIfAvailable: boolean;
 }): Promise<void> {
-  updateTrayStatePatch({
+  updateStatePatch({
     phase: "checking",
-    message:
-      options.trigger === "startup"
-        ? "\u542f\u52a8\u540e\u68c0\u67e5\u66f4\u65b0..."
-        : "\u6b63\u5728\u68c0\u67e5\u66f4\u65b0...",
+    message: "\u542f\u52a8\u540e\u68c0\u67e5\u66f4\u65b0...",
     error: null,
   });
 
   try {
     const status = await getSelfUpdateStatus(true);
-    syncTrayStateFromSelfUpdateStatus(status);
+    syncUpdateStateFromSelfUpdateStatus(status);
 
     if (!status.hasUpdate) {
       return;
@@ -395,7 +285,7 @@ async function checkForUpdates(options: {
       return;
     }
 
-    updateTrayStatePatch({
+    updateStatePatch({
       phase: "downloading",
       hasUpdate: true,
       readyToApply: false,
@@ -405,11 +295,11 @@ async function checkForUpdates(options: {
 
     await runSelfUpdate({
       applyUpdate: false,
-      onStatus: syncTrayStateFromUpdaterStatus,
+      onStatus: syncUpdateStateFromUpdaterStatus,
     });
 
     const refreshed = await getSelfUpdateStatus(true);
-    syncTrayStateFromSelfUpdateStatus(refreshed);
+    syncUpdateStateFromSelfUpdateStatus(refreshed);
     if (refreshed.updateReady) {
       showDesktopNotification(
         "ClawOS \u66f4\u65b0\u5df2\u4e0b\u8f7d",
@@ -420,7 +310,7 @@ async function checkForUpdates(options: {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    updateTrayStatePatch({
+    updateStatePatch({
       phase: "error",
       message,
       error: message,
@@ -441,92 +331,6 @@ function startBackgroundUpdateCheck(): void {
       downloadIfAvailable: SHOULD_BACKGROUND_DOWNLOAD_UPDATES,
     });
   });
-}
-
-function applyReadyUpdate(): void {
-  handleUpdateAction(async () => {
-    try {
-      updateTrayStatePatch({
-        phase: "applying",
-        message: "\u6b63\u5728\u5b89\u88c5\u66f4\u65b0\u5e76\u91cd\u542f...",
-        error: null,
-      });
-
-      await runSelfUpdate({
-        applyUpdate: true,
-        onStatus: syncTrayStateFromUpdaterStatus,
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      updateTrayStatePatch({
-        phase: "error",
-        message,
-        error: message,
-      });
-      showDesktopNotification("ClawOS \u66f4\u65b0\u5931\u8d25", message);
-    }
-  });
-}
-
-function handleTrayClick(event: TrayClickEvent): void {
-  const action = String(event?.data?.action || "").trim();
-  if (!action) {
-    openOrCreateDesktopWindow();
-    return;
-  }
-
-  switch (action) {
-    case "open-main":
-      openOrCreateDesktopWindow();
-      break;
-    case "check-update":
-      handleUpdateAction(async () => {
-        await checkForUpdates({
-          trigger: "tray",
-          downloadIfAvailable: false,
-        });
-      });
-      break;
-    case "download-update":
-      handleUpdateAction(async () => {
-        await checkForUpdates({
-          trigger: "tray",
-          downloadIfAvailable: true,
-        });
-      });
-      break;
-    case "apply-update":
-      applyReadyUpdate();
-      break;
-    case "restart-gateway":
-      startGatewayControlTask("restart");
-      showDesktopNotification("ClawOS", "\u5df2\u5f00\u59cb\u91cd\u542f Gateway");
-      break;
-    case "quit-app":
-      Electrobun.Utils.quit();
-      break;
-    default:
-      openOrCreateDesktopWindow();
-      break;
-  }
-}
-
-function ensureTray(): void {
-  if (appTray) {
-    refreshTrayMenu();
-    return;
-  }
-
-  appTray = new Tray({
-    title: "ClawOS",
-    image: TRAY_ICON_URL,
-    width: 18,
-    height: 18,
-  });
-  appTray.on("tray-clicked", (event) => {
-    handleTrayClick(event as TrayClickEvent);
-  });
-  refreshTrayMenu();
 }
 
 async function notifyRunningInstance(controlPort: number): Promise<boolean> {
@@ -588,7 +392,7 @@ async function acquireSingleInstanceGuard(controlPort: number): Promise<{ isPrim
   }
 
   try {
-    const server = await openControlServer(controlPort, focusDesktopWindow);
+    const server = await openControlServer(controlPort, openOrCreateDesktopWindow);
     return { isPrimary: true, server };
   } catch (error) {
     const code = (error as NodeJS.ErrnoException | null)?.code;
@@ -694,7 +498,6 @@ function attachWindowCloseTracking(window: BrowserWindow): void {
   window.on("close", () => {
     if (desktopWindow?.id === window.id) {
       desktopWindow = null;
-      refreshTrayMenu();
     }
   });
 }
@@ -720,7 +523,6 @@ function createDesktopWindow(): BrowserWindow {
   }
 
   desktopWindow = window;
-  refreshTrayMenu();
   return window;
 }
 
@@ -761,11 +563,7 @@ async function main(): Promise<void> {
 
   Electrobun.events.on("before-quit", () => {
     guard.server?.close();
-    appTray?.remove();
-    appTray = null;
   });
-
-  ensureTray();
 
   try {
     createDesktopWindow();

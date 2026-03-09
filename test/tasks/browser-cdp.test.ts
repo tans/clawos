@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import {
   BROWSER_BOOT_URL,
   BROWSER_CDP_PORT,
-  BROWSER_CDP_PROXY_PORT,
+  BROWSER_USER_DATA_DIR,
   buildChromeStartArgs,
   buildChromeStartCommand,
   buildRemoteCdpUrl,
@@ -33,6 +33,7 @@ describe("browser cdp helpers", () => {
 
     expect(command).toContain("Start-Process -FilePath 'C:\\Program Files\\Google\\Chrome\\Application\\chrome''s.exe'");
     expect(command).toContain(`'--remote-debugging-port=${BROWSER_CDP_PORT}'`);
+    expect(command).toContain(`'--user-data-dir=${BROWSER_USER_DATA_DIR}'`);
     expect(command).toContain(`'${BROWSER_BOOT_URL}'`);
     expect(args).toEqual([
       "powershell.exe",
@@ -54,8 +55,8 @@ nameserver 8.8.8.8
     expect(nameserver).toBe("172.31.64.1");
   });
 
-  it("builds remote cdp url with proxy port", () => {
+  it("builds remote cdp url with unified port 9222", () => {
     const remote = buildRemoteCdpUrl("ws://127.0.0.1:9222/devtools/browser/abc", "172.28.240.1");
-    expect(remote).toBe(`ws://172.28.240.1:${BROWSER_CDP_PROXY_PORT}/devtools/browser/abc`);
+    expect(remote).toBe(`ws://172.28.240.1:${BROWSER_CDP_PORT}/devtools/browser/abc`);
   });
 });

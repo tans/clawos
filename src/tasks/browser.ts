@@ -8,16 +8,12 @@ import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 const IS_WINDOWS = process.platform === "win32";
 
 export const BROWSER_CDP_PORT = 9222;
-export const BROWSER_CDP_PROXY_PORT = 9223;
-export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "http://localhost:8080";
+export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "about:blank";
+export const BROWSER_USER_DATA_DIR = process.env.CLAWOS_CHROME_USER_DATA_DIR?.trim() || "C:\\chrome-openclaw";
+
 const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/version`;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
-
-type BrowserForwardClient = Bun.SocketHandler<unknown>["open"] extends (socket: infer T) => void ? T : never;
-
-let browserCdpForwardServer: Bun.Server | null = null;
-const browserCdpUpstreamMap = new WeakMap<BrowserForwardClient, Bun.Socket<unknown>>();
 
 export const DEFAULT_CHROME_EXE_PATHS = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -50,8 +46,8 @@ async function runProcessStep(
   }
 ): Promise<void> {
   task.step = params.step;
-  appendTaskLog(task, `步骤 ${params.step}/${params.totalSteps}：${params.name}`);
-  appendTaskLog(task, `执行命令：${params.command}`);
+  appendTaskLog(task, `Step ${params.step}/${params.totalSteps}: ${params.name}`);
+  appendTaskLog(task, `Run: ${params.command}`);
 
   const result = await runProcess(params.args);
   const allowedExitCodes = new Set(params.allowExitCodes || []);
@@ -59,57 +55,108 @@ async function runProcessStep(
   const treatedAsSuccess = result.ok || allowedExitCodes.has(result.code) || allowedFailure;
   appendProcessLogs(task, result, treatedAsSuccess);
   if (!treatedAsSuccess) {
-    throw new Error(`${params.name} 执行失败（退出码 ${result.code}）`);
+    throw new Error(`${params.name} failed (exit code ${result.code})`);
   }
 }
 
-function stopBrowserForwarder(): void {
-  browserCdpForwardServer?.stop(true);
-  browserCdpForwardServer = null;
+function isPortProxyDeleteMissing(result: CommandResult): boolean {
+  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  return text.includes("element not found") || text.includes("cannot find") || text.includes("not found");
 }
 
-function ensureBrowserForwarder(task: Task, step: number, totalSteps: number): void {
+function isElevationError(result: CommandResult): boolean {
+  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  return text.includes("requires elevation");
+}
+
+async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: number): Promise<void> {
   task.step = step;
-  appendTaskLog(task, `步骤 ${step}/${totalSteps}：启动 Bun 端口转发（${BROWSER_CDP_PROXY_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}）`);
+  appendTaskLog(task, `Step ${step}/${totalSteps}: configure Windows Firewall for TCP ${BROWSER_CDP_PORT}`);
 
-  stopBrowserForwarder();
-  browserCdpForwardServer = Bun.listen({
-    hostname: "0.0.0.0",
-    port: BROWSER_CDP_PROXY_PORT,
-    socket: {
-      open(client) {
-        const upstream = Bun.connect({
-          hostname: "127.0.0.1",
-          port: BROWSER_CDP_PORT,
-          socket: {
-            data(_upstream, data) {
-              client.write(data);
-            },
-            close() {
-              client.end();
-            },
-            error() {
-              client.end();
-            },
-          },
-        });
-        browserCdpUpstreamMap.set(client, upstream);
-      },
-      data(client, data) {
-        browserCdpUpstreamMap.get(client)?.write(data);
-      },
-      close(client) {
-        browserCdpUpstreamMap.get(client)?.end();
-        browserCdpUpstreamMap.delete(client);
-      },
-      error(client) {
-        browserCdpUpstreamMap.get(client)?.end();
-        browserCdpUpstreamMap.delete(client);
-      },
-    },
-  });
+  const deleteArgs = [
+    "netsh",
+    "advfirewall",
+    "firewall",
+    "delete",
+    "rule",
+    `name=ClawOS CDP ${BROWSER_CDP_PORT}`,
+  ];
+  appendTaskLog(task, `Run: ${deleteArgs.join(" ")}`);
+  const deleteResult = await runProcess(deleteArgs);
+  appendProcessLogs(task, deleteResult, true);
 
-  appendTaskLog(task, `已启用 Bun 转发：0.0.0.0:${BROWSER_CDP_PROXY_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
+  const addArgs = [
+    "netsh",
+    "advfirewall",
+    "firewall",
+    "add",
+    "rule",
+    `name=ClawOS CDP ${BROWSER_CDP_PORT}`,
+    "dir=in",
+    "action=allow",
+    "protocol=TCP",
+    `localport=${BROWSER_CDP_PORT}`,
+  ];
+  appendTaskLog(task, `Run: ${addArgs.join(" ")}`);
+  const addResult = await runProcess(addArgs);
+  appendProcessLogs(task, addResult, addResult.ok);
+  if (!addResult.ok) {
+    if (isElevationError(addResult)) {
+      throw new Error("Failed to configure Windows Firewall: admin privileges are required for netsh.");
+    }
+    throw new Error(`Failed to configure Windows Firewall rule (exit code ${addResult.code})`);
+  }
+
+  appendTaskLog(task, `Windows Firewall rule ready: ClawOS CDP ${BROWSER_CDP_PORT}`);
+}
+
+async function ensureBrowserPortProxy(
+  task: Task,
+  step: number,
+  totalSteps: number,
+  listenAddress: string
+): Promise<void> {
+  task.step = step;
+  appendTaskLog(
+    task,
+    `Step ${step}/${totalSteps}: configure system portproxy (${listenAddress}:${BROWSER_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT})`
+  );
+
+  const deleteArgs = [
+    "netsh",
+    "interface",
+    "portproxy",
+    "delete",
+    "v4tov4",
+    `listenport=${BROWSER_CDP_PORT}`,
+    `listenaddress=${listenAddress}`,
+  ];
+  appendTaskLog(task, `Run: ${deleteArgs.join(" ")}`);
+  const deleteResult = await runProcess(deleteArgs);
+  appendProcessLogs(task, deleteResult, deleteResult.ok || isPortProxyDeleteMissing(deleteResult));
+
+  const addArgs = [
+    "netsh",
+    "interface",
+    "portproxy",
+    "add",
+    "v4tov4",
+    `listenport=${BROWSER_CDP_PORT}`,
+    `listenaddress=${listenAddress}`,
+    `connectport=${BROWSER_CDP_PORT}`,
+    "connectaddress=127.0.0.1",
+  ];
+  appendTaskLog(task, `Run: ${addArgs.join(" ")}`);
+  const addResult = await runProcess(addArgs);
+  appendProcessLogs(task, addResult, addResult.ok);
+  if (!addResult.ok) {
+    if (isElevationError(addResult)) {
+      throw new Error("Failed to configure system portproxy: admin privileges are required for netsh.");
+    }
+    throw new Error(`Failed to configure system portproxy (exit code ${addResult.code})`);
+  }
+
+  appendTaskLog(task, `System portproxy ready: ${listenAddress}:${BROWSER_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
 }
 
 async function runWslStep(
@@ -123,12 +170,12 @@ async function runWslStep(
   }
 ): Promise<CommandResult> {
   task.step = params.step;
-  appendTaskLog(task, `步骤 ${params.step}/${params.totalSteps}：${params.name}`);
-  appendTaskLog(task, `执行命令：${params.displayCommand}`);
+  appendTaskLog(task, `Step ${params.step}/${params.totalSteps}: ${params.name}`);
+  appendTaskLog(task, `Run: ${params.displayCommand}`);
   const result = await runWslScript(params.script, { shellMode: "clean", loginShell: false });
   appendProcessLogs(task, result, result.ok);
   if (!result.ok) {
-    throw new Error(`${params.name} 执行失败（退出码 ${result.code}）`);
+    throw new Error(`${params.name} failed (exit code ${result.code})`);
   }
   return result;
 }
@@ -152,11 +199,11 @@ async function fetchCdpVersion(timeoutMs: number): Promise<CdpVersionProbeResult
     }
     const payload = asObject(await response.json().catch(() => null));
     if (!payload) {
-      throw new Error("返回格式无效，预期 JSON 对象。");
+      throw new Error("Invalid CDP version payload.");
     }
     const webSocketDebuggerUrl = readNonEmptyString(payload.webSocketDebuggerUrl);
     if (!webSocketDebuggerUrl) {
-      throw new Error("未返回 webSocketDebuggerUrl，CDP 可能尚未准备好。");
+      throw new Error("Missing webSocketDebuggerUrl in CDP version payload.");
     }
     return {
       payload,
@@ -169,25 +216,25 @@ async function fetchCdpVersion(timeoutMs: number): Promise<CdpVersionProbeResult
 
 async function waitForCdpVersion(task: Task): Promise<CdpVersionProbeResult> {
   const deadline = Date.now() + BROWSER_CDP_PROBE_TIMEOUT_MS;
-  let lastError = "未知错误";
+  let lastError = "unknown error";
   let attempt = 0;
 
   while (Date.now() < deadline) {
     attempt += 1;
     try {
       const result = await fetchCdpVersion(3_000);
-      appendTaskLog(task, `CDP 就绪：${BROWSER_CDP_VERSION_URL}`);
+      appendTaskLog(task, `CDP ready: ${BROWSER_CDP_VERSION_URL}`);
       appendTaskLog(task, `CDP WebSocket: ${result.webSocketDebuggerUrl}`);
       return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       lastError = message;
-      appendTaskLog(task, `CDP 探测第 ${attempt} 次失败：${message}`);
+      appendTaskLog(task, `CDP probe attempt ${attempt} failed: ${message}`);
       await Bun.sleep(BROWSER_CDP_PROBE_INTERVAL_MS);
     }
   }
 
-  throw new Error(`CDP 端口 ${BROWSER_CDP_PORT} 启动超时：${lastError}`);
+  throw new Error(`CDP port ${BROWSER_CDP_PORT} timed out: ${lastError}`);
 }
 
 export function parseFirstNameserver(content: string): string | null {
@@ -209,7 +256,7 @@ async function readWslNameserver(task: Task, step: number, totalSteps: number): 
   const script = [
     "set -euo pipefail",
     "if [ ! -f /etc/resolv.conf ]; then",
-    '  echo "/etc/resolv.conf 不存在" >&2',
+    '  echo "/etc/resolv.conf not found" >&2',
     "  exit 1",
     "fi",
     "cat /etc/resolv.conf",
@@ -217,17 +264,17 @@ async function readWslNameserver(task: Task, step: number, totalSteps: number): 
   const result = await runWslStep(task, {
     step,
     totalSteps,
-    name: "读取 WSL nameserver",
+    name: "read WSL nameserver",
     script,
     displayCommand: "cat /etc/resolv.conf",
   });
 
   const nameserver = parseFirstNameserver(result.stdout);
   if (!nameserver) {
-    throw new Error("未在 /etc/resolv.conf 中解析到 nameserver。");
+    throw new Error("Could not parse nameserver from /etc/resolv.conf.");
   }
 
-  appendTaskLog(task, `WSL nameserver：${nameserver}`);
+  appendTaskLog(task, `WSL nameserver: ${nameserver}`);
   return nameserver;
 }
 
@@ -236,8 +283,50 @@ export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, nameserver:
   const protocol = parsed.protocol === "wss:" || parsed.protocol === "https:" ? "wss:" : "ws:";
   parsed.protocol = protocol;
   parsed.hostname = nameserver;
-  parsed.port = String(BROWSER_CDP_PROXY_PORT);
+  parsed.port = String(BROWSER_CDP_PORT);
   return parsed.toString();
+}
+
+function buildRemoteHttpVersionUrl(nameserver: string): string {
+  return `http://${nameserver}:${BROWSER_CDP_PORT}/json/version`;
+}
+
+async function verifyRemoteHttpVersionFromWsl(
+  task: Task,
+  step: number,
+  totalSteps: number,
+  url: string
+): Promise<void> {
+  const script = [
+    "set -euo pipefail",
+    `URL='${url.replaceAll("'", "'\"'\"'")}'`,
+    'if command -v curl >/dev/null 2>&1; then',
+    '  curl -fsS --globoff --max-time 5 "$URL" >/tmp/clawos-browser-version.json',
+    'elif command -v wget >/dev/null 2>&1; then',
+    '  wget -q -T 5 -O /tmp/clawos-browser-version.json "$URL"',
+    "else",
+    '  echo "Missing curl/wget in WSL" >&2',
+    "  exit 127",
+    "fi",
+    "cat /tmp/clawos-browser-version.json",
+  ].join("\n");
+
+  const result = await runWslStep(task, {
+    step,
+    totalSteps,
+    name: "verify remote CDP from WSL",
+    script,
+    displayCommand: `curl ${url}`,
+  });
+
+  const payload = asObject(JSON.parse(result.stdout));
+  const webSocketDebuggerUrl = readNonEmptyString(payload?.webSocketDebuggerUrl);
+  if (!payload || !webSocketDebuggerUrl) {
+    throw new Error("Remote CDP verification succeeded, but webSocketDebuggerUrl is missing.");
+  }
+
+  appendTaskLog(task, `WSL HTTP verified: ${url}`);
+  appendTaskLog(task, `WSL WebSocket: ${webSocketDebuggerUrl}`);
 }
 
 async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Promise<void> {
@@ -261,9 +350,9 @@ async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Pro
   }
 
   config.browser = nextBrowser;
-  await applyOpenclawConfig(config, "ClawOS 重置 browser 配置为 Remote CDP");
+  await applyOpenclawConfig(config, "ClawOS reset browser config to Remote CDP");
 
-  appendTaskLog(task, "openclaw.browser 配置重置完成。");
+  appendTaskLog(task, "openclaw.browser config updated.");
   appendTaskLog(task, `browser.cdpUrl => ${remoteCdpUrl}`);
   appendTaskLog(task, "browser.attachOnly => true");
 }
@@ -286,7 +375,7 @@ export function resolveChromeExePath(): string {
   }
 
   throw new Error(
-    `未找到 chrome.exe。请先安装 Chrome，或通过 CLAWOS_CHROME_EXE_PATH 指定路径。候选路径：${candidates.join(", ")}`
+    `Could not find chrome.exe. Install Chrome or set CLAWOS_CHROME_EXE_PATH. Candidates: ${candidates.join(", ")}`
   );
 }
 
@@ -298,6 +387,7 @@ export function buildChromeStartCommand(exePath: string, workingDirectory: strin
   const args = [
     "--remote-debugging-address=127.0.0.1",
     `--remote-debugging-port=${BROWSER_CDP_PORT}`,
+    `--user-data-dir=${BROWSER_USER_DATA_DIR}`,
     "--new-window",
     "--no-first-run",
     "--no-default-browser-check",
@@ -328,13 +418,13 @@ type BrowserCdpPrepareResult = {
 
 async function prepareRemoteCdp(task: Task, step: number, totalSteps: number): Promise<BrowserCdpPrepareResult> {
   task.step = step;
-  appendTaskLog(task, `步骤 ${step}/${totalSteps}：探测 CDP 并生成 remote cdpUrl`);
-  appendTaskLog(task, `执行命令：GET ${BROWSER_CDP_VERSION_URL}`);
+  appendTaskLog(task, `Step ${step}/${totalSteps}: probe CDP and build remote cdpUrl`);
+  appendTaskLog(task, `Run: GET ${BROWSER_CDP_VERSION_URL}`);
   const version = await waitForCdpVersion(task);
   const nameserver = await readWslNameserver(task, step, totalSteps);
   const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, nameserver);
 
-  appendTaskLog(task, `remote cdpUrl：${remoteCdpUrl}`);
+  appendTaskLog(task, `remote cdpUrl: ${remoteCdpUrl}`);
   return {
     remoteCdpUrl,
     localWebSocketDebuggerUrl: version.webSocketDebuggerUrl,
@@ -345,30 +435,30 @@ async function prepareRemoteCdp(task: Task, step: number, totalSteps: number): P
 export function startBrowserRestartTask(): { task: Task; reused: boolean } {
   const runningTask = findRunningTask("browser-cdp-restart");
   if (runningTask) {
-    appendTaskLog(runningTask, "检测到已有浏览器重启任务正在执行，已复用当前任务。");
+    appendTaskLog(runningTask, "Reusing existing browser restart task.");
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 4;
-  const task = createTask("browser-cdp-restart", "重启浏览器（开启 CDP 与端口转发）", totalSteps);
+  const totalSteps = 7;
+  const task = createTask("browser-cdp-restart", "Restart browser with CDP, portproxy, and firewall rule", totalSteps);
   task.status = "running";
 
   (async () => {
     try {
       if (!IS_WINDOWS) {
-        throw new Error("当前系统不是 Windows，无法执行浏览器 CDP 重启。");
+        throw new Error("Browser CDP restart is only supported on Windows.");
       }
 
       const chromeExePath = resolveChromeExePath();
       if (!existsSync(chromeExePath)) {
-        throw new Error(`chrome.exe 不存在：${chromeExePath}`);
+        throw new Error(`chrome.exe not found: ${chromeExePath}`);
       }
       const chromeWorkingDirectory = resolveChromeWorkingDirectory(chromeExePath);
 
       await runProcessStep(task, {
         step: 1,
         totalSteps,
-        name: "停止 chrome.exe 进程",
+        name: "stop chrome.exe",
         command: "taskkill /F /IM chrome.exe /T",
         args: ["taskkill", "/F", "/IM", "chrome.exe", "/T"],
         allowExitCodes: [128],
@@ -377,21 +467,30 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       await runProcessStep(task, {
         step: 2,
         totalSteps,
-        name: `启动 Chrome（CDP:9222，打开 ${BROWSER_BOOT_URL}）`,
+        name: `start Chrome with CDP on ${BROWSER_CDP_PORT}`,
         command: `powershell.exe ... ${buildChromeStartCommand(chromeExePath, chromeWorkingDirectory)}`,
         args: buildChromeStartArgs(chromeExePath, chromeWorkingDirectory),
       });
 
-      ensureBrowserForwarder(task, 3, totalSteps);
+      task.step = 3;
+      appendTaskLog(task, `Step 3/${totalSteps}: verify local CDP`);
+      appendTaskLog(task, `Run: GET ${BROWSER_CDP_VERSION_URL}`);
+      const version = await waitForCdpVersion(task);
 
-      task.step = 4;
-      appendTaskLog(task, `步骤 4/${totalSteps}：校验 CDP 端口就绪`);
-      appendTaskLog(task, `执行命令：GET ${BROWSER_CDP_VERSION_URL}`);
-      await waitForCdpVersion(task);
+      const nameserver = await readWslNameserver(task, 4, totalSteps);
+      await ensureBrowserPortProxy(task, 5, totalSteps, nameserver);
+      await ensureBrowserFirewallRule(task, 6, totalSteps);
+
+      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, nameserver);
+      const remoteHttpVersionUrl = buildRemoteHttpVersionUrl(nameserver);
+      appendTaskLog(task, `WSL HTTP endpoint: ${remoteHttpVersionUrl}`);
+      appendTaskLog(task, `WSL WebSocket endpoint: ${remoteCdpUrl}`);
+
+      await verifyRemoteHttpVersionFromWsl(task, 7, totalSteps, remoteHttpVersionUrl);
 
       task.status = "success";
       task.endedAt = new Date().toISOString();
-      appendTaskLog(task, "任务完成");
+      appendTaskLog(task, "Task completed.");
     } catch (error) {
       task.status = "failed";
       task.endedAt = new Date().toISOString();
@@ -411,35 +510,34 @@ export function startBrowserCdpRestartTask(): { task: Task; reused: boolean } {
 export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
   const runningTask = findRunningTask("browser-cdp-reset-config");
   if (runningTask) {
-    appendTaskLog(runningTask, "检测到已有浏览器配置重置任务正在执行，已复用当前任务。");
+    appendTaskLog(runningTask, "Reusing existing browser config reset task.");
     return { task: runningTask, reused: true };
   }
 
   const totalSteps = 3;
-  const task = createTask("browser-cdp-reset-config", "重置 browser 配置为 Remote CDP", totalSteps);
+  const task = createTask("browser-cdp-reset-config", "Reset browser config to Remote CDP", totalSteps);
   task.status = "running";
 
   (async () => {
     try {
       if (!IS_WINDOWS) {
-        throw new Error("当前系统不是 Windows，无法执行 browser 配置重置。");
+        throw new Error("Browser config reset is only supported on Windows.");
       }
 
       const prepared = await prepareRemoteCdp(task, 1, totalSteps);
+      await ensureBrowserPortProxy(task, 2, totalSteps, prepared.nameserver);
 
-      ensureBrowserForwarder(task, 2, totalSteps);
-
-      appendTaskLog(task, `当前 nameserver：${prepared.nameserver}`);
-      appendTaskLog(task, `本机 CDP：${prepared.localWebSocketDebuggerUrl}`);
+      appendTaskLog(task, `Current nameserver: ${prepared.nameserver}`);
+      appendTaskLog(task, `Local CDP: ${prepared.localWebSocketDebuggerUrl}`);
 
       task.step = 3;
-      appendTaskLog(task, `步骤 3/${totalSteps}：写入 openclaw browser 配置`);
-      appendTaskLog(task, "执行命令：openclaw gateway call config.apply (browser)");
+      appendTaskLog(task, `Step 3/${totalSteps}: update openclaw browser config`);
+      appendTaskLog(task, "Run: openclaw gateway call config.apply (browser)");
       await resetOpenclawBrowserConfig(task, prepared.remoteCdpUrl);
 
       task.status = "success";
       task.endedAt = new Date().toISOString();
-      appendTaskLog(task, "任务完成");
+      appendTaskLog(task, "Task completed.");
     } catch (error) {
       task.status = "failed";
       task.endedAt = new Date().toISOString();
