@@ -23,11 +23,7 @@
   }
 
   body {
-    background:
-      radial-gradient(circle at top left, color-mix(in oklab, var(--color-primary) 10%, transparent) 0, transparent 32%),
-      radial-gradient(circle at 85% 10%, color-mix(in oklab, var(--color-secondary) 10%, transparent) 0, transparent 28%),
-      linear-gradient(180deg, color-mix(in oklab, var(--color-base-100) 86%, white) 0%, var(--color-base-200) 100%);
-    background-attachment: fixed;
+    background: var(--color-base-200);
   }
 }
 
