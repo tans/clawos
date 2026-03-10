@@ -59,9 +59,6 @@ export function renderAgentPage(): string {
                 <span>ClawOS / To Agent</span>
               </div>
               <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="页面导航">
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="/install-guide">
-                  安装
-                </a>
                 <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1">
                   <a class="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-base-content/58 transition-colors hover:text-base-content" href="/">
                     <SunIcon />

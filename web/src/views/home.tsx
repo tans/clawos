@@ -2,6 +2,8 @@
 
 import { renderToString } from "hono/jsx/dom/server";
 
+const LOBSTER_DESKTOP_DOWNLOAD_URL = "https://ydschool-video.nosdn.127.net/1772959618633LobsterAI+Setup+0.2.2.exe";
+
 function DownloadIcon() {
   return (
     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -86,9 +88,6 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="#oem">
                   定制
                 </a>
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="/install-guide">
-                  安装
-                </a>
                 <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1">
                   <a class="inline-flex items-center gap-2 rounded-full bg-warning/18 px-3 py-2 text-xs font-semibold text-base-content" href="/" aria-current="page">
                     <SunIcon />
@@ -103,9 +102,21 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
             </div>
           </header>
 
+          <div class="page-fade page-fade-delay-1 mt-5 flex justify-center">
+            <a
+              class="btn btn-primary btn-wide"
+              href={LOBSTER_DESKTOP_DOWNLOAD_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <DownloadIcon />
+              简易版龙虾下载
+            </a>
+          </div>
+
           <section
             id="overview"
-            class="page-fade page-fade-delay-1 ambient-shell mt-8 px-6 py-10 sm:mt-10 sm:px-10 sm:py-14 lg:px-14 lg:py-18"
+            class="page-fade page-fade-delay-1 ambient-shell mt-8 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-18"
           >
             <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
               <div class="max-w-2xl">
@@ -133,23 +144,6 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                   <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">Gateway Protocol 可视化</span>
                 </div>
 
-                <div class="mt-10 flex flex-wrap gap-3">
-                  {hasInstaller ? (
-                    <a class="btn btn-primary btn-wide" href="/downloads/latest">
-                      <DownloadIcon />
-                      {`下载 v${versionText}`}
-                    </a>
-                  ) : (
-                    <button class="btn btn-primary btn-wide" type="button" disabled>
-                      <DownloadIcon />
-                      安装包暂未发布
-                    </button>
-                  )}
-                  <a class="btn btn-ghost btn-wide border border-base-content/15 bg-base-100/60" href="/install-guide">
-                    查看安装说明
-                  </a>
-                </div>
-
                 <div class="mt-12 grid gap-6 sm:grid-cols-3">
                   <div>
                     <div class="text-2xl font-semibold">1 个入口</div>
@@ -163,6 +157,20 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                     <div class="text-2xl font-semibold">支持定制</div>
                     <div class="mt-2 text-sm leading-7 text-base-content/65">适合 OEM 和行业交付。</div>
                   </div>
+                </div>
+
+                <div class="mt-10 flex flex-wrap gap-3">
+                  {hasInstaller ? (
+                    <a class="btn btn-ghost btn-wide border border-base-content/15 bg-base-100/60" href="/downloads/latest">
+                      <DownloadIcon />
+                      {`下载 v${versionText}`}
+                    </a>
+                  ) : (
+                    <button class="btn btn-ghost btn-wide border border-base-content/15 bg-base-100/60" type="button" disabled>
+                      <DownloadIcon />
+                      安装包暂未发布
+                    </button>
+                  )}
                 </div>
               </div>
 

@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
 import { renderHomePage } from "../views/home";
-import { renderInstallGuidePage } from "../views/install-guide";
 
 export const pageRoutes = new Hono();
 
@@ -24,7 +23,7 @@ pageRoutes.get("/downloads", async (c) => {
 });
 
 pageRoutes.get("/install-guide", (c) => {
-  return c.html(renderInstallGuidePage());
+  return c.redirect("/", 302);
 });
 
 pageRoutes.get("/to-agent", (c) => {
