@@ -171,6 +171,13 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                       安装包暂未发布
                     </button>
                   )}
+                  <a
+                    class="btn btn-outline btn-wide border border-base-content/15 bg-base-100/40"
+                    href="https://clawos.minapp.xin/public/ClawOS.1.0.zip"
+                  >
+                    <DownloadIcon />
+                    下载 1.0.0-slim
+                  </a>
                 </div>
               </div>
 
