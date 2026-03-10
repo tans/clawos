@@ -30,7 +30,7 @@
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
                       <div class="text-sm font-medium">openclaw Token</div>
-                      <div class="text-xs text-base-content/60">用于打开 openclaw 控制台时自动附带 token。</div>
+                      <div class="text-xs text-base-content/60">默认值 xiake，用于侧边栏“打开 openclaw 后台”入口拼接访问链接。</div>
                     </div>
                     <input
                       class="input input-bordered input-sm w-full font-mono"
@@ -42,10 +42,25 @@
                 </div>
 
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
+                    <div class="space-y-1">
+                      <div class="text-sm font-medium">授权控制地址</div>
+                      <div class="text-xs text-base-content/60">可为空。填写后将用于授权控制功能。</div>
+                    </div>
+                    <input
+                      class="input input-bordered input-sm w-full font-mono"
+                      type="text"
+                      data-field="controller-address"
+                      placeholder="0x..."
+                    />
+                  </div>
+                </div>
+
+                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
                     <div class="space-y-1">
                       <div class="text-sm font-medium">开机后自动启动 ClawOS</div>
-                      <div class="text-xs text-base-content/60">启用后，登录系统时会自动启动 ClawOS。</div>
+                      <div class="text-xs text-base-content/60">说明：启用后，登录系统时会自动启动 ClawOS。</div>
                     </div>
                     <div class="space-y-2">
                       <label class="label cursor-pointer justify-start gap-3 p-0">
@@ -56,18 +71,34 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </section>
 
+          <section class="card card-compact border border-base-200 bg-base-100">
+            <div class="card-body gap-4">
+              <h2 class="card-title text-base">寄养虾场</h2>
+              <p class="text-xs text-base-content/60">仅需配置养虾场通讯地址（含 farm ID，可选加入密码），保存后可快速跳转。</p>
+              <div class="grid gap-3">
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">远程控制地址</div>
+                      <div class="text-sm font-medium">养虾场通讯地址</div>
+                      <div class="text-xs text-base-content/60">包含 farm ID，可选带 4 位加入密码，例如 https://farm.clawos.cc/join/abc123?pwd=1234</div>
                     </div>
-                    <input
-                      class="input input-bordered input-sm w-full font-mono"
-                      type="text"
-                      data-field="farm-address"
-                      placeholder="https://example.com/control"
-                    />
+                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="farm-address" placeholder="https://farm.clawos.cc/join/abc123?pwd=1234" />
+                  </div>
+                </div>
+
+
+                <div class="rounded-lg border border-base-200 bg-base-100 p-3 text-xs">
+                  <div class="mb-2 text-base-content/70">页面入口</div>
+                  <div>
+                    <div class="mb-1 text-base-content/60">养虾场入口</div>
+                    <div class="flex items-center gap-2">
+                      <a class="link link-primary font-mono" href="#" target="_blank" rel="noreferrer" data-link="farm-home">未配置</a>
+                      <button class="btn btn-outline btn-xs" type="button" data-action="open-farm-home">打开</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -87,9 +118,13 @@
       const metaEl = document.querySelector("[data-meta]");
       const reloadBtn = document.querySelector('[data-action="reload"]');
       const saveBtn = document.querySelector('[data-action="save"]');
+      const openFarmHomeBtn = document.querySelector('[data-action="open-farm-home"]');
+      const farmHomeLinkEl = document.querySelector('[data-link="farm-home"]');
 
       const tokenInput = document.querySelector('[data-field="openclaw-token"]');
-      const remoteControlAddressInput = document.querySelector('[data-field="farm-address"]');
+      const controllerAddressInput = document.querySelector('[data-field="controller-address"]');
+      const farmAddressInput = document.querySelector('[data-field="farm-address"]');
+      
       const autoStartCheckbox = document.querySelector("#clawos-autostart");
       const autoStartStatusEl = document.querySelector("[data-autostart-status]");
 
@@ -128,6 +163,25 @@
         }
       }
 
+
+      function buildFarmHomeUrl() {
+        const farmAddress = farmAddressInput ? String(farmAddressInput.value || '').trim() : '';
+        if (!farmAddress) {
+          return null;
+        }
+        return farmAddress;
+      }
+
+      function updateFarmLinks() {
+        const farmHomeUrl = buildFarmHomeUrl();
+        const display = farmHomeUrl || '未配置';
+
+        if (farmHomeLinkEl) {
+          farmHomeLinkEl.textContent = display;
+          farmHomeLinkEl.href = farmHomeUrl || '#';
+        }
+      }
+
       async function loadSettings() {
         const [settingsData, autoStartData] = await Promise.all([
           api("/api/local/settings"),
@@ -138,11 +192,16 @@
         if (tokenInput) {
           tokenInput.value = typeof settings.openclawToken === "string" ? settings.openclawToken : "xiake";
         }
-        if (remoteControlAddressInput) {
-          const legacyFarmBaseUrl = typeof settings.farmBaseUrl === "string" ? settings.farmBaseUrl : "";
-          remoteControlAddressInput.value =
-            typeof settings.farmAddress === "string" ? settings.farmAddress : legacyFarmBaseUrl;
+        if (controllerAddressInput) {
+          controllerAddressInput.value =
+            typeof settings.controllerAddress === "string" ? settings.controllerAddress : "";
         }
+
+        if (farmAddressInput) {
+          const legacyFarmBaseUrl = typeof settings.farmBaseUrl === "string" ? settings.farmBaseUrl : "";
+          farmAddressInput.value = typeof settings.farmAddress === "string" ? settings.farmAddress : legacyFarmBaseUrl;
+        }
+        updateFarmLinks();
 
         const state = autoStartData.state || {};
         if (autoStartCheckbox) {
@@ -165,7 +224,7 @@
       }
 
       async function saveSettings() {
-        if (!tokenInput || !remoteControlAddressInput) {
+        if (!tokenInput || !controllerAddressInput || !farmAddressInput) {
           return;
         }
 
@@ -174,11 +233,17 @@
           throw new Error("openclaw Token 不能为空。");
         }
 
-        const farmAddress = remoteControlAddressInput.value.trim();
+        const controllerAddress = controllerAddressInput.value.trim();
+        if (controllerAddress && !/^0x[a-fA-F0-9]{40}$/.test(controllerAddress)) {
+          throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
+        }
+
+        const farmAddress = farmAddressInput.value.trim();
         await api("/api/local/settings", {
           method: "PUT",
           body: JSON.stringify({
             openclawToken,
+            controllerAddress,
             farmAddress,
           }),
         });
@@ -195,6 +260,21 @@
             ? "已启用：开机后会自动启动 ClawOS。"
             : "未启用：开机后不会自动启动 ClawOS。";
         }
+      }
+
+      if (farmAddressInput) {
+        farmAddressInput.addEventListener("input", updateFarmLinks);
+      }
+
+      if (openFarmHomeBtn) {
+        openFarmHomeBtn.addEventListener("click", () => {
+          const farmHomeUrl = buildFarmHomeUrl();
+          if (!farmHomeUrl) {
+            setMeta("请先填写养虾场通讯地址。保存后可直接打开页面。");
+            return;
+          }
+          window.open(farmHomeUrl, "_blank", "noopener,noreferrer");
+        });
       }
 
       if (reloadBtn) {
@@ -215,7 +295,8 @@
             setSaving(true);
             setMeta("正在保存设置...");
             await saveSettings();
-            setMeta("设置已保存。openclaw Token 与远程控制地址已更新。");
+            updateFarmLinks();
+            setMeta("设置已保存。openclaw Token、授权控制地址与养虾场通讯地址已更新。");
           } catch (error) {
             setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
           } finally {

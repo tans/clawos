@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 增加组件</title>
+    <title>ClawOS 模块中心</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
@@ -15,138 +15,74 @@
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
           <div>
-            <h1 class="text-lg font-semibold">增加组件</h1>
-            <div class="text-xs text-base-content/60">浏览器、钱包、企业微信统一放在这里管理。</div>
+            <h1 class="text-lg font-semibold">模块中心</h1>
+            <div class="text-xs text-base-content/60">保留原有功能，按模块重新整理入口与职责。</div>
           </div>
         </header>
 
         <section class="flex-1 p-6">
-          <div class="grid gap-4">
-            <section class="card card-compact border border-base-200 bg-base-100">
+          <div class="grid gap-4 xl:grid-cols-2">
+            <section class="card border border-base-200 bg-base-100">
               <div class="card-body gap-4">
                 <div>
-                  <h2 class="card-title text-base">浏览器</h2>
-                  <div class="text-xs text-base-content/70">先尝试重启浏览器，如果仍然异常，再重置浏览器设置。</div>
+                  <h2 class="card-title text-base">渠道与接入</h2>
+                  <div class="text-xs text-base-content/70">管理飞书、企业微信等外部通讯能力。</div>
                 </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <button class="btn btn-primary btn-sm" data-browser-action="restart-browser">重启浏览器</button>
-                  <button class="btn btn-outline btn-sm" data-browser-action="reset-config">重置浏览器设置</button>
+                <div class="rounded-lg border border-base-200 bg-base-200/20 p-3 text-xs text-base-content/70">
+                  渠道开关、凭证参数、企业微信相关接入都集中在这里。
                 </div>
-
-                <div class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/70" data-browser-op-status>
-                  等待执行...
+                <div class="card-actions justify-end">
+                  <a class="btn btn-primary btn-sm" href="/config/channels">打开渠道配置</a>
                 </div>
               </div>
             </section>
 
-            <section class="card card-compact border border-base-200 bg-base-100">
+            <section class="card border border-base-200 bg-base-100">
               <div class="card-body gap-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 class="card-title text-base">钱包</h2>
-                    <div class="text-xs text-base-content/70">本地钱包生成、地址查看与余额刷新。</div>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <button class="btn btn-primary btn-sm" type="button" data-wallet-action="generate-wallet">生成钱包</button>
-                    <button class="btn btn-outline btn-sm" type="button" data-wallet-action="reload-wallet">刷新</button>
-                  </div>
+                <div>
+                  <h2 class="card-title text-base">浏览器工具</h2>
+                  <div class="text-xs text-base-content/70">检查连通性，执行重启和配置重置。</div>
                 </div>
-
-                <div class="grid gap-2 text-sm md:grid-cols-2">
-                  <div class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-2">
-                    <div class="text-xs text-base-content/60">钱包地址</div>
-                    <div class="font-mono break-all" data-wallet-address>-</div>
-                  </div>
-                  <div class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-2">
-                    <div class="text-xs text-base-content/60">创建时间</div>
-                    <div class="font-mono" data-wallet-created>-</div>
-                  </div>
+                <div class="rounded-lg border border-base-200 bg-base-200/20 p-3 text-xs text-base-content/70">
+                  浏览器异常时，先看连通性，再做修复，避免把排查和操作混在一个大页里。
                 </div>
-
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="mb-2 text-sm font-semibold">余额</div>
-                  <div class="space-y-2 text-sm">
-                    <div class="font-mono leading-6">
-                      <span class="font-semibold text-base-content/80">ETH</span>
-                      <span class="text-base-content/60"> ETH </span>
-                      <span data-balance="eth-native">-</span>
-                      <span class="text-base-content/40"> | </span>
-                      <span class="text-base-content/60">USDT </span>
-                      <span data-balance="eth-usdt">-</span>
-                    </div>
-                    <div class="text-[11px] leading-4 text-error/80" data-balance-error="eth"></div>
-
-                    <div class="font-mono leading-6">
-                      <span class="font-semibold text-base-content/80">BSC</span>
-                      <span class="text-base-content/60"> BNB </span>
-                      <span data-balance="bsc-native">-</span>
-                      <span class="text-base-content/40"> | </span>
-                      <span class="text-base-content/60">USDT </span>
-                      <span data-balance="bsc-usdt">-</span>
-                    </div>
-                    <div class="text-[11px] leading-4 text-error/80" data-balance-error="bsc"></div>
-
-                    <div class="font-mono leading-6">
-                      <span class="font-semibold text-base-content/80">Base</span>
-                      <span class="text-base-content/60"> ETH </span>
-                      <span data-balance="base-native">-</span>
-                      <span class="text-base-content/40"> | </span>
-                      <span class="text-base-content/60">USDT </span>
-                      <span data-balance="base-usdt">-</span>
-                    </div>
-                    <div class="text-[11px] leading-4 text-error/80" data-balance-error="base"></div>
-                  </div>
-                  <div class="mt-2 text-[11px] text-base-content/60" data-balance-updated>尚未查询</div>
+                <div class="card-actions justify-end">
+                  <a class="btn btn-primary btn-sm" href="/config/browser">打开浏览器页面</a>
                 </div>
-
-                <div class="hidden rounded-lg border border-warning/40 bg-warning/10 px-3 py-3" data-wallet-secret-wrap>
-                  <div class="mb-1 text-xs font-semibold text-warning">本次生成私钥，仅展示一次</div>
-                  <textarea class="textarea textarea-bordered h-20 w-full font-mono text-xs" readonly data-wallet-privatekey></textarea>
-                </div>
-
-                <div class="text-xs text-base-content/70" data-wallet-meta>正在读取钱包状态...</div>
               </div>
             </section>
 
-            <section class="card card-compact border border-base-200 bg-base-100">
+            <section class="card border border-base-200 bg-base-100">
               <div class="card-body gap-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 class="card-title text-base">企业微信</h2>
-                    <div class="text-xs text-base-content/70">控制企业微信组件启用状态。</div>
-                  </div>
-                  <label class="label cursor-pointer gap-3 rounded-lg border border-base-200 px-3 py-2">
-                    <span class="text-sm">启用</span>
-                    <input class="toggle toggle-sm" type="checkbox" data-wework-enabled />
-                  </label>
+                <div>
+                  <h2 class="card-title text-base">钱包模块</h2>
+                  <div class="text-xs text-base-content/70">查看本地钱包、生成地址并查询多链余额。</div>
                 </div>
-
-                <div class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/70" data-wework-meta>
-                  正在读取企业微信配置...
+                <div class="rounded-lg border border-base-200 bg-base-200/20 p-3 text-xs text-base-content/70">
+                  包含钱包创建、地址查看、ETH/BSC/Base 余额查询。
                 </div>
-
-                <div class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75" data-qw-gateway-status>
-                  启动状态: 未检测
-                </div>
-                <div class="text-[11px] text-base-content/60" data-qw-gateway-status-detail>
-                  等待状态更新...
-                </div>
-
-                <div class="flex gap-2">
-                  <button class="btn btn-primary btn-sm" type="button" data-wework-save>保存企业微信设置</button>
-                  <button class="btn btn-outline btn-sm" type="button" data-wework-reload>重新读取</button>
-                  <button class="btn btn-outline btn-sm" type="button" data-qw-gateway-restart>重启企微网关</button>
+                <div class="card-actions justify-end">
+                  <a class="btn btn-primary btn-sm" href="/config/wallet">打开钱包页面</a>
                 </div>
               </div>
             </section>
 
-            <section class="card card-compact border border-base-200 bg-base-100">
-              <div class="card-body gap-3">
-                <h2 class="card-title text-base">日志</h2>
-                <div class="text-xs text-base-content/70" data-browser-task-meta>当前无任务</div>
-                <progress class="progress progress-neutral hidden w-full" value="0" max="100" data-browser-task-progress></progress>
-                <pre class="min-h-[260px] max-h-[420px] overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-task-output>操作记录会显示在这里...</pre>
+            <section class="card border border-base-200 bg-base-100">
+              <div class="card-body gap-4">
+                <div>
+                  <h2 class="card-title text-base">模型与系统</h2>
+                  <div class="text-xs text-base-content/70">管理代理模型、openclaw token、自启动和远程地址。</div>
+                </div>
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <a class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-3 text-sm transition hover:bg-base-200/40" href="/config/agents">
+                    <div class="font-medium">代理配置</div>
+                    <div class="mt-1 text-xs text-base-content/65">模型路由与 Provider</div>
+                  </a>
+                  <a class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-3 text-sm transition hover:bg-base-200/40" href="/config/settings">
+                    <div class="font-medium">常规设置</div>
+                    <div class="mt-1 text-xs text-base-content/65">Token、自启动、授权控制、养虾场</div>
+                  </a>
+                </div>
               </div>
             </section>
           </div>
@@ -155,448 +91,5 @@
     </div>
 
     <script src="/sidebar-update.js"></script>
-    <script>
-      const browserOpStatusEl = document.querySelector("[data-browser-op-status]");
-      const browserTaskMetaEl = document.querySelector("[data-browser-task-meta]");
-      const browserTaskProgressEl = document.querySelector("[data-browser-task-progress]");
-      const browserTaskOutputEl = document.querySelector("[data-browser-task-output]");
-      const addressEl = document.querySelector("[data-wallet-address]");
-      const createdEl = document.querySelector("[data-wallet-created]");
-      const walletMetaEl = document.querySelector("[data-wallet-meta]");
-      const balanceUpdatedEl = document.querySelector("[data-balance-updated]");
-      const secretWrapEl = document.querySelector("[data-wallet-secret-wrap]");
-      const privateKeyEl = document.querySelector("[data-wallet-privatekey]");
-      const generateBtn = document.querySelector('[data-wallet-action="generate-wallet"]');
-      const reloadBtn = document.querySelector('[data-wallet-action="reload-wallet"]');
-      const weworkEnabledEl = document.querySelector("[data-wework-enabled]");
-      const weworkMetaEl = document.querySelector("[data-wework-meta]");
-      const weworkSaveBtn = document.querySelector("[data-wework-save]");
-      const weworkReloadBtn = document.querySelector("[data-wework-reload]");
-      const qwGatewayStatusEl = document.querySelector("[data-qw-gateway-status]");
-      const qwGatewayStatusDetailEl = document.querySelector("[data-qw-gateway-status-detail]");
-      const qwGatewayRestartBtn = document.querySelector("[data-qw-gateway-restart]");
-
-      let taskPollTimer = null;
-      let walletExists = false;
-      let qwGatewayStatusTimer = null;
-
-      const balanceEls = {
-        eth: {
-          native: document.querySelector('[data-balance="eth-native"]'),
-          usdt: document.querySelector('[data-balance="eth-usdt"]'),
-          error: document.querySelector('[data-balance-error="eth"]'),
-        },
-        bsc: {
-          native: document.querySelector('[data-balance="bsc-native"]'),
-          usdt: document.querySelector('[data-balance="bsc-usdt"]'),
-          error: document.querySelector('[data-balance-error="bsc"]'),
-        },
-        base: {
-          native: document.querySelector('[data-balance="base-native"]'),
-          usdt: document.querySelector('[data-balance="base-usdt"]'),
-          error: document.querySelector('[data-balance-error="base"]'),
-        },
-      };
-
-      async function api(path, options = {}) {
-        const res = await fetch(path, {
-          headers: { "content-type": "application/json" },
-          ...options,
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
-          apiError.isApiError = true;
-          throw apiError;
-        }
-        return data;
-      }
-
-      function readUserErrorMessage(error, fallback) {
-        if (error && typeof error === "object" && error.isApiError === true) {
-          return fallback;
-        }
-        const message = error instanceof Error ? String(error.message || "").trim() : "";
-        return message || fallback;
-      }
-
-      function formatTime(iso) {
-        if (typeof iso !== "string" || !iso.trim()) {
-          return "-";
-        }
-        const date = new Date(iso);
-        if (Number.isNaN(date.getTime())) {
-          return iso;
-        }
-        return date.toLocaleString("zh-CN", { hour12: false });
-      }
-
-      function setQwGatewayStatusTone(state) {
-        qwGatewayStatusEl.classList.remove(
-          "border-base-200",
-          "border-info/30",
-          "border-success/30",
-          "border-error/30",
-          "bg-base-200/20",
-          "bg-info/10",
-          "bg-success/10",
-          "bg-error/10"
-        );
-        if (state === "running") {
-          qwGatewayStatusEl.classList.add("border-info/30", "bg-info/10");
-          return;
-        }
-        if (state === "success") {
-          qwGatewayStatusEl.classList.add("border-success/30", "bg-success/10");
-          return;
-        }
-        if (state === "failed" || state === "unsupported") {
-          qwGatewayStatusEl.classList.add("border-error/30", "bg-error/10");
-          return;
-        }
-        qwGatewayStatusEl.classList.add("border-base-200", "bg-base-200/20");
-      }
-
-      function stopTaskPolling() {
-        if (taskPollTimer) {
-          clearInterval(taskPollTimer);
-          taskPollTimer = null;
-        }
-      }
-
-      function stopQwGatewayStatusPolling() {
-        if (qwGatewayStatusTimer) {
-          clearTimeout(qwGatewayStatusTimer);
-          qwGatewayStatusTimer = null;
-        }
-      }
-
-      function renderBrowserTask(task) {
-        const logs = Array.isArray(task?.logs) ? task.logs : [];
-        const step = Number.isFinite(task?.step) ? task.step : 0;
-        const totalSteps = Number.isFinite(task?.totalSteps) ? task.totalSteps : 0;
-        const percent = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
-        const status = typeof task?.status === "string" ? task.status : "unknown";
-        const title = typeof task?.title === "string" ? task.title : "未知任务";
-        const running = status === "running" || status === "pending";
-        const statusText =
-          status === "running" || status === "pending"
-            ? "执行中"
-            : status === "success"
-              ? "已完成"
-              : status === "failed"
-                ? "失败"
-                : "未知";
-
-        browserTaskProgressEl.value = percent;
-        browserTaskProgressEl.classList.toggle("hidden", !running);
-        browserTaskMetaEl.textContent = `${title}（${statusText}）`;
-        browserTaskOutputEl.textContent =
-          logs.map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`).join("\n") ||
-          "暂无日志";
-        browserTaskOutputEl.scrollTop = browserTaskOutputEl.scrollHeight;
-      }
-
-      async function pollTask(taskId) {
-        stopTaskPolling();
-
-        const tick = async () => {
-          try {
-            const data = await api(`/api/tasks/${taskId}`);
-            const task = data.task || {};
-            renderBrowserTask(task);
-
-            if (task.status === "success" || task.status === "failed") {
-              stopTaskPolling();
-              browserOpStatusEl.textContent = task.status === "success" ? "操作完成。" : "操作未完成，请稍后重试。";
-            }
-          } catch (error) {
-            stopTaskPolling();
-            browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = readUserErrorMessage(error, "状态刷新失败，请稍后重试。");
-            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
-          }
-        };
-
-        await tick();
-        taskPollTimer = setInterval(tick, 1000);
-      }
-
-      async function runBrowserAction(action) {
-        const label = action === "restart-browser" ? "重启浏览器" : "重置浏览器设置";
-        browserOpStatusEl.textContent = `正在执行：${label}`;
-        browserTaskOutputEl.textContent = "任务启动中...";
-        browserTaskMetaEl.textContent = "任务启动中...";
-        browserTaskProgressEl.classList.remove("hidden");
-        browserTaskProgressEl.value = 0;
-
-        const data = await api("/api/browser/action", {
-          method: "POST",
-          body: JSON.stringify({ action }),
-        });
-
-        if (!data.taskId) {
-          throw new Error("服务端未返回任务 ID");
-        }
-
-        if (data.reused) {
-          browserOpStatusEl.textContent = `检测到同类任务正在执行，已切换日志：${label}`;
-        }
-
-        await pollTask(data.taskId);
-      }
-
-      function resetBalances(placeholder = "-") {
-        Object.values(balanceEls).forEach((item) => {
-          item.native.textContent = placeholder;
-          item.usdt.textContent = placeholder;
-          item.error.textContent = "";
-        });
-        balanceUpdatedEl.textContent = "尚未查询";
-      }
-
-      function renderBalances(balances) {
-        if (!balances || !balances.chains) {
-          resetBalances();
-          return;
-        }
-
-        ["eth", "bsc", "base"].forEach((key) => {
-          const item = balances.chains[key] || {};
-          balanceEls[key].native.textContent = item.nativeBalance || "-";
-          balanceEls[key].usdt.textContent = item.usdtBalance || "-";
-
-          const errors = [];
-          if (typeof item.nativeError === "string" && item.nativeError.length > 0) {
-            errors.push("原生币余额暂时无法获取");
-          }
-          if (typeof item.usdtError === "string" && item.usdtError.length > 0) {
-            errors.push("USDT 余额暂时无法获取");
-          }
-          balanceEls[key].error.textContent = errors.join("；");
-        });
-
-        balanceUpdatedEl.textContent = balances.updatedAt ? `更新时间: ${formatTime(balances.updatedAt)}` : "更新时间: -";
-      }
-
-      function renderWallet(wallet) {
-        const exists = Boolean(wallet && wallet.exists);
-        walletExists = exists;
-        addressEl.textContent = exists ? wallet.address || "-" : "未生成";
-        createdEl.textContent = exists ? formatTime(wallet.createdAt) : "-";
-        generateBtn.disabled = exists;
-        generateBtn.textContent = exists ? "已生成" : "生成钱包";
-      }
-
-      function setWalletRunning(running) {
-        if (walletExists) {
-          generateBtn.disabled = true;
-          generateBtn.textContent = "已生成";
-        } else {
-          generateBtn.disabled = running;
-          generateBtn.textContent = running ? "生成中..." : "生成钱包";
-        }
-        reloadBtn.disabled = running;
-      }
-
-      async function loadBalances() {
-        const data = await api("/api/local/wallet/balances");
-        renderBalances(data.balances || null);
-      }
-
-      async function loadWallet() {
-        walletMetaEl.textContent = "正在读取钱包状态...";
-        const data = await api("/api/local/wallet");
-        const wallet = data.wallet || {};
-        renderWallet(wallet);
-
-        if (wallet.exists) {
-          await loadBalances();
-          walletMetaEl.textContent = "已读取钱包与余额信息。";
-        } else {
-          resetBalances("未生成");
-          walletMetaEl.textContent = "当前尚未生成钱包。";
-        }
-      }
-
-      async function generateWallet() {
-        setWalletRunning(true);
-        walletMetaEl.textContent = "正在生成钱包并保存配置...";
-
-        try {
-          const data = await api("/api/local/wallet/generate", {
-            method: "POST",
-            body: JSON.stringify({}),
-          });
-          renderWallet(data.wallet || {});
-
-          if (typeof data.privateKey === "string" && data.privateKey.length > 0) {
-            privateKeyEl.value = data.privateKey;
-            secretWrapEl.classList.remove("hidden");
-          }
-
-          await loadBalances();
-          walletMetaEl.textContent = "钱包已生成，余额已更新。";
-        } catch (error) {
-          walletMetaEl.textContent = readUserErrorMessage(error, "生成失败，请稍后重试。");
-        } finally {
-          setWalletRunning(false);
-        }
-      }
-
-      function renderWework(config) {
-        const source = config && typeof config === "object" ? config : {};
-        const enabled = source.enabled === true || source.enable === true;
-        weworkEnabledEl.checked = enabled;
-        weworkMetaEl.textContent = enabled ? "企业微信组件已启用。" : "企业微信组件当前未启用。";
-      }
-
-      function renderQwGatewayStatus(status) {
-        const state = typeof status?.state === "string" ? status.state : "idle";
-        const message =
-          typeof status?.message === "string" && status.message.trim()
-            ? status.message.trim()
-            : "尚未检测企微网关状态";
-        const source = typeof status?.source === "string" ? status.source : null;
-        const updatedAt = formatTime(status?.updatedAt);
-
-        let stateText = "未运行";
-        let sourceText = "手动";
-        if (source === "startup") sourceText = "启动时";
-        if (state === "running") stateText = "启动中";
-        if (state === "success") stateText = "运行中";
-        if (state === "failed") stateText = "启动失败";
-        if (state === "unsupported") stateText = "系统不支持";
-
-        qwGatewayStatusEl.textContent = `启动状态: ${stateText}`;
-        setQwGatewayStatusTone(state);
-
-        const parts = [message];
-        if (state !== "idle") {
-          parts.push(`来源: ${sourceText}`);
-        }
-        if (updatedAt && updatedAt !== "-") {
-          parts.push(`更新时间: ${updatedAt}`);
-        }
-        qwGatewayStatusDetailEl.textContent = parts.join(" | ");
-      }
-
-      async function refreshQwGatewayStatus() {
-        const data = await api("/api/qw-gateway/status");
-        const status = data.status || {};
-        renderQwGatewayStatus(status);
-        return status;
-      }
-
-      async function pollQwGatewayStatus() {
-        stopQwGatewayStatusPolling();
-        try {
-          const status = await refreshQwGatewayStatus();
-          if (status?.state === "running") {
-            qwGatewayStatusTimer = setTimeout(pollQwGatewayStatus, 2000);
-          }
-        } catch (error) {
-          qwGatewayStatusDetailEl.textContent = readUserErrorMessage(error, "状态获取失败，请稍后重试。");
-        }
-      }
-
-      async function loadWework() {
-        weworkMetaEl.textContent = "正在读取企业微信配置...";
-        const data = await api("/api/config/channels");
-        const channels = data.data || {};
-        renderWework(channels.wework || {});
-      }
-
-      async function saveWework() {
-        weworkSaveBtn.disabled = true;
-        weworkReloadBtn.disabled = true;
-        weworkEnabledEl.disabled = true;
-        weworkMetaEl.textContent = "正在保存企业微信配置...";
-
-        try {
-          const data = await api("/api/config/channels/channel/wework", {
-            method: "PATCH",
-            body: JSON.stringify({
-              data: {
-                enabled: weworkEnabledEl.checked,
-              },
-            }),
-          });
-          renderWework(data.data || {});
-        } catch (error) {
-          weworkMetaEl.textContent = readUserErrorMessage(error, "企业微信配置保存失败，请稍后重试。");
-        } finally {
-          weworkSaveBtn.disabled = false;
-          weworkReloadBtn.disabled = false;
-          weworkEnabledEl.disabled = false;
-        }
-      }
-
-      document.querySelectorAll("[data-browser-action]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const action = button.getAttribute("data-browser-action");
-          if (!action) {
-            return;
-          }
-
-          button.disabled = true;
-          try {
-            await runBrowserAction(action);
-          } catch (error) {
-            browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
-            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
-          } finally {
-            button.disabled = false;
-          }
-        });
-      });
-
-      generateBtn.addEventListener("click", () => {
-        void generateWallet();
-      });
-
-      reloadBtn.addEventListener("click", () => {
-        void loadWallet().catch((error) => {
-          walletMetaEl.textContent = readUserErrorMessage(error, "读取钱包失败，请稍后重试。");
-        });
-      });
-
-      weworkSaveBtn.addEventListener("click", () => {
-        void saveWework();
-      });
-
-      weworkReloadBtn.addEventListener("click", () => {
-        void loadWework().catch((error) => {
-          weworkMetaEl.textContent = readUserErrorMessage(error, "读取企业微信配置失败，请稍后重试。");
-        });
-      });
-
-      qwGatewayRestartBtn.addEventListener("click", async () => {
-        qwGatewayRestartBtn.disabled = true;
-        try {
-          await api("/api/gateway/action", {
-            method: "POST",
-            body: JSON.stringify({ action: "restart-qw-gateway" }),
-          });
-          await pollQwGatewayStatus();
-        } catch (error) {
-          qwGatewayStatusDetailEl.textContent = readUserErrorMessage(error, "重启企微网关失败，请稍后重试。");
-        } finally {
-          qwGatewayRestartBtn.disabled = false;
-        }
-      });
-
-      void loadWallet().catch((error) => {
-        walletMetaEl.textContent = readUserErrorMessage(error, "读取钱包失败，请稍后重试。");
-      });
-
-      void loadWework().catch((error) => {
-        weworkMetaEl.textContent = readUserErrorMessage(error, "读取企业微信配置失败，请稍后重试。");
-      });
-
-      void pollQwGatewayStatus();
-    </script>
   </body>
 </html>

@@ -1,29 +1,41 @@
 import indexHtml from "../pages/index.html" with { type: "text" };
 import sessionsHtml from "../pages/sessions.html" with { type: "text" };
+import configChannelsHtml from "../pages/config-channels.html" with { type: "text" };
 import configAgentsHtml from "../pages/config-agents.html" with { type: "text" };
 import configSkillsHtml from "../pages/config-skills.html" with { type: "text" };
+import configBrowserHtml from "../pages/config-browser.html" with { type: "text" };
+import configWalletHtml from "../pages/config-wallet.html" with { type: "text" };
 import configComponentsHtml from "../pages/config-components.html" with { type: "text" };
 import configSettingsHtml from "../pages/config-settings.html" with { type: "text" };
 import sidebarUpdateJs from "../pages/sidebar-update.js" with { type: "text" };
 import cssContent from "../../dist/output.css" with { type: "text" };
 
-type SidebarNavId = "dashboard" | "components" | "agents" | "skills" | "sessions";
+type SidebarNavId =
+  | "dashboard"
+  | "components"
+  | "channels"
+  | "agents"
+  | "skills"
+  | "browser"
+  | "wallet"
+  | "settings"
+  | "sessions";
 
 const PAGES: Record<string, string> = {
   "/": indexHtml,
   "/index": indexHtml,
-  "/config/components": configComponentsHtml,
-  "/config/components/": configComponentsHtml,
-  "/config/channels": configComponentsHtml,
-  "/config/channels/": configComponentsHtml,
+  "/config/channels": configChannelsHtml,
+  "/config/channels/": configChannelsHtml,
   "/config/agents": configAgentsHtml,
   "/config/agents/": configAgentsHtml,
   "/config/skills": configSkillsHtml,
   "/config/skills/": configSkillsHtml,
-  "/config/browser": configComponentsHtml,
-  "/config/browser/": configComponentsHtml,
-  "/config/wallet": configComponentsHtml,
-  "/config/wallet/": configComponentsHtml,
+  "/config/browser": configBrowserHtml,
+  "/config/browser/": configBrowserHtml,
+  "/config/wallet": configWalletHtml,
+  "/config/wallet/": configWalletHtml,
+  "/config/components": configComponentsHtml,
+  "/config/components/": configComponentsHtml,
   "/config/settings": configSettingsHtml,
   "/config/settings/": configSettingsHtml,
   "/sessions": sessionsHtml,
@@ -33,28 +45,64 @@ const PAGES: Record<string, string> = {
 function resolveSidebarActive(path: string): SidebarNavId | null {
   if (path === "/" || path === "/index") return "dashboard";
   if (path.startsWith("/config/components")) return "components";
-  if (path.startsWith("/config/channels")) return "components";
+  if (path.startsWith("/config/channels")) return "channels";
   if (path.startsWith("/config/agents")) return "agents";
   if (path.startsWith("/config/skills")) return "skills";
-  if (path.startsWith("/config/browser")) return "components";
-  if (path.startsWith("/config/wallet")) return "components";
+  if (path.startsWith("/config/browser")) return "browser";
+  if (path.startsWith("/config/wallet")) return "wallet";
+  if (path.startsWith("/config/settings")) return "settings";
   if (path.startsWith("/sessions")) return "sessions";
   return null;
 }
 
 function renderSidebar(active: SidebarNavId | null): string {
-  const items: Array<{ id: SidebarNavId; href: string; label: string }> = [
-    { id: "dashboard", href: "/", label: "\u63a7\u5236\u53f0" },
-    { id: "components", href: "/config/components", label: "\u589e\u52a0\u7ec4\u4ef6" },
-    { id: "agents", href: "/config/agents", label: "\u6a21\u578b\u914d\u7f6e" },
-    { id: "skills", href: "/config/skills", label: "Skills" },
+  const sections: Array<{
+    title: string;
+    items: Array<{ id: SidebarNavId; href: string; label: string }>;
+  }> = [
+    {
+      title: "\u603b\u89c8",
+      items: [
+        { id: "dashboard", href: "/", label: "\u63a7\u5236\u53f0" },
+        { id: "components", href: "/config/components", label: "\u6a21\u5757\u4e2d\u5fc3" },
+      ],
+    },
+    {
+      title: "\u914d\u7f6e",
+      items: [
+        { id: "channels", href: "/config/channels", label: "\u6e20\u9053\u914d\u7f6e" },
+        { id: "agents", href: "/config/agents", label: "\u4ee3\u7406\u914d\u7f6e" },
+        { id: "settings", href: "/config/settings", label: "\u5e38\u89c4\u8bbe\u7f6e" },
+      ],
+    },
+    {
+      title: "\u5de5\u5177",
+      items: [
+        { id: "browser", href: "/config/browser", label: "\u6d4f\u89c8\u5668" },
+        { id: "wallet", href: "/config/wallet", label: "\u94b1\u5305" },
+        { id: "sessions", href: "/sessions", label: "\u4f1a\u8bdd" },
+        { id: "skills", href: "/config/skills", label: "Skills" },
+      ],
+    },
   ];
 
-  const nav = items
-    .map((item) => {
-      const className =
-        item.id === active ? "btn btn-primary btn-sm justify-start gap-2" : "btn btn-ghost btn-sm justify-start gap-2";
-      return `<a class="${className}" href="${item.href}"><span>${item.label}</span></a>`;
+  const nav = sections
+    .map((section) => {
+      const itemsHtml = section.items
+        .map((item) => {
+          const className =
+            item.id === active
+              ? "btn btn-primary btn-sm justify-start gap-2"
+              : "btn btn-ghost btn-sm justify-start gap-2";
+          return `<a class="${className}" href="${item.href}"><span>${item.label}</span></a>`;
+        })
+        .join("");
+      return `
+        <div class="flex flex-col gap-1.5">
+          <div class="px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-base-content/40">${section.title}</div>
+          <div class="flex flex-col gap-1">${itemsHtml}</div>
+        </div>
+      `;
     })
     .join("");
 
