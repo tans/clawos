@@ -18,6 +18,7 @@ type ResponsesBody = {
 
 const PORT = Number(process.env.PORT || process.env.FREEGPT_PROVIDER_PORT || process.env.FREE_PROVIDER_PORT || "18765");
 const MODEL_ID = process.env.FREEGPT_PROVIDER_MODEL_ID || process.env.FREE_PROVIDER_MODEL_ID || "freegpt-echo";
+const FREE_MODEL_NOTICE = "提醒：这是一个免费的测试模型，请先去配置其他大模型接入。";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
@@ -142,9 +143,14 @@ function normalizeResponseInput(input: unknown): string {
   return "";
 }
 
+function appendFreeModelNotice(content: string): string {
+  const trimmed = content.trim();
+  return trimmed ? `${trimmed}\n\n${FREE_MODEL_NOTICE}` : FREE_MODEL_NOTICE;
+}
+
 function buildCompletion(body: ChatCompletionsBody): Record<string, unknown> {
   const nowSec = Math.floor(Date.now() / 1000);
-  const content = pickEchoText(body.messages);
+  const content = appendFreeModelNotice(pickEchoText(body.messages));
   return {
     id: `chatcmpl-freegpt-${Date.now()}`,
     object: "chat.completion",
@@ -170,7 +176,7 @@ function buildCompletion(body: ChatCompletionsBody): Record<string, unknown> {
 
 function buildStream(body: ChatCompletionsBody): Response {
   const nowSec = Math.floor(Date.now() / 1000);
-  const content = pickEchoText(body.messages);
+  const content = appendFreeModelNotice(pickEchoText(body.messages));
   const model = body.model || MODEL_ID;
   const id = `chatcmpl-freegpt-${Date.now()}`;
   const encoder = new TextEncoder();
@@ -203,7 +209,7 @@ function buildStream(body: ChatCompletionsBody): Response {
 }
 
 function buildResponses(body: ResponsesBody): Record<string, unknown> {
-  const content = normalizeResponseInput(body.input);
+  const content = appendFreeModelNotice(normalizeResponseInput(body.input));
   return {
     id: `resp-freegpt-${Date.now()}`,
     object: "response",
