@@ -4,7 +4,6 @@ import type { DesktopApiResponse, DesktopRpcSchema } from "./rpc-schema";
 const ALLOWED_PAGE_PATHS = new Set([
   "/",
   "/index",
-  "/config/components",
   "/config/channels",
   "/config/agents",
   "/config/skills",

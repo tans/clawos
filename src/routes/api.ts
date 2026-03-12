@@ -774,13 +774,15 @@ async function handleBrowserAction(req: Request): Promise<Response> {
       ? "restart-browser"
       : rawAction === "reset"
         ? "reset-config"
-        : (rawAction as "restart-browser" | "restart-cdp" | "reset-config");
+        : rawAction === "repair"
+          ? "repair"
+          : (rawAction as "restart-browser" | "restart-cdp" | "reset-config" | "repair");
 
-  if (!["restart-browser", "restart-cdp", "reset-config"].includes(action)) {
+  if (!["restart-browser", "restart-cdp", "reset-config", "repair"].includes(action)) {
     throw new HttpError(400, `不支持的 action：${action}`);
   }
 
-  if (action === "restart-browser" || action === "restart-cdp") {
+  if (action === "restart-browser" || action === "restart-cdp" || action === "repair") {
     const { task, reused } = startBrowserRestartTask();
     return jsonResponse({ ok: true, taskId: task.id, task, reused });
   }

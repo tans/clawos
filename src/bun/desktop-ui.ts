@@ -14,7 +14,6 @@ const DESKTOP_SIDEBAR_SCRIPT_URL = "views://clawos/sidebar-update.js";
 const KNOWN_PAGE_PATHS = new Set([
   "/",
   "/index",
-  "/config/components",
   "/config/channels",
   "/config/agents",
   "/config/skills",

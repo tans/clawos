@@ -2,6 +2,7 @@ import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
 import { openclawCliTroubleshootingTips } from "../openclaw/cli";
 import { asObject, readNonEmptyString } from "../lib/value";
 import { runWslScript } from "../tasks/shell";
+import { BROWSER_CDP_PORT, BROWSER_REMOTE_CDP_PORT } from "../tasks/browser";
 
 type GatewayProbe =
   | {
@@ -169,8 +170,8 @@ export function normalizeCdpJsonVersionEndpoint(cdpUrl: string): { cdpUrl: strin
 }
 
 export function buildPortProxyCommand(connectPort: number): string {
-  const listenPort = connectPort < 65535 ? connectPort + 1 : connectPort;
-  return `netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=${listenPort} connectaddress=127.0.0.1 connectport=${connectPort}`;
+  const effectiveConnectPort = connectPort || BROWSER_CDP_PORT;
+  return `netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=${BROWSER_REMOTE_CDP_PORT} connectaddress=127.0.0.1 connectport=${effectiveConnectPort}`;
 }
 
 export function classifyCdpProbeConnectivity(direct127Ok: boolean, wslCdpOk: boolean): CdpProbeClassification {
