@@ -83,6 +83,7 @@
       const PROVIDER_ALIASES = {
         free: "freegpt",
         minimax: "minimax-cn",
+        "minimax-cn": "minimax-cn",
       };
       const FREEGPT_DEFAULTS = {
         baseUrl: "https://freegpt.minapp.xin/v1",
@@ -294,16 +295,26 @@
 
         for (const rawProviderKey of Object.keys(providers)) {
           const providerKey = normalizeProviderKey(rawProviderKey);
-          if (isPresetProvider(providerKey)) {
+          if (providerKey) {
             providerKeys.add(providerKey);
           }
         }
 
-        if (routing.primaryRef && isPresetProvider(routing.primaryRef.provider)) {
+        if (routing.primaryRef && routing.primaryRef.provider) {
           providerKeys.add(routing.primaryRef.provider);
         }
         for (const providerKey of routing.fallbackProviderSet) {
-          if (isPresetProvider(providerKey)) {
+          if (providerKey) {
+            providerKeys.add(providerKey);
+          }
+        }
+        for (const providerKey of routing.modelByProvider.keys()) {
+          if (providerKey) {
+            providerKeys.add(providerKey);
+          }
+        }
+        for (const providerKey of routing.modelCatalogByProvider.keys()) {
+          if (providerKey) {
             providerKeys.add(providerKey);
           }
         }
@@ -400,6 +411,12 @@
             .filter(Boolean)
             .map((id) => `<option value="${escapeHtml(id)}"></option>`)
             .join("");
+        }
+
+        if (!Array.isArray(providerDrafts) || providerDrafts.length === 0) {
+          modelListEl.innerHTML =
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">暂无可用 provider，已回退到默认预设失败。请检查 models/agents 配置是否为合法 JSON 对象。</div>';
+          return;
         }
 
         modelListEl.innerHTML = providerDrafts
@@ -713,13 +730,34 @@
       }
 
       async function loadSections() {
-        const [modelsData, agentsData] = await Promise.all([api(`/api/config/${MODEL_SECTION}`), api(`/api/config/${AGENT_SECTION}`)]);
+        const [modelsResult, agentsResult] = await Promise.allSettled([
+          api(`/api/config/${MODEL_SECTION}`),
+          api(`/api/config/${AGENT_SECTION}`),
+        ]);
 
-        modelsConfig = ensureObject(modelsData.data || {}, MODEL_SECTION);
-        agentsConfig = ensureObject(agentsData.data || {}, AGENT_SECTION);
+        const loadWarnings = [];
+        const nextModelsConfig =
+          modelsResult.status === "fulfilled" && isObject(modelsResult.value?.data) ? modelsResult.value.data : {};
+        const nextAgentsConfig =
+          agentsResult.status === "fulfilled" && isObject(agentsResult.value?.data) ? agentsResult.value.data : {};
+
+        if (modelsResult.status === "rejected") {
+          loadWarnings.push(`models 加载失败：${readUserErrorMessage(modelsResult.reason, "未知错误")}`);
+        } else if (!isObject(modelsResult.value?.data)) {
+          loadWarnings.push("models 配置不是对象，已回退到默认预设。");
+        }
+
+        if (agentsResult.status === "rejected") {
+          loadWarnings.push(`agents 加载失败：${readUserErrorMessage(agentsResult.reason, "未知错误")}`);
+        } else if (!isObject(agentsResult.value?.data)) {
+          loadWarnings.push("agents 配置不是对象，已回退到默认预设。");
+        }
+
+        modelsConfig = ensureObject(nextModelsConfig, MODEL_SECTION);
+        agentsConfig = ensureObject(nextAgentsConfig, AGENT_SECTION);
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = "大模型配置已加载。";
+        metaEl.textContent = loadWarnings.length > 0 ? `大模型配置已加载（部分配置已回退）。${loadWarnings.join(" ")}` : "大模型配置已加载。";
       }
 
       async function saveSingleProvider(providerKey) {

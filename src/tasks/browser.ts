@@ -8,10 +8,12 @@ import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 const IS_WINDOWS = process.platform === "win32";
 
 export const BROWSER_CDP_PORT = 9222;
+export const BROWSER_REMOTE_CDP_PORT = 9223;
 export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "about:blank";
 export const BROWSER_USER_DATA_DIR = process.env.CLAWOS_CHROME_USER_DATA_DIR?.trim() || "C:\\chrome-openclaw";
 
 const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/version`;
+const BROWSER_REMOTE_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_REMOTE_CDP_PORT}/json/version`;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
 
@@ -71,7 +73,7 @@ function isElevationError(result: CommandResult): boolean {
 
 async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: number): Promise<void> {
   task.step = step;
-  appendTaskLog(task, `Step ${step}/${totalSteps}: configure Windows Firewall for TCP ${BROWSER_CDP_PORT}`);
+  appendTaskLog(task, `Step ${step}/${totalSteps}: configure Windows Firewall for TCP ${BROWSER_REMOTE_CDP_PORT}`);
 
   const deleteArgs = [
     "netsh",
@@ -79,7 +81,7 @@ async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: n
     "firewall",
     "delete",
     "rule",
-    `name=ClawOS CDP ${BROWSER_CDP_PORT}`,
+    `name=ClawOS CDP ${BROWSER_REMOTE_CDP_PORT}`,
   ];
   appendTaskLog(task, `Run: ${deleteArgs.join(" ")}`);
   const deleteResult = await runProcess(deleteArgs);
@@ -91,11 +93,11 @@ async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: n
     "firewall",
     "add",
     "rule",
-    `name=ClawOS CDP ${BROWSER_CDP_PORT}`,
+    `name=ClawOS CDP ${BROWSER_REMOTE_CDP_PORT}`,
     "dir=in",
     "action=allow",
     "protocol=TCP",
-    `localport=${BROWSER_CDP_PORT}`,
+    `localport=${BROWSER_REMOTE_CDP_PORT}`,
   ];
   appendTaskLog(task, `Run: ${addArgs.join(" ")}`);
   const addResult = await runProcess(addArgs);
@@ -107,20 +109,13 @@ async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: n
     throw new Error(`Failed to configure Windows Firewall rule (exit code ${addResult.code})`);
   }
 
-  appendTaskLog(task, `Windows Firewall rule ready: ClawOS CDP ${BROWSER_CDP_PORT}`);
+  appendTaskLog(task, `Windows Firewall rule ready: ClawOS CDP ${BROWSER_REMOTE_CDP_PORT}`);
 }
 
-async function ensureBrowserPortProxy(
-  task: Task,
-  step: number,
-  totalSteps: number,
-  listenAddress: string
-): Promise<void> {
+async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: number): Promise<void> {
   task.step = step;
-  appendTaskLog(
-    task,
-    `Step ${step}/${totalSteps}: configure system portproxy (${listenAddress}:${BROWSER_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT})`
-  );
+  const listenAddress = "0.0.0.0";
+  appendTaskLog(task, `Step ${step}/${totalSteps}: configure system portproxy (${listenAddress}:${BROWSER_REMOTE_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT})`);
 
   const deleteArgs = [
     "netsh",
@@ -128,7 +123,7 @@ async function ensureBrowserPortProxy(
     "portproxy",
     "delete",
     "v4tov4",
-    `listenport=${BROWSER_CDP_PORT}`,
+    `listenport=${BROWSER_REMOTE_CDP_PORT}`,
     `listenaddress=${listenAddress}`,
   ];
   appendTaskLog(task, `Run: ${deleteArgs.join(" ")}`);
@@ -141,7 +136,7 @@ async function ensureBrowserPortProxy(
     "portproxy",
     "add",
     "v4tov4",
-    `listenport=${BROWSER_CDP_PORT}`,
+    `listenport=${BROWSER_REMOTE_CDP_PORT}`,
     `listenaddress=${listenAddress}`,
     `connectport=${BROWSER_CDP_PORT}`,
     "connectaddress=127.0.0.1",
@@ -156,7 +151,7 @@ async function ensureBrowserPortProxy(
     throw new Error(`Failed to configure system portproxy (exit code ${addResult.code})`);
   }
 
-  appendTaskLog(task, `System portproxy ready: ${listenAddress}:${BROWSER_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
+  appendTaskLog(task, `System portproxy ready: ${listenAddress}:${BROWSER_REMOTE_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
 }
 
 async function runWslStep(
@@ -283,12 +278,12 @@ export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, nameserver:
   const protocol = parsed.protocol === "wss:" || parsed.protocol === "https:" ? "wss:" : "ws:";
   parsed.protocol = protocol;
   parsed.hostname = nameserver;
-  parsed.port = String(BROWSER_CDP_PORT);
+  parsed.port = String(BROWSER_REMOTE_CDP_PORT);
   return parsed.toString();
 }
 
 function buildRemoteHttpVersionUrl(nameserver: string): string {
-  return `http://${nameserver}:${BROWSER_CDP_PORT}/json/version`;
+  return `http://${nameserver}:${BROWSER_REMOTE_CDP_PORT}/json/version`;
 }
 
 async function verifyRemoteHttpVersionFromWsl(
@@ -439,8 +434,8 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 7;
-  const task = createTask("browser-cdp-restart", "Restart browser with CDP, portproxy, and firewall rule", totalSteps);
+  const totalSteps = 4;
+  const task = createTask("browser-cdp-restart", "Repair browser CDP and openclaw config", totalSteps);
   task.status = "running";
 
   (async () => {
@@ -455,38 +450,43 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       }
       const chromeWorkingDirectory = resolveChromeWorkingDirectory(chromeExePath);
 
-      await runProcessStep(task, {
-        step: 1,
-        totalSteps,
-        name: "stop chrome.exe",
-        command: "taskkill /F /IM chrome.exe /T",
-        args: ["taskkill", "/F", "/IM", "chrome.exe", "/T"],
-        allowExitCodes: [128],
-      });
+      task.step = 1;
+      appendTaskLog(task, `Step 1/${totalSteps}: start local CDP on 127.0.0.1:${BROWSER_CDP_PORT}`);
+      appendTaskLog(task, "Run: taskkill /F /IM chrome.exe /T");
+      const killResult = await runProcess(["taskkill", "/F", "/IM", "chrome.exe", "/T"]);
+      appendProcessLogs(task, killResult, killResult.ok || killResult.code === 128);
+      if (!killResult.ok && killResult.code !== 128) {
+        throw new Error(`stop chrome.exe failed (exit code ${killResult.code})`);
+      }
 
       await runProcessStep(task, {
-        step: 2,
+        step: 1,
         totalSteps,
         name: `start Chrome with CDP on ${BROWSER_CDP_PORT}`,
         command: `powershell.exe ... ${buildChromeStartCommand(chromeExePath, chromeWorkingDirectory)}`,
         args: buildChromeStartArgs(chromeExePath, chromeWorkingDirectory),
       });
 
-      task.step = 3;
-      appendTaskLog(task, `Step 3/${totalSteps}: verify local CDP`);
       appendTaskLog(task, `Run: GET ${BROWSER_CDP_VERSION_URL}`);
       const version = await waitForCdpVersion(task);
 
-      const nameserver = await readWslNameserver(task, 4, totalSteps);
-      await ensureBrowserPortProxy(task, 5, totalSteps, nameserver);
-      await ensureBrowserFirewallRule(task, 6, totalSteps);
+      const nameserver = await readWslNameserver(task, 2, totalSteps);
+      await ensureBrowserPortProxy(task, 2, totalSteps);
+      appendTaskLog(task, `Remote proxy endpoint: ${BROWSER_REMOTE_CDP_VERSION_URL}`);
+
+      await ensureBrowserFirewallRule(task, 3, totalSteps);
 
       const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, nameserver);
       const remoteHttpVersionUrl = buildRemoteHttpVersionUrl(nameserver);
       appendTaskLog(task, `WSL HTTP endpoint: ${remoteHttpVersionUrl}`);
       appendTaskLog(task, `WSL WebSocket endpoint: ${remoteCdpUrl}`);
 
-      await verifyRemoteHttpVersionFromWsl(task, 7, totalSteps, remoteHttpVersionUrl);
+      task.step = 4;
+      appendTaskLog(task, `Step 4/${totalSteps}: update openclaw browser config`);
+      appendTaskLog(task, `Run: curl ${remoteHttpVersionUrl}`);
+      await verifyRemoteHttpVersionFromWsl(task, 4, totalSteps, remoteHttpVersionUrl);
+      appendTaskLog(task, "Run: openclaw gateway call config.apply (browser)");
+      await resetOpenclawBrowserConfig(task, remoteCdpUrl);
 
       task.status = "success";
       task.endedAt = new Date().toISOString();
@@ -514,7 +514,7 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 3;
+  const totalSteps = 4;
   const task = createTask("browser-cdp-reset-config", "Reset browser config to Remote CDP", totalSteps);
   task.status = "running";
 
@@ -525,13 +525,14 @@ export function startBrowserConfigResetTask(): { task: Task; reused: boolean } {
       }
 
       const prepared = await prepareRemoteCdp(task, 1, totalSteps);
-      await ensureBrowserPortProxy(task, 2, totalSteps, prepared.nameserver);
+      await ensureBrowserPortProxy(task, 2, totalSteps);
+      await ensureBrowserFirewallRule(task, 3, totalSteps);
 
       appendTaskLog(task, `Current nameserver: ${prepared.nameserver}`);
       appendTaskLog(task, `Local CDP: ${prepared.localWebSocketDebuggerUrl}`);
 
-      task.step = 3;
-      appendTaskLog(task, `Step 3/${totalSteps}: update openclaw browser config`);
+      task.step = 4;
+      appendTaskLog(task, `Step 4/${totalSteps}: update openclaw browser config`);
       appendTaskLog(task, "Run: openclaw gateway call config.apply (browser)");
       await resetOpenclawBrowserConfig(task, prepared.remoteCdpUrl);
 

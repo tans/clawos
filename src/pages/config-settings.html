@@ -75,36 +75,6 @@
             </div>
           </section>
 
-          <section class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body gap-4">
-              <h2 class="card-title text-base">寄养虾场</h2>
-              <p class="text-xs text-base-content/60">仅需配置养虾场通讯地址（含 farm ID，可选加入密码），保存后可快速跳转。</p>
-              <div class="grid gap-3">
-                <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                  <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
-                    <div class="space-y-1">
-                      <div class="text-sm font-medium">养虾场通讯地址</div>
-                      <div class="text-xs text-base-content/60">包含 farm ID，可选带 4 位加入密码，例如 https://farm.clawos.cc/join/abc123?pwd=1234</div>
-                    </div>
-                    <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="farm-address" placeholder="https://farm.clawos.cc/join/abc123?pwd=1234" />
-                  </div>
-                </div>
-
-
-                <div class="rounded-lg border border-base-200 bg-base-100 p-3 text-xs">
-                  <div class="mb-2 text-base-content/70">页面入口</div>
-                  <div>
-                    <div class="mb-1 text-base-content/60">养虾场入口</div>
-                    <div class="flex items-center gap-2">
-                      <a class="link link-primary font-mono" href="#" target="_blank" rel="noreferrer" data-link="farm-home">未配置</a>
-                      <button class="btn btn-outline btn-xs" type="button" data-action="open-farm-home">打开</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
           <div class="rounded-lg border border-base-200 bg-base-100 px-4 py-3 text-xs text-base-content/70" data-meta>
             正在读取设置...
           </div>
@@ -224,7 +194,7 @@
       }
 
       async function saveSettings() {
-        if (!tokenInput || !controllerAddressInput || !farmAddressInput) {
+        if (!tokenInput || !controllerAddressInput) {
           return;
         }
 
@@ -238,7 +208,7 @@
           throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
         }
 
-        const farmAddress = farmAddressInput.value.trim();
+        const farmAddress = farmAddressInput ? farmAddressInput.value.trim() : undefined;
         await api("/api/local/settings", {
           method: "PUT",
           body: JSON.stringify({

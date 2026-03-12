@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClawOS 浏览器</title>
     <link rel="stylesheet" href="/styles.css" />
-      </head>
+  </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
@@ -18,43 +18,44 @@
         </header>
 
         <section class="flex-1 p-6">
-          <div class="grid gap-4">
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">浏览器连通性</h2>
-              <div class="text-xs text-base-content/70">检测本机与 WSL 对浏览器 CDP 的连通情况，便于定位“浏览器不可用”问题。</div>
-
-              <div class="flex flex-wrap gap-2">
-                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>检查浏览器连通性</button>
+              <h2 class="card-title text-base">检测与修复</h2>
+              <div class="text-xs text-base-content/70">
+                只保留两个操作：检测当前浏览器连通性，或按固定流程修复浏览器 CDP、端口转发、防火墙和 openclaw 配置。
               </div>
 
-              <div class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2" data-browser-connectivity-status>
+              <div class="flex flex-wrap gap-2">
+                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>检测</button>
+                <button class="btn btn-primary btn-sm" data-browser-action="repair">修复</button>
+              </div>
+
+              <div
+                class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
+                data-browser-connectivity-status
+              >
                 等待检测...
               </div>
-              <pre class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-connectivity-output>检测详情会显示在这里...</pre>
-            </div>
-          </section>
+              <pre
+                class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
+                data-browser-connectivity-output
+              >检测详情会显示在这里...</pre>
 
-          <section class="card card-compact border border-base-200 bg-base-100">
-            <div class="card-body gap-4">
-              <h2 class="card-title text-base">常用操作</h2>
-              <div class="text-xs text-base-content/70">遇到浏览器问题时，先点“重启浏览器”，仍不行再点“重置浏览器设置”。</div>
-
-              <div class="flex flex-wrap gap-2">
-                <button class="btn btn-primary btn-sm" data-browser-action="restart-browser">重启浏览器</button>
-                <button class="btn btn-outline btn-sm" data-browser-action="reset-config">重置浏览器设置</button>
-              </div>
-
-              <div class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2" data-browser-op-status>
+              <div
+                class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
+                data-browser-op-status
+              >
                 等待执行...
               </div>
 
               <div class="text-xs text-base-content/70" data-browser-task-meta>当前无任务</div>
-              <progress class="progress progress-neutral w-full hidden" value="0" max="100" data-browser-task-progress></progress>
-              <pre class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5" data-browser-task-output>操作记录会显示在这里...</pre>
+              <progress class="progress progress-neutral hidden w-full" value="0" max="100" data-browser-task-progress></progress>
+              <pre
+                class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
+                data-browser-task-output
+              >操作记录会显示在这里...</pre>
             </div>
           </section>
-          </div>
         </section>
       </main>
     </div>
@@ -117,9 +118,9 @@
           case "ok":
             return "正常";
           case "local-only":
-            return "仅本机直连";
+            return "仅本机可达";
           case "cdp-only":
-            return "仅服务侧连通";
+            return "仅远程入口可达";
           case "disabled":
             return "已禁用";
           case "not-configured":
@@ -160,22 +161,22 @@
 
         if (info?.direct127 && typeof info.direct127 === "object") {
           lines.push(
-            `本机127检测: ${info.direct127.ok === true ? "成功" : "失败"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
+            `本机检测: ${info.direct127.ok === true ? "成功" : "失败"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
           );
         }
 
         if (info?.wslCdp && typeof info.wslCdp === "object") {
           lines.push(
-            `WSL检测: ${info.wslCdp.ok === true ? "成功" : "失败"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
+            `WSL 检测: ${info.wslCdp.ok === true ? "成功" : "失败"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
           );
           if (typeof info.wslCdp.command === "string" && info.wslCdp.command.trim()) {
-            lines.push(`WSL命令: ${info.wslCdp.command}`);
+            lines.push(`WSL 命令: ${info.wslCdp.command}`);
           }
         }
 
         if (Array.isArray(info?.warnings) && info.warnings.length > 0) {
           lines.push("");
-          lines.push("告警:");
+          lines.push("提示:");
           for (const warning of info.warnings) {
             if (typeof warning === "string" && warning.trim()) {
               lines.push(`- ${warning.trim()}`);
@@ -221,7 +222,7 @@
 
         browserTaskProgressEl.value = percent;
         browserTaskProgressEl.classList.toggle("hidden", !running);
-        browserTaskMetaEl.textContent = `${title}（${statusText}）`;
+        browserTaskMetaEl.textContent = `${title}，${statusText}`;
 
         const lines = logs.map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
         browserTaskOutputEl.textContent = lines.join("\n") || "暂无日志";
@@ -258,7 +259,7 @@
       }
 
       async function runBrowserAction(action) {
-        const label = action === "restart-browser" ? "重启浏览器" : "重置浏览器设置";
+        const label = action === "repair" ? "修复" : action;
         browserOpStatusEl.textContent = `正在执行：${label}`;
         browserTaskOutputEl.textContent = "任务启动中...";
         browserTaskMetaEl.textContent = "任务启动中...";
@@ -275,7 +276,7 @@
         }
 
         if (data.reused) {
-          browserOpStatusEl.textContent = `检测到同类任务在执行，已切换日志：${label}`;
+          browserOpStatusEl.textContent = `检测到同类任务正在执行，已切换日志：${label}`;
         }
 
         await pollTask(data.taskId);

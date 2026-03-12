@@ -5,14 +5,12 @@ import configAgentsHtml from "../pages/config-agents.html" with { type: "text" }
 import configSkillsHtml from "../pages/config-skills.html" with { type: "text" };
 import configBrowserHtml from "../pages/config-browser.html" with { type: "text" };
 import configWalletHtml from "../pages/config-wallet.html" with { type: "text" };
-import configComponentsHtml from "../pages/config-components.html" with { type: "text" };
 import configSettingsHtml from "../pages/config-settings.html" with { type: "text" };
 import sidebarUpdateJs from "../pages/sidebar-update.js" with { type: "text" };
 import cssContent from "../../dist/output.css" with { type: "text" };
 
 type SidebarNavId =
   | "dashboard"
-  | "components"
   | "channels"
   | "agents"
   | "skills"
@@ -34,8 +32,6 @@ const PAGES: Record<string, string> = {
   "/config/browser/": configBrowserHtml,
   "/config/wallet": configWalletHtml,
   "/config/wallet/": configWalletHtml,
-  "/config/components": configComponentsHtml,
-  "/config/components/": configComponentsHtml,
   "/config/settings": configSettingsHtml,
   "/config/settings/": configSettingsHtml,
   "/sessions": sessionsHtml,
@@ -44,7 +40,6 @@ const PAGES: Record<string, string> = {
 
 function resolveSidebarActive(path: string): SidebarNavId | null {
   if (path === "/" || path === "/index") return "dashboard";
-  if (path.startsWith("/config/components")) return "components";
   if (path.startsWith("/config/channels")) return "channels";
   if (path.startsWith("/config/agents")) return "agents";
   if (path.startsWith("/config/skills")) return "skills";
@@ -64,7 +59,6 @@ function renderSidebar(active: SidebarNavId | null): string {
       title: "\u603b\u89c8",
       items: [
         { id: "dashboard", href: "/", label: "\u63a7\u5236\u53f0" },
-        { id: "components", href: "/config/components", label: "\u6a21\u5757\u4e2d\u5fc3" },
       ],
     },
     {
