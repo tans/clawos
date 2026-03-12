@@ -71,6 +71,22 @@ function isElevationError(result: CommandResult): boolean {
   return text.includes("requires elevation");
 }
 
+async function disableWindowsFirewall(task: Task, step: number, totalSteps: number): Promise<void> {
+  task.step = step;
+  const args = ["netsh", "advfirewall", "set", "allprofiles", "state", "off"];
+  appendTaskLog(task, `Step ${step}/${totalSteps}: disable Windows Firewall for all profiles`);
+  appendTaskLog(task, `Run: ${args.join(" ")}`);
+
+  const result = await runProcess(args);
+  appendProcessLogs(task, result, result.ok);
+  if (!result.ok) {
+    if (isElevationError(result)) {
+      throw new Error("Failed to disable Windows Firewall: admin privileges are required for netsh.");
+    }
+    throw new Error(`Failed to disable Windows Firewall (exit code ${result.code})`);
+  }
+}
+
 async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: number): Promise<void> {
   task.step = step;
   appendTaskLog(task, `Step ${step}/${totalSteps}: configure Windows Firewall for TCP ${BROWSER_REMOTE_CDP_PORT}`);
@@ -115,7 +131,18 @@ async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: n
 async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: number): Promise<void> {
   task.step = step;
   const listenAddress = "0.0.0.0";
-  appendTaskLog(task, `Step ${step}/${totalSteps}: configure system portproxy (${listenAddress}:${BROWSER_REMOTE_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT})`);
+  appendTaskLog(task, `Step ${step}/${totalSteps}: reset and configure system portproxy`);
+
+  const resetArgs = ["netsh", "interface", "portproxy", "reset"];
+  appendTaskLog(task, `Run: ${resetArgs.join(" ")}`);
+  const resetResult = await runProcess(resetArgs);
+  appendProcessLogs(task, resetResult, resetResult.ok);
+  if (!resetResult.ok) {
+    if (isElevationError(resetResult)) {
+      throw new Error("Failed to reset system portproxy: admin privileges are required for netsh.");
+    }
+    throw new Error(`Failed to reset system portproxy (exit code ${resetResult.code})`);
+  }
 
   const deleteArgs = [
     "netsh",
@@ -152,6 +179,28 @@ async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: numb
   }
 
   appendTaskLog(task, `System portproxy ready: ${listenAddress}:${BROWSER_REMOTE_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
+
+  const addV4ToV6Args = [
+    "netsh",
+    "interface",
+    "portproxy",
+    "add",
+    "v4tov6",
+    `listenport=${BROWSER_CDP_PORT}`,
+    "connectaddress=::1",
+    `connectport=${BROWSER_CDP_PORT}`,
+  ];
+  appendTaskLog(task, `Run: ${addV4ToV6Args.join(" ")}`);
+  const addV4ToV6Result = await runProcess(addV4ToV6Args);
+  appendProcessLogs(task, addV4ToV6Result, addV4ToV6Result.ok);
+  if (!addV4ToV6Result.ok) {
+    if (isElevationError(addV4ToV6Result)) {
+      throw new Error("Failed to configure v4tov6 portproxy: admin privileges are required for netsh.");
+    }
+    throw new Error(`Failed to configure v4tov6 portproxy (exit code ${addV4ToV6Result.code})`);
+  }
+
+  appendTaskLog(task, `System portproxy ready: 0.0.0.0:${BROWSER_CDP_PORT} -> [::1]:${BROWSER_CDP_PORT} (v4tov6)`);
 }
 
 async function runWslStep(
@@ -434,7 +483,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const task = createTask("browser-cdp-restart", "Repair browser CDP and openclaw config", totalSteps);
   task.status = "running";
 
@@ -474,17 +523,18 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       await ensureBrowserPortProxy(task, 2, totalSteps);
       appendTaskLog(task, `Remote proxy endpoint: ${BROWSER_REMOTE_CDP_VERSION_URL}`);
 
-      await ensureBrowserFirewallRule(task, 3, totalSteps);
+      await disableWindowsFirewall(task, 3, totalSteps);
+      await ensureBrowserFirewallRule(task, 4, totalSteps);
 
       const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, nameserver);
       const remoteHttpVersionUrl = buildRemoteHttpVersionUrl(nameserver);
       appendTaskLog(task, `WSL HTTP endpoint: ${remoteHttpVersionUrl}`);
       appendTaskLog(task, `WSL WebSocket endpoint: ${remoteCdpUrl}`);
 
-      task.step = 4;
-      appendTaskLog(task, `Step 4/${totalSteps}: update openclaw browser config`);
+      task.step = 5;
+      appendTaskLog(task, `Step 5/${totalSteps}: update openclaw browser config`);
       appendTaskLog(task, `Run: curl ${remoteHttpVersionUrl}`);
-      await verifyRemoteHttpVersionFromWsl(task, 4, totalSteps, remoteHttpVersionUrl);
+      await verifyRemoteHttpVersionFromWsl(task, 5, totalSteps, remoteHttpVersionUrl);
       appendTaskLog(task, "Run: openclaw gateway call config.apply (browser)");
       await resetOpenclawBrowserConfig(task, remoteCdpUrl);
 
