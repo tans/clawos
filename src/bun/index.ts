@@ -5,6 +5,7 @@ import type { DesktopRpcSchema } from "../desktop-ui/rpc-schema";
 import { invokeDesktopApi, renderDesktopPage } from "./desktop-ui";
 import { computeDesktopControlPort } from "./single-instance";
 import { detectAndPersistOpenclawExecutionEnvironment } from "../system/openclaw-execution";
+import { startQwGatewayRestartTaskOnStartup } from "../tasks/gateway";
 import {
   getSelfUpdateStatus,
   runSelfUpdate,
@@ -29,6 +30,9 @@ const SHOULD_BACKGROUND_CHECK_UPDATES = !["0", "false", "no", "off"].includes(
 );
 const SHOULD_BACKGROUND_DOWNLOAD_UPDATES = !["0", "false", "no", "off"].includes(
   (process.env.CLAWOS_BACKGROUND_UPDATE_DOWNLOAD || "").trim().toLowerCase()
+);
+const SHOULD_AUTO_START_QW_GATEWAY = !["0", "false", "no", "off"].includes(
+  (process.env.CLAWOS_AUTO_START_QW_GATEWAY || "").trim().toLowerCase()
 );
 
 type UpdatePhase = "idle" | "checking" | "available" | "downloading" | "ready" | "applying" | "error";
@@ -502,6 +506,23 @@ function attachWindowCloseTracking(window: BrowserWindow): void {
   });
 }
 
+function startBackgroundQwGatewayAutoRestart(): void {
+  if (!SHOULD_AUTO_START_QW_GATEWAY) {
+    console.log("[desktop] qw gateway auto-start disabled");
+    return;
+  }
+
+  try {
+    const { task, reused } = startQwGatewayRestartTaskOnStartup();
+    console.log(
+      `[desktop] qw gateway startup task ${reused ? "reused" : "started"}: ${task.id}`
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[desktop] failed to start qw gateway startup task: ${message}`);
+  }
+}
+
 function createDesktopWindow(): BrowserWindow {
   const windowContent = resolveUseInlineShellHtml() ? { html: shellHtml } : { url: SHELL_VIEW_URL };
   const window = new BrowserWindow({
@@ -579,6 +600,7 @@ async function main(): Promise<void> {
     desktopWindow = fallbackWindow;
   }
 
+  startBackgroundQwGatewayAutoRestart();
   startBackgroundUpdateCheck();
 }
 
