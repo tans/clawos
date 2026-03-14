@@ -130,40 +130,7 @@
                             </div>
                         </section>
 
-                        <section class="card card-compact border border-base-200 bg-base-100">
-                            <div class="card-body gap-3">
-                                <h2 class="card-title text-base">OpenClaw 运行状态</h2>
-                                <div class="grid grid-cols-1 gap-2">
-                                    <div class="flex items-center justify-between rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs">
-                                        <span>OpenClaw 进程</span>
-                                        <span class="flex items-center gap-2"><span class="inline-block h-2.5 w-2.5 rounded-full bg-base-300" data-openclaw-running-light></span><span data-openclaw-running-text>检测中...</span></span>
-                                    </div>
-                                    <div class="flex items-center justify-between rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs">
-                                        <span>消息处理中</span>
-                                        <span class="flex items-center gap-2"><span class="inline-block h-3.5 w-3.5 rounded-full border-2 border-base-300 border-t-transparent" data-openclaw-thinking-spinner></span><span data-openclaw-thinking-text>检测中...</span></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="card card-compact border border-base-200 bg-base-100">
-                            <div class="card-body gap-3">
-                                <h2 class="card-title text-base">Token 消耗面板（日统计）</h2>
-                                <div class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75" data-token-usage-summary>
-                                    正在同步 token 消耗...
-                                </div>
-                                <div class="overflow-x-auto">
-                                    <table class="table table-xs">
-                                        <thead>
-                                            <tr><th>日期</th><th>Token</th><th>会话数</th></tr>
-                                        </thead>
-                                        <tbody data-token-usage-table>
-                                            <tr><td colspan="3" class="text-base-content/60">加载中...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </section>
+                        <!-- 临时下线：运行状态与 Token 用量面板暂不发布，相关前端代码和轮询已移除。 -->
 
                     </div>
                 </section>
@@ -223,12 +190,8 @@
                 browserLight: document.querySelector(
                     '[data-status-light="browser"]',
                 ),
-                openclawRunningLight: document.querySelector("[data-openclaw-running-light]"),
-                openclawRunningText: document.querySelector("[data-openclaw-running-text]"),
-                openclawThinkingSpinner: document.querySelector("[data-openclaw-thinking-spinner]"),
-                openclawThinkingText: document.querySelector("[data-openclaw-thinking-text]"),
-                tokenUsageSummary: document.querySelector("[data-token-usage-summary]"),
-                tokenUsageTable: document.querySelector("[data-token-usage-table]"),
+                qwGatewayStatus: document.querySelector("[data-qw-gateway-status]"),
+                qwGatewayStatusDetail: document.querySelector("[data-qw-gateway-status-detail]"),
             };
 
             const taskMeta = document.querySelector("[data-task-meta]");
@@ -246,8 +209,8 @@
             const ACTIVE_TASK_STORAGE_KEY = "clawos.activeTaskId";
 
             let pollTimer = null;
-            let tokenUsageTimer = null;
-            let runtimeStatusTimer = null;
+            let qwGatewayStatusTimer = null;
+            // 临时下线：运行状态与 Token 用量轮询暂停发布。
 
             async function api(path, options = {}) {
                 const res = await fetch(path, {
@@ -394,55 +357,7 @@
                 }
             }
 
-            function renderRuntimeStatus(status) {
-                const running = status?.openclawRunning === true;
-                const thinking = status?.thinking === true;
-                if (statusBadges.openclawRunningText) {
-                    statusBadges.openclawRunningText.textContent = running ? "运行中" : "未运行";
-                }
-                if (statusBadges.openclawRunningLight) {
-                    statusBadges.openclawRunningLight.classList.remove("bg-base-300", "bg-success", "bg-error");
-                    statusBadges.openclawRunningLight.classList.add(running ? "bg-success" : "bg-error");
-                }
-                if (statusBadges.openclawThinkingText) {
-                    statusBadges.openclawThinkingText.textContent = thinking ? "大模型 thinking 中" : "空闲";
-                }
-                if (statusBadges.openclawThinkingSpinner) {
-                    statusBadges.openclawThinkingSpinner.classList.remove("border-base-300", "border-info", "animate-spin");
-                    statusBadges.openclawThinkingSpinner.classList.add(thinking ? "border-info" : "border-base-300");
-                    if (thinking) {
-                        statusBadges.openclawThinkingSpinner.classList.add("animate-spin");
-                    }
-                }
-            }
-
-            function renderTokenUsage(stats, updatedAt) {
-                const rows = Array.isArray(stats) ? stats : [];
-                if (statusBadges.tokenUsageSummary) {
-                    const total = rows.reduce((sum, item) => sum + (Number(item?.tokens) || 0), 0);
-                    statusBadges.tokenUsageSummary.textContent = `最近 ${rows.length} 天累计 Token: ${total.toLocaleString()}（实时同步）${updatedAt ? `，更新时间：${new Date(updatedAt).toLocaleTimeString()}` : ""}`;
-                }
-                if (!statusBadges.tokenUsageTable) return;
-                if (rows.length === 0) {
-                    statusBadges.tokenUsageTable.innerHTML = '<tr><td colspan="3" class="text-base-content/60">暂无统计数据</td></tr>';
-                    return;
-                }
-                statusBadges.tokenUsageTable.innerHTML = rows
-                    .slice()
-                    .reverse()
-                    .map((item) => `<tr><td>${item.date || "-"}</td><td>${Number(item.tokens || 0).toLocaleString()}</td><td>${Number(item.sessions || 0).toLocaleString()}</td></tr>`)
-                    .join("");
-            }
-
-            async function refreshRuntimeStatus() {
-                const data = await api("/api/console/runtime-status");
-                renderRuntimeStatus(data.status || {});
-            }
-
-            async function refreshTokenUsage() {
-                const data = await api("/api/console/token-usage/daily?days=7");
-                renderTokenUsage(data.stats || [], data.updatedAt || "");
-            }
+            // 临时下线：运行状态与 Token 用量面板不发布，相关请求先停用。
 
             function stopTaskPolling() {
                 if (pollTimer) {
@@ -835,6 +750,12 @@
                     case "repair-env":
                         await startTask("/api/system/repair");
                         return;
+                    case "restart-qw-gateway":
+                        await startTask("/api/gateway/action", {
+                            action: "restart-qw-gateway",
+                        });
+                        void pollQwGatewayStatus();
+                        return;
                     case "refresh-openclaw-backups":
                         await refreshOpenclawBackups();
                         return;
@@ -918,14 +839,8 @@
                 if (activeTaskId) {
                     await pollTask(activeTaskId);
                 }
-                await refreshRuntimeStatus().catch(() => null);
-                runtimeStatusTimer = setInterval(() => {
-                    void refreshRuntimeStatus().catch(() => null);
-                }, 8000);
-                await refreshTokenUsage().catch(() => null);
-                tokenUsageTimer = setInterval(() => {
-                    void refreshTokenUsage().catch(() => null);
-                }, 10000);
+                await pollQwGatewayStatus().catch(() => null);
+                // 临时下线：运行状态与 Token 用量轮询暂停发布。
             })();
         </script>
     </body>

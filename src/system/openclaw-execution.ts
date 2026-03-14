@@ -36,7 +36,7 @@ export async function detectAndPersistOpenclawExecutionEnvironment(): Promise<Lo
   }
 
   const wslBin = resolveWslBin();
-  const probe = await runProcess([wslBin, "-l", "-q"]);
+  const probe = await runProcess([wslBin, "-l", "-q"], { timeoutMs: 3_000 });
   const hasWsl = probe.ok || !looksLikeWslMissing(probe.stderr);
 
   return updateLocalOpenclawExecutionEnvironment({

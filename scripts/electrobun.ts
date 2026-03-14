@@ -102,18 +102,49 @@ async function ensureElectrobunCliFromLocalPackage(
   const extractedCliPath = join(cacheDir, `electrobun${cliBinExt}`);
   const binCliPath = join(electrobunDir, "bin", `electrobun${cliBinExt}`);
 
-  const ensureBinPath = (): void => {
+  const syncBinPathBestEffort = async (): Promise<void> => {
     mkdirSync(dirname(binCliPath), { recursive: true });
-    copyFileSync(cachedCliPath, binCliPath);
-    if (releasePlatform !== "win") {
-      chmodSync(cachedCliPath, 0o755);
-      chmodSync(binCliPath, 0o755);
+
+    const cachedSize = statSync(cachedCliPath).size;
+    if (existsSync(binCliPath)) {
+      try {
+        const binSize = statSync(binCliPath).size;
+        if (binSize === cachedSize) {
+          if (releasePlatform !== "win") {
+            chmodSync(cachedCliPath, 0o755);
+            chmodSync(binCliPath, 0o755);
+          }
+          return;
+        }
+      } catch {
+        // Fall through to copy retry.
+      }
     }
+
+    let lastError: unknown = null;
+    for (let attempt = 1; attempt <= 4; attempt += 1) {
+      try {
+        copyFileSync(cachedCliPath, binCliPath);
+        if (releasePlatform !== "win") {
+          chmodSync(cachedCliPath, 0o755);
+          chmodSync(binCliPath, 0o755);
+        }
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 4) {
+          await Bun.sleep(150 * attempt);
+        }
+      }
+    }
+
+    const message = lastError instanceof Error ? lastError.message : String(lastError);
+    console.warn(`[electrobun-wrapper] bin CLI sync skipped: ${message}`);
   };
 
   if (existsSync(cachedCliPath)) {
-    ensureBinPath();
-    return binCliPath;
+    await syncBinPathBestEffort();
+    return cachedCliPath;
   }
 
   const cliAsset = `electrobun-cli-${releasePlatform}-${arch}.tar.gz`;
@@ -140,8 +171,8 @@ async function ensureElectrobunCliFromLocalPackage(
     throw new Error(`CLI 解压后未找到可执行文件：${cachedCliPath}`);
   }
 
-  ensureBinPath();
-  return binCliPath;
+  await syncBinPathBestEffort();
+  return cachedCliPath;
 }
 
 async function ensureElectrobunCoreFromLocalPackage(
