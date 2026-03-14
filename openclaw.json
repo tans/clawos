@@ -114,7 +114,7 @@
       "accounts": {},
       "allowFrom": ["*"],
       "enabled": true,
-      "defaultAccount": "1688855037478047",
+      "defaultAccount": "",
       "mediaDownloadDir": "\\\\wsl.localhost\\Ubuntu\\root\\.openclaw\\media",
       "groupPolicy": "open",
       "dmPolicy": "open"
