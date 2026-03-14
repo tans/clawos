@@ -115,6 +115,8 @@
       let channelsConfig = {};
       let activeSpec = null;
       let activeDraft = {};
+      let qwGatewayStatus = null;
+      let qwGatewayStatusPollTimer = null;
 
       function isObject(value) {
         return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -382,6 +384,17 @@
       function renderChannelCards() {
         channelListEl.innerHTML = CHANNEL_SPECS.map((spec) => {
           const iconClass = typeof spec.icon === "string" && spec.icon.trim() ? spec.icon : "fa-solid fa-comment-dots";
+          const actionButtons = [];
+          if (spec.fields.length > 0) {
+            actionButtons.push(
+              `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>`
+            );
+          }
+          if (spec.key === "wework") {
+            actionButtons.push(
+              `<button class="btn btn-primary btn-xs" type="button" data-action="restart-qw-gateway" data-channel-key="${spec.key}">重启企微网关</button>`
+            );
+          }
           return `
             <section class="rounded-lg border border-base-200 p-3" data-channel-card data-channel-key="${spec.key}">
               <div class="flex items-start justify-between gap-3">
@@ -391,13 +404,14 @@
                     <span>${spec.title}</span>
                   </div>
                   <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参数</div>
+                  ${spec.key === "wework" ? '<div class="mt-1 text-[11px] text-base-content/50" data-qw-gateway-status>企微网关状态未检查</div>' : ""}
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center justify-end gap-2">
                   <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
                     <span class="text-xs">开启</span>
                     <input class="toggle toggle-sm" type="checkbox" data-channel-enabled data-channel-key="${spec.key}" />
                   </label>
-                  ${spec.fields.length > 0 ? `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>` : ""}
+                  ${actionButtons.join("")}
                 </div>
               </div>
             </section>
@@ -415,7 +429,50 @@
           card,
           enabled: card.querySelector("[data-channel-enabled]"),
           summary: card.querySelector("[data-channel-summary]"),
+          gatewayStatus: card.querySelector("[data-qw-gateway-status]"),
         };
+      }
+
+      function readQwGatewayStateLabel(status) {
+        switch (status?.state) {
+          case "running":
+            return "重启中";
+          case "success":
+            return "最近一次重启成功";
+          case "failed":
+            return "最近一次重启失败";
+          case "unsupported":
+            return "当前系统不支持";
+          default:
+            return "尚未执行重启";
+        }
+      }
+
+      function formatQwGatewayStatusText(status) {
+        if (!status || !isObject(status)) {
+          return "企微网关状态未检查";
+        }
+
+        const parts = [readQwGatewayStateLabel(status)];
+        if (status.source === "startup") {
+          parts.push("启动时触发");
+        } else if (status.source === "manual") {
+          parts.push("手动触发");
+        }
+
+        const message = typeof status.message === "string" ? status.message.trim() : "";
+        if (message) {
+          parts.push(message);
+        }
+
+        return parts.join(" · ");
+      }
+
+      function updateQwGatewayCardStatus(cardEls) {
+        if (!cardEls?.gatewayStatus) {
+          return;
+        }
+        cardEls.gatewayStatus.textContent = formatQwGatewayStatusText(qwGatewayStatus);
       }
 
       function updateCardState(spec, config) {
@@ -432,6 +489,9 @@
 
         if (spec.fields.length === 0) {
           cardEls.summary.textContent = channel.enable === true ? "已开启" : "已关闭";
+          if (spec.key === "wework") {
+            updateQwGatewayCardStatus(cardEls);
+          }
           return;
         }
 
@@ -647,6 +707,55 @@
         loadingToastEl.classList.toggle("hidden", !visible);
       }
 
+      function stopQwGatewayStatusPolling() {
+        if (qwGatewayStatusPollTimer) {
+          clearTimeout(qwGatewayStatusPollTimer);
+          qwGatewayStatusPollTimer = null;
+        }
+      }
+
+      async function refreshQwGatewayStatus() {
+        const data = await api("/api/qw-gateway/status", {
+          method: "GET",
+        });
+        qwGatewayStatus = isObject(data.status) ? data.status : null;
+        const weworkSpec = specByKey.get("wework");
+        if (weworkSpec) {
+          updateCardState(weworkSpec, channelsConfig);
+        }
+        return qwGatewayStatus;
+      }
+
+      async function pollQwGatewayStatus() {
+        stopQwGatewayStatusPolling();
+
+        const tick = async () => {
+          try {
+            const status = await refreshQwGatewayStatus();
+            if (status?.state === "running") {
+              qwGatewayStatusPollTimer = setTimeout(tick, 1000);
+            }
+          } catch (_error) {
+            stopQwGatewayStatusPolling();
+          }
+        };
+
+        await tick();
+      }
+
+      async function startGatewayAction(action) {
+        const data = await api("/api/gateway/action", {
+          method: "POST",
+          body: JSON.stringify({ action }),
+        });
+
+        if (!data.taskId) {
+          throw new Error("服务端未返回任务 ID");
+        }
+
+        return data;
+      }
+
       async function saveChannelDraft(specKey, channelDraft) {
         const payload = sanitizeChannelDraft(specKey, channelDraft);
         const data = await api(`/api/config/channels/channel/${encodeURIComponent(specKey)}`, {
@@ -665,6 +774,12 @@
         try {
           const data = await api(`/api/config/${SECTION}`);
           channelsConfig = sanitizeChannelsConfig(ensureObject(data.data || {}, SECTION));
+          if (!IS_MACOS) {
+            const status = await refreshQwGatewayStatus().catch(() => null);
+            if (status?.state === "running") {
+              void pollQwGatewayStatus();
+            }
+          }
           fillCardForm(channelsConfig);
           metaEl.textContent = IS_MACOS
             ? `${SECTION} 已加载（macOS 已隐藏企业微信配置）`
@@ -674,21 +789,42 @@
         }
       }
 
-      channelListEl.addEventListener("click", (event) => {
-        const btn = event.target.closest("[data-action='open-config']");
+      channelListEl.addEventListener("click", async (event) => {
+        const btn = event.target.closest("[data-action]");
         if (!btn) {
           return;
         }
 
+        const action = btn.getAttribute("data-action");
         const specKey = btn.getAttribute("data-channel-key");
-        if (!specKey) {
+        if (!action || !specKey) {
           return;
         }
 
+        if (action === "open-config") {
+          try {
+            openChannelConfig(specKey);
+          } catch (error) {
+            metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试。");
+          }
+          return;
+        }
+
+        if (action !== "restart-qw-gateway") {
+          return;
+        }
+
+        btn.disabled = true;
         try {
-          openChannelConfig(specKey);
+          const data = await startGatewayAction("restart-qw-gateway");
+          metaEl.textContent = data.reused
+            ? "企微网关重启任务已在执行，已复用当前任务。"
+            : `已开始重启企微网关，任务 ID: ${data.taskId}`;
+          void pollQwGatewayStatus();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "重启企微网关失败，请稍后重试。");
+        } finally {
+          btn.disabled = false;
         }
       });
 
