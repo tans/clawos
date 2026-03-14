@@ -4,6 +4,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 type PublishPlatform = "windows" | "macos" | "linux";
 type BuildEnv = "dev" | "canary" | "stable";
+type ReleaseChannel = "stable" | "beta";
 
 const VERSION_PATTERN = /(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/;
 const PLATFORM_TOKEN: Record<PublishPlatform, string> = {
@@ -25,6 +26,7 @@ interface Options {
   timeoutMs: number;
   heartbeatMs: number;
   buildEnv: BuildEnv;
+  releaseChannel: ReleaseChannel;
 }
 
 type InstallerResolution = {
@@ -74,6 +76,14 @@ function defaultInstallerPath(platform: PublishPlatform): string {
   return resolve(process.cwd(), "dist", defaultInstallerFileName(platform));
 }
 
+function parseReleaseChannel(raw: string | undefined): ReleaseChannel {
+  const value = (raw || "").trim().toLowerCase();
+  if (value === "beta") {
+    return "beta";
+  }
+  return "stable";
+}
+
 function printUsage(): void {
   const platform = resolveHostPublishPlatform();
   console.log(`ClawOS 发布脚本
@@ -87,6 +97,7 @@ function printUsage(): void {
 选项:
   --installer <path>    安装包路径（可选，未传则自动探测）
   --build-env <env>     构建环境 dev/canary/stable，默认 stable
+  --release-channel <channel>  发布通道 stable/beta，默认 stable
   --updater-dir <path>  Electrobun 更新产物目录（可选，默认自动探测）
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
@@ -111,6 +122,7 @@ function printUsage(): void {
   CLAWOS_CONFIG_PATH
   CLAWOS_VERSION
   CLAWOS_BUILD_ENV
+  CLAWOS_RELEASE_CHANNEL
   CLAWOS_UPDATER_DIR
 `);
 }
@@ -144,6 +156,7 @@ function parseArgs(argv: string[]): Options {
     timeoutMs: Number.parseInt(process.env.UPLOAD_TIMEOUT_MS || "", 10) || 10 * 60 * 1000,
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
     buildEnv: parseBuildEnv(process.env.CLAWOS_BUILD_ENV),
+    releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
   };
 
   while (args.length > 0) {
@@ -212,6 +225,10 @@ function parseArgs(argv: string[]): Options {
       opts.buildEnv = parseBuildEnv(arg.slice("--build-env=".length));
       continue;
     }
+    if (arg.startsWith("--release-channel=")) {
+      opts.releaseChannel = parseReleaseChannel(arg.slice("--release-channel=".length));
+      continue;
+    }
 
     const value = args.shift();
     if (!value) {
@@ -245,6 +262,9 @@ function parseArgs(argv: string[]): Options {
         break;
       case "--build-env":
         opts.buildEnv = parseBuildEnv(value);
+        break;
+      case "--release-channel":
+        opts.releaseChannel = parseReleaseChannel(value);
         break;
       default:
         throw new Error(`未知参数: ${arg}`);
@@ -593,6 +613,7 @@ async function uploadFile(params: {
   baseUrl: string;
   version?: string;
   platform?: PublishPlatform;
+  channel: ReleaseChannel;
   timeoutMs: number;
   heartbeatMs: number;
 }): Promise<Record<string, unknown>> {
@@ -606,11 +627,13 @@ async function uploadFile(params: {
   if (params.platform) {
     form.append("platform", params.platform);
   }
+  form.append("channel", params.channel);
 
   const endpointUrl = new URL(`${params.baseUrl}${params.endpoint}`);
   if (params.platform) {
     endpointUrl.searchParams.set("platform", params.platform);
   }
+  endpointUrl.searchParams.set("channel", params.channel);
   const url = endpointUrl.toString();
   console.log(`[publish] 开始上传: ${basename(params.filePath)} (${formatBytes(fileSize)}) -> ${url}`);
 
@@ -631,6 +654,7 @@ async function uploadFile(params: {
       headers: {
         Authorization: `Bearer ${params.token}`,
         ...(params.platform ? { "x-platform": params.platform } : {}),
+        "x-channel": params.channel,
       },
       body: form,
       signal: controller.signal,
@@ -730,6 +754,7 @@ async function main(): Promise<void> {
   console.log(`[publish] host platform: ${hostPlatform}`);
   console.log(`[publish] build env: ${opts.buildEnv}`);
   console.log(`[publish] base url: ${opts.baseUrl}`);
+  console.log(`[publish] release channel: ${opts.releaseChannel}`);
   console.log(`[publish] token: ${opts.token === "clawos" ? "clawos (default)" : "***"}`);
   console.log(`[publish] timeout: ${formatDuration(opts.timeoutMs)}`);
   console.log(`[publish] heartbeat: ${formatDuration(opts.heartbeatMs)}`);
@@ -761,6 +786,7 @@ async function main(): Promise<void> {
       platform: hostPlatform,
       timeoutMs: opts.timeoutMs,
       heartbeatMs: opts.heartbeatMs,
+      channel: opts.releaseChannel,
     });
     console.log(
       `[publish] 安装包上传成功(${hostPlatform}): ${String(result.fileName || "unknown")} -> ${String(result.url || "")}`
@@ -782,6 +808,7 @@ async function main(): Promise<void> {
       baseUrl: opts.baseUrl,
       timeoutMs: opts.timeoutMs,
       heartbeatMs: opts.heartbeatMs,
+      channel: opts.releaseChannel,
     });
     console.log(`[publish] 配置文件上传成功: ${String(result.fileName || "unknown")}`);
     uploadedSummaries.push({
@@ -802,6 +829,7 @@ async function main(): Promise<void> {
         baseUrl: opts.baseUrl,
         timeoutMs: opts.timeoutMs,
         heartbeatMs: opts.heartbeatMs,
+        channel: opts.releaseChannel,
       });
       uploadedSummaries.push({
         kind: "updater",

@@ -3,9 +3,13 @@ import { constants as fsConstants } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import { getEnv } from "./env";
 import { sha256Hex } from "./hash";
-import type { InstallerPlatform, LatestRelease, ReleaseAsset } from "./types";
+import type { InstallerPlatform, LatestRelease, ReleaseAsset, ReleaseChannel } from "./types";
 
 const RELEASE_FILE_NAME = "latest.json";
+const RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
+  stable: "latest.json",
+  beta: "latest-beta.json",
+};
 const CONFIG_CANONICAL_NAME = "clawos_xiake.json";
 const INSTALLER_PLATFORMS: InstallerPlatform[] = ["windows", "macos", "linux"];
 const UPDATER_ASSET_MAX_ENTRIES = 240;
@@ -41,9 +45,10 @@ function createEmptyRelease(): LatestRelease {
   };
 }
 
-function getReleaseFilePath(): string {
+function getReleaseFilePath(channel: ReleaseChannel): string {
   const env = getEnv();
-  return resolve(env.storageDir, "releases", RELEASE_FILE_NAME);
+  const fileName = RELEASE_FILE_NAME_BY_CHANNEL[channel] || RELEASE_FILE_NAME;
+  return resolve(env.storageDir, "releases", fileName);
 }
 
 function getInstallerDir(platform?: InstallerPlatform): string {
@@ -100,6 +105,20 @@ export function normalizeInstallerPlatform(raw: unknown): InstallerPlatform | nu
   }
   if (normalized === "linux") {
     return "linux";
+  }
+  return null;
+}
+
+export function normalizeReleaseChannel(raw: unknown): ReleaseChannel | null {
+  if (typeof raw !== "string") {
+    return null;
+  }
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "stable") {
+    return "stable";
+  }
+  if (normalized === "beta") {
+    return "beta";
   }
   return null;
 }
@@ -187,11 +206,11 @@ function normalizeRelease(raw: unknown): LatestRelease {
   };
 }
 
-export async function readLatestRelease(): Promise<LatestRelease | null> {
+export async function readLatestRelease(channel: ReleaseChannel = "stable"): Promise<LatestRelease | null> {
   await ensureStorageDirs();
 
   try {
-    const content = await readFile(getReleaseFilePath(), "utf-8");
+    const content = await readFile(getReleaseFilePath(channel), "utf-8");
     return normalizeRelease(JSON.parse(content));
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
@@ -202,9 +221,9 @@ export async function readLatestRelease(): Promise<LatestRelease | null> {
   }
 }
 
-export async function writeLatestRelease(release: LatestRelease): Promise<void> {
+export async function writeLatestRelease(release: LatestRelease, channel: ReleaseChannel = "stable"): Promise<void> {
   await ensureStorageDirs();
-  await writeFile(getReleaseFilePath(), `${JSON.stringify(release, null, 2)}\n`, "utf-8");
+  await writeFile(getReleaseFilePath(channel), `${JSON.stringify(release, null, 2)}\n`, "utf-8");
 }
 
 function assertInstallerFile(fileName: string, platform: InstallerPlatform): void {
@@ -268,6 +287,7 @@ export async function storeInstaller(params: {
   bytes: Uint8Array;
   version?: string;
   platform?: InstallerPlatform;
+  channel?: ReleaseChannel;
 }): Promise<UploadedAssetResult> {
   const env = getEnv();
   await ensureStorageDirs();
@@ -289,7 +309,8 @@ export async function storeInstaller(params: {
     uploadedAt: nowIso(),
   };
 
-  const latest = (await readLatestRelease()) ?? createEmptyRelease();
+  const channel = normalizeReleaseChannel(params.channel) || "stable";
+  const latest = (await readLatestRelease(channel)) ?? createEmptyRelease();
   latest.installers = { ...(latest.installers || {}), [platform]: asset };
   if (platform === "windows" || !latest.installer) {
     latest.installer = asset;
@@ -298,13 +319,14 @@ export async function storeInstaller(params: {
     params.version?.trim() || detectVersionFromFileName(safeName) || latest.version || "dev";
   latest.publishedAt = nowIso();
 
-  await writeLatestRelease(latest);
+  await writeLatestRelease(latest, channel);
   return { release: latest, asset };
 }
 
 export async function storeXiakeConfig(params: {
   fileName: string;
   bytes: Uint8Array;
+  channel?: ReleaseChannel;
 }): Promise<UploadedAssetResult> {
   const env = getEnv();
   await ensureStorageDirs();
@@ -323,17 +345,19 @@ export async function storeXiakeConfig(params: {
     uploadedAt: nowIso(),
   };
 
-  const latest = (await readLatestRelease()) ?? createEmptyRelease();
+  const channel = normalizeReleaseChannel(params.channel) || "stable";
+  const latest = (await readLatestRelease(channel)) ?? createEmptyRelease();
   latest.xiakeConfig = asset;
   latest.publishedAt = nowIso();
 
-  await writeLatestRelease(latest);
+  await writeLatestRelease(latest, channel);
   return { release: latest, asset };
 }
 
 export async function storeUpdaterArtifact(params: {
   fileName: string;
   bytes: Uint8Array;
+  channel?: ReleaseChannel;
 }): Promise<{ release: LatestRelease; asset: ReleaseAsset }> {
   const env = getEnv();
   await ensureStorageDirs();
@@ -352,13 +376,14 @@ export async function storeUpdaterArtifact(params: {
     uploadedAt: nowIso(),
   };
 
-  const latest = (await readLatestRelease()) ?? createEmptyRelease();
+  const channel = normalizeReleaseChannel(params.channel) || "stable";
+  const latest = (await readLatestRelease(channel)) ?? createEmptyRelease();
   const merged = [...(latest.updaterAssets || []).filter((item) => item.name !== safeName), asset]
     .sort((a, b) => (a.name === b.name ? 0 : a.name < b.name ? -1 : 1))
     .slice(-UPDATER_ASSET_MAX_ENTRIES);
   latest.updaterAssets = merged;
   latest.publishedAt = nowIso();
-  await writeLatestRelease(latest);
+  await writeLatestRelease(latest, channel);
 
   return { release: latest, asset };
 }
@@ -428,8 +453,11 @@ export async function resolveUpdaterArtifact(fileName: string): Promise<{
   };
 }
 
-export async function resolveLatestInstaller(platform?: InstallerPlatform): Promise<ResolvedDownload> {
-  const latest = await readLatestRelease();
+export async function resolveLatestInstaller(
+  platform?: InstallerPlatform,
+  channel: ReleaseChannel = "stable"
+): Promise<ResolvedDownload> {
+  const latest = await readLatestRelease(channel);
   if (!latest) {
     throw new Error("尚未上传安装包");
   }
@@ -449,8 +477,8 @@ export async function resolveLatestInstaller(platform?: InstallerPlatform): Prom
   return { release: latest, asset: candidate, absolutePath };
 }
 
-export async function resolveLatestXiakeConfig(): Promise<ResolvedDownload> {
-  const latest = await readLatestRelease();
+export async function resolveLatestXiakeConfig(channel: ReleaseChannel = "stable"): Promise<ResolvedDownload> {
+  const latest = await readLatestRelease(channel);
   if (!latest?.xiakeConfig) {
     throw new Error("尚未上传 clawos_xiake.json");
   }

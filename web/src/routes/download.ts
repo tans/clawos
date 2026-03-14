@@ -1,12 +1,18 @@
 import { Hono } from "hono";
 import {
   normalizeInstallerPlatform,
+  normalizeReleaseChannel,
   resolveLatestInstaller,
   resolveLatestXiakeConfig,
   resolveUpdaterArtifact,
 } from "../lib/storage";
+import type { ReleaseChannel } from "../lib/types";
 
 export const downloadRoutes = new Hono();
+
+function resolveChannelFromRequest(raw: string | undefined, fallback: ReleaseChannel = "stable"): ReleaseChannel {
+  return normalizeReleaseChannel(raw) || fallback;
+}
 
 function contentDisposition(fileName: string): string {
   return `attachment; filename="${fileName}"; filename*=UTF-8''${encodeURIComponent(fileName)}`;
@@ -28,13 +34,15 @@ function resolveUpdaterContentType(fileName: string): string {
 
 downloadRoutes.get("/downloads/latest", async (c) => {
   try {
+    const channel = resolveChannelFromRequest(c.req.query("channel"));
     const platform = normalizeInstallerPlatform(c.req.query("platform") || undefined) || undefined;
-    const { absolutePath, asset } = await resolveLatestInstaller(platform);
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, channel);
     return new Response(Bun.file(absolutePath), {
       headers: {
         "content-type": "application/octet-stream",
         "content-disposition": contentDisposition(asset.name),
         "x-file-sha256": asset.sha256,
+        "x-release-channel": channel,
       },
     });
   } catch (error) {
@@ -44,17 +52,19 @@ downloadRoutes.get("/downloads/latest", async (c) => {
 
 downloadRoutes.get("/downloads/latest/:platform", async (c) => {
   try {
+    const channel = resolveChannelFromRequest(c.req.query("channel"));
     const platform = normalizeInstallerPlatform(c.req.param("platform"));
     if (!platform) {
       return c.json({ ok: false, error: "不支持的平台" }, 400);
     }
-    const { absolutePath, asset } = await resolveLatestInstaller(platform);
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, channel);
     return new Response(Bun.file(absolutePath), {
       headers: {
         "content-type": "application/octet-stream",
         "content-disposition": contentDisposition(asset.name),
         "x-file-sha256": asset.sha256,
         "x-installer-platform": platform,
+        "x-release-channel": channel,
       },
     });
   } catch (error) {
@@ -64,12 +74,52 @@ downloadRoutes.get("/downloads/latest/:platform", async (c) => {
 
 downloadRoutes.get("/downloads/clawos_xiake.json", async (c) => {
   try {
-    const { absolutePath, asset } = await resolveLatestXiakeConfig();
+    const channel = resolveChannelFromRequest(c.req.query("channel"));
+    const { absolutePath, asset } = await resolveLatestXiakeConfig(channel);
     return new Response(Bun.file(absolutePath), {
       headers: {
         "content-type": "application/json; charset=utf-8",
         "content-disposition": contentDisposition("clawos_xiake.json"),
         "x-file-sha256": asset.sha256,
+        "x-release-channel": channel,
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
+downloadRoutes.get("/downloads/beta", async (c) => {
+  try {
+    const platform = normalizeInstallerPlatform(c.req.query("platform") || undefined) || undefined;
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, "beta");
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-release-channel": "beta",
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
+downloadRoutes.get("/downloads/beta/:platform", async (c) => {
+  try {
+    const platform = normalizeInstallerPlatform(c.req.param("platform"));
+    if (!platform) {
+      return c.json({ ok: false, error: "不支持的平台" }, 400);
+    }
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, "beta");
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-installer-platform": platform,
+        "x-release-channel": "beta",
       },
     });
   } catch (error) {

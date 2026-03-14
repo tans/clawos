@@ -48,8 +48,19 @@ function SectionTitle({ eyebrow, title, desc }: { eyebrow: string; title: string
   );
 }
 
-function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; latestVersion: string | null }) {
+function HomePage({
+  hasInstaller,
+  latestVersion,
+  hasBetaInstaller,
+  betaVersion,
+}: {
+  hasInstaller: boolean;
+  latestVersion: string | null;
+  hasBetaInstaller: boolean;
+  betaVersion: string | null;
+}) {
   const versionText = latestVersion?.trim() ? latestVersion.trim() : "dev";
+  const betaVersionText = betaVersion?.trim() ? betaVersion.trim() : "dev";
   const features = [
     ["一键更新", "更新、重启、状态查看放在一起。"],
     ["模型配置", "常用模型和 provider 直接改。"],
@@ -171,6 +182,12 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
                       安装包暂未发布
                     </button>
                   )}
+                  {hasBetaInstaller ? (
+                    <a class="btn btn-ghost btn-wide border border-warning/30 bg-warning/10" href="/downloads/beta">
+                      <DownloadIcon />
+                      {`下载 Beta v${betaVersionText}`}
+                    </a>
+                  ) : null}
                   <a
                     class="btn btn-outline btn-wide border border-base-content/15 bg-base-100/40"
                     href="https://gx50d0q123.feishu.cn/wiki/CueLw8F8TiwjEMkGiCFclxtXnnh?from=from_copylink"
@@ -244,6 +261,18 @@ function HomePage({ hasInstaller, latestVersion }: { hasInstaller: boolean; late
   );
 }
 
-export function renderHomePage(hasInstaller: boolean, latestVersion: string | null): string {
-  return `<!doctype html>${renderToString(<HomePage hasInstaller={hasInstaller} latestVersion={latestVersion} />)}`;
+export function renderHomePage(
+  hasInstaller: boolean,
+  latestVersion: string | null,
+  hasBetaInstaller = false,
+  betaVersion: string | null = null
+): string {
+  return `<!doctype html>${renderToString(
+    <HomePage
+      hasInstaller={hasInstaller}
+      latestVersion={latestVersion}
+      hasBetaInstaller={hasBetaInstaller}
+      betaVersion={betaVersion}
+    />
+  )}`;
 }

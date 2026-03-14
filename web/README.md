@@ -29,8 +29,13 @@
   - 返回最新 `clawos_xiake.json` 文件
 - `GET /downloads/latest`
   - 返回最新安装包（建议重定向到真实文件 URL，或直接流式返回）
+- `GET /downloads/beta`
+  - 返回 beta 通道最新安装包
+- `GET /downloads/latest?channel=beta`
+  - 与 `/downloads/beta` 等价（兼容参数写法）
 - `GET /api/releases/latest`
   - 返回最新版本元数据（JSON）
+  - 可用 `?channel=stable|beta` 指定通道
 
 示例返回：
 
@@ -58,13 +63,16 @@
 - `POST /api/upload/installer`
   - 上传安装包（`multipart/form-data`）
   - 字段：`file`
+  - 可选字段：`channel`（`stable`/`beta`，默认 `stable`）
 - `POST /api/upload/xiake-config`
   - 上传 `clawos_xiake.json`（`multipart/form-data`）
   - 字段：`file`
+  - 可选字段：`channel`（`stable`/`beta`，默认 `stable`）
 
 统一要求：
 
 - Header 使用 `Authorization: Bearer <UPLOAD_TOKEN>`
+- 如需指定通道，可同时传 `x-channel: beta` 或 query `?channel=beta`
 - 服务端校验：
   - 文件名和扩展名
   - 文件大小上限

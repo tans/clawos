@@ -1,7 +1,7 @@
 import { Hono, type Context } from "hono";
 import { requireUploadAuth } from "../lib/auth";
-import { normalizeInstallerPlatform, storeInstaller, storeUpdaterArtifact, storeXiakeConfig } from "../lib/storage";
-import type { InstallerPlatform } from "../lib/types";
+import { normalizeInstallerPlatform, normalizeReleaseChannel, storeInstaller, storeUpdaterArtifact, storeXiakeConfig } from "../lib/storage";
+import type { InstallerPlatform, ReleaseChannel } from "../lib/types";
 
 export const uploadRoutes = new Hono();
 
@@ -23,6 +23,7 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
   bytes: Uint8Array;
   version?: string;
   platform?: InstallerPlatform;
+  channel?: ReleaseChannel;
 }> {
   const contentType = c.req.header("content-type") || "";
 
@@ -37,12 +38,15 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
     const version = typeof versionField === "string" ? versionField.trim() : undefined;
     const platformField = firstValue(body.platform);
     const platform = normalizeInstallerPlatform(platformField);
+    const channelField = firstValue(body.channel);
+    const channel = normalizeReleaseChannel(channelField);
 
     return {
       fileName: fileField.name || defaultFileName,
       bytes: toUint8Array(await fileField.arrayBuffer()),
       version: version || undefined,
       platform: platform || undefined,
+      channel: channel || undefined,
     };
   }
 
@@ -52,6 +56,7 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
     defaultFileName;
   const version = c.req.header("x-version") || c.req.query("version") || undefined;
   const platform = normalizeInstallerPlatform(c.req.header("x-platform") || c.req.query("platform") || undefined);
+  const channel = normalizeReleaseChannel(c.req.header("x-channel") || c.req.query("channel") || undefined);
   const bytes = toUint8Array(await c.req.arrayBuffer());
 
   return {
@@ -59,6 +64,7 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
     bytes,
     version,
     platform: platform || undefined,
+    channel: channel || undefined,
   };
 }
 
@@ -74,7 +80,14 @@ uploadRoutes.post("/api/upload/installer", async (c) => {
       sha256: result.asset.sha256,
       version: result.release.version,
       platform: upload.platform || null,
-      url: upload.platform ? `/downloads/latest/${upload.platform}` : "/downloads/latest",
+      channel: upload.channel || "stable",
+      url: upload.channel === "beta"
+        ? upload.platform
+          ? `/downloads/beta/${upload.platform}`
+          : "/downloads/beta"
+        : upload.platform
+          ? `/downloads/latest/${upload.platform}`
+          : "/downloads/latest",
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);
@@ -92,7 +105,8 @@ uploadRoutes.post("/api/upload/xiake-config", async (c) => {
       size: result.asset.size,
       sha256: result.asset.sha256,
       version: result.release.version,
-      url: "/downloads/clawos_xiake.json",
+      channel: upload.channel || "stable",
+      url: upload.channel === "beta" ? "/downloads/clawos_xiake.json?channel=beta" : "/downloads/clawos_xiake.json",
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);
@@ -105,6 +119,7 @@ uploadRoutes.post("/api/upload/electrobun-artifact", async (c) => {
     const result = await storeUpdaterArtifact({
       fileName: upload.fileName,
       bytes: upload.bytes,
+      channel: upload.channel,
     });
 
     return c.json({
@@ -113,6 +128,7 @@ uploadRoutes.post("/api/upload/electrobun-artifact", async (c) => {
       size: result.asset.size,
       sha256: result.asset.sha256,
       version: result.release.version || null,
+      channel: upload.channel || "stable",
       url: `/updates/${encodeURIComponent(result.asset.name)}`,
     });
   } catch (error) {
