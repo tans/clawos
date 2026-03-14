@@ -64,6 +64,29 @@ describe("release storage", () => {
     expect(download.asset.size).toBe(macBytes.byteLength);
   });
 
+  it("separates stable and beta installer channels", async () => {
+    await storeInstaller({
+      fileName: "clawos-stable-3.0.0.exe",
+      bytes: new TextEncoder().encode("stable-installer"),
+      channel: "stable",
+    });
+    await storeInstaller({
+      fileName: "clawos-beta-3.1.0.exe",
+      bytes: new TextEncoder().encode("beta-installer"),
+      channel: "beta",
+    });
+
+    const stable = await readLatestRelease("stable");
+    const beta = await readLatestRelease("beta");
+    expect(stable?.installer?.name).toBe("clawos-stable-3.0.0.exe");
+    expect(beta?.installer?.name).toBe("clawos-beta-3.1.0.exe");
+
+    const stableDownload = await resolveLatestInstaller(undefined, "stable");
+    const betaDownload = await resolveLatestInstaller(undefined, "beta");
+    expect(stableDownload.asset.name).toBe("clawos-stable-3.0.0.exe");
+    expect(betaDownload.asset.name).toBe("clawos-beta-3.1.0.exe");
+  });
+
   it("stores xiake config and resolves downloadable file", async () => {
     await storeInstaller({
       fileName: "clawos-setup-2.0.0.exe",

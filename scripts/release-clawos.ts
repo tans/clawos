@@ -45,6 +45,7 @@ function printUsage(): void {
   bun run scripts/release-clawos.ts --env=stable
   bun run scripts/release-clawos.ts --version=0.3.2
   bun run scripts/release-clawos.ts --env=stable -- --skip-config
+  bun run scripts/release-clawos.ts --env=canary -- --release-channel=beta
   bun run scripts/release-clawos.ts --skip-build -- --installer artifacts/stable-win-x64-ClawOS-Setup.zip
 `);
 }

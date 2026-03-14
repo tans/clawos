@@ -2,6 +2,23 @@ name: Release Build And Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      build_env:
+        description: "Build env used for artifact detection"
+        required: true
+        default: "stable"
+        type: choice
+        options:
+          - stable
+          - canary
+      release_channel:
+        description: "Release channel to publish"
+        required: true
+        default: "stable"
+        type: choice
+        options:
+          - stable
+          - beta
 
 jobs:
   build-and-publish:
@@ -72,11 +89,13 @@ jobs:
           PUBLISH_BASE_URL: ${{ vars.PUBLISH_BASE_URL }}
           UPLOAD_TIMEOUT_MS: "1200000"
           UPLOAD_HEARTBEAT_MS: "15000"
+          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
+          RELEASE_CHANNEL: ${{ github.event.inputs.release_channel || 'stable' }}
         shell: bash
         run: |
           set -euo pipefail
           if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then
-            bun run publish -- --base-url "${PUBLISH_BASE_URL}" --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"
+            bun run publish -- --base-url "${PUBLISH_BASE_URL}" --build-env "${BUILD_ENV}" --release-channel "${RELEASE_CHANNEL}" --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"
           else
-            bun run publish -- --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"
+            bun run publish -- --build-env "${BUILD_ENV}" --release-channel "${RELEASE_CHANNEL}" --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"
           fi
