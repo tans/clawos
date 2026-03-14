@@ -569,7 +569,10 @@ async function main(): Promise<void> {
 
   try {
     ensureLocalConfigTemplateFile();
-    await detectAndPersistOpenclawExecutionEnvironment();
+    void detectAndPersistOpenclawExecutionEnvironment().catch((error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`[desktop] failed to detect execution environment: ${message}`);
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`[desktop] failed to detect execution environment: ${message}`);

@@ -18,6 +18,7 @@ export type CommandResult = {
 };
 type RunProcessOptions = {
   stdinText?: string;
+  timeoutMs?: number;
 };
 
 export type WslShellMode = "login" | "interactive" | "non-login" | "clean";
@@ -231,18 +232,56 @@ export async function runProcess(args: string[], options: RunProcessOptions = {}
   }
 
   const proc = Bun.spawn(args, spawnOptions);
+  let timedOut = false;
+
+  const waitForExit = async (): Promise<number> => {
+    const timeoutMs = options.timeoutMs;
+    if (!(typeof timeoutMs === "number" && timeoutMs > 0)) {
+      return await proc.exited;
+    }
+
+    const exitOrTimeout = await Promise.race<number | "timeout">([
+      proc.exited,
+      Bun.sleep(timeoutMs).then(() => "timeout" as const),
+    ]);
+    if (exitOrTimeout !== "timeout") {
+      return exitOrTimeout;
+    }
+
+    timedOut = true;
+    try {
+      if (IS_WINDOWS && typeof proc.pid === "number" && proc.pid > 0) {
+        Bun.spawnSync({
+          cmd: ["cmd.exe", "/d", "/c", `taskkill /PID ${proc.pid} /T /F`],
+          stdin: "ignore",
+          stdout: "ignore",
+          stderr: "ignore",
+        });
+      } else {
+        proc.kill();
+      }
+    } catch {
+      // Ignore kill failures and wait for the process to settle.
+    }
+
+    return await proc.exited;
+  };
 
   const [stdoutBuffer, stderrBuffer, code] = await Promise.all([
     new Response(proc.stdout).arrayBuffer(),
     new Response(proc.stderr).arrayBuffer(),
-    proc.exited,
+    waitForExit(),
   ]);
   const stdout = decodeProcessOutput(new Uint8Array(stdoutBuffer));
-  const stderr = decodeProcessOutput(new Uint8Array(stderrBuffer));
+  const stderrText = decodeProcessOutput(new Uint8Array(stderrBuffer));
+  const stderr =
+    timedOut && typeof options.timeoutMs === "number" && options.timeoutMs > 0
+      ? `${stderrText}${stderrText ? "\n" : ""}Process timed out after ${options.timeoutMs}ms`
+      : stderrText;
 
   return {
-    ok: code === 0,
-    code,
+    ok: !timedOut && code === 0,
+    code: timedOut ? -1 : code,
     stdout,
     stderr,
     command: formatProcessCommand(args),
