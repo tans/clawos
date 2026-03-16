@@ -31,7 +31,7 @@
             <div class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
                 <h2 class="text-base font-semibold" data-session-title>未选择会话</h2>
-                <div class="text-xs text-base-content/70" data-detail-meta>请选择左侧会话查看历史消息</div>
+                <div class="text-xs text-base-content/70" data-detail-meta></div>
                 <div class="flex flex-col gap-2" data-message-list></div>
               </div>
             </div>
@@ -209,7 +209,7 @@
           await selectSession(activeSessionKey, active?.title || activeSessionKey, false);
         } else {
           titleEl.textContent = "未选择会话";
-          detailMetaEl.textContent = "请选择左侧会话查看历史消息";
+          detailMetaEl.textContent = "";
           renderMessageList([]);
         }
       }

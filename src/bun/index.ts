@@ -436,7 +436,7 @@ function renderStartupErrorHtml(errorMessage: string): string {
           "Noto Sans CJK SC",
           "Segoe UI",
           sans-serif;
-        background: #f6f8fb;
+        background: #ffffff;
         color: #111827;
       }
       main { max-width: 720px; margin: 48px auto; background: #ffffff; border: 1px solid #dbe2ea; border-radius: 12px; padding: 24px; box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06); }

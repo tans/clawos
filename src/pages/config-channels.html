@@ -25,7 +25,6 @@
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="card-title text-base">渠道开关与参数入口</h2>
-                <span class="text-[11px] text-base-content/60">仅展示当前常用渠道</span>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
             </div>
@@ -48,7 +47,7 @@
         <div class="mb-2 flex items-start justify-between gap-3">
           <div>
             <h3 class="text-base font-semibold" data-modal-title>渠道参数</h3>
-            <div class="text-[11px] text-base-content/60" data-modal-subtitle>仅展示当前可编辑参数。</div>
+            <div class="text-[11px] text-base-content/60" data-modal-subtitle></div>
           </div>
           <button class="btn btn-ghost btn-xs" type="button" data-modal-close>关闭</button>
         </div>
@@ -613,7 +612,7 @@
         activeDraft = cloneObject(entry.value);
 
         modalTitleEl.textContent = `${spec.title} 参数配置`;
-        modalSubtitleEl.textContent = "仅展示当前可编辑参数。";
+        modalSubtitleEl.textContent = "";
         modalFieldsEl.innerHTML = spec.fields.map((field) => renderModalField(spec.key, field, activeDraft)).join("");
 
         showModal();

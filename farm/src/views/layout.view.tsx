@@ -45,7 +45,7 @@ const LayoutRoot: FC<{
 }
         `}</style>
       </head>
-      <body class="bg-base-200 min-h-screen">
+      <body class="bg-white min-h-screen">
         <main class="max-w-6xl mx-auto p-4 md:p-6">
           {user ? (
             <div class="navbar bg-base-100 rounded-box shadow-sm mb-4 border border-base-300">

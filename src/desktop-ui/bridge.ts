@@ -115,7 +115,7 @@ function renderDesktopError(message: string): void {
       body {
         margin: 0;
         font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", "Segoe UI", sans-serif;
-        background: #f6f8fb;
+        background: #ffffff;
         color: #111827;
       }
       main {

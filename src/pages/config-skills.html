@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 功能</title>
+    <title>ClawOS 鍔熻兘</title>
     <link rel="stylesheet" href="/styles.css" />
       </head>
   <body class="bg-base-100 text-base-content overflow-x-auto">
@@ -14,9 +14,9 @@
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">功能</h1>
+          <h1 class="text-lg font-semibold">鍔熻兘</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">閲嶆柊鍔犺浇</button>
           </div>
         </header>
 
@@ -25,41 +25,29 @@
             <div class="card-body gap-4">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 class="card-title text-base">Tools 设置</h2>
-                  <div class="mt-1 text-xs text-base-content/60">
-                    上面是工具 tools 的设置（保存到根级 <code>tools</code>）。
-                    <a
-                      class="link link-hover"
-                      href="https://docs.openclaw.ai/tools"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      文档参考
-                    </a>
-                  </div>
+                  <h2 class="card-title text-base">Tools 璁剧疆</h2>
                 </div>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">保存 Tools</button>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">淇濆瓨 Tools</button>
               </div>
 
               <section class="rounded-lg border border-base-200 p-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-semibold">开放所有权限</div>
-                    <div class="mt-1 text-xs text-base-content/60">开启后将使用全权限策略（tools.profile = full）。</div>
                   </div>
                   <input type="checkbox" class="toggle toggle-primary" data-field="tools-permission-all" />
                 </div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">1) 策略与权限</div>
+                <div class="text-sm font-semibold">1) 绛栫暐涓庢潈闄?/div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
                       <span class="label-text text-xs">Tool Profile</span>
                     </div>
                     <select class="select select-bordered select-sm" data-field="tools-profile">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="minimal">minimal</option>
                       <option value="coding">coding</option>
                       <option value="messaging">messaging</option>
@@ -71,7 +59,7 @@
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
-                      <span class="label-text text-xs">allow（每行一个）</span>
+                      <span class="label-text text-xs">allow锛堟瘡琛屼竴涓級</span>
                     </div>
                     <textarea
                       class="textarea textarea-bordered h-28 w-full font-mono text-xs"
@@ -81,7 +69,7 @@
                   </label>
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
-                      <span class="label-text text-xs">alsoAllow（每行一个）</span>
+                      <span class="label-text text-xs">alsoAllow锛堟瘡琛屼竴涓級</span>
                     </div>
                     <textarea
                       class="textarea textarea-bordered h-28 w-full font-mono text-xs"
@@ -91,7 +79,7 @@
                   </label>
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
-                      <span class="label-text text-xs">deny（每行一个）</span>
+                      <span class="label-text text-xs">deny锛堟瘡琛屼竴涓級</span>
                     </div>
                     <textarea
                       class="textarea textarea-bordered h-28 w-full font-mono text-xs"
@@ -103,15 +91,15 @@
 
                 <div class="mt-4">
                   <div class="mb-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-semibold">byProvider（按 provider 定制策略）</div>
-                    <button class="btn btn-outline btn-xs" type="button" data-action="add-provider-row">新增 provider</button>
+                    <div class="text-xs font-semibold">byProvider锛堟寜 provider 瀹氬埗绛栫暐锛?/div>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="add-provider-row">鏂板 provider</button>
                   </div>
                   <div class="grid gap-3" data-provider-rows></div>
                 </div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">2) Web 工具</div>
+                <div class="text-sm font-semibold">2) Web 宸ュ叿</div>
 
                 <div class="mt-3 rounded-lg border border-base-200 p-3">
                   <div class="text-xs font-semibold">web.search</div>
@@ -119,28 +107,28 @@
                     <label class="form-control w-full gap-2">
                       <div class="label py-0"><span class="label-text text-xs">enabled</span></div>
                       <select class="select select-bordered select-sm" data-field="tools-web-search-enabled">
-                        <option value="">跟随默认</option>
-                        <option value="true">启用</option>
-                        <option value="false">禁用</option>
+                        <option value="">璺熼殢榛樿</option>
+                        <option value="true">鍚敤</option>
+                        <option value="false">绂佺敤</option>
                       </select>
                     </label>
                     <label class="form-control w-full gap-2">
                       <div class="label py-0"><span class="label-text text-xs">provider</span></div>
                       <select class="select select-bordered select-sm" data-field="tools-web-search-provider">
-                        <option value="">不设置</option>
+                        <option value="">涓嶈缃?/option>
                         <option value="brave">brave</option>
                         <option value="perplexity">perplexity</option>
                         <option value="grok">grok</option>
                       </select>
                     </label>
                     <label class="form-control w-full gap-2">
-                      <div class="label py-0"><span class="label-text text-xs">apiKey（通用）</span></div>
+                      <div class="label py-0"><span class="label-text text-xs">apiKey锛堥€氱敤锛?/span></div>
                       <input
                         class="input input-bordered input-sm font-mono"
                         type="password"
                         data-field="tools-web-search-api-key"
                         autocomplete="off"
-                        placeholder="可留空"
+                        placeholder="鍙暀绌?
                       />
                     </label>
                     <label class="form-control w-full gap-2">
@@ -159,7 +147,7 @@
 
                   <div class="mt-3 grid gap-3 xl:grid-cols-2">
                     <div class="rounded-lg border border-base-200 p-3">
-                      <div class="mb-2 text-xs font-semibold">perplexity 子配置</div>
+                      <div class="mb-2 text-xs font-semibold">perplexity 瀛愰厤缃?/div>
                       <div class="grid gap-2">
                         <input
                           class="input input-bordered input-sm font-mono"
@@ -183,7 +171,7 @@
                       </div>
                     </div>
                     <div class="rounded-lg border border-base-200 p-3">
-                      <div class="mb-2 text-xs font-semibold">grok 子配置</div>
+                      <div class="mb-2 text-xs font-semibold">grok 瀛愰厤缃?/div>
                       <div class="grid gap-2">
                         <input
                           class="input input-bordered input-sm font-mono"
@@ -199,7 +187,7 @@
                           placeholder="model"
                         />
                         <select class="select select-bordered select-sm" data-field="tools-web-search-grok-inline-citations">
-                          <option value="">inlineCitations 跟随默认</option>
+                          <option value="">inlineCitations 璺熼殢榛樿</option>
                           <option value="true">inlineCitations: true</option>
                           <option value="false">inlineCitations: false</option>
                         </select>
@@ -214,9 +202,9 @@
                     <label class="form-control w-full gap-2">
                       <div class="label py-0"><span class="label-text text-xs">enabled</span></div>
                       <select class="select select-bordered select-sm" data-field="tools-web-fetch-enabled">
-                        <option value="">跟随默认</option>
-                        <option value="true">启用</option>
-                        <option value="false">禁用</option>
+                        <option value="">璺熼殢榛樿</option>
+                        <option value="true">鍚敤</option>
+                        <option value="false">绂佺敤</option>
                       </select>
                     </label>
                     <label class="form-control w-full gap-2">
@@ -250,12 +238,12 @@
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">3) Exec 执行工具</div>
+                <div class="text-sm font-semibold">3) Exec 鎵ц宸ュ叿</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">host</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-host">
-                      <option value="">不设置</option>
+                      <option value="">涓嶈缃?/option>
                       <option value="sandbox">sandbox</option>
                       <option value="gateway">gateway</option>
                       <option value="node">node</option>
@@ -264,7 +252,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">security</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-security">
-                      <option value="">不设置</option>
+                      <option value="">涓嶈缃?/option>
                       <option value="deny">deny</option>
                       <option value="allowlist">allowlist</option>
                       <option value="full">full</option>
@@ -273,7 +261,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">ask</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-ask">
-                      <option value="">不设置</option>
+                      <option value="">涓嶈缃?/option>
                       <option value="off">off</option>
                       <option value="on-miss">on-miss</option>
                       <option value="always">always</option>
@@ -298,7 +286,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">notifyOnExit</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-notify-on-exit">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -306,7 +294,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">applyPatch.enabled</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-apply-patch-enabled">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -315,27 +303,27 @@
 
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">pathPrepend（每行一个目录）</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">pathPrepend锛堟瘡琛屼竴涓洰褰曪級</span></div>
                     <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-path-prepend"></textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">safeBins（每行一个）</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">safeBins锛堟瘡琛屼竴涓級</span></div>
                     <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-safe-bins"></textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">applyPatch.allowModels（每行一个）</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">applyPatch.allowModels锛堟瘡琛屼竴涓級</span></div>
                     <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-apply-patch-allow-models"></textarea>
                   </label>
                 </div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">4) Message 跨上下文</div>
+                <div class="text-sm font-semibold">4) Message 璺ㄤ笂涓嬫枃</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">allowCrossContextSend</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-allow-cross-context-send">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -343,7 +331,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">crossContext.allowWithinProvider</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-cross-context-allow-within-provider">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -351,7 +339,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">crossContext.allowAcrossProviders</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-cross-context-allow-across-providers">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -359,7 +347,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">crossContext.marker.enabled</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-marker-enabled">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -375,7 +363,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">broadcast.enabled</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-broadcast-enabled">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -385,10 +373,10 @@
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <div class="text-sm font-semibold">5) Tools 高级 JSON</div>
+                  <div class="text-sm font-semibold">5) Tools 楂樼骇 JSON</div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-json-to-form">JSON -> 表单</button>
-                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-form-to-json">表单 -> JSON</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-json-to-form">JSON -> 琛ㄥ崟</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-form-to-json">琛ㄥ崟 -> JSON</button>
                   </div>
                 </div>
                 <textarea
@@ -396,7 +384,6 @@
                   data-field="tools-json-raw"
                   spellcheck="false"
                 ></textarea>
-                <div class="mt-2 text-xs text-base-content/60">保留高级字段（如 media/sandbox/subagents/elevated）建议在此编辑。</div>
               </section>
             </div>
           </section>
@@ -406,35 +393,23 @@
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <h2 class="card-title text-base">Skills 学习</h2>
-                  <div class="mt-1 text-xs text-base-content/60">下面是 skills 的学习（保存到 <code>skills</code>）。</div>
                 </div>
                 <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存 Skills</button>
               </div>
 
               <section class="rounded-lg border border-base-200 p-3">
-                <div class="text-sm font-semibold">ClawHub 技能</div>
-                <div class="mt-1 text-xs text-base-content/60">搜索 ClawHub 技能并一键激活（安装并启用）。</div>
-                <div class="mt-3 flex flex-wrap items-center gap-2">
-                  <input
-                    class="input input-bordered input-sm w-full max-w-xl"
-                    type="text"
-                    data-field="clawhub-search-query"
-                    placeholder="输入关键词，例如：calendar / github / feishu"
-                  />
-                  <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-install">安装 ClawHub</button>
-                  <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-search">搜索</button>
-                </div>
-                <div class="mt-2 text-xs text-base-content/70" data-clawhub-status>输入关键词后点击搜索。</div>
+                <div class="text-sm font-semibold">ClawHub 鎶€鑳?/div>
+                <div class="mt-2 text-xs text-base-content/70" data-clawhub-status>杈撳叆鍏抽敭璇嶅悗鐐瑰嚮鎼滅储銆?/div>
                 <div class="mt-3 grid gap-2" data-clawhub-results></div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3">
-                <div class="text-sm font-semibold">1) Skills 快捷项</div>
+                <div class="text-sm font-semibold">1) Skills 蹇嵎椤?/div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">load.watch</span></div>
                     <select class="select select-bordered select-sm" data-field="skills-load-watch">
-                      <option value="">跟随默认</option>
+                      <option value="">璺熼殢榛樿</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -448,10 +423,10 @@
 
               <section class="rounded-lg border border-base-200 p-3">
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <div class="text-sm font-semibold">2) Skills 高级 JSON</div>
+                  <div class="text-sm font-semibold">2) Skills 楂樼骇 JSON</div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-json-to-form">JSON -> 表单</button>
-                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-form-to-json">表单 -> JSON</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-json-to-form">JSON -> 琛ㄥ崟</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-form-to-json">琛ㄥ崟 -> JSON</button>
                   </div>
                 </div>
                 <textarea
@@ -463,7 +438,7 @@
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
+          <div class="mt-3 text-xs text-base-content/70" data-meta>灏氭湭鍔犺浇</div>
         </section>
       </main>
     </div>
@@ -522,10 +497,10 @@
         try {
           parsed = JSON.parse(String(rawText || "{}").trim() || "{}");
         } catch {
-          throw new Error(`${label} 不是合法 JSON。`);
+          throw new Error(`${label} 涓嶆槸鍚堟硶 JSON銆俙);
         }
         if (!isObject(parsed)) {
-          throw new Error(`${label} 必须是 JSON 对象。`);
+          throw new Error(`${label} 蹇呴』鏄?JSON 瀵硅薄銆俙);
         }
         return parsed;
       }
@@ -541,7 +516,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `请求失败: ${res.status}`);
+          throw new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
         }
         return data;
       }
@@ -566,10 +541,10 @@
         }
         const parsed = Number(text);
         if (!Number.isInteger(parsed)) {
-          throw new Error(`${label} 必须是整数。`);
+          throw new Error(`${label} 蹇呴』鏄暣鏁般€俙);
         }
         if (typeof min === "number" && parsed < min) {
-          throw new Error(`${label} 不能小于 ${min}。`);
+          throw new Error(`${label} 涓嶈兘灏忎簬 ${min}銆俙);
         }
         return parsed;
       }
@@ -581,10 +556,10 @@
         }
         const parsed = Number(text);
         if (!Number.isFinite(parsed)) {
-          throw new Error(`${label} 必须是数字。`);
+          throw new Error(`${label} 蹇呴』鏄暟瀛椼€俙);
         }
         if (typeof min === "number" && parsed < min) {
-          throw new Error(`${label} 不能小于 ${min}。`);
+          throw new Error(`${label} 涓嶈兘灏忎簬 ${min}銆俙);
         }
         return parsed;
       }
@@ -669,7 +644,7 @@
 
         if (!Array.isArray(clawhubSearchItems) || clawhubSearchItems.length === 0) {
           clawhubResultsEl.innerHTML =
-            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">暂无结果。</div>';
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">鏆傛棤缁撴灉銆?/div>';
           return;
         }
 
@@ -691,7 +666,7 @@
                   <button class="btn btn-primary btn-xs" type="button" data-action="clawhub-activate" data-skill="${escapeHtml(id)}" ${
                     active ? "disabled" : ""
                   }>
-                    ${active ? "已激活" : "一键激活"}
+                    ${active ? "宸叉縺娲? : "涓€閿縺娲?}
                   </button>
                 </div>
               </div>
@@ -779,7 +754,7 @@
 
       function buildProviderProfileOptions(selected) {
         const options = [
-          { value: "", label: "跟随默认" },
+          { value: "", label: "璺熼殢榛樿" },
           { value: "minimal", label: "minimal" },
           { value: "coding", label: "coding" },
           { value: "messaging", label: "messaging" },
@@ -800,7 +775,7 @@
 
         if (!Array.isArray(providerRows) || providerRows.length === 0) {
           providerRowsEl.innerHTML =
-            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">暂无 provider 定制策略，点击右上角新增。</div>';
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">鏆傛棤 provider 瀹氬埗绛栫暐锛岀偣鍑诲彸涓婅鏂板銆?/div>';
           return;
         }
 
@@ -816,7 +791,7 @@
               <div class="rounded-lg border border-base-200 p-3" data-provider-row="${index}">
                 <div class="mb-2 flex items-center justify-between gap-2">
                   <div class="text-xs font-semibold">Provider #${index + 1}</div>
-                  <button class="btn btn-ghost btn-xs text-error" type="button" data-action="remove-provider-row" data-index="${index}">删除</button>
+                  <button class="btn btn-ghost btn-xs text-error" type="button" data-action="remove-provider-row" data-index="${index}">鍒犻櫎</button>
                 </div>
                 <div class="grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
@@ -832,15 +807,15 @@
                 </div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">allow（每行一个）</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">allow锛堟瘡琛屼竴涓級</span></div>
                     <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-allow">${allow}</textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">alsoAllow（每行一个）</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">alsoAllow锛堟瘡琛屼竴涓級</span></div>
                     <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-also-allow">${alsoAllow}</textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">deny（每行一个）</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">deny锛堟瘡琛屼竴涓級</span></div>
                     <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-deny">${deny}</textarea>
                   </label>
                 </div>
@@ -1215,17 +1190,17 @@
       async function searchClawhubSkills() {
         const query = String(clawhubSearchQueryInput?.value || "").trim();
         if (!query) {
-          setClawhubStatus("请输入搜索关键词。");
+          setClawhubStatus("璇疯緭鍏ユ悳绱㈠叧閿瘝銆?);
           return;
         }
 
-        setClawhubStatus(`正在搜索 ClawHub：${query} ...`);
+        setClawhubStatus(`姝ｅ湪鎼滅储 ClawHub锛?{query} ...`);
         const data = await api(`/api/skills/clawhub/search?q=${encodeURIComponent(query)}&limit=30`);
         clawhubSearchItems = Array.isArray(data.items) ? data.items : [];
         if (clawhubSearchItems.length === 0) {
-          setClawhubStatus(`未搜索到技能：${query}`);
+          setClawhubStatus(`鏈悳绱㈠埌鎶€鑳斤細${query}`);
         } else {
-          setClawhubStatus(`共找到 ${clawhubSearchItems.length} 个技能。`);
+          setClawhubStatus(`鍏辨壘鍒?${clawhubSearchItems.length} 涓妧鑳姐€俙);
         }
         renderClawhubResults();
       }
@@ -1233,9 +1208,9 @@
       async function activateClawhubSkill(skill) {
         const skillId = String(skill || "").trim();
         if (!skillId) {
-          throw new Error("skill 不能为空。");
+          throw new Error("skill 涓嶈兘涓虹┖銆?);
         }
-        setClawhubStatus(`正在激活：${skillId} ...`);
+        setClawhubStatus(`姝ｅ湪婵€娲伙細${skillId} ...`);
         const result = await api("/api/skills/clawhub/activate", {
           method: "POST",
           body: JSON.stringify({ skill: skillId }),
@@ -1246,20 +1221,20 @@
           skillsRawInput.value = formatJson(loadedSkillsConfig);
         }
         renderClawhubResults();
-        setClawhubStatus(`激活成功：${skillId}`);
+        setClawhubStatus(`婵€娲绘垚鍔燂細${skillId}`);
       }
 
       async function installClawhub() {
-        setClawhubStatus("正在安装 ClawHub ...");
+        setClawhubStatus("姝ｅ湪瀹夎 ClawHub ...");
         const result = await api("/api/skills/clawhub/install", {
           method: "POST",
           body: JSON.stringify({}),
         });
         if (result.installed === true) {
-          setClawhubStatus("ClawHub 已安装，可直接搜索并激活技能。");
+          setClawhubStatus("ClawHub 宸插畨瑁咃紝鍙洿鎺ユ悳绱㈠苟婵€娲绘妧鑳姐€?);
           return;
         }
-        setClawhubStatus("ClawHub 安装状态未知，请稍后重试。");
+        setClawhubStatus("ClawHub 瀹夎鐘舵€佹湭鐭ワ紝璇风◢鍚庨噸璇曘€?);
       }
 
       if (providerRowsEl) {
@@ -1282,13 +1257,13 @@
       if (clawhubSearchBtn) {
         clawhubSearchBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(clawhubSearchBtn, true, "搜索中...", "搜索");
+            setButtonBusy(clawhubSearchBtn, true, "鎼滅储涓?..", "鎼滅储");
             await searchClawhubSkills();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`搜索失败: ${message}`);
+            setClawhubStatus(`鎼滅储澶辫触: ${message}`);
           } finally {
-            setButtonBusy(clawhubSearchBtn, false, "搜索中...", "搜索");
+            setButtonBusy(clawhubSearchBtn, false, "鎼滅储涓?..", "鎼滅储");
           }
         });
       }
@@ -1296,13 +1271,13 @@
       if (clawhubInstallBtn) {
         clawhubInstallBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(clawhubInstallBtn, true, "安装中...", "安装 ClawHub");
+            setButtonBusy(clawhubInstallBtn, true, "瀹夎涓?..", "瀹夎 ClawHub");
             await installClawhub();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`安装失败: ${message}`);
+            setClawhubStatus(`瀹夎澶辫触: ${message}`);
           } finally {
-            setButtonBusy(clawhubInstallBtn, false, "安装中...", "安装 ClawHub");
+            setButtonBusy(clawhubInstallBtn, false, "瀹夎涓?..", "瀹夎 ClawHub");
           }
         });
       }
@@ -1321,7 +1296,7 @@
             await searchClawhubSkills();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`搜索失败: ${message}`);
+            setClawhubStatus(`鎼滅储澶辫触: ${message}`);
           }
         });
       }
@@ -1341,7 +1316,7 @@
             await activateClawhubSkill(skill);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`激活失败: ${message}`);
+            setClawhubStatus(`婵€娲诲け璐? ${message}`);
             target.removeAttribute("disabled");
           }
         });
@@ -1365,10 +1340,10 @@
             }
             const parsed = parseJsonObject(toolsRawInput.value, "Tools JSON");
             fillToolsForm(parsed);
-            setMeta("Tools JSON 已应用到表单。");
+            setMeta("Tools JSON 宸插簲鐢ㄥ埌琛ㄥ崟銆?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`应用失败: ${message}`);
+            setMeta(`搴旂敤澶辫触: ${message}`);
           }
         });
       }
@@ -1382,10 +1357,10 @@
             if (toolsRawInput) {
               toolsRawInput.value = formatJson(merged);
             }
-            setMeta("Tools 表单已同步到 JSON。");
+            setMeta("Tools 琛ㄥ崟宸插悓姝ュ埌 JSON銆?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`同步失败: ${message}`);
+            setMeta(`鍚屾澶辫触: ${message}`);
           }
         });
       }
@@ -1399,10 +1374,10 @@
             }
             const parsed = parseJsonObject(skillsRawInput.value, "Skills JSON");
             fillSkillsForm(parsed);
-            setMeta("Skills JSON 已应用到表单。");
+            setMeta("Skills JSON 宸插簲鐢ㄥ埌琛ㄥ崟銆?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`应用失败: ${message}`);
+            setMeta(`搴旂敤澶辫触: ${message}`);
           }
         });
       }
@@ -1416,10 +1391,10 @@
             if (skillsRawInput) {
               skillsRawInput.value = formatJson(merged);
             }
-            setMeta("Skills 表单已同步到 JSON。");
+            setMeta("Skills 琛ㄥ崟宸插悓姝ュ埌 JSON銆?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`同步失败: ${message}`);
+            setMeta(`鍚屾澶辫触: ${message}`);
           }
         });
       }
@@ -1427,15 +1402,15 @@
       if (reloadBtn) {
         reloadBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(reloadBtn, true, "加载中...", "重新加载");
-            setMeta("正在读取功能配置...");
+            setButtonBusy(reloadBtn, true, "鍔犺浇涓?..", "閲嶆柊鍔犺浇");
+            setMeta("姝ｅ湪璇诲彇鍔熻兘閰嶇疆...");
             await loadConfig();
-            setMeta("功能配置已刷新。");
+            setMeta("鍔熻兘閰嶇疆宸插埛鏂般€?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`读取失败: ${message}`);
+            setMeta(`璇诲彇澶辫触: ${message}`);
           } finally {
-            setButtonBusy(reloadBtn, false, "加载中...", "重新加载");
+            setButtonBusy(reloadBtn, false, "鍔犺浇涓?..", "閲嶆柊鍔犺浇");
           }
         });
       }
@@ -1443,17 +1418,17 @@
       if (saveToolsBtn) {
         saveToolsBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(saveToolsBtn, true, "保存中...", "保存 Tools");
-            setMeta("正在保存 Tools 配置...");
+            setButtonBusy(saveToolsBtn, true, "淇濆瓨涓?..", "淇濆瓨 Tools");
+            setMeta("姝ｅ湪淇濆瓨 Tools 閰嶇疆...");
             const base = toolsRawInput ? parseJsonObject(toolsRawInput.value, "Tools JSON") : cloneObject(loadedToolsConfig);
             const merged = buildToolsConfigFromForm(base);
             await saveTools(merged);
-            setMeta("Tools 配置已保存。");
+            setMeta("Tools 閰嶇疆宸蹭繚瀛樸€?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`保存 Tools 失败: ${message}`);
+            setMeta(`淇濆瓨 Tools 澶辫触: ${message}`);
           } finally {
-            setButtonBusy(saveToolsBtn, false, "保存中...", "保存 Tools");
+            setButtonBusy(saveToolsBtn, false, "淇濆瓨涓?..", "淇濆瓨 Tools");
           }
         });
       }
@@ -1461,31 +1436,33 @@
       if (saveSkillsBtn) {
         saveSkillsBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(saveSkillsBtn, true, "保存中...", "保存 Skills");
-            setMeta("正在保存 Skills 配置...");
+            setButtonBusy(saveSkillsBtn, true, "淇濆瓨涓?..", "淇濆瓨 Skills");
+            setMeta("姝ｅ湪淇濆瓨 Skills 閰嶇疆...");
             const base = skillsRawInput ? parseJsonObject(skillsRawInput.value, "Skills JSON") : cloneObject(loadedSkillsConfig);
             const merged = buildSkillsConfigFromForm(base);
             await saveSkills(merged);
-            setMeta("Skills 配置已保存。");
+            setMeta("Skills 閰嶇疆宸蹭繚瀛樸€?);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`保存 Skills 失败: ${message}`);
+            setMeta(`淇濆瓨 Skills 澶辫触: ${message}`);
           } finally {
-            setButtonBusy(saveSkillsBtn, false, "保存中...", "保存 Skills");
+            setButtonBusy(saveSkillsBtn, false, "淇濆瓨涓?..", "淇濆瓨 Skills");
           }
         });
       }
 
       (async () => {
         try {
-          setMeta("正在读取功能配置...");
+          setMeta("姝ｅ湪璇诲彇鍔熻兘閰嶇疆...");
           await loadConfig();
-          setMeta("已加载：上面是 tools 设置，下面是 skills 学习。");
+          setMeta("宸插姞杞斤細涓婇潰鏄?tools 璁剧疆锛屼笅闈㈡槸 skills 瀛︿範銆?);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          setMeta(`读取失败: ${message}`);
+          setMeta(`璇诲彇澶辫触: ${message}`);
         }
       })();
     </script>
   </body>
 </html>
+
+

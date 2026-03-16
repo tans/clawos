@@ -7,7 +7,7 @@
     <style>
       :root {
         color-scheme: light;
-        --boot-bg: #f8fafc;
+        --boot-bg: #ffffff;
         --boot-panel: #ffffff;
         --boot-border: #dbe2ea;
         --boot-text: #0f172a;
@@ -24,7 +24,7 @@
           "Noto Sans CJK SC",
           "Segoe UI",
           sans-serif;
-        background: radial-gradient(1200px 700px at 50% -120px, #e2e8f0 0%, var(--boot-bg) 58%);
+        background: var(--boot-bg);
         color: var(--boot-text);
       }
       .boot {
@@ -36,8 +36,7 @@
         width: min(360px, calc(100vw - 40px));
         border-radius: 16px;
         border: 1px solid var(--boot-border);
-        background: color-mix(in srgb, var(--boot-panel) 88%, transparent);
-        backdrop-filter: blur(8px);
+        background: var(--boot-panel);
         padding: 28px 24px;
         display: grid;
         justify-items: center;

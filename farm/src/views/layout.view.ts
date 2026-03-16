@@ -50,7 +50,7 @@ export function renderPageShell(body: string, user?: ConsoleUser, title = "é¾™è™
 }
   </style>
 </head>
-<body class="bg-base-200 min-h-screen">
+<body class="bg-white min-h-screen">
   <main class="max-w-6xl mx-auto p-4 md:p-6">
     ${nav}
     ${body}

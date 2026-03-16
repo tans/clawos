@@ -23,7 +23,7 @@
   }
 
   body {
-    background: var(--color-base-200);
+    background: #fff;
   }
 }
 
@@ -92,7 +92,7 @@
 }
 
 @utility surface-wash {
-  background: color-mix(in oklab, var(--color-base-100) 78%, transparent);
+  background: #fff;
   backdrop-filter: blur(18px);
 }
 
@@ -106,31 +106,11 @@
   }
 
   .ambient-shell::before {
-    content: "";
-    position: absolute;
-    inset: -2rem auto auto -1rem;
-    width: 10rem;
-    height: 10rem;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-primary) 16%, transparent);
-    filter: blur(48px);
-    opacity: 0.5;
-    pointer-events: none;
-    animation: var(--animate-soft-pulse);
+    content: none;
   }
 
   .ambient-shell::after {
-    content: "";
-    position: absolute;
-    inset: auto -1rem -2rem auto;
-    width: 12rem;
-    height: 12rem;
-    border-radius: 9999px;
-    background: color-mix(in oklab, var(--color-accent) 14%, transparent);
-    filter: blur(58px);
-    opacity: 0.42;
-    pointer-events: none;
-    animation: var(--animate-drift);
+    content: none;
   }
 
   .rise-on-hover {
