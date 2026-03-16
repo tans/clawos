@@ -1,12 +1,13 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 鍔熻兘</title>
+    <title>ClawOS &#21151;&#33021;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
         <div class="text-sm text-base-content/60">loading...</div>
@@ -14,9 +15,9 @@
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">鍔熻兘</h1>
+          <h1 class="text-lg font-semibold">&#21151;&#33021;</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" type="button" data-action="reload">閲嶆柊鍔犺浇</button>
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">&#37325;&#26032;&#21152;&#36733;</button>
           </div>
         </header>
 
@@ -25,29 +26,41 @@
             <div class="card-body gap-4">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 class="card-title text-base">Tools 璁剧疆</h2>
+                  <h2 class="card-title text-base">Tools &#35774;&#32622;</h2>
+                  <div class="mt-1 text-xs text-base-content/60">
+                    &#19978;&#38754;&#26159;&#24037;&#20855; tools &#30340;&#35774;&#32622;&#65288;&#20445;&#23384;&#21040;&#26681;&#32423; <code>tools</code>&#65289;&#12290;
+                    <a
+                      class="link link-hover"
+                      href="https://docs.openclaw.ai/tools"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      &#25991;&#26723;&#21442;&#32771;
+                    </a>
+                  </div>
                 </div>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">淇濆瓨 Tools</button>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-tools">&#20445;&#23384; Tools</button>
               </div>
 
               <section class="rounded-lg border border-base-200 p-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
-                    <div class="text-sm font-semibold">开放所有权限</div>
+                    <div class="text-sm font-semibold">&#24320;&#25918;&#25152;&#26377;&#26435;&#38480;</div>
+                    <div class="mt-1 text-xs text-base-content/60">&#24320;&#21551;&#21518;&#23558;&#20351;&#29992;&#20840;&#26435;&#38480;&#31574;&#30053;&#65288;tools.profile = full&#65289;&#12290;</div>
                   </div>
                   <input type="checkbox" class="toggle toggle-primary" data-field="tools-permission-all" />
                 </div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">1) 绛栫暐涓庢潈闄?/div>
+                <div class="text-sm font-semibold">1) &#31574;&#30053;&#19982;&#26435;&#38480;</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
                       <span class="label-text text-xs">Tool Profile</span>
                     </div>
                     <select class="select select-bordered select-sm" data-field="tools-profile">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="minimal">minimal</option>
                       <option value="coding">coding</option>
                       <option value="messaging">messaging</option>
@@ -59,7 +72,7 @@
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
-                      <span class="label-text text-xs">allow锛堟瘡琛屼竴涓級</span>
+                      <span class="label-text text-xs">allow&#65288;&#27599;&#34892;&#19968;&#20010;&#65289;</span>
                     </div>
                     <textarea
                       class="textarea textarea-bordered h-28 w-full font-mono text-xs"
@@ -69,7 +82,7 @@
                   </label>
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
-                      <span class="label-text text-xs">alsoAllow锛堟瘡琛屼竴涓級</span>
+                      <span class="label-text text-xs">alsoAllow&#65288;&#27599;&#34892;&#19968;&#20010;&#65289;</span>
                     </div>
                     <textarea
                       class="textarea textarea-bordered h-28 w-full font-mono text-xs"
@@ -79,7 +92,7 @@
                   </label>
                   <label class="form-control w-full gap-2">
                     <div class="label py-0">
-                      <span class="label-text text-xs">deny锛堟瘡琛屼竴涓級</span>
+                      <span class="label-text text-xs">deny&#65288;&#27599;&#34892;&#19968;&#20010;&#65289;</span>
                     </div>
                     <textarea
                       class="textarea textarea-bordered h-28 w-full font-mono text-xs"
@@ -91,15 +104,15 @@
 
                 <div class="mt-4">
                   <div class="mb-2 flex items-center justify-between gap-2">
-                    <div class="text-xs font-semibold">byProvider锛堟寜 provider 瀹氬埗绛栫暐锛?/div>
-                    <button class="btn btn-outline btn-xs" type="button" data-action="add-provider-row">鏂板 provider</button>
+                    <div class="text-xs font-semibold">byProvider&#65288;&#25353; provider &#23450;&#21046;&#31574;&#30053;&#65289;</div>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="add-provider-row">&#26032;&#22686; provider</button>
                   </div>
                   <div class="grid gap-3" data-provider-rows></div>
                 </div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">2) Web 宸ュ叿</div>
+                <div class="text-sm font-semibold">2) Web &#24037;&#20855;</div>
 
                 <div class="mt-3 rounded-lg border border-base-200 p-3">
                   <div class="text-xs font-semibold">web.search</div>
@@ -107,28 +120,28 @@
                     <label class="form-control w-full gap-2">
                       <div class="label py-0"><span class="label-text text-xs">enabled</span></div>
                       <select class="select select-bordered select-sm" data-field="tools-web-search-enabled">
-                        <option value="">璺熼殢榛樿</option>
-                        <option value="true">鍚敤</option>
-                        <option value="false">绂佺敤</option>
+                        <option value="">&#36319;&#38543;&#40664;&#35748;</option>
+                        <option value="true">&#21551;&#29992;</option>
+                        <option value="false">&#31105;&#29992;</option>
                       </select>
                     </label>
                     <label class="form-control w-full gap-2">
                       <div class="label py-0"><span class="label-text text-xs">provider</span></div>
                       <select class="select select-bordered select-sm" data-field="tools-web-search-provider">
-                        <option value="">涓嶈缃?/option>
+                        <option value="">&#19981;&#35774;&#32622;</option>
                         <option value="brave">brave</option>
                         <option value="perplexity">perplexity</option>
                         <option value="grok">grok</option>
                       </select>
                     </label>
                     <label class="form-control w-full gap-2">
-                      <div class="label py-0"><span class="label-text text-xs">apiKey锛堥€氱敤锛?/span></div>
+                      <div class="label py-0"><span class="label-text text-xs">apiKey&#65288;&#36890;&#29992;&#65289;</span></div>
                       <input
                         class="input input-bordered input-sm font-mono"
                         type="password"
                         data-field="tools-web-search-api-key"
                         autocomplete="off"
-                        placeholder="鍙暀绌?
+                        placeholder="&#21487;&#30041;&#31354;"
                       />
                     </label>
                     <label class="form-control w-full gap-2">
@@ -147,7 +160,7 @@
 
                   <div class="mt-3 grid gap-3 xl:grid-cols-2">
                     <div class="rounded-lg border border-base-200 p-3">
-                      <div class="mb-2 text-xs font-semibold">perplexity 瀛愰厤缃?/div>
+                      <div class="mb-2 text-xs font-semibold">perplexity &#23376;&#37197;&#32622;</div>
                       <div class="grid gap-2">
                         <input
                           class="input input-bordered input-sm font-mono"
@@ -171,7 +184,7 @@
                       </div>
                     </div>
                     <div class="rounded-lg border border-base-200 p-3">
-                      <div class="mb-2 text-xs font-semibold">grok 瀛愰厤缃?/div>
+                      <div class="mb-2 text-xs font-semibold">grok &#23376;&#37197;&#32622;</div>
                       <div class="grid gap-2">
                         <input
                           class="input input-bordered input-sm font-mono"
@@ -187,7 +200,7 @@
                           placeholder="model"
                         />
                         <select class="select select-bordered select-sm" data-field="tools-web-search-grok-inline-citations">
-                          <option value="">inlineCitations 璺熼殢榛樿</option>
+                          <option value="">inlineCitations &#36319;&#38543;&#40664;&#35748;</option>
                           <option value="true">inlineCitations: true</option>
                           <option value="false">inlineCitations: false</option>
                         </select>
@@ -202,9 +215,9 @@
                     <label class="form-control w-full gap-2">
                       <div class="label py-0"><span class="label-text text-xs">enabled</span></div>
                       <select class="select select-bordered select-sm" data-field="tools-web-fetch-enabled">
-                        <option value="">璺熼殢榛樿</option>
-                        <option value="true">鍚敤</option>
-                        <option value="false">绂佺敤</option>
+                        <option value="">&#36319;&#38543;&#40664;&#35748;</option>
+                        <option value="true">&#21551;&#29992;</option>
+                        <option value="false">&#31105;&#29992;</option>
                       </select>
                     </label>
                     <label class="form-control w-full gap-2">
@@ -238,12 +251,12 @@
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">3) Exec 鎵ц宸ュ叿</div>
+                <div class="text-sm font-semibold">3) Exec &#25191;&#34892;&#24037;&#20855;</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">host</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-host">
-                      <option value="">涓嶈缃?/option>
+                      <option value="">&#19981;&#35774;&#32622;</option>
                       <option value="sandbox">sandbox</option>
                       <option value="gateway">gateway</option>
                       <option value="node">node</option>
@@ -252,7 +265,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">security</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-security">
-                      <option value="">涓嶈缃?/option>
+                      <option value="">&#19981;&#35774;&#32622;</option>
                       <option value="deny">deny</option>
                       <option value="allowlist">allowlist</option>
                       <option value="full">full</option>
@@ -261,7 +274,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">ask</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-ask">
-                      <option value="">涓嶈缃?/option>
+                      <option value="">&#19981;&#35774;&#32622;</option>
                       <option value="off">off</option>
                       <option value="on-miss">on-miss</option>
                       <option value="always">always</option>
@@ -286,7 +299,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">notifyOnExit</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-notify-on-exit">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -294,7 +307,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">applyPatch.enabled</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-exec-apply-patch-enabled">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -303,27 +316,27 @@
 
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">pathPrepend锛堟瘡琛屼竴涓洰褰曪級</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">pathPrepend&#65288;&#27599;&#34892;&#19968;&#20010;&#30446;&#24405;&#65289;</span></div>
                     <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-path-prepend"></textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">safeBins锛堟瘡琛屼竴涓級</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">safeBins&#65288;&#27599;&#34892;&#19968;&#20010;&#65289;</span></div>
                     <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-safe-bins"></textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">applyPatch.allowModels锛堟瘡琛屼竴涓級</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">applyPatch.allowModels&#65288;&#27599;&#34892;&#19968;&#20010;&#65289;</span></div>
                     <textarea class="textarea textarea-bordered h-28 w-full font-mono text-xs" data-field="tools-exec-apply-patch-allow-models"></textarea>
                   </label>
                 </div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
-                <div class="text-sm font-semibold">4) Message 璺ㄤ笂涓嬫枃</div>
+                <div class="text-sm font-semibold">4) Message &#36328;&#19978;&#19979;&#25991;</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">allowCrossContextSend</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-allow-cross-context-send">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -331,7 +344,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">crossContext.allowWithinProvider</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-cross-context-allow-within-provider">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -339,7 +352,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">crossContext.allowAcrossProviders</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-cross-context-allow-across-providers">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -347,7 +360,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">crossContext.marker.enabled</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-marker-enabled">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -363,7 +376,7 @@
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">broadcast.enabled</span></div>
                     <select class="select select-bordered select-sm" data-field="tools-message-broadcast-enabled">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -373,10 +386,10 @@
 
               <section class="rounded-lg border border-base-200 p-3" data-advanced-tools>
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <div class="text-sm font-semibold">5) Tools 楂樼骇 JSON</div>
+                  <div class="text-sm font-semibold">5) Tools &#39640;&#32423; JSON</div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-json-to-form">JSON -> 琛ㄥ崟</button>
-                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-form-to-json">琛ㄥ崟 -> JSON</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-json-to-form">JSON -> &#34920;&#21333;</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="tools-form-to-json">&#34920;&#21333; -> JSON</button>
                   </div>
                 </div>
                 <textarea
@@ -384,6 +397,7 @@
                   data-field="tools-json-raw"
                   spellcheck="false"
                 ></textarea>
+                <div class="mt-2 text-xs text-base-content/60">&#20445;&#30041;&#39640;&#32423;&#23383;&#27573;&#65288;&#22914; media/sandbox/subagents/elevated&#65289;&#24314;&#35758;&#22312;&#27492;&#32534;&#36753;&#12290;</div>
               </section>
             </div>
           </section>
@@ -392,24 +406,36 @@
             <div class="card-body gap-4">
               <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 class="card-title text-base">Skills 学习</h2>
+                  <h2 class="card-title text-base">Skills &#23398;&#20064;</h2>
+                  <div class="mt-1 text-xs text-base-content/60">&#19979;&#38754;&#26159; skills &#30340;&#23398;&#20064;&#65288;&#20445;&#23384;&#21040; <code>skills</code>&#65289;&#12290;</div>
                 </div>
-                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">保存 Skills</button>
+                <button class="btn btn-primary btn-xs" type="button" data-action="save-skills">&#20445;&#23384; Skills</button>
               </div>
 
               <section class="rounded-lg border border-base-200 p-3">
-                <div class="text-sm font-semibold">ClawHub 鎶€鑳?/div>
-                <div class="mt-2 text-xs text-base-content/70" data-clawhub-status>杈撳叆鍏抽敭璇嶅悗鐐瑰嚮鎼滅储銆?/div>
+                <div class="text-sm font-semibold">ClawHub &#25216;&#33021;</div>
+                <div class="mt-1 text-xs text-base-content/60">&#25628;&#32034; ClawHub &#25216;&#33021;&#24182;&#19968;&#38190;&#28608;&#27963;&#65288;&#23433;&#35013;&#24182;&#21551;&#29992;&#65289;&#12290;</div>
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    class="input input-bordered input-sm w-full max-w-xl"
+                    type="text"
+                    data-field="clawhub-search-query"
+                    placeholder="&#36755;&#20837;&#20851;&#38190;&#35789;&#65292;&#20363;&#22914;&#65306;calendar / github / feishu"
+                  />
+                  <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-install">&#23433;&#35013; ClawHub</button>
+                  <button class="btn btn-outline btn-sm" type="button" data-action="clawhub-search">&#25628;&#32034;</button>
+                </div>
+                <div class="mt-2 text-xs text-base-content/70" data-clawhub-status>&#36755;&#20837;&#20851;&#38190;&#35789;&#21518;&#28857;&#20987;&#25628;&#32034;&#12290;</div>
                 <div class="mt-3 grid gap-2" data-clawhub-results></div>
               </section>
 
               <section class="rounded-lg border border-base-200 p-3">
-                <div class="text-sm font-semibold">1) Skills 蹇嵎椤?/div>
+                <div class="text-sm font-semibold">1) Skills &#24555;&#25463;&#39033;</div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
                     <div class="label py-0"><span class="label-text text-xs">load.watch</span></div>
                     <select class="select select-bordered select-sm" data-field="skills-load-watch">
-                      <option value="">璺熼殢榛樿</option>
+                      <option value="">&#36319;&#38543;&#40664;&#35748;</option>
                       <option value="true">true</option>
                       <option value="false">false</option>
                     </select>
@@ -423,10 +449,10 @@
 
               <section class="rounded-lg border border-base-200 p-3">
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <div class="text-sm font-semibold">2) Skills 楂樼骇 JSON</div>
+                  <div class="text-sm font-semibold">2) Skills &#39640;&#32423; JSON</div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-json-to-form">JSON -> 琛ㄥ崟</button>
-                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-form-to-json">琛ㄥ崟 -> JSON</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-json-to-form">JSON -> &#34920;&#21333;</button>
+                    <button class="btn btn-outline btn-xs" type="button" data-action="skills-form-to-json">&#34920;&#21333; -> JSON</button>
                   </div>
                 </div>
                 <textarea
@@ -438,7 +464,7 @@
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>灏氭湭鍔犺浇</div>
+          <div class="mt-3 text-xs text-base-content/70" data-meta>&#23578;&#26410;&#21152;&#36733;</div>
         </section>
       </main>
     </div>
@@ -497,10 +523,10 @@
         try {
           parsed = JSON.parse(String(rawText || "{}").trim() || "{}");
         } catch {
-          throw new Error(`${label} 涓嶆槸鍚堟硶 JSON銆俙);
+          throw new Error(`${label} \u4e0d\u662f\u5408\u6cd5 JSON\u3002`);
         }
         if (!isObject(parsed)) {
-          throw new Error(`${label} 蹇呴』鏄?JSON 瀵硅薄銆俙);
+          throw new Error(`${label} \u5fc5\u987b\u662f JSON \u5bf9\u8c61\u3002`);
         }
         return parsed;
       }
@@ -516,7 +542,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          throw new Error(data.error || `璇锋眰澶辫触: ${res.status}`);
+          throw new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
         }
         return data;
       }
@@ -541,10 +567,10 @@
         }
         const parsed = Number(text);
         if (!Number.isInteger(parsed)) {
-          throw new Error(`${label} 蹇呴』鏄暣鏁般€俙);
+          throw new Error(`${label} \u5fc5\u987b\u662f\u6574\u6570\u3002`);
         }
         if (typeof min === "number" && parsed < min) {
-          throw new Error(`${label} 涓嶈兘灏忎簬 ${min}銆俙);
+          throw new Error(`${label} \u4e0d\u80fd\u5c0f\u4e8e ${min}\u3002`);
         }
         return parsed;
       }
@@ -556,10 +582,10 @@
         }
         const parsed = Number(text);
         if (!Number.isFinite(parsed)) {
-          throw new Error(`${label} 蹇呴』鏄暟瀛椼€俙);
+          throw new Error(`${label} \u5fc5\u987b\u662f\u6570\u5b57\u3002`);
         }
         if (typeof min === "number" && parsed < min) {
-          throw new Error(`${label} 涓嶈兘灏忎簬 ${min}銆俙);
+          throw new Error(`${label} \u4e0d\u80fd\u5c0f\u4e8e ${min}\u3002`);
         }
         return parsed;
       }
@@ -644,7 +670,7 @@
 
         if (!Array.isArray(clawhubSearchItems) || clawhubSearchItems.length === 0) {
           clawhubResultsEl.innerHTML =
-            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">鏆傛棤缁撴灉銆?/div>';
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">\u6682\u65e0\u7ed3\u679c\u3002</div>';
           return;
         }
 
@@ -666,7 +692,7 @@
                   <button class="btn btn-primary btn-xs" type="button" data-action="clawhub-activate" data-skill="${escapeHtml(id)}" ${
                     active ? "disabled" : ""
                   }>
-                    ${active ? "宸叉縺娲? : "涓€閿縺娲?}
+                    ${active ? "\u5df2\u6fc0\u6d3b" : "\u4e00\u952e\u6fc0\u6d3b"}
                   </button>
                 </div>
               </div>
@@ -754,7 +780,7 @@
 
       function buildProviderProfileOptions(selected) {
         const options = [
-          { value: "", label: "璺熼殢榛樿" },
+          { value: "", label: "\u8ddf\u968f\u9ed8\u8ba4" },
           { value: "minimal", label: "minimal" },
           { value: "coding", label: "coding" },
           { value: "messaging", label: "messaging" },
@@ -775,7 +801,7 @@
 
         if (!Array.isArray(providerRows) || providerRows.length === 0) {
           providerRowsEl.innerHTML =
-            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">鏆傛棤 provider 瀹氬埗绛栫暐锛岀偣鍑诲彸涓婅鏂板銆?/div>';
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">\u6682\u65e0 provider \u5b9a\u5236\u7b56\u7565\uff0c\u70b9\u51fb\u53f3\u4e0a\u89d2\u65b0\u589e\u3002</div>';
           return;
         }
 
@@ -791,7 +817,7 @@
               <div class="rounded-lg border border-base-200 p-3" data-provider-row="${index}">
                 <div class="mb-2 flex items-center justify-between gap-2">
                   <div class="text-xs font-semibold">Provider #${index + 1}</div>
-                  <button class="btn btn-ghost btn-xs text-error" type="button" data-action="remove-provider-row" data-index="${index}">鍒犻櫎</button>
+                  <button class="btn btn-ghost btn-xs text-error" type="button" data-action="remove-provider-row" data-index="${index}">\u5220\u9664</button>
                 </div>
                 <div class="grid gap-3 xl:grid-cols-2">
                   <label class="form-control w-full gap-2">
@@ -807,15 +833,15 @@
                 </div>
                 <div class="mt-3 grid gap-3 xl:grid-cols-3">
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">allow锛堟瘡琛屼竴涓級</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">allow\uff08\u6bcf\u884c\u4e00\u4e2a\uff09</span></div>
                     <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-allow">${allow}</textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">alsoAllow锛堟瘡琛屼竴涓級</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">alsoAllow\uff08\u6bcf\u884c\u4e00\u4e2a\uff09</span></div>
                     <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-also-allow">${alsoAllow}</textarea>
                   </label>
                   <label class="form-control w-full gap-2">
-                    <div class="label py-0"><span class="label-text text-xs">deny锛堟瘡琛屼竴涓級</span></div>
+                    <div class="label py-0"><span class="label-text text-xs">deny\uff08\u6bcf\u884c\u4e00\u4e2a\uff09</span></div>
                     <textarea class="textarea textarea-bordered h-24 w-full font-mono text-xs" data-field="provider-deny">${deny}</textarea>
                   </label>
                 </div>
@@ -1190,17 +1216,17 @@
       async function searchClawhubSkills() {
         const query = String(clawhubSearchQueryInput?.value || "").trim();
         if (!query) {
-          setClawhubStatus("璇疯緭鍏ユ悳绱㈠叧閿瘝銆?);
+          setClawhubStatus("\u8bf7\u8f93\u5165\u641c\u7d22\u5173\u952e\u8bcd\u3002");
           return;
         }
 
-        setClawhubStatus(`姝ｅ湪鎼滅储 ClawHub锛?{query} ...`);
+        setClawhubStatus(`\u6b63\u5728\u641c\u7d22 ClawHub\uff1a${query} ...`);
         const data = await api(`/api/skills/clawhub/search?q=${encodeURIComponent(query)}&limit=30`);
         clawhubSearchItems = Array.isArray(data.items) ? data.items : [];
         if (clawhubSearchItems.length === 0) {
-          setClawhubStatus(`鏈悳绱㈠埌鎶€鑳斤細${query}`);
+          setClawhubStatus(`\u672a\u641c\u7d22\u5230\u6280\u80fd\uff1a${query}`);
         } else {
-          setClawhubStatus(`鍏辨壘鍒?${clawhubSearchItems.length} 涓妧鑳姐€俙);
+          setClawhubStatus(`\u5171\u627e\u5230 ${clawhubSearchItems.length} \u4e2a\u6280\u80fd\u3002`);
         }
         renderClawhubResults();
       }
@@ -1208,9 +1234,9 @@
       async function activateClawhubSkill(skill) {
         const skillId = String(skill || "").trim();
         if (!skillId) {
-          throw new Error("skill 涓嶈兘涓虹┖銆?);
+          throw new Error("skill \u4e0d\u80fd\u4e3a\u7a7a\u3002");
         }
-        setClawhubStatus(`姝ｅ湪婵€娲伙細${skillId} ...`);
+        setClawhubStatus(`\u6b63\u5728\u6fc0\u6d3b\uff1a${skillId} ...`);
         const result = await api("/api/skills/clawhub/activate", {
           method: "POST",
           body: JSON.stringify({ skill: skillId }),
@@ -1221,20 +1247,20 @@
           skillsRawInput.value = formatJson(loadedSkillsConfig);
         }
         renderClawhubResults();
-        setClawhubStatus(`婵€娲绘垚鍔燂細${skillId}`);
+        setClawhubStatus(`\u6fc0\u6d3b\u6210\u529f\uff1a${skillId}`);
       }
 
       async function installClawhub() {
-        setClawhubStatus("姝ｅ湪瀹夎 ClawHub ...");
+        setClawhubStatus("\u6b63\u5728\u5b89\u88c5 ClawHub ...");
         const result = await api("/api/skills/clawhub/install", {
           method: "POST",
           body: JSON.stringify({}),
         });
         if (result.installed === true) {
-          setClawhubStatus("ClawHub 宸插畨瑁咃紝鍙洿鎺ユ悳绱㈠苟婵€娲绘妧鑳姐€?);
+          setClawhubStatus("ClawHub \u5df2\u5b89\u88c5\uff0c\u53ef\u76f4\u63a5\u641c\u7d22\u5e76\u6fc0\u6d3b\u6280\u80fd\u3002");
           return;
         }
-        setClawhubStatus("ClawHub 瀹夎鐘舵€佹湭鐭ワ紝璇风◢鍚庨噸璇曘€?);
+        setClawhubStatus("ClawHub \u5b89\u88c5\u72b6\u6001\u672a\u77e5\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
       }
 
       if (providerRowsEl) {
@@ -1257,13 +1283,13 @@
       if (clawhubSearchBtn) {
         clawhubSearchBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(clawhubSearchBtn, true, "鎼滅储涓?..", "鎼滅储");
+            setButtonBusy(clawhubSearchBtn, true, "\u641c\u7d22\u4e2d...", "\u641c\u7d22");
             await searchClawhubSkills();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`鎼滅储澶辫触: ${message}`);
+            setClawhubStatus(`\u641c\u7d22\u5931\u8d25: ${message}`);
           } finally {
-            setButtonBusy(clawhubSearchBtn, false, "鎼滅储涓?..", "鎼滅储");
+            setButtonBusy(clawhubSearchBtn, false, "\u641c\u7d22\u4e2d...", "\u641c\u7d22");
           }
         });
       }
@@ -1271,13 +1297,13 @@
       if (clawhubInstallBtn) {
         clawhubInstallBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(clawhubInstallBtn, true, "瀹夎涓?..", "瀹夎 ClawHub");
+            setButtonBusy(clawhubInstallBtn, true, "\u5b89\u88c5\u4e2d...", "\u5b89\u88c5 ClawHub");
             await installClawhub();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`瀹夎澶辫触: ${message}`);
+            setClawhubStatus(`\u5b89\u88c5\u5931\u8d25: ${message}`);
           } finally {
-            setButtonBusy(clawhubInstallBtn, false, "瀹夎涓?..", "瀹夎 ClawHub");
+            setButtonBusy(clawhubInstallBtn, false, "\u5b89\u88c5\u4e2d...", "\u5b89\u88c5 ClawHub");
           }
         });
       }
@@ -1296,7 +1322,7 @@
             await searchClawhubSkills();
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`鎼滅储澶辫触: ${message}`);
+            setClawhubStatus(`\u641c\u7d22\u5931\u8d25: ${message}`);
           }
         });
       }
@@ -1316,7 +1342,7 @@
             await activateClawhubSkill(skill);
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setClawhubStatus(`婵€娲诲け璐? ${message}`);
+            setClawhubStatus(`\u6fc0\u6d3b\u5931\u8d25: ${message}`);
             target.removeAttribute("disabled");
           }
         });
@@ -1340,10 +1366,10 @@
             }
             const parsed = parseJsonObject(toolsRawInput.value, "Tools JSON");
             fillToolsForm(parsed);
-            setMeta("Tools JSON 宸插簲鐢ㄥ埌琛ㄥ崟銆?);
+            setMeta("Tools JSON \u5df2\u5e94\u7528\u5230\u8868\u5355\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`搴旂敤澶辫触: ${message}`);
+            setMeta(`\u5e94\u7528\u5931\u8d25: ${message}`);
           }
         });
       }
@@ -1357,10 +1383,10 @@
             if (toolsRawInput) {
               toolsRawInput.value = formatJson(merged);
             }
-            setMeta("Tools 琛ㄥ崟宸插悓姝ュ埌 JSON銆?);
+            setMeta("Tools \u8868\u5355\u5df2\u540c\u6b65\u5230 JSON\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`鍚屾澶辫触: ${message}`);
+            setMeta(`\u540c\u6b65\u5931\u8d25: ${message}`);
           }
         });
       }
@@ -1374,10 +1400,10 @@
             }
             const parsed = parseJsonObject(skillsRawInput.value, "Skills JSON");
             fillSkillsForm(parsed);
-            setMeta("Skills JSON 宸插簲鐢ㄥ埌琛ㄥ崟銆?);
+            setMeta("Skills JSON \u5df2\u5e94\u7528\u5230\u8868\u5355\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`搴旂敤澶辫触: ${message}`);
+            setMeta(`\u5e94\u7528\u5931\u8d25: ${message}`);
           }
         });
       }
@@ -1391,10 +1417,10 @@
             if (skillsRawInput) {
               skillsRawInput.value = formatJson(merged);
             }
-            setMeta("Skills 琛ㄥ崟宸插悓姝ュ埌 JSON銆?);
+            setMeta("Skills \u8868\u5355\u5df2\u540c\u6b65\u5230 JSON\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`鍚屾澶辫触: ${message}`);
+            setMeta(`\u540c\u6b65\u5931\u8d25: ${message}`);
           }
         });
       }
@@ -1402,15 +1428,15 @@
       if (reloadBtn) {
         reloadBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(reloadBtn, true, "鍔犺浇涓?..", "閲嶆柊鍔犺浇");
-            setMeta("姝ｅ湪璇诲彇鍔熻兘閰嶇疆...");
+            setButtonBusy(reloadBtn, true, "\u52a0\u8f7d\u4e2d...", "\u91cd\u65b0\u52a0\u8f7d");
+            setMeta("\u6b63\u5728\u8bfb\u53d6\u529f\u80fd\u914d\u7f6e...");
             await loadConfig();
-            setMeta("鍔熻兘閰嶇疆宸插埛鏂般€?);
+            setMeta("\u529f\u80fd\u914d\u7f6e\u5df2\u5237\u65b0\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`璇诲彇澶辫触: ${message}`);
+            setMeta(`\u8bfb\u53d6\u5931\u8d25: ${message}`);
           } finally {
-            setButtonBusy(reloadBtn, false, "鍔犺浇涓?..", "閲嶆柊鍔犺浇");
+            setButtonBusy(reloadBtn, false, "\u52a0\u8f7d\u4e2d...", "\u91cd\u65b0\u52a0\u8f7d");
           }
         });
       }
@@ -1418,17 +1444,17 @@
       if (saveToolsBtn) {
         saveToolsBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(saveToolsBtn, true, "淇濆瓨涓?..", "淇濆瓨 Tools");
-            setMeta("姝ｅ湪淇濆瓨 Tools 閰嶇疆...");
+            setButtonBusy(saveToolsBtn, true, "\u4fdd\u5b58\u4e2d...", "\u4fdd\u5b58 Tools");
+            setMeta("\u6b63\u5728\u4fdd\u5b58 Tools \u914d\u7f6e...");
             const base = toolsRawInput ? parseJsonObject(toolsRawInput.value, "Tools JSON") : cloneObject(loadedToolsConfig);
             const merged = buildToolsConfigFromForm(base);
             await saveTools(merged);
-            setMeta("Tools 閰嶇疆宸蹭繚瀛樸€?);
+            setMeta("Tools \u914d\u7f6e\u5df2\u4fdd\u5b58\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`淇濆瓨 Tools 澶辫触: ${message}`);
+            setMeta(`\u4fdd\u5b58 Tools \u5931\u8d25: ${message}`);
           } finally {
-            setButtonBusy(saveToolsBtn, false, "淇濆瓨涓?..", "淇濆瓨 Tools");
+            setButtonBusy(saveToolsBtn, false, "\u4fdd\u5b58\u4e2d...", "\u4fdd\u5b58 Tools");
           }
         });
       }
@@ -1436,33 +1462,31 @@
       if (saveSkillsBtn) {
         saveSkillsBtn.addEventListener("click", async () => {
           try {
-            setButtonBusy(saveSkillsBtn, true, "淇濆瓨涓?..", "淇濆瓨 Skills");
-            setMeta("姝ｅ湪淇濆瓨 Skills 閰嶇疆...");
+            setButtonBusy(saveSkillsBtn, true, "\u4fdd\u5b58\u4e2d...", "\u4fdd\u5b58 Skills");
+            setMeta("\u6b63\u5728\u4fdd\u5b58 Skills \u914d\u7f6e...");
             const base = skillsRawInput ? parseJsonObject(skillsRawInput.value, "Skills JSON") : cloneObject(loadedSkillsConfig);
             const merged = buildSkillsConfigFromForm(base);
             await saveSkills(merged);
-            setMeta("Skills 閰嶇疆宸蹭繚瀛樸€?);
+            setMeta("Skills \u914d\u7f6e\u5df2\u4fdd\u5b58\u3002");
           } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setMeta(`淇濆瓨 Skills 澶辫触: ${message}`);
+            setMeta(`\u4fdd\u5b58 Skills \u5931\u8d25: ${message}`);
           } finally {
-            setButtonBusy(saveSkillsBtn, false, "淇濆瓨涓?..", "淇濆瓨 Skills");
+            setButtonBusy(saveSkillsBtn, false, "\u4fdd\u5b58\u4e2d...", "\u4fdd\u5b58 Skills");
           }
         });
       }
 
       (async () => {
         try {
-          setMeta("姝ｅ湪璇诲彇鍔熻兘閰嶇疆...");
+          setMeta("\u6b63\u5728\u8bfb\u53d6\u529f\u80fd\u914d\u7f6e...");
           await loadConfig();
-          setMeta("宸插姞杞斤細涓婇潰鏄?tools 璁剧疆锛屼笅闈㈡槸 skills 瀛︿範銆?);
+          setMeta("\u5df2\u52a0\u8f7d\uff1a\u4e0a\u9762\u662f tools \u8bbe\u7f6e\uff0c\u4e0b\u9762\u662f skills \u5b66\u4e60\u3002");
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          setMeta(`璇诲彇澶辫触: ${message}`);
+          setMeta(`\u8bfb\u53d6\u5931\u8d25: ${message}`);
         }
       })();
     </script>
   </body>
 </html>
-
-

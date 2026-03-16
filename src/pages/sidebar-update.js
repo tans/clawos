@@ -73,7 +73,7 @@
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
-      throw new Error(data.error || `请求失败: ${res.status}`);
+      throw new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
     }
     return data;
   }
@@ -160,7 +160,7 @@
   }
 
   function showUpdateAction(remoteVersion) {
-    runUpdateButton.textContent = remoteVersion ? `更新到 v${remoteVersion}` : "更新并重启";
+    runUpdateButton.textContent = remoteVersion ? `\u66f4\u65b0\u5230 v${remoteVersion}` : "\u66f4\u65b0\u5e76\u91cd\u542f";
     actionsEl.classList.remove("hidden");
   }
 
@@ -183,7 +183,7 @@
   async function refreshLocalVersion() {
     try {
       const data = await api("/api/health");
-      const current = typeof data?.version === "string" && data.version.trim() ? data.version.trim() : "未知";
+      const current = typeof data?.version === "string" && data.version.trim() ? data.version.trim() : "\u672a\u77e5";
       versionEl.textContent = `v${current}`;
       return current;
     } catch {
@@ -199,7 +199,7 @@
 
     runningUpdate = true;
     runUpdateButton.disabled = true;
-    setMetaText("正在启动更新任务...");
+    setMetaText("\u6b63\u5728\u542f\u52a8\u66f4\u65b0\u4efb\u52a1...");
 
     try {
       const data = await api("/api/app/update/run", {
@@ -211,11 +211,11 @@
       });
       const taskId = typeof data?.taskId === "string" ? data.taskId.trim() : "";
       if (!taskId) {
-        throw new Error("服务端未返回更新任务 ID");
+        throw new Error("\u670d\u52a1\u7aef\u672a\u8fd4\u56de\u66f4\u65b0\u4efb\u52a1 ID");
       }
 
       storeActiveTaskId(taskId);
-      setMetaText("更新任务已启动，正在打开控制台...");
+      setMetaText("\u66f4\u65b0\u4efb\u52a1\u5df2\u542f\u52a8\uff0c\u6b63\u5728\u6253\u5f00\u63a7\u5236\u53f0...");
       window.dispatchEvent(
         new CustomEvent("clawos:self-update-started", {
           detail: { taskId },
@@ -223,8 +223,8 @@
       );
       goToDashboard();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "启动更新失败";
-      setMetaText(message || "启动更新失败");
+      const message = error instanceof Error ? error.message : "\u542f\u52a8\u66f4\u65b0\u5931\u8d25";
+      setMetaText(message || "\u542f\u52a8\u66f4\u65b0\u5931\u8d25");
       runUpdateButton.disabled = false;
     } finally {
       runningUpdate = false;
@@ -242,7 +242,7 @@
     refreshing = true;
     try {
       if (!silent) {
-        setMetaText("正在获取版本信息...");
+        setMetaText("\u6b63\u5728\u83b7\u53d6\u7248\u672c\u4fe1\u606f...");
       }
       const currentVersion = await refreshLocalVersion();
       const data = await api("/api/app/update/status");
@@ -250,7 +250,7 @@
 
       if (status.error || !status.supported) {
         hideUpdateAction();
-        setMetaText("版本信息暂不可用。");
+        setMetaText("\u7248\u672c\u4fe1\u606f\u6682\u4e0d\u53ef\u7528\u3002");
         return;
       }
 
@@ -258,20 +258,20 @@
         typeof status.remoteVersion === "string" && status.remoteVersion.trim() ? status.remoteVersion.trim() : "";
       const hasUpdate = status.hasUpdate === true && !!remoteVersion;
       if (hasUpdate) {
-        setMetaText(`发现新版本 v${remoteVersion}`);
+        setMetaText(`\u53d1\u73b0\u65b0\u7248\u672c v${remoteVersion}`);
         showUpdateAction(remoteVersion);
         return;
       }
 
       hideUpdateAction();
       if (currentVersion) {
-        setMetaText(`当前已是最新版本 v${currentVersion}`);
+        setMetaText(`\u5f53\u524d\u5df2\u662f\u6700\u65b0\u7248\u672c v${currentVersion}`);
       } else {
-        setMetaText("当前已是最新版本。");
+        setMetaText("\u5f53\u524d\u5df2\u662f\u6700\u65b0\u7248\u672c\u3002");
       }
     } catch {
       hideUpdateAction();
-      setMetaText("版本信息暂不可用。");
+      setMetaText("\u7248\u672c\u4fe1\u606f\u6682\u4e0d\u53ef\u7528\u3002");
     } finally {
       refreshing = false;
     }

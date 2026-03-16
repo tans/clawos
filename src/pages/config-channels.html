@@ -3,20 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 通讯渠道</title>
+    <title>ClawOS &#36890;&#35759;&#28192;&#36947;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">通讯渠道</h1>
+          <h1 class="text-lg font-semibold">&#36890;&#35759;&#28192;&#36947;</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" data-action="reload">重新加载</button>
+            <button class="btn btn-outline btn-xs" data-action="reload">&#37325;&#26032;&#21152;&#36733;</button>
           </div>
         </header>
 
@@ -24,13 +25,13 @@
           <section class="card card-compact border border-base-200 bg-base-100" data-card-editor>
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="card-title text-base">渠道开关与参数入口</h2>
+                <h2 class="card-title text-base">&#28192;&#36947;&#24320;&#20851;&#19982;&#21442;&#25968;&#20837;&#21475;</h2>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-channel-list></div>
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
+          <div class="mt-3 text-xs text-base-content/70" data-meta>&#23578;&#26410;&#21152;&#36733;</div>
         </section>
       </main>
     </div>
@@ -38,7 +39,7 @@
     <div class="toast toast-end toast-top hidden" data-loading-toast>
       <div class="alert alert-info text-xs">
         <span class="loading loading-spinner loading-xs"></span>
-        <span>加载中...</span>
+        <span>&#21152;&#36733;&#20013;...</span>
       </div>
     </div>
 
@@ -46,21 +47,21 @@
       <div class="modal-box max-w-3xl">
         <div class="mb-2 flex items-start justify-between gap-3">
           <div>
-            <h3 class="text-base font-semibold" data-modal-title>渠道参数</h3>
+            <h3 class="text-base font-semibold" data-modal-title>&#28192;&#36947;&#21442;&#25968;</h3>
             <div class="text-[11px] text-base-content/60" data-modal-subtitle></div>
           </div>
-          <button class="btn btn-ghost btn-xs" type="button" data-modal-close>关闭</button>
+          <button class="btn btn-ghost btn-xs" type="button" data-modal-close>&#20851;&#38381;</button>
         </div>
 
         <div class="grid gap-3" data-modal-fields></div>
 
         <div class="modal-action">
-          <button class="btn btn-ghost btn-sm" type="button" data-modal-cancel>取消</button>
-          <button class="btn btn-primary btn-sm" type="button" data-modal-save>保存</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-modal-cancel>&#21462;&#28040;</button>
+          <button class="btn btn-primary btn-sm" type="button" data-modal-save>&#20445;&#23384;</button>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
-        <button aria-label="关闭">close</button>
+        <button aria-label="&#20851;&#38381;">close</button>
       </form>
     </dialog>
 
@@ -81,7 +82,7 @@
       const CHANNEL_SPECS_BASE = [
         {
           key: "feishu",
-          title: "飞书",
+          title: "\u98de\u4e66",
           icon: "fa-solid fa-feather-pointed",
           fields: [
             { path: "appId", label: "appId", type: "text" },
@@ -90,7 +91,7 @@
         },
         {
           key: "wework",
-          title: "企业微信",
+          title: "\u4f01\u4e1a\u5fae\u4fe1",
           icon: "fa-brands fa-weixin",
           fields: [],
         },
@@ -123,7 +124,7 @@
 
       function ensureObject(value, field) {
         if (!isObject(value)) {
-          throw new Error(`${field} 必须是 JSON 对象`);
+          throw new Error(`${field} \u5fc5\u987b\u662f JSON \u5bf9\u8c61`);
         }
         return value;
       }
@@ -218,20 +219,20 @@
 
         const value = Number(text);
         if (!Number.isFinite(value)) {
-          throw new Error(`${fieldLabel} 必须是数字`);
+          throw new Error(`${fieldLabel} \u5fc5\u987b\u662f\u6570\u5b57`);
         }
 
         const integer = field.integer !== false;
         if (integer && !Number.isInteger(value)) {
-          throw new Error(`${fieldLabel} 必须是整数`);
+          throw new Error(`${fieldLabel} \u5fc5\u987b\u662f\u6574\u6570`);
         }
 
         if (typeof field.min === "number" && value < field.min) {
-          throw new Error(`${fieldLabel} 不能小于 ${field.min}`);
+          throw new Error(`${fieldLabel} \u4e0d\u80fd\u5c0f\u4e8e ${field.min}`);
         }
 
         if (typeof field.max === "number" && value > field.max) {
-          throw new Error(`${fieldLabel} 不能大于 ${field.max}`);
+          throw new Error(`${fieldLabel} \u4e0d\u80fd\u5927\u4e8e ${field.max}`);
         }
 
         return value;
@@ -323,7 +324,7 @@
         if (specKey === "wework") {
           return sanitizeWeworkEntry(draft);
         }
-        throw new Error(`未知渠道：${specKey}`);
+        throw new Error(`\u672a\u77e5\u6e20\u9053\uff1a${specKey}`);
       }
 
       function getChannelEntry(config, specKey) {
@@ -386,12 +387,12 @@
           const actionButtons = [];
           if (spec.fields.length > 0) {
             actionButtons.push(
-              `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">配置参数</button>`
+              `<button class="btn btn-outline btn-xs" type="button" data-action="open-config" data-channel-key="${spec.key}">\u914d\u7f6e\u53c2\u6570</button>`
             );
           }
           if (spec.key === "wework") {
             actionButtons.push(
-              `<button class="btn btn-primary btn-xs" type="button" data-action="restart-qw-gateway" data-channel-key="${spec.key}">重启企微网关</button>`
+              `<button class="btn btn-primary btn-xs" type="button" data-action="restart-qw-gateway" data-channel-key="${spec.key}">\u91cd\u542f\u4f01\u5fae\u7f51\u5173</button>`
             );
           }
           return `
@@ -402,12 +403,12 @@
                     <i class="${iconClass} w-4 text-center text-base-content/70" aria-hidden="true"></i>
                     <span>${spec.title}</span>
                   </div>
-                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>未配置参数</div>
-                  ${spec.key === "wework" ? '<div class="mt-1 text-[11px] text-base-content/50" data-qw-gateway-status>企微网关状态未检查</div>' : ""}
+                  <div class="mt-1 text-[11px] text-base-content/60" data-channel-summary>\u672a\u914d\u7f6e\u53c2\u6570</div>
+                  ${spec.key === "wework" ? '<div class="mt-1 text-[11px] text-base-content/50" data-qw-gateway-status>\u4f01\u5fae\u7f51\u5173\u72b6\u6001\u672a\u68c0\u67e5</div>' : ""}
                 </div>
                 <div class="flex flex-wrap items-center justify-end gap-2">
                   <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                    <span class="text-xs">开启</span>
+                    <span class="text-xs">\u5f00\u542f</span>
                     <input class="toggle toggle-sm" type="checkbox" data-channel-enabled data-channel-key="${spec.key}" />
                   </label>
                   ${actionButtons.join("")}
@@ -435,28 +436,28 @@
       function readQwGatewayStateLabel(status) {
         switch (status?.state) {
           case "running":
-            return "重启中";
+            return "\u91cd\u542f\u4e2d";
           case "success":
-            return "最近一次重启成功";
+            return "\u6700\u8fd1\u4e00\u6b21\u91cd\u542f\u6210\u529f";
           case "failed":
-            return "最近一次重启失败";
+            return "\u6700\u8fd1\u4e00\u6b21\u91cd\u542f\u5931\u8d25";
           case "unsupported":
-            return "当前系统不支持";
+            return "\u5f53\u524d\u7cfb\u7edf\u4e0d\u652f\u6301";
           default:
-            return "尚未执行重启";
+            return "\u5c1a\u672a\u6267\u884c\u91cd\u542f";
         }
       }
 
       function formatQwGatewayStatusText(status) {
         if (!status || !isObject(status)) {
-          return "企微网关状态未检查";
+          return "\u4f01\u5fae\u7f51\u5173\u72b6\u6001\u672a\u68c0\u67e5";
         }
 
         const parts = [readQwGatewayStateLabel(status)];
         if (status.source === "startup") {
-          parts.push("启动时触发");
+          parts.push("\u542f\u52a8\u65f6\u89e6\u53d1");
         } else if (status.source === "manual") {
-          parts.push("手动触发");
+          parts.push("\u624b\u52a8\u89e6\u53d1");
         }
 
         const message = typeof status.message === "string" ? status.message.trim() : "";
@@ -464,7 +465,7 @@
           parts.push(message);
         }
 
-        return parts.join(" · ");
+        return parts.join(" \u00b7 ");
       }
 
       function updateQwGatewayCardStatus(cardEls) {
@@ -487,7 +488,7 @@
         cardEls.enabled.checked = channel.enable === true;
 
         if (spec.fields.length === 0) {
-          cardEls.summary.textContent = channel.enable === true ? "已开启" : "已关闭";
+          cardEls.summary.textContent = channel.enable === true ? "\u5df2\u5f00\u542f" : "\u5df2\u5173\u95ed";
           if (spec.key === "wework") {
             updateQwGatewayCardStatus(cardEls);
           }
@@ -495,9 +496,9 @@
         }
 
         if (configured > 0) {
-          cardEls.summary.textContent = `已配置 ${configured} 项参数`;
+          cardEls.summary.textContent = `\u5df2\u914d\u7f6e ${configured} \u9879\u53c2\u6570`;
         } else {
-          cardEls.summary.textContent = "未配置参数";
+          cardEls.summary.textContent = "\u672a\u914d\u7f6e\u53c2\u6570";
         }
       }
 
@@ -510,7 +511,7 @@
       function findSpec(specKey) {
         const spec = specByKey.get(specKey);
         if (!spec) {
-          throw new Error(`未知渠道：${specKey}`);
+          throw new Error(`\u672a\u77e5\u6e20\u9053\uff1a${specKey}`);
         }
         return spec;
       }
@@ -564,7 +565,7 @@
           const current = typeof value === "string" ? value : "";
           const options = (field.options || []).map((option) => {
             const selected = option === current ? "selected" : "";
-            const text = option || "默认";
+            const text = option || "\u9ed8\u8ba4";
             return `<option value="${escapeHtml(option)}" ${selected}>${escapeHtml(text)}</option>`;
           }).join("");
 
@@ -603,7 +604,7 @@
       function openChannelConfig(specKey) {
         const spec = findSpec(specKey);
         if (spec.fields.length === 0) {
-          throw new Error(`${spec.title}仅支持开关，不需要额外参数`);
+          throw new Error(`${spec.title}\u4ec5\u652f\u6301\u5f00\u5173\uff0c\u4e0d\u9700\u8981\u989d\u5916\u53c2\u6570`);
         }
 
         const entry = getChannelEntry(channelsConfig, spec.key);
@@ -611,7 +612,7 @@
         activeSpec = spec;
         activeDraft = cloneObject(entry.value);
 
-        modalTitleEl.textContent = `${spec.title} 参数配置`;
+        modalTitleEl.textContent = `${spec.title} \u53c2\u6570\u914d\u7f6e`;
         modalSubtitleEl.textContent = "";
         modalFieldsEl.innerHTML = spec.fields.map((field) => renderModalField(spec.key, field, activeDraft)).join("");
 
@@ -679,7 +680,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -749,7 +750,7 @@
         });
 
         if (!data.taskId) {
-          throw new Error("服务端未返回任务 ID");
+          throw new Error("\u670d\u52a1\u7aef\u672a\u8fd4\u56de\u4efb\u52a1 ID");
         }
 
         return data;
@@ -781,8 +782,8 @@
           }
           fillCardForm(channelsConfig);
           metaEl.textContent = IS_MACOS
-            ? `${SECTION} 已加载（macOS 已隐藏企业微信配置）`
-            : `${SECTION} 已加载`;
+            ? `${SECTION} \u5df2\u52a0\u8f7d\uff08macOS \u5df2\u9690\u85cf\u4f01\u4e1a\u5fae\u4fe1\u914d\u7f6e\uff09`
+            : `${SECTION} \u5df2\u52a0\u8f7d`;
         } finally {
           setLoadingToast(false);
         }
@@ -804,7 +805,7 @@
           try {
             openChannelConfig(specKey);
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "打开配置失败，请稍后重试。");
+            metaEl.textContent = readUserErrorMessage(error, "\u6253\u5f00\u914d\u7f6e\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           }
           return;
         }
@@ -817,11 +818,11 @@
         try {
           const data = await startGatewayAction("restart-qw-gateway");
           metaEl.textContent = data.reused
-            ? "企微网关重启任务已在执行，已复用当前任务。"
-            : `已开始重启企微网关，任务 ID: ${data.taskId}`;
+            ? "\u4f01\u5fae\u7f51\u5173\u91cd\u542f\u4efb\u52a1\u5df2\u5728\u6267\u884c\uff0c\u5df2\u590d\u7528\u5f53\u524d\u4efb\u52a1\u3002"
+            : `\u5df2\u5f00\u59cb\u91cd\u542f\u4f01\u5fae\u7f51\u5173\uff0c\u4efb\u52a1 ID: ${data.taskId}`;
           void pollQwGatewayStatus();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "重启企微网关失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "\u91cd\u542f\u4f01\u5fae\u7f51\u5173\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
         } finally {
           btn.disabled = false;
         }
@@ -843,10 +844,10 @@
         try {
           const draft = buildEnabledDraft(specKey, Boolean(input.checked));
           await saveChannelDraft(specKey, draft);
-          metaEl.textContent = `${findSpec(specKey).title} 开关已保存`;
+          metaEl.textContent = `${findSpec(specKey).title} \u5f00\u5173\u5df2\u4fdd\u5b58`;
         } catch (error) {
           input.checked = previousChecked;
-          metaEl.textContent = readUserErrorMessage(error, "更新开关失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "\u66f4\u65b0\u5f00\u5173\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
         } finally {
           input.disabled = false;
         }
@@ -856,17 +857,17 @@
         modalSaveEl.disabled = true;
         try {
           if (!activeSpec) {
-            throw new Error("当前没有可保存的渠道");
+            throw new Error("\u5f53\u524d\u6ca1\u6709\u53ef\u4fdd\u5b58\u7684\u6e20\u9053");
           }
           const nextDraft = collectActiveModalDraft();
           if (!nextDraft) {
-            throw new Error("当前没有可保存的渠道");
+            throw new Error("\u5f53\u524d\u6ca1\u6709\u53ef\u4fdd\u5b58\u7684\u6e20\u9053");
           }
           await saveChannelDraft(activeSpec.key, nextDraft);
-          metaEl.textContent = `${activeSpec.title} 参数已保存`;
+          metaEl.textContent = `${activeSpec.title} \u53c2\u6570\u5df2\u4fdd\u5b58`;
           closeModal();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
         } finally {
           modalSaveEl.disabled = false;
         }
@@ -888,7 +889,7 @@
         try {
           await loadSection();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "加载失败，请检查服务后重试。");
+          metaEl.textContent = readUserErrorMessage(error, "\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u670d\u52a1\u540e\u91cd\u8bd5\u3002");
         } finally {
           button.disabled = false;
         }
@@ -897,10 +898,10 @@
       (async function init() {
         try {
           renderChannelCards();
-          metaEl.textContent = "加载中...";
+          metaEl.textContent = "\u52a0\u8f7d\u4e2d...";
           await loadSection();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
+          metaEl.textContent = readUserErrorMessage(error, "\u521d\u59cb\u5316\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002");
         }
       })();
     </script>

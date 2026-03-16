@@ -1,36 +1,37 @@
-﻿<!doctype html>
+&#65279;<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 大模型</title>
+    <title>ClawOS &#22823;&#27169;&#22411;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
   </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">大模型</h1>
+          <h1 class="text-lg font-semibold">&#22823;&#27169;&#22411;</h1>
           <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">&#37325;&#26032;&#21152;&#36733;</button>
           </div>
         </header>
 
         <section class="flex-1 p-6">
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-3">
-              <div class="flex items-center justify-between gap-2">
-                <h2 class="card-title text-base">模型路由</h2>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="card-title text-base">&#27169;&#22411;&#36335;&#30001;</h2>
               </div>
               <div class="grid gap-3 xl:grid-cols-2" data-model-list></div>
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>尚未加载</div>
+          <div class="mt-3 text-xs text-base-content/70" data-meta>&#23578;&#26410;&#21152;&#36733;</div>
         </section>
       </main>
     </div>
@@ -107,7 +108,7 @@
 
       function ensureObject(value, field) {
         if (!isObject(value)) {
-          throw new Error(`${field} 必须�?JSON 对象`);
+          throw new Error(`${field} \u5fc5\u987b\ufffd?JSON \u5bf9\u8c61`);
         }
         return value;
       }
@@ -414,7 +415,7 @@
 
         if (!Array.isArray(providerDrafts) || providerDrafts.length === 0) {
           modelListEl.innerHTML =
-            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">暂无可用 provider，已回退到默认预设失败。请检查 models/agents 配置是否为合法 JSON 对象。</div>';
+            '<div class="rounded-lg border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/60">\u6682\u65e0\u53ef\u7528 provider\uff0c\u5df2\u56de\u9000\u5230\u9ed8\u8ba4\u9884\u8bbe\u5931\u8d25\u3002\u8bf7\u68c0\u67e5 models/agents \u914d\u7f6e\u662f\u5426\u4e3a\u5408\u6cd5 JSON \u5bf9\u8c61\u3002</div>';
           return;
         }
 
@@ -430,32 +431,32 @@
                   <div class="min-w-0">
                     <div class="text-sm font-medium">${escapeHtml(item.title)}</div>
                     <div class="text-[11px] text-base-content/60 font-mono">${escapeHtml(item.providerKey)}</div>
-                    ${item.providerKey === FREEGPT_PROVIDER_KEY ? '<div class="mt-1 text-[11px] text-base-content/60">启用后自动作为 fallback，默认 API Key 为 free</div>' : ""}
+                    ${item.providerKey === FREEGPT_PROVIDER_KEY ? '<div class="mt-1 text-[11px] text-base-content/60">\u542f\u7528\u540e\u81ea\u52a8\u4f5c\u4e3a fallback\uff0c\u9ed8\u8ba4 API Key \u4e3a free</div>' : ""}
                   </div>
                   <div class="flex items-center gap-2 flex-wrap justify-end">
                     ${
                       isFreeGpt
                         ? `<label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                            <span class="text-xs">启用</span>
+                            <span class="text-xs">\u542f\u7528</span>
                             <input class="checkbox checkbox-xs" type="checkbox" data-field="enabled" ${item.enabled ? "checked" : ""} />
                           </label>`
                         : `<label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                            <span class="text-xs">主模型</span>
+                            <span class="text-xs">\u4e3b\u6a21\u578b</span>
                             <input class="radio radio-xs" type="radio" name="primary-model" value="${escapeHtml(item.providerKey)}" ${primaryChecked} />
                           </label>
                           <label class="label cursor-pointer gap-2 rounded-lg border border-base-200 px-2 py-1">
-                            <span class="text-xs">备用</span>
+                            <span class="text-xs">\u5907\u7528</span>
                             <input class="checkbox checkbox-xs" type="checkbox" data-field="fallback" ${fallbackChecked} ${fallbackDisabled} />
                           </label>`
                     }
-                    <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">保存此卡片</button>
+                    <button class="btn btn-primary btn-xs" type="button" data-action="save-card" data-provider-key="${escapeHtml(item.providerKey)}">\u4fdd\u5b58\u6b64\u5361\u7247</button>
                   </div>
                 </div>
 
                 ${
                   isFreeGpt
                     ? `<div class="mt-3 rounded-lg border border-dashed border-base-300 px-3 py-2 text-xs text-base-content/70">
-                        启用后自动写入默认参数：fallback、API Key=freeforclawos、模型=${escapeHtml(FREEGPT_DEFAULTS.modelId)}
+                        \u542f\u7528\u540e\u81ea\u52a8\u5199\u5165\u9ed8\u8ba4\u53c2\u6570\uff1afallback\u3001API Key=freeforclawos\u3001\u6a21\u578b=${escapeHtml(FREEGPT_DEFAULTS.modelId)}
                       </div>`
                     : `<div class="mt-3 grid gap-3">
                         <label class="form-control w-full gap-1">
@@ -471,7 +472,7 @@
                         </label>
 
                         <label class="form-control w-full gap-1">
-                          <span class="text-xs text-base-content/70">当前模型</span>
+                          <span class="text-xs text-base-content/70">\u5f53\u524d\u6a21\u578b</span>
                           <input class="input input-bordered input-sm w-full font-mono" type="text" data-field="model-id" value="${escapeHtml(item.modelId)}" placeholder="model-id" list="model-suggest-${escapeHtml(item.providerKey)}" />
                           <datalist id="model-suggest-${escapeHtml(item.providerKey)}">${renderModelSuggestion(item.modelOptions || [])}</datalist>
                         </label>
@@ -587,12 +588,12 @@
           const currentModels = readProviderModels(currentProvider);
           const modelId = readOptionalText(draft.modelId);
           if (!modelId) {
-            throw new Error(`${resolveTitle(providerKey)} 的模�?ID 不能为空`);
+            throw new Error(`${resolveTitle(providerKey)} \u7684\u6a21\ufffd?ID \u4e0d\u80fd\u4e3a\u7a7a`);
           }
 
           const baseUrl = readOptionalText(draft.baseUrl) || readOptionalText(currentProvider.baseUrl) || readOptionalText(preset?.baseUrl);
           if (!baseUrl) {
-            throw new Error(`${resolveTitle(providerKey)} �?Base URL 不能为空`);
+            throw new Error(`${resolveTitle(providerKey)} \ufffd?Base URL \u4e0d\u80fd\u4e3a\u7a7a`);
           }
 
           const existingModel = currentModels.find((item) => readOptionalText(item.id) === modelId);
@@ -643,7 +644,7 @@
           const currentPrimaryRef = parseProviderModel(model.primary);
           if (currentPrimaryRef && currentPrimaryRef.provider === providerKey) {
             if (!selectedPrimaryTargetKey) {
-              throw new Error("请先选择一个主模型，再关闭 FreeGPT。");
+              throw new Error("\u8bf7\u5148\u9009\u62e9\u4e00\u4e2a\u4e3b\u6a21\u578b\uff0c\u518d\u5173\u95ed FreeGPT\u3002");
             }
             model.primary = selectedPrimaryTargetKey;
           }
@@ -713,7 +714,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -741,22 +742,22 @@
           agentsResult.status === "fulfilled" && isObject(agentsResult.value?.data) ? agentsResult.value.data : {};
 
         if (modelsResult.status === "rejected") {
-          loadWarnings.push(`models 加载失败：${readUserErrorMessage(modelsResult.reason, "未知错误")}`);
+          loadWarnings.push(`models \u52a0\u8f7d\u5931\u8d25\uff1a${readUserErrorMessage(modelsResult.reason, "\u672a\u77e5\u9519\u8bef")}`);
         } else if (!isObject(modelsResult.value?.data)) {
-          loadWarnings.push("models 配置不是对象，已回退到默认预设。");
+          loadWarnings.push("models \u914d\u7f6e\u4e0d\u662f\u5bf9\u8c61\uff0c\u5df2\u56de\u9000\u5230\u9ed8\u8ba4\u9884\u8bbe\u3002");
         }
 
         if (agentsResult.status === "rejected") {
-          loadWarnings.push(`agents 加载失败：${readUserErrorMessage(agentsResult.reason, "未知错误")}`);
+          loadWarnings.push(`agents \u52a0\u8f7d\u5931\u8d25\uff1a${readUserErrorMessage(agentsResult.reason, "\u672a\u77e5\u9519\u8bef")}`);
         } else if (!isObject(agentsResult.value?.data)) {
-          loadWarnings.push("agents 配置不是对象，已回退到默认预设。");
+          loadWarnings.push("agents \u914d\u7f6e\u4e0d\u662f\u5bf9\u8c61\uff0c\u5df2\u56de\u9000\u5230\u9ed8\u8ba4\u9884\u8bbe\u3002");
         }
 
         modelsConfig = ensureObject(nextModelsConfig, MODEL_SECTION);
         agentsConfig = ensureObject(nextAgentsConfig, AGENT_SECTION);
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = loadWarnings.length > 0 ? `大模型配置已加载（部分配置已回退）。${loadWarnings.join(" ")}` : "大模型配置已加载。";
+        metaEl.textContent = loadWarnings.length > 0 ? `\u5927\u6a21\u578b\u914d\u7f6e\u5df2\u52a0\u8f7d\uff08\u90e8\u5206\u914d\u7f6e\u5df2\u56de\u9000\uff09\u3002${loadWarnings.join(" ")}` : "\u5927\u6a21\u578b\u914d\u7f6e\u5df2\u52a0\u8f7d\u3002";
       }
 
       async function saveSingleProvider(providerKey) {
@@ -783,7 +784,7 @@
         agentsConfig = nextAgents;
         providerDrafts = buildProviderDrafts(modelsConfig, agentsConfig);
         renderCards();
-        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} 已保存。`;
+        metaEl.textContent = `${resolveTitle(normalizeProviderKey(providerKey))} \u5df2\u4fdd\u5b58\u3002`;
       }
 
       if (modelListEl) {
@@ -814,14 +815,14 @@
 
           button.disabled = true;
           const originalText = button.textContent;
-          button.textContent = "保存中...";
+          button.textContent = "\u4fdd\u5b58\u4e2d...";
           try {
             await saveSingleProvider(providerKey);
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
+            metaEl.textContent = readUserErrorMessage(error, "\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           } finally {
             button.disabled = false;
-            button.textContent = originalText || "保存此卡片";
+            button.textContent = originalText || "\u4fdd\u5b58\u6b64\u5361\u7247";
           }
         });
       }
@@ -832,7 +833,7 @@
           try {
             await loadSections();
           } catch (error) {
-            metaEl.textContent = readUserErrorMessage(error, "加载失败，请刷新后重试。");
+            metaEl.textContent = readUserErrorMessage(error, "\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5\u3002");
           } finally {
             reloadBtn.disabled = false;
           }
@@ -843,7 +844,7 @@
         try {
           await loadSections();
         } catch (error) {
-          metaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
+          metaEl.textContent = readUserErrorMessage(error, "\u521d\u59cb\u5316\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002");
         }
       })();
     </script>

@@ -3,28 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 设置</title>
+    <title>ClawOS &#35774;&#32622;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
   </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">设置</h1>
+          <h1 class="text-lg font-semibold">&#35774;&#32622;</h1>
           <div class="flex items-center gap-2">
-            <button class="btn btn-outline btn-xs" type="button" data-action="reload">重新加载</button>
-            <button class="btn btn-primary btn-xs" type="button" data-action="save">保存设置</button>
+            <button class="btn btn-outline btn-xs" type="button" data-action="reload">&#37325;&#26032;&#21152;&#36733;</button>
+            <button class="btn btn-primary btn-xs" type="button" data-action="save">&#20445;&#23384;&#35774;&#32622;</button>
           </div>
         </header>
 
         <section class="flex-1 space-y-4 p-6">
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">服务参数</h2>
+              <h2 class="card-title text-base">&#26381;&#21153;&#21442;&#25968;</h2>
               <div class="grid gap-3">
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
@@ -43,7 +44,7 @@
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-center">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">授权控制地址</div>
+                      <div class="text-sm font-medium">&#25480;&#26435;&#25511;&#21046;&#22320;&#22336;</div>
                     </div>
                     <input
                       class="input input-bordered input-sm w-full font-mono"
@@ -57,14 +58,14 @@
                 <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
                   <div class="grid gap-3 xl:grid-cols-[220px_minmax(0,1fr)] xl:items-start">
                     <div class="space-y-1">
-                      <div class="text-sm font-medium">开机后自动启动 ClawOS</div>
+                      <div class="text-sm font-medium">&#24320;&#26426;&#21518;&#33258;&#21160;&#21551;&#21160; ClawOS</div>
                     </div>
                     <div class="space-y-2">
                       <label class="label cursor-pointer justify-start gap-3 p-0">
                         <input id="clawos-autostart" type="checkbox" class="toggle toggle-primary" />
-                        <span class="label-text text-sm">启用</span>
+                        <span class="label-text text-sm">&#21551;&#29992;</span>
                       </label>
-                      <div class="text-xs text-base-content/60" data-autostart-status>正在读取状态...</div>
+                      <div class="text-xs text-base-content/60" data-autostart-status>&#27491;&#22312;&#35835;&#21462;&#29366;&#24577;...</div>
                     </div>
                   </div>
                 </div>
@@ -73,7 +74,7 @@
           </section>
 
           <div class="rounded-lg border border-base-200 bg-base-100 px-4 py-3 text-xs text-base-content/70" data-meta>
-            正在读取设置...
+            &#27491;&#22312;&#35835;&#21462;&#35774;&#32622;...
           </div>
         </section>
       </main>
@@ -108,7 +109,7 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -126,7 +127,7 @@
       function setSaving(saving) {
         if (saveBtn) {
           saveBtn.disabled = saving;
-          saveBtn.textContent = saving ? "保存中..." : "保存设置";
+          saveBtn.textContent = saving ? "\u4fdd\u5b58\u4e2d..." : "\u4fdd\u5b58\u8bbe\u7f6e";
         }
       }
 
@@ -141,7 +142,7 @@
 
       function updateFarmLinks() {
         const farmHomeUrl = buildFarmHomeUrl();
-        const display = farmHomeUrl || '未配置';
+        const display = farmHomeUrl || '\u672a\u914d\u7f6e';
 
         if (farmHomeLinkEl) {
           farmHomeLinkEl.textContent = display;
@@ -176,15 +177,15 @@
             autoStartCheckbox.checked = false;
             autoStartCheckbox.disabled = true;
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = "当前系统不支持此功能（仅 Windows 可用）。";
+              autoStartStatusEl.textContent = "\u5f53\u524d\u7cfb\u7edf\u4e0d\u652f\u6301\u6b64\u529f\u80fd\uff08\u4ec5 Windows \u53ef\u7528\uff09\u3002";
             }
           } else {
             autoStartCheckbox.disabled = false;
             autoStartCheckbox.checked = Boolean(state.enabled);
             if (autoStartStatusEl) {
               autoStartStatusEl.textContent = state.enabled
-                ? "已启用：开机后会自动启动 ClawOS。"
-                : "未启用：开机后不会自动启动 ClawOS。";
+                ? "\u5df2\u542f\u7528\uff1a\u5f00\u673a\u540e\u4f1a\u81ea\u52a8\u542f\u52a8 ClawOS\u3002"
+                : "\u672a\u542f\u7528\uff1a\u5f00\u673a\u540e\u4e0d\u4f1a\u81ea\u52a8\u542f\u52a8 ClawOS\u3002";
             }
           }
         }
@@ -197,12 +198,12 @@
 
         const openclawToken = tokenInput.value.trim();
         if (!openclawToken) {
-          throw new Error("openclaw Token 不能为空。");
+          throw new Error("openclaw Token \u4e0d\u80fd\u4e3a\u7a7a\u3002");
         }
 
         const controllerAddress = controllerAddressInput.value.trim();
         if (controllerAddress && !/^0x[a-fA-F0-9]{40}$/.test(controllerAddress)) {
-          throw new Error("授权控制地址格式不合法，必须是 0x 开头的 40 位十六进制地址。");
+          throw new Error("\u6388\u6743\u63a7\u5236\u5730\u5740\u683c\u5f0f\u4e0d\u5408\u6cd5\uff0c\u5fc5\u987b\u662f 0x \u5f00\u5934\u7684 40 \u4f4d\u5341\u516d\u8fdb\u5236\u5730\u5740\u3002");
         }
 
         const farmAddress = farmAddressInput ? farmAddressInput.value.trim() : undefined;
@@ -224,8 +225,8 @@
         const state = data.state || {};
         if (autoStartStatusEl) {
           autoStartStatusEl.textContent = state.enabled
-            ? "已启用：开机后会自动启动 ClawOS。"
-            : "未启用：开机后不会自动启动 ClawOS。";
+            ? "\u5df2\u542f\u7528\uff1a\u5f00\u673a\u540e\u4f1a\u81ea\u52a8\u542f\u52a8 ClawOS\u3002"
+            : "\u672a\u542f\u7528\uff1a\u5f00\u673a\u540e\u4e0d\u4f1a\u81ea\u52a8\u542f\u52a8 ClawOS\u3002";
         }
       }
 
@@ -237,7 +238,7 @@
         openFarmHomeBtn.addEventListener("click", () => {
           const farmHomeUrl = buildFarmHomeUrl();
           if (!farmHomeUrl) {
-            setMeta("请先填写养虾场通讯地址。保存后可直接打开页面。");
+            setMeta("\u8bf7\u5148\u586b\u5199\u517b\u867e\u573a\u901a\u8baf\u5730\u5740\u3002\u4fdd\u5b58\u540e\u53ef\u76f4\u63a5\u6253\u5f00\u9875\u9762\u3002");
             return;
           }
           window.open(farmHomeUrl, "_blank", "noopener,noreferrer");
@@ -247,11 +248,11 @@
       if (reloadBtn) {
         reloadBtn.addEventListener("click", async () => {
           try {
-            setMeta("正在读取设置...");
+            setMeta("\u6b63\u5728\u8bfb\u53d6\u8bbe\u7f6e...");
             await loadSettings();
-            setMeta("设置已刷新。");
+            setMeta("\u8bbe\u7f6e\u5df2\u5237\u65b0\u3002");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "读取失败，请检查服务状态后重试。"));
+            setMeta(readUserErrorMessage(error, "\u8bfb\u53d6\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u670d\u52a1\u72b6\u6001\u540e\u91cd\u8bd5\u3002"));
           }
         });
       }
@@ -260,12 +261,12 @@
         saveBtn.addEventListener("click", async () => {
           try {
             setSaving(true);
-            setMeta("正在保存设置...");
+            setMeta("\u6b63\u5728\u4fdd\u5b58\u8bbe\u7f6e...");
             await saveSettings();
             updateFarmLinks();
-            setMeta("设置已保存。openclaw Token、授权控制地址与养虾场通讯地址已更新。");
+            setMeta("\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002openclaw Token\u3001\u6388\u6743\u63a7\u5236\u5730\u5740\u4e0e\u517b\u867e\u573a\u901a\u8baf\u5730\u5740\u5df2\u66f4\u65b0\u3002");
           } catch (error) {
-            setMeta(readUserErrorMessage(error, "保存失败，请稍后重试。"));
+            setMeta(readUserErrorMessage(error, "\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002"));
           } finally {
             setSaving(false);
           }
@@ -277,15 +278,15 @@
           const next = autoStartCheckbox.checked;
           autoStartCheckbox.disabled = true;
           if (autoStartStatusEl) {
-            autoStartStatusEl.textContent = "正在保存开机自启动状态...";
+            autoStartStatusEl.textContent = "\u6b63\u5728\u4fdd\u5b58\u5f00\u673a\u81ea\u542f\u52a8\u72b6\u6001...";
           }
           try {
             await saveAutoStart(next);
-            setMeta("开机自启动状态已更新。");
+            setMeta("\u5f00\u673a\u81ea\u542f\u52a8\u72b6\u6001\u5df2\u66f4\u65b0\u3002");
           } catch (error) {
             autoStartCheckbox.checked = !next;
             if (autoStartStatusEl) {
-              autoStartStatusEl.textContent = readUserErrorMessage(error, "保存失败，请稍后重试。");
+              autoStartStatusEl.textContent = readUserErrorMessage(error, "\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
             }
           } finally {
             autoStartCheckbox.disabled = false;
@@ -296,9 +297,9 @@
       (async function init() {
         try {
           await loadSettings();
-          setMeta("设置已加载。可以修改后点击“保存设置”。");
+          setMeta("\u8bbe\u7f6e\u5df2\u52a0\u8f7d\u3002\u53ef\u4ee5\u4fee\u6539\u540e\u70b9\u51fb\u201c\u4fdd\u5b58\u8bbe\u7f6e\u201d\u3002");
         } catch (error) {
-          setMeta(readUserErrorMessage(error, "初始化失败，请刷新页面重试。"));
+          setMeta(readUserErrorMessage(error, "\u521d\u59cb\u5316\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002"));
         }
       })();
     </script>

@@ -3,34 +3,35 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 会话</title>
+    <title>ClawOS &#20250;&#35805;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">会话</h1>
-          <button class="btn btn-outline btn-xs" data-action="reload">刷新</button>
+          <h1 class="text-lg font-semibold">&#20250;&#35805;</h1>
+          <button class="btn btn-outline btn-xs" data-action="reload">&#21047;&#26032;</button>
         </header>
 
         <section class="flex-1 p-6">
-          <div class="grid gap-4 lg:grid-cols-[300px_1fr]">
+          <div class="grid gap-3 lg:grid-cols-[280px_1fr]">
             <div class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
-                <div class="text-xs uppercase tracking-[0.18em] text-base-content/50">所有会话</div>
-                <div class="text-xs text-base-content/70" data-list-meta>尚未加载</div>
+                <h2 class="text-sm font-semibold">&#25152;&#26377;&#20250;&#35805;</h2>
+                <div class="text-xs text-base-content/70" data-list-meta>&#23578;&#26410;&#21152;&#36733;</div>
                 <div class="flex flex-col gap-2" data-session-list></div>
               </div>
             </div>
 
             <div class="card card-compact border border-base-200 bg-base-100">
               <div class="card-body gap-3">
-                <h2 class="text-base font-semibold" data-session-title>未选择会话</h2>
+                <h2 class="text-base font-semibold" data-session-title>&#26410;&#36873;&#25321;&#20250;&#35805;</h2>
                 <div class="text-xs text-base-content/70" data-detail-meta></div>
                 <div class="flex flex-col gap-2" data-message-list></div>
               </div>
@@ -61,7 +62,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -96,10 +97,10 @@
 
       function roleLabel(role) {
         const key = String(role || "unknown").toLowerCase();
-        if (["user", "human"].includes(key)) return "用户";
-        if (["assistant", "ai", "bot", "agent"].includes(key)) return "助手";
-        if (["system"].includes(key)) return "系统";
-        return "其他";
+        if (["user", "human"].includes(key)) return "\u7528\u6237";
+        if (["assistant", "ai", "bot", "agent"].includes(key)) return "\u52a9\u624b";
+        if (["system"].includes(key)) return "\u7cfb\u7edf";
+        return "\u5176\u4ed6";
       }
 
       function clearChildren(el) {
@@ -114,13 +115,13 @@
         if (!Array.isArray(sessions) || sessions.length === 0) {
           const empty = document.createElement("div");
           empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
-          empty.textContent = "暂无会话数据";
+          empty.textContent = "\u6682\u65e0\u4f1a\u8bdd\u6570\u636e";
           sessionListEl.appendChild(empty);
-          listMetaEl.textContent = "共 0 条";
+          listMetaEl.textContent = "\u5171 0 \u6761";
           return;
         }
 
-        listMetaEl.textContent = `共 ${sessions.length} 条`;
+        listMetaEl.textContent = `\u5171 ${sessions.length} \u6761`;
 
         sessions.forEach((session) => {
           const btn = document.createElement("button");
@@ -163,7 +164,7 @@
         if (!Array.isArray(history) || history.length === 0) {
           const empty = document.createElement("div");
           empty.className = "rounded-lg border border-base-200 bg-base-200/30 px-3 py-2 text-xs text-base-content/70";
-          empty.textContent = "该会话暂无历史消息";
+          empty.textContent = "\u8be5\u4f1a\u8bdd\u6682\u65e0\u5386\u53f2\u6d88\u606f";
           messageListEl.appendChild(empty);
           return;
         }
@@ -208,7 +209,7 @@
           const active = sessions.find((item) => item.key === activeSessionKey);
           await selectSession(activeSessionKey, active?.title || activeSessionKey, false);
         } else {
-          titleEl.textContent = "未选择会话";
+          titleEl.textContent = "\u672a\u9009\u62e9\u4f1a\u8bdd";
           detailMetaEl.textContent = "";
           renderMessageList([]);
         }
@@ -217,7 +218,7 @@
       async function selectSession(sessionKey, title, rerender = true) {
         activeSessionKey = sessionKey;
         titleEl.textContent = title;
-        detailMetaEl.textContent = "正在加载历史消息...";
+        detailMetaEl.textContent = "\u6b63\u5728\u52a0\u8f7d\u5386\u53f2\u6d88\u606f...";
         if (rerender) {
           renderSessionList();
         }
@@ -225,10 +226,10 @@
         try {
           const data = await api(`/api/sessions/${encodeURIComponent(sessionKey)}/history?limit=300`);
           const history = Array.isArray(data.history) ? data.history : [];
-          detailMetaEl.textContent = `共 ${history.length} 条消息`;
+          detailMetaEl.textContent = `\u5171 ${history.length} \u6761\u6d88\u606f`;
           renderMessageList(history);
         } catch (error) {
-          detailMetaEl.textContent = readUserErrorMessage(error, "加载失败，请稍后重试。");
+          detailMetaEl.textContent = readUserErrorMessage(error, "\u52a0\u8f7d\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           renderMessageList([]);
         }
       }
@@ -239,11 +240,11 @@
           return;
         }
         button.disabled = true;
-        listMetaEl.textContent = "正在刷新...";
+        listMetaEl.textContent = "\u6b63\u5728\u5237\u65b0...";
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = readUserErrorMessage(error, "刷新失败，请稍后重试。");
+          listMetaEl.textContent = readUserErrorMessage(error, "\u5237\u65b0\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           clearChildren(sessionListEl);
         } finally {
           button.disabled = false;
@@ -254,10 +255,10 @@
         try {
           await loadSessions();
         } catch (error) {
-          listMetaEl.textContent = readUserErrorMessage(error, "初始化失败，请刷新页面重试。");
+          listMetaEl.textContent = readUserErrorMessage(error, "\u521d\u59cb\u5316\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002");
           clearChildren(sessionListEl);
-          titleEl.textContent = "未选择会话";
-          detailMetaEl.textContent = "请先检查服务连接状态";
+          titleEl.textContent = "\u672a\u9009\u62e9\u4f1a\u8bdd";
+          detailMetaEl.textContent = "\u8bf7\u5148\u68c0\u67e5\u670d\u52a1\u8fde\u63a5\u72b6\u6001";
           renderMessageList([]);
         }
       })();

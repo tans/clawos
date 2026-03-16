@@ -125,7 +125,7 @@ function renderSidebar(active: SidebarNavId | null): string {
             <div class="mt-2 text-[11px] text-base-content/60" data-app-update-meta>\u68c0\u67e5\u66f4\u65b0\u4e2d...</div>
             <div class="mt-2 hidden" data-app-update-actions>
               <button class="btn btn-primary btn-xs w-full" type="button" data-app-update-run>
-                更新并重启 ClawOS
+                \u66f4\u65b0\u5e76\u91cd\u542f ClawOS
               </button>
             </div>
           </div>

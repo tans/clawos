@@ -3,53 +3,56 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 浏览器</title>
+    <title>ClawOS &#27983;&#35272;&#22120;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
   </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">浏览器修复</h1>
+          <h1 class="text-lg font-semibold">&#27983;&#35272;&#22120;&#20462;&#22797;</h1>
         </header>
 
         <section class="flex-1 p-6">
           <section class="card card-compact border border-base-200 bg-base-100">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">检测与修复</h2>
-              <div class="flex flex-wrap gap-2">
-                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>检测</button>
-                <button class="btn btn-primary btn-sm" data-browser-action="repair">修复</button>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="card-title text-base">&#26816;&#27979;&#19982;&#20462;&#22797;</h2>
+                <div class="flex flex-wrap gap-2">
+                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>&#26816;&#27979;</button>
+                <button class="btn btn-primary btn-sm" data-browser-action="repair">&#20462;&#22797;</button>
+              </div>
               </div>
 
               <div
                 class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
                 data-browser-connectivity-status
               >
-                等待检测...
+                &#31561;&#24453;&#26816;&#27979;...
               </div>
               <pre
                 class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
                 data-browser-connectivity-output
-              >检测详情会显示在这里...</pre>
+              >&#26816;&#27979;&#35814;&#24773;&#20250;&#26174;&#31034;&#22312;&#36825;&#37324;...</pre>
 
               <div
                 class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
                 data-browser-op-status
               >
-                等待执行...
+                &#31561;&#24453;&#25191;&#34892;...
               </div>
 
-              <div class="text-xs text-base-content/70" data-browser-task-meta>当前无任务</div>
+              <div class="text-xs text-base-content/70" data-browser-task-meta>&#24403;&#21069;&#26080;&#20219;&#21153;</div>
               <progress class="progress progress-neutral hidden w-full" value="0" max="100" data-browser-task-progress></progress>
               <pre
                 class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
                 data-browser-task-output
-              >操作记录会显示在这里...</pre>
+              >&#25805;&#20316;&#35760;&#24405;&#20250;&#26174;&#31034;&#22312;&#36825;&#37324;...</pre>
             </div>
           </section>
         </section>
@@ -76,7 +79,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -112,21 +115,21 @@
       function connectivityStatusText(status) {
         switch (status) {
           case "ok":
-            return "正常";
+            return "\u6b63\u5e38";
           case "local-only":
-            return "仅本机可达";
+            return "\u4ec5\u672c\u673a\u53ef\u8fbe";
           case "cdp-only":
-            return "仅远程入口可达";
+            return "\u4ec5\u8fdc\u7a0b\u5165\u53e3\u53ef\u8fbe";
           case "disabled":
-            return "已禁用";
+            return "\u5df2\u7981\u7528";
           case "not-configured":
-            return "未配置";
+            return "\u672a\u914d\u7f6e";
           case "gateway-error":
-            return "网关异常";
+            return "\u7f51\u5173\u5f02\u5e38";
           case "probe-error":
-            return "连通失败";
+            return "\u8fde\u901a\u5931\u8d25";
           default:
-            return "未知";
+            return "\u672a\u77e5";
         }
       }
 
@@ -135,20 +138,20 @@
           return;
         }
 
-        const mode = info?.mode === "local" ? "本地" : "CDP";
+        const mode = info?.mode === "local" ? "\u672c\u5730" : "CDP";
         const statusText = connectivityStatusText(info?.status);
-        browserConnectivityStatusEl.textContent = `连通状态: ${statusText}（模式: ${mode}）`;
+        browserConnectivityStatusEl.textContent = `\u8fde\u901a\u72b6\u6001: ${statusText}\uff08\u6a21\u5f0f: ${mode}\uff09`;
 
         const lines = [
-          `状态: ${statusText}`,
-          `模式: ${mode}`,
-          `启用: ${info?.enabled === false ? "否" : "是"}`,
-          `已配置: ${info?.configured === true ? "是" : "否"}`,
+          `\u72b6\u6001: ${statusText}`,
+          `\u6a21\u5f0f: ${mode}`,
+          `\u542f\u7528: ${info?.enabled === false ? "\u5426" : "\u662f"}`,
+          `\u5df2\u914d\u7f6e: ${info?.configured === true ? "\u662f" : "\u5426"}`,
         ];
 
         const checkedAt = formatCheckTime(info?.checkedAt);
         if (checkedAt) {
-          lines.push(`检测时间: ${checkedAt}`);
+          lines.push(`\u68c0\u6d4b\u65f6\u95f4: ${checkedAt}`);
         }
 
         if (info?.cdpUrl) {
@@ -157,22 +160,22 @@
 
         if (info?.direct127 && typeof info.direct127 === "object") {
           lines.push(
-            `本机检测: ${info.direct127.ok === true ? "成功" : "失败"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
+            `\u672c\u673a\u68c0\u6d4b: ${info.direct127.ok === true ? "\u6210\u529f" : "\u5931\u8d25"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
           );
         }
 
         if (info?.wslCdp && typeof info.wslCdp === "object") {
           lines.push(
-            `WSL 检测: ${info.wslCdp.ok === true ? "成功" : "失败"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
+            `WSL \u68c0\u6d4b: ${info.wslCdp.ok === true ? "\u6210\u529f" : "\u5931\u8d25"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
           );
           if (typeof info.wslCdp.command === "string" && info.wslCdp.command.trim()) {
-            lines.push(`WSL 命令: ${info.wslCdp.command}`);
+            lines.push(`WSL \u547d\u4ee4: ${info.wslCdp.command}`);
           }
         }
 
         if (Array.isArray(info?.warnings) && info.warnings.length > 0) {
           lines.push("");
-          lines.push("提示:");
+          lines.push("\u63d0\u793a:");
           for (const warning of info.warnings) {
             if (typeof warning === "string" && warning.trim()) {
               lines.push(`- ${warning.trim()}`);
@@ -190,8 +193,8 @@
         }
 
         if (!silent) {
-          browserConnectivityStatusEl.textContent = "连通状态: 检测中...";
-          browserConnectivityOutputEl.textContent = "正在检测浏览器连通性...";
+          browserConnectivityStatusEl.textContent = "\u8fde\u901a\u72b6\u6001: \u68c0\u6d4b\u4e2d...";
+          browserConnectivityOutputEl.textContent = "\u6b63\u5728\u68c0\u6d4b\u6d4f\u89c8\u5668\u8fde\u901a\u6027...";
         }
 
         const data = await api("/api/system/browser/check");
@@ -205,23 +208,23 @@
         const totalSteps = Number.isFinite(task?.totalSteps) ? task.totalSteps : 0;
         const percent = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
         const status = typeof task?.status === "string" ? task.status : "unknown";
-        const title = typeof task?.title === "string" ? task.title : "未知任务";
+        const title = typeof task?.title === "string" ? task.title : "\u672a\u77e5\u4efb\u52a1";
         const running = status === "running" || status === "pending";
         const statusText =
           status === "running" || status === "pending"
-            ? "执行中"
+            ? "\u6267\u884c\u4e2d"
             : status === "success"
-              ? "已完成"
+              ? "\u5df2\u5b8c\u6210"
               : status === "failed"
-                ? "失败"
-                : "未知";
+                ? "\u5931\u8d25"
+                : "\u672a\u77e5";
 
         browserTaskProgressEl.value = percent;
         browserTaskProgressEl.classList.toggle("hidden", !running);
-        browserTaskMetaEl.textContent = `${title}，${statusText}`;
+        browserTaskMetaEl.textContent = `${title}\uff0c${statusText}`;
 
         const lines = logs.map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
-        browserTaskOutputEl.textContent = lines.join("\n") || "暂无日志";
+        browserTaskOutputEl.textContent = lines.join("\n") || "\u6682\u65e0\u65e5\u5fd7";
         browserTaskOutputEl.scrollTop = browserTaskOutputEl.scrollHeight;
       }
 
@@ -237,16 +240,16 @@
             if (task.status === "success" || task.status === "failed") {
               stopTaskPolling();
               if (task.status === "success") {
-                browserOpStatusEl.textContent = "操作完成。";
+                browserOpStatusEl.textContent = "\u64cd\u4f5c\u5b8c\u6210\u3002";
               } else {
-                browserOpStatusEl.textContent = "操作未完成，请稍后重试。";
+                browserOpStatusEl.textContent = "\u64cd\u4f5c\u672a\u5b8c\u6210\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002";
               }
             }
           } catch (error) {
             stopTaskPolling();
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = readUserErrorMessage(error, "状态刷新失败，请稍后重试。");
-            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
+            browserTaskMetaEl.textContent = readUserErrorMessage(error, "\u72b6\u6001\u5237\u65b0\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
+            browserOpStatusEl.textContent = readUserErrorMessage(error, "\u64cd\u4f5c\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           }
         };
 
@@ -255,10 +258,10 @@
       }
 
       async function runBrowserAction(action) {
-        const label = action === "repair" ? "修复" : action;
-        browserOpStatusEl.textContent = `正在执行：${label}`;
-        browserTaskOutputEl.textContent = "任务启动中...";
-        browserTaskMetaEl.textContent = "任务启动中...";
+        const label = action === "repair" ? "\u4fee\u590d" : action;
+        browserOpStatusEl.textContent = `\u6b63\u5728\u6267\u884c\uff1a${label}`;
+        browserTaskOutputEl.textContent = "\u4efb\u52a1\u542f\u52a8\u4e2d...";
+        browserTaskMetaEl.textContent = "\u4efb\u52a1\u542f\u52a8\u4e2d...";
         browserTaskProgressEl.classList.remove("hidden");
         browserTaskProgressEl.value = 0;
 
@@ -268,11 +271,11 @@
         });
 
         if (!data.taskId) {
-          throw new Error("服务端未返回任务 ID");
+          throw new Error("\u670d\u52a1\u7aef\u672a\u8fd4\u56de\u4efb\u52a1 ID");
         }
 
         if (data.reused) {
-          browserOpStatusEl.textContent = `检测到同类任务正在执行，已切换日志：${label}`;
+          browserOpStatusEl.textContent = `\u68c0\u6d4b\u5230\u540c\u7c7b\u4efb\u52a1\u6b63\u5728\u6267\u884c\uff0c\u5df2\u5207\u6362\u65e5\u5fd7\uff1a${label}`;
         }
 
         await pollTask(data.taskId);
@@ -291,7 +294,7 @@
         }
 
         return window.confirm(
-          "浏览器修复会重启 Chrome，并修改 Windows 端口代理和防火墙。\n如果当前不是管理员运行，接下来会弹出系统授权窗口（UAC）。\n是否继续？"
+          "\u6d4f\u89c8\u5668\u4fee\u590d\u4f1a\u91cd\u542f Chrome\uff0c\u5e76\u4fee\u6539 Windows \u7aef\u53e3\u4ee3\u7406\u548c\u9632\u706b\u5899\u3002\n\u5982\u679c\u5f53\u524d\u4e0d\u662f\u7ba1\u7406\u5458\u8fd0\u884c\uff0c\u63a5\u4e0b\u6765\u4f1a\u5f39\u51fa\u7cfb\u7edf\u6388\u6743\u7a97\u53e3\uff08UAC\uff09\u3002\n\u662f\u5426\u7ee7\u7eed\uff1f"
         );
       }
 
@@ -304,8 +307,8 @@
 
           if (!confirmBrowserAction(action)) {
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = "已取消本次浏览器修复。";
-            browserOpStatusEl.textContent = "已取消本次浏览器修复。";
+            browserTaskMetaEl.textContent = "\u5df2\u53d6\u6d88\u672c\u6b21\u6d4f\u89c8\u5668\u4fee\u590d\u3002";
+            browserOpStatusEl.textContent = "\u5df2\u53d6\u6d88\u672c\u6b21\u6d4f\u89c8\u5668\u4fee\u590d\u3002";
             return;
           }
 
@@ -314,8 +317,8 @@
             await runBrowserAction(action);
           } catch (error) {
             browserTaskProgressEl.classList.add("hidden");
-            browserTaskMetaEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
-            browserOpStatusEl.textContent = readUserErrorMessage(error, "操作失败，请稍后重试。");
+            browserTaskMetaEl.textContent = readUserErrorMessage(error, "\u64cd\u4f5c\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
+            browserOpStatusEl.textContent = readUserErrorMessage(error, "\u64cd\u4f5c\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           } finally {
             button.disabled = false;
           }
@@ -329,7 +332,7 @@
             await checkBrowserConnectivity(false);
           } catch (error) {
             if (browserConnectivityStatusEl instanceof HTMLElement) {
-              browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "连通性检测失败，请稍后重试。");
+              browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "\u8fde\u901a\u6027\u68c0\u6d4b\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
             }
           } finally {
             browserConnectivityCheckBtn.disabled = false;
@@ -339,7 +342,7 @@
 
       void checkBrowserConnectivity(true).catch((error) => {
         if (browserConnectivityStatusEl instanceof HTMLElement) {
-          browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "初始化连通性检测失败。");
+          browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "\u521d\u59cb\u5316\u8fde\u901a\u6027\u68c0\u6d4b\u5931\u8d25\u3002");
         }
       });
     </script>

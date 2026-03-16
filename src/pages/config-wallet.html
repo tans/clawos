@@ -3,45 +3,48 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS 钱包</title>
+    <title>ClawOS &#38065;&#21253;</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="bg-base-100 text-base-content overflow-x-auto">
+  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
     <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
       <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
-        <div class="text-sm text-base-content/60">加载中...</div>
+        <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
       <main class="flex min-h-screen flex-col">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">钱包</h1>
+          <h1 class="text-lg font-semibold">&#38065;&#21253;</h1>
         </header>
 
         <section class="flex-1 p-6">
-          <div class="card card-compact border border-base-200 bg-base-100">
+          <div class="card card-compact border border-base-200 bg-base-100 max-w-[980px]">
             <div class="card-body gap-4">
-              <h2 class="card-title text-base">本地钱包</h2>
-              <div class="flex flex-wrap gap-2">
-                <button class="btn btn-primary btn-sm" type="button" data-action="generate-wallet">生成钱包</button>
-                <button class="btn btn-outline btn-sm" type="button" data-action="reload-wallet">刷新</button>
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="card-title text-base">&#26412;&#22320;&#38065;&#21253;</h2>
+                <div class="flex flex-wrap gap-2">
+                <button class="btn btn-primary btn-sm" type="button" data-action="generate-wallet">&#29983;&#25104;&#38065;&#21253;</button>
+                <button class="btn btn-outline btn-sm" type="button" data-action="reload-wallet">&#21047;&#26032;</button>
+              </div>
               </div>
 
               <div class="grid gap-2 text-sm">
                 <div class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-2">
-                  <div class="text-xs text-base-content/60">钱包地址</div>
+                  <div class="text-xs text-base-content/60">&#38065;&#21253;&#22320;&#22336;</div>
                   <div class="font-mono break-all" data-wallet-address>-</div>
                 </div>
                 <div class="rounded-lg border border-base-200 bg-base-200/20 px-3 py-2">
-                  <div class="text-xs text-base-content/60">创建时间</div>
+                  <div class="text-xs text-base-content/60">&#21019;&#24314;&#26102;&#38388;</div>
                   <div class="font-mono" data-wallet-created>-</div>
                 </div>
               </div>
 
               <div class="rounded-lg border border-base-200 bg-base-200/10 p-3">
-                <div class="mb-2 text-sm font-semibold">余额</div>
+                <div class="mb-2 text-sm font-semibold">&#20313;&#39069;</div>
                 <div class="grid gap-3 xl:grid-cols-3">
                   <div class="rounded-lg border border-base-200 bg-base-100 px-3 py-3">
-                    <div class="text-xs font-semibold text-base-content/80">ETH 主网</div>
+                    <div class="text-xs font-semibold text-base-content/80">ETH &#20027;&#32593;</div>
                     <div class="mt-2 text-xs text-base-content/60">ETH</div>
                     <div class="font-mono text-sm" data-balance="eth-native">-</div>
                     <div class="mt-2 text-xs text-base-content/60">USDT</div>
@@ -67,15 +70,15 @@
                     <div class="mt-2 text-[11px] text-error/80" data-balance-error="base"></div>
                   </div>
                 </div>
-                <div class="mt-2 text-[11px] text-base-content/60" data-balance-updated>尚未查询</div>
+                <div class="mt-2 text-[11px] text-base-content/60" data-balance-updated>&#23578;&#26410;&#26597;&#35810;</div>
               </div>
 
               <div class="hidden rounded-lg border border-warning/40 bg-warning/10 px-3 py-3" data-wallet-secret-wrap>
-                <div class="mb-1 text-xs font-semibold text-warning">本次生成私钥（仅本次返回）</div>
+                <div class="mb-1 text-xs font-semibold text-warning">&#26412;&#27425;&#29983;&#25104;&#31169;&#38053;&#65288;&#20165;&#26412;&#27425;&#36820;&#22238;&#65289;</div>
                 <textarea class="textarea textarea-bordered h-20 w-full font-mono text-xs" readonly data-wallet-privatekey></textarea>
               </div>
 
-              <div class="text-xs text-base-content/70" data-wallet-meta>正在读取钱包状态...</div>
+              <div class="text-xs text-base-content/70" data-wallet-meta>&#27491;&#22312;&#35835;&#21462;&#38065;&#21253;&#29366;&#24577;...</div>
             </div>
           </div>
         </section>
@@ -121,7 +124,7 @@
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
-          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
           apiError.isApiError = true;
           throw apiError;
         }
@@ -153,7 +156,7 @@
           item.usdt.textContent = placeholder;
           item.error.textContent = "";
         });
-        balanceUpdatedEl.textContent = "尚未查询";
+        balanceUpdatedEl.textContent = "\u5c1a\u672a\u67e5\u8be2";
       }
 
       function renderBalances(balances) {
@@ -169,27 +172,27 @@
 
           const errors = [];
           if (typeof item.nativeError === "string" && item.nativeError.length > 0) {
-            errors.push("原生币余额暂时无法获取");
+            errors.push("\u539f\u751f\u5e01\u4f59\u989d\u6682\u65f6\u65e0\u6cd5\u83b7\u53d6");
           }
           if (typeof item.usdtError === "string" && item.usdtError.length > 0) {
-            errors.push("USDT 余额暂时无法获取");
+            errors.push("USDT \u4f59\u989d\u6682\u65f6\u65e0\u6cd5\u83b7\u53d6");
           }
-          balanceEls[key].error.textContent = errors.join("；");
+          balanceEls[key].error.textContent = errors.join("\uff1b");
         });
 
         balanceUpdatedEl.textContent = balances.updatedAt
-          ? `更新时间: ${formatCreatedAt(balances.updatedAt)}`
-          : "更新时间: -";
+          ? `\u66f4\u65b0\u65f6\u95f4: ${formatCreatedAt(balances.updatedAt)}`
+          : "\u66f4\u65b0\u65f6\u95f4: -";
       }
 
       function renderWallet(wallet) {
         const exists = Boolean(wallet && wallet.exists);
         walletExists = exists;
-        addressEl.textContent = exists ? wallet.address || "-" : "未生成";
+        addressEl.textContent = exists ? wallet.address || "-" : "\u672a\u751f\u6210";
         createdEl.textContent = exists ? formatCreatedAt(wallet.createdAt) : "-";
         if (generateBtn) {
           generateBtn.disabled = exists;
-          generateBtn.textContent = exists ? "已生成" : "生成钱包";
+          generateBtn.textContent = exists ? "\u5df2\u751f\u6210" : "\u751f\u6210\u94b1\u5305";
         }
       }
 
@@ -197,10 +200,10 @@
         if (generateBtn) {
           if (walletExists) {
             generateBtn.disabled = true;
-            generateBtn.textContent = "已生成";
+            generateBtn.textContent = "\u5df2\u751f\u6210";
           } else {
             generateBtn.disabled = running;
-            generateBtn.textContent = running ? "生成中..." : "生成钱包";
+            generateBtn.textContent = running ? "\u751f\u6210\u4e2d..." : "\u751f\u6210\u94b1\u5305";
           }
         }
         if (reloadBtn) {
@@ -214,23 +217,23 @@
       }
 
       async function loadWallet() {
-        metaEl.textContent = "正在读取钱包状态...";
+        metaEl.textContent = "\u6b63\u5728\u8bfb\u53d6\u94b1\u5305\u72b6\u6001...";
         const data = await api("/api/local/wallet");
         const wallet = data.wallet || {};
         renderWallet(wallet);
 
         if (wallet.exists) {
           await loadBalances();
-          metaEl.textContent = "已存在钱包，已读取余额信息。";
+          metaEl.textContent = "\u5df2\u5b58\u5728\u94b1\u5305\uff0c\u5df2\u8bfb\u53d6\u4f59\u989d\u4fe1\u606f\u3002";
         } else {
-          resetBalances("未生成");
-          metaEl.textContent = "当前尚未生成钱包，点击“生成钱包”创建。";
+          resetBalances("\u672a\u751f\u6210");
+          metaEl.textContent = "\u5f53\u524d\u5c1a\u672a\u751f\u6210\u94b1\u5305\uff0c\u70b9\u51fb\u201c\u751f\u6210\u94b1\u5305\u201d\u521b\u5efa\u3002";
         }
       }
 
       async function generateWallet() {
         setRunning(true);
-        metaEl.textContent = "正在生成钱包并保存配置...";
+        metaEl.textContent = "\u6b63\u5728\u751f\u6210\u94b1\u5305\u5e76\u4fdd\u5b58\u914d\u7f6e...";
 
         try {
           const data = await api("/api/local/wallet/generate", {
@@ -245,14 +248,14 @@
           }
 
           await loadBalances();
-          metaEl.textContent = "钱包已生成并保存，余额已更新。";
+          metaEl.textContent = "\u94b1\u5305\u5df2\u751f\u6210\u5e76\u4fdd\u5b58\uff0c\u4f59\u989d\u5df2\u66f4\u65b0\u3002";
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          if (message.includes("已存在钱包")) {
+          if (message.includes("\u5df2\u5b58\u5728\u94b1\u5305")) {
             await loadWallet();
-            metaEl.textContent = "已存在钱包，无需重复生成。";
+            metaEl.textContent = "\u5df2\u5b58\u5728\u94b1\u5305\uff0c\u65e0\u9700\u91cd\u590d\u751f\u6210\u3002";
           } else {
-            metaEl.textContent = readUserErrorMessage(error, "生成失败，请稍后重试。");
+            metaEl.textContent = readUserErrorMessage(error, "\u751f\u6210\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
           }
         } finally {
           setRunning(false);

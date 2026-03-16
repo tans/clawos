@@ -3,8 +3,9 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>ClawOS 控制台</title>
+        <title>ClawOS &#25511;&#21046;&#21488;</title>
         <link rel="stylesheet" href="/styles.css" />
+        <link rel="stylesheet" href="/pages-shell.css" />
         <style>
             body[data-theme="silk"] main > header .text-xs,
             body[data-theme="silk"] main > header p,
@@ -99,17 +100,17 @@
             }
         </style>
             </head>
-    <body class="overflow-x-auto bg-base-100 text-base-content">
+    <body class="clawos-page-shell clawos-page-shell--index overflow-x-auto bg-base-100 text-base-content">
         <div class="min-h-screen min-w-[1180px] bg-white">
             <div class="grid min-h-screen grid-cols-[240px_minmax(0,1fr)]">
             <aside class="flex min-h-screen flex-col gap-2 border-r border-base-200/80 bg-base-100 px-3 py-3">
-                <div class="text-sm text-base-content/60">加载中...</div>
+                <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
             </aside>
 
             <main class="flex min-h-screen flex-col">
                 <header class="border-b border-base-200/80 bg-base-100 px-3 py-2">
                     <div class="hidden">
-                    <h1 class="text-lg font-semibold">控制台</h1>
+                    <h1 class="text-lg font-semibold">&#25511;&#21046;&#21488;</h1>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
@@ -117,14 +118,14 @@
                                 ClawOS Console
                             </div>
                             <div>
-                                <h1 class="text-3xl font-semibold tracking-tight">控制台</h1>
+                                <h1 class="text-3xl font-semibold tracking-tight">&#25511;&#21046;&#21488;</h1>
                             </div>
                         </div>
                         <div hidden
                             class="rounded-full border border-base-200 bg-base-100/90 px-4 py-2 text-xs text-base-content/70 shadow-sm"
                             data-status="execution"
                         >
-                            执行模式: 未知
+                            &#25191;&#34892;&#27169;&#24335;: &#26410;&#30693;
                         </div>
                     </div>
                 </header>
@@ -137,7 +138,7 @@
                                     <div class="space-y-5">
                                         <div class="space-y-2">
                                             <div class="hidden text-xs font-medium uppercase tracking-[0.22em] text-base-content/45">
-                                                主控面板
+                                                &#20027;&#25511;&#38754;&#26495;
                                             </div> 
                                         </div> 
                                     </div>
@@ -146,7 +147,7 @@
                                         <div class="flex items-start justify-between gap-3">
                                             <div>
                                                 <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
-                                                    版本与状态
+                                                    &#29256;&#26412;&#19982;&#29366;&#24577;
                                                 </div>
                                                 <div class="mt-2 text-lg font-semibold">openclaw</div>
                                             </div>
@@ -156,16 +157,16 @@
                                             class="hidden rounded-2xl border border-base-200/80 bg-base-200/20 px-4 py-3 text-sm text-base-content/75"
                                             data-openclaw-version
                                         >
-                                            版本: 未知
+                                            &#29256;&#26412;: &#26410;&#30693;
                                         </div>
                                         <div
                                             class="rounded-2xl border border-base-200/80 bg-base-200/20 px-4 py-3 text-sm text-base-content/75"
                                             data-qw-gateway-status
                                         >
-                                            企微网关启动状态: 未检测
+                                            &#20225;&#24494;&#32593;&#20851;&#21551;&#21160;&#29366;&#24577;: &#26410;&#26816;&#27979;
                                         </div>
                                         <div class="hidden text-xs leading-5 text-base-content/60" data-qw-gateway-status-detail>
-                                            等待状态更新...
+                                            &#31561;&#24453;&#29366;&#24577;&#26356;&#26032;...
                                         </div>
                                     </div>
                                 </div>
@@ -175,28 +176,28 @@
                                 <section class="space-y-4">
                                     <div>
                                         <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
-                                            快速操作
+                                            &#24555;&#36895;&#25805;&#20316;
                                         </div>
-                                        <h3 class="mt-1 text-lg font-semibold">常用命令</h3>
+                                        <h3 class="mt-1 text-lg font-semibold">&#24120;&#29992;&#21629;&#20196;</h3>
                                     </div>
                                     <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                                         <button class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" type="button" data-openclaw-entry>
-                                            <span class="block text-sm font-semibold">打开 openclaw Console</span> 
+                                            <span class="block text-sm font-semibold">&#25171;&#24320; openclaw Console</span> 
                                         </button>
                                         <button class="btn btn-primary h-auto min-h-24 items-start justify-start rounded-2xl px-4 py-4 text-left" data-action="restart-gateway">
-                                            <span class="block text-sm font-semibold">重启 openclaw</span> 
+                                            <span class="block text-sm font-semibold">&#37325;&#21551; openclaw</span> 
                                         </button>
                                         <button class="btn btn-warning h-auto min-h-24 items-start justify-start rounded-2xl px-4 py-4 text-left" data-action="update-openclaw">
-                                            <span class="block text-sm font-semibold">升级 openclaw</span> 
+                                            <span class="block text-sm font-semibold">&#21319;&#32423; openclaw</span> 
                                         </button>
                                         <button hidden class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" data-action="check-env">
-                                            <span class="block text-sm font-semibold">检查环境</span> 
+                                            <span class="block text-sm font-semibold">&#26816;&#26597;&#29615;&#22659;</span> 
                                         </button>
                                         <button hidden class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" data-action="repair-env">
-                                            <span class="block text-sm font-semibold">修复环境</span> 
+                                            <span class="block text-sm font-semibold">&#20462;&#22797;&#29615;&#22659;</span> 
                                         </button>
                                         <button class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" data-action="restart-qw-gateway">
-                                            <span class="block text-sm font-semibold">重启企微网关</span> 
+                                            <span class="block text-sm font-semibold">&#37325;&#21551;&#20225;&#24494;&#32593;&#20851;</span> 
                                         </button>
                                     </div>
                                 </section>
@@ -205,12 +206,12 @@
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
                                             <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
-                                                配置备份
+                                                &#37197;&#32622;&#22791;&#20221;
                                             </div>
-                                            <h3 class="mt-1 text-lg font-semibold">备份切换</h3>
+                                            <h3 class="mt-1 text-lg font-semibold">&#22791;&#20221;&#20999;&#25442;</h3>
                                         </div>
                                         <button class="btn btn-ghost btn-sm rounded-full px-4" data-action="refresh-openclaw-backups">
-                                            刷新
+                                            &#21047;&#26032;
                                         </button>
                                     </div>
                                     <div class="mt-4 space-y-4">
@@ -218,15 +219,15 @@
                                             class="rounded-2xl border border-base-200/80 bg-base-100 px-4 py-3 text-sm text-base-content/75"
                                             data-openclaw-backup-summary
                                         >
-                                            正在加载备份列表...
+                                            &#27491;&#22312;&#21152;&#36733;&#22791;&#20221;&#21015;&#34920;...
                                         </div>
                                         <label class="form-control w-full gap-2">
-                                            <span class="label-text text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">备份文件</span>
+                                            <span class="label-text text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">&#22791;&#20221;&#25991;&#20214;</span>
                                             <select
                                                 class="select select-bordered w-full rounded-2xl border-base-200 bg-base-100"
                                                 data-openclaw-backup-select
                                             >
-                                                <option value="">正在加载...</option>
+                                                <option value="">&#27491;&#22312;&#21152;&#36733;...</option>
                                             </select>
                                         </label>
                                         <div class="flex flex-wrap gap-2">
@@ -234,14 +235,14 @@
                                                 class="btn btn-warning rounded-full px-5"
                                                 data-action="rollback-openclaw-backup"
                                             >
-                                                切换到该备份
+                                                &#20999;&#25442;&#21040;&#35813;&#22791;&#20221;
                                             </button>
                                         </div>
                                         <div
                                             class="rounded-2xl border border-dashed border-base-300 bg-base-100/80 px-4 py-3 text-xs leading-6 text-base-content/70"
                                             data-openclaw-backup-detail
                                         >
-                                            当前备份信息：读取中...
+                                            &#24403;&#21069;&#22791;&#20221;&#20449;&#24687;&#65306;&#35835;&#21462;&#20013;...
                                         </div>
                                     </div>
                                 </section>
@@ -254,16 +255,16 @@
                                     <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
                                         Tasks
                                     </div>
-                                    <h2 class="mt-1 text-xl font-semibold">任务日志</h2>
+                                    <h2 class="mt-1 text-xl font-semibold">&#20219;&#21153;&#26085;&#24535;</h2>
                                 </div>
                                 <div class="hidden text-xs text-base-content/60">
-                                    长任务会自动续接到当前页面
+                                    &#38271;&#20219;&#21153;&#20250;&#33258;&#21160;&#32493;&#25509;&#21040;&#24403;&#21069;&#39029;&#38754;
                                 </div>
                             </header>
                             <section class="px-3 py-2">
                                 <div class="flex flex-col gap-2 border border-base-200/80 bg-base-100 p-2">
                                     <div class="border border-base-200/80 bg-base-100 px-3 py-2 text-sm text-base-content/75" data-task-meta>
-                                        暂无任务
+                                        &#26242;&#26080;&#20219;&#21153;
                                     </div>
                                     <progress
                                         class="progress progress-neutral hidden w-full"
@@ -275,7 +276,7 @@
                                         class="min-h-[220px] overflow-auto border border-base-200/80 bg-white p-3 text-[11px] leading-5 text-base-content"
                                         data-task-output
                                     >
-等待任务执行...</pre
+&#31561;&#24453;&#20219;&#21153;&#25191;&#34892;...</pre
                                     >
                                 </div>
                             </section>
@@ -291,7 +292,7 @@
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-openclaw-version
                                 >
-                                    版本: 未知
+                                    &#29256;&#26412;: &#26410;&#30693;
                                 </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
@@ -299,19 +300,19 @@
                                         type="button"
                                         data-openclaw-entry
                                     >
-                                        打开 openclaw Console
+                                        &#25171;&#24320; openclaw Console
                                     </button>
                                     <button
                                         class="btn btn-primary btn-sm"
                                         data-action="restart-gateway"
                                     >
-                                        重启 openclaw
+                                        &#37325;&#21551; openclaw
                                     </button>
                                     <button
                                         class="btn btn-warning btn-sm"
                                         data-action="update-openclaw"
                                     >
-                                        升级 openclaw
+                                        &#21319;&#32423; openclaw
                                     </button>
                                 </div>
                             </div>
@@ -321,25 +322,25 @@
                             class="hidden card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
-                                <h2 class="card-title text-base">企微</h2>
+                                <h2 class="card-title text-base">&#20225;&#24494;</h2>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-qw-gateway-status
                                 >
-                                    启动状态: 未检测
+                                    &#21551;&#21160;&#29366;&#24577;: &#26410;&#26816;&#27979;
                                 </div>
                                 <div
                                     class="text-[11px] text-base-content/60"
                                     data-qw-gateway-status-detail
                                 >
-                                    等待状态更新...
+                                    &#31561;&#24453;&#29366;&#24577;&#26356;&#26032;...
                                 </div>
                                 <div class="flex flex-wrap gap-2">
                                     <button
                                         class="btn btn-primary btn-sm"
                                         data-action="restart-qw-gateway"
                                     >
-                                        重启企微网关
+                                        &#37325;&#21551;&#20225;&#24494;&#32593;&#20851;
                                     </button>
                                 </div>
                             </div>
@@ -349,23 +350,23 @@
                             class="card card-compact border border-base-200 bg-base-100"
                         >
                             <div class="card-body gap-3">
-                                <h2 class="card-title text-base">更多设置</h2>
-                                <div class="text-xs text-base-content/60">配置备份切换</div>
+                                <h2 class="card-title text-base">&#26356;&#22810;&#35774;&#32622;</h2>
+                                <div class="text-xs text-base-content/60">&#37197;&#32622;&#22791;&#20221;&#20999;&#25442;</div>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
                                     data-openclaw-backup-summary
                                 >
-                                    正在加载备份列表...
+                                    &#27491;&#22312;&#21152;&#36733;&#22791;&#20221;&#21015;&#34920;...
                                 </div>
                                 <label class="form-control w-full gap-1.5">
                                     <span class="label-text text-xs text-base-content/70"
-                                        >备份文件</span
+                                        >&#22791;&#20221;&#25991;&#20214;</span
                                     >
                                     <select
                                         class="select select-sm select-bordered w-full"
                                         data-openclaw-backup-select
                                     >
-                                        <option value="">正在加载...</option>
+                                        <option value="">&#27491;&#22312;&#21152;&#36733;...</option>
                                     </select>
                                 </label>
                                 <div class="flex flex-wrap gap-2">
@@ -373,25 +374,25 @@
                                         class="btn btn-outline btn-sm"
                                         data-action="refresh-openclaw-backups"
                                     >
-                                        刷新备份
+                                        &#21047;&#26032;&#22791;&#20221;
                                     </button>
                                     <button
                                         class="btn btn-warning btn-sm"
                                         data-action="rollback-openclaw-backup"
                                     >
-                                        切换到该备份
+                                        &#20999;&#25442;&#21040;&#35813;&#22791;&#20221;
                                     </button>
                                 </div>
                                 <div
                                     class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-[11px] text-base-content/70"
                                     data-openclaw-backup-detail
                                 >
-                                    当前备份信息：读取中...
+                                    &#24403;&#21069;&#22791;&#20221;&#20449;&#24687;&#65306;&#35835;&#21462;&#20013;...
                                 </div>
                             </div>
                         </section>
 
-                        <!-- 临时下线：运行状态与 Token 用量面板暂不发布，相关前端代码和轮询已移除。 -->
+                        <!-- &#20020;&#26102;&#19979;&#32447;&#65306;&#36816;&#34892;&#29366;&#24577;&#19982; Token &#29992;&#37327;&#38754;&#26495;&#26242;&#19981;&#21457;&#24067;&#65292;&#30456;&#20851;&#21069;&#31471;&#20195;&#30721;&#21644;&#36718;&#35810;&#24050;&#31227;&#38500;&#12290; -->
 
                     </div>
                 </section>
@@ -399,12 +400,12 @@
 
             <aside class="hidden min-h-screen flex-col bg-base-100">
                 <header class="border-b border-base-200 px-5 py-4">
-                    <h2 class="text-base font-semibold">日志</h2>
+                    <h2 class="text-base font-semibold">&#26085;&#24535;</h2>
                 </header>
                 <section class="flex-1 p-4">
                     <div class="flex h-full flex-col gap-3 rounded-xl border border-base-200 bg-base-100 p-3">
                         <div class="text-xs text-base-content/70" data-task-meta>
-                            暂无任务
+                            &#26242;&#26080;&#20219;&#21153;
                         </div>
                         <progress
                             class="progress progress-neutral w-full hidden"
@@ -416,7 +417,7 @@
                             class="min-h-[260px] flex-1 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
                             data-task-output
                         >
-等待任务执行...</pre
+&#31561;&#24453;&#20219;&#21153;&#25191;&#34892;...</pre
                         >
                     </div>
                 </section>
@@ -448,7 +449,7 @@
 
             let pollTimer = null;
             let qwGatewayStatusTimer = null;
-            // 临时下线：运行状态与 Token 用量轮询暂停发布。
+            // \u4e34\u65f6\u4e0b\u7ebf\uff1a\u8fd0\u884c\u72b6\u6001\u4e0e Token \u7528\u91cf\u8f6e\u8be2\u6682\u505c\u53d1\u5e03\u3002
 
             async function api(path, options = {}) {
                 const res = await fetch(path, {
@@ -458,7 +459,7 @@
 
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    const apiError = new Error(data.error || `请求失败: ${res.status}`);
+                    const apiError = new Error(data.error || `\u8bf7\u6c42\u5931\u8d25: ${res.status}`);
                     apiError.isApiError = true;
                     throw apiError;
                 }
@@ -477,7 +478,7 @@
                 const disabled = state === null;
                 const ok = state === true;
                 if (labelEl) {
-                    labelEl.textContent = `${label}: ${disabled ? "已禁用" : ok ? "正常" : "异常"}`;
+                    labelEl.textContent = `${label}: ${disabled ? "\u5df2\u7981\u7528" : ok ? "\u6b63\u5e38" : "\u5f02\u5e38"}`;
                 }
                 if (!lightEl) return;
                 lightEl.classList.remove(
@@ -534,36 +535,36 @@
                     typeof status?.message === "string" &&
                     status.message.trim()
                         ? status.message.trim()
-                        : "状态未知";
+                        : "\u72b6\u6001\u672a\u77e5";
                 const sourceText =
                     status?.source === "startup"
-                        ? "启动自动任务"
+                        ? "\u542f\u52a8\u81ea\u52a8\u4efb\u52a1"
                         : status?.source === "manual"
-                          ? "手动任务"
-                          : "未知";
+                          ? "\u624b\u52a8\u4efb\u52a1"
+                          : "\u672a\u77e5";
                 const updatedAt =
                     typeof status?.updatedAt === "string" &&
                     status.updatedAt.trim()
                         ? status.updatedAt.trim()
                         : "";
 
-                let stateText = "未执行";
-                if (state === "running") stateText = "启动中";
-                if (state === "success") stateText = "启动成功";
-                if (state === "failed") stateText = "启动失败";
-                if (state === "unsupported") stateText = "系统不支持";
+                let stateText = "\u672a\u6267\u884c";
+                if (state === "running") stateText = "\u542f\u52a8\u4e2d";
+                if (state === "success") stateText = "\u542f\u52a8\u6210\u529f";
+                if (state === "failed") stateText = "\u542f\u52a8\u5931\u8d25";
+                if (state === "unsupported") stateText = "\u7cfb\u7edf\u4e0d\u652f\u6301";
 
                 if (statusBadges.qwGatewayStatus) {
-                    statusBadges.qwGatewayStatus.textContent = `启动状态: ${stateText}`;
+                    statusBadges.qwGatewayStatus.textContent = `\u542f\u52a8\u72b6\u6001: ${stateText}`;
                     setQwGatewayStatusTone(state);
                 }
                 if (statusBadges.qwGatewayStatusDetail) {
                     const parts = [message];
                     if (state !== "idle") {
-                        parts.push(`来源: ${sourceText}`);
+                        parts.push(`\u6765\u6e90: ${sourceText}`);
                     }
                     if (updatedAt) {
-                        parts.push(`更新时间: ${updatedAt}`);
+                        parts.push(`\u66f4\u65b0\u65f6\u95f4: ${updatedAt}`);
                     }
                     statusBadges.qwGatewayStatusDetail.textContent =
                         parts.join(" | ");
@@ -590,12 +591,12 @@
                 } catch (error) {
                     if (statusBadges.qwGatewayStatusDetail) {
                         statusBadges.qwGatewayStatusDetail.textContent =
-                            readUserErrorMessage(error, "状态获取失败，请稍后重试。");
+                            readUserErrorMessage(error, "\u72b6\u6001\u83b7\u53d6\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
                     }
                 }
             }
 
-            // 临时下线：运行状态与 Token 用量面板不发布，相关请求先停用。
+            // \u4e34\u65f6\u4e0b\u7ebf\uff1a\u8fd0\u884c\u72b6\u6001\u4e0e Token \u7528\u91cf\u9762\u677f\u4e0d\u53d1\u5e03\uff0c\u76f8\u5173\u8bf7\u6c42\u5148\u505c\u7528\u3002
 
             function stopTaskPolling() {
                 if (pollTimer) {
@@ -605,7 +606,7 @@
             }
 
             function formatBackupTime(value) {
-                if (typeof value !== "string" || !value.trim()) return "未知";
+                if (typeof value !== "string" || !value.trim()) return "\u672a\u77e5";
                 const time = new Date(value);
                 if (!Number.isFinite(time.getTime())) return value;
                 return time.toLocaleString("zh-CN", { hour12: false });
@@ -613,7 +614,7 @@
 
             function formatBackupSize(value) {
                 const size = Number(value);
-                if (!Number.isFinite(size) || size < 0) return "未知";
+                if (!Number.isFinite(size) || size < 0) return "\u672a\u77e5";
                 if (size < 1024) return `${size} B`;
                 if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
                 return `${(size / (1024 * 1024)).toFixed(2)} MB`;
@@ -637,21 +638,21 @@
                 if (!selectedBackup) {
                     if (openclawBackupUI.summary) {
                         openclawBackupUI.summary.textContent =
-                            "当前未发现配置备份";
+                            "\u5f53\u524d\u672a\u53d1\u73b0\u914d\u7f6e\u5907\u4efd";
                     }
                     if (openclawBackupUI.detail) {
                         openclawBackupUI.detail.textContent =
-                            "请先生成配置备份后再进行切换。";
+                            "\u8bf7\u5148\u751f\u6210\u914d\u7f6e\u5907\u4efd\u540e\u518d\u8fdb\u884c\u5207\u6362\u3002";
                     }
                     return;
                 }
 
                 if (openclawBackupUI.summary) {
-                    openclawBackupUI.summary.textContent = `共 ${openclawBackupState.backups.length} 个备份，当前选择：${selectedBackup.fileName}`;
+                    openclawBackupUI.summary.textContent = `\u5171 ${openclawBackupState.backups.length} \u4e2a\u5907\u4efd\uff0c\u5f53\u524d\u9009\u62e9\uff1a${selectedBackup.fileName}`;
                 }
                 if (openclawBackupUI.detail) {
                     openclawBackupUI.detail.textContent =
-                        `时间: ${formatBackupTime(selectedBackup.modifiedAt)} | 大小: ${formatBackupSize(selectedBackup.size)}`;
+                        `\u65f6\u95f4: ${formatBackupTime(selectedBackup.modifiedAt)} | \u5927\u5c0f: ${formatBackupSize(selectedBackup.size)}`;
                 }
             }
 
@@ -664,7 +665,7 @@
                 if (backups.length === 0) {
                     const option = document.createElement("option");
                     option.value = "";
-                    option.textContent = "未找到备份文件";
+                    option.textContent = "\u672a\u627e\u5230\u5907\u4efd\u6587\u4ef6";
                     select.append(option);
                     select.disabled = true;
                     openclawBackupState.selectedPath = "";
@@ -694,7 +695,7 @@
 
             async function refreshOpenclawBackups(preferredPath = "") {
                 taskProgress.classList.add("hidden");
-                taskMeta.textContent = "正在读取配置备份列表...";
+                taskMeta.textContent = "\u6b63\u5728\u8bfb\u53d6\u914d\u7f6e\u5907\u4efd\u5217\u8868...";
                 const data = await api("/api/gateway/config/backups");
                 const command =
                     typeof data.command === "string" ? data.command.trim() : "";
@@ -705,20 +706,20 @@
                 renderOpenclawBackupOptions(preferredPath);
 
                 if (openclawBackupState.backups.length === 0) {
-                    taskMeta.textContent = "未找到配置备份";
-                    taskOutput.textContent = "未找到可用的配置备份文件。";
+                    taskMeta.textContent = "\u672a\u627e\u5230\u914d\u7f6e\u5907\u4efd";
+                    taskOutput.textContent = "\u672a\u627e\u5230\u53ef\u7528\u7684\u914d\u7f6e\u5907\u4efd\u6587\u4ef6\u3002";
                     taskOutput.scrollTop = taskOutput.scrollHeight;
                     return;
                 }
 
                 const selectedBackup = getSelectedOpenclawBackup();
                 if (!selectedBackup) return;
-                taskMeta.textContent = `已加载备份 ${openclawBackupState.backups.length} 个`;
+                taskMeta.textContent = `\u5df2\u52a0\u8f7d\u5907\u4efd ${openclawBackupState.backups.length} \u4e2a`;
                 taskOutput.textContent = [
-                    command ? `命令: ${command}` : "",
-                    `当前选择: ${selectedBackup.fileName}`,
-                    `时间: ${formatBackupTime(selectedBackup.modifiedAt)}`,
-                    `大小: ${formatBackupSize(selectedBackup.size)}`,
+                    command ? `\u547d\u4ee4: ${command}` : "",
+                    `\u5f53\u524d\u9009\u62e9: ${selectedBackup.fileName}`,
+                    `\u65f6\u95f4: ${formatBackupTime(selectedBackup.modifiedAt)}`,
+                    `\u5927\u5c0f: ${formatBackupSize(selectedBackup.size)}`,
                 ].filter(Boolean).join("\n");
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
@@ -726,15 +727,15 @@
             async function rollbackOpenclawBackup() {
                 const selectedBackup = getSelectedOpenclawBackup();
                 if (!selectedBackup) {
-                    throw new Error("请先选择可用备份。");
+                    throw new Error("\u8bf7\u5148\u9009\u62e9\u53ef\u7528\u5907\u4efd\u3002");
                 }
 
                 const confirmed = window.confirm(
-                    `将切换到备份 ${selectedBackup.fileName}。\n此操作会覆盖当前配置并重启服务，是否继续？`,
+                    `\u5c06\u5207\u6362\u5230\u5907\u4efd ${selectedBackup.fileName}\u3002\n\u6b64\u64cd\u4f5c\u4f1a\u8986\u76d6\u5f53\u524d\u914d\u7f6e\u5e76\u91cd\u542f\u670d\u52a1\uff0c\u662f\u5426\u7ee7\u7eed\uff1f`,
                 );
                 if (!confirmed) {
                     taskProgress.classList.add("hidden");
-                    taskMeta.textContent = "已取消备份切换。";
+                    taskMeta.textContent = "\u5df2\u53d6\u6d88\u5907\u4efd\u5207\u6362\u3002";
                     return;
                 }
 
@@ -745,7 +746,7 @@
             }
 
             function formatHealthState(value) {
-                return value ? "正常" : "异常";
+                return value ? "\u6b63\u5e38" : "\u5f02\u5e38";
             }
 
             function renderEnvironmentReport(info) {
@@ -755,14 +756,14 @@
                     : [];
                 taskMeta.textContent =
                     warnings.length > 0
-                        ? `环境检查完成（告警 ${warnings.length} 条）`
-                        : "环境检查完成（无告警）";
+                        ? `\u73af\u5883\u68c0\u67e5\u5b8c\u6210\uff08\u544a\u8b66 ${warnings.length} \u6761\uff09`
+                        : "\u73af\u5883\u68c0\u67e5\u5b8c\u6210\uff08\u65e0\u544a\u8b66\uff09";
 
                 const openclawVersion =
                     typeof info?.openclawVersion === "string" &&
                     info.openclawVersion.trim()
                         ? info.openclawVersion.trim()
-                        : "未知";
+                        : "\u672a\u77e5";
                 const openclawVersionSource =
                     typeof info?.openclawVersionSource === "string" &&
                     info.openclawVersionSource.trim()
@@ -774,31 +775,31 @@
                         ? info.gatewayReportedVersion.trim()
                         : "";
 
-                const browserMode = info?.browserMode === "local" ? "本地" : "CDP";
+                const browserMode = info?.browserMode === "local" ? "\u672c\u5730" : "CDP";
                 const browserState =
                     info?.browserEnabled === false
-                        ? "已禁用"
+                        ? "\u5df2\u7981\u7528"
                         : formatHealthState(Boolean(info?.browserReady));
 
                 const lines = [
-                    `执行模式: ${info?.execution || "未知"}`,
+                    `\u6267\u884c\u6a21\u5f0f: ${info?.execution || "\u672a\u77e5"}`,
                     `WSL: ${formatHealthState(Boolean(info?.wslReady))}`,
                     `openclaw: ${formatHealthState(Boolean(info?.openclawReady))}`,
-                    `openclaw 版本: ${openclawVersion}`,
+                    `openclaw \u7248\u672c: ${openclawVersion}`,
                     `gateway: ${formatHealthState(Boolean(info?.gatewayReady))}`,
-                    `浏览器(${browserMode}): ${browserState}`,
+                    `\u6d4f\u89c8\u5668(${browserMode}): ${browserState}`,
                 ];
 
                 if (openclawVersionSource) {
-                    lines.push("版本来源: 系统检测");
+                    lines.push("\u7248\u672c\u6765\u6e90: \u7cfb\u7edf\u68c0\u6d4b");
                 }
                 if (gatewayReportedVersion) {
-                    lines.push(`服务上报版本: ${gatewayReportedVersion}`);
+                    lines.push(`\u670d\u52a1\u4e0a\u62a5\u7248\u672c: ${gatewayReportedVersion}`);
                 }
 
                 if (warnings.length > 0) {
                     lines.push("");
-                    lines.push("检测到异常，请先执行“环境修复”后重试。");
+                    lines.push("\u68c0\u6d4b\u5230\u5f02\u5e38\uff0c\u8bf7\u5148\u6267\u884c\u201c\u73af\u5883\u4fee\u590d\u201d\u540e\u91cd\u8bd5\u3002");
                 }
 
                 taskOutput.textContent = lines.join("\n");
@@ -848,10 +849,10 @@
 
             function renderTask(task) {
                 const statusTextMap = {
-                    pending: "等待中",
-                    running: "执行中",
-                    success: "已完成",
-                    failed: "失败",
+                    pending: "\u7b49\u5f85\u4e2d",
+                    running: "\u6267\u884c\u4e2d",
+                    success: "\u5df2\u5b8c\u6210",
+                    failed: "\u5931\u8d25",
                 };
                 const percent =
                     task.totalSteps > 0
@@ -862,14 +863,14 @@
                     task.status === "running" || task.status === "pending";
                 taskProgress.classList.toggle("hidden", !running);
                 const statusText =
-                    statusTextMap[task.status] || "未知";
+                    statusTextMap[task.status] || "\u672a\u77e5";
                 taskMeta.textContent = `${task.title} | ${statusText} | ${task.step}/${task.totalSteps}`;
 
                 const lines = task.logs.map(
                     (item) =>
                         `[${item.timestamp}] ${item.level.toUpperCase()} ${item.message}`,
                 );
-                taskOutput.textContent = lines.join("\n") || "暂无日志";
+                taskOutput.textContent = lines.join("\n") || "\u6682\u65e0\u65e5\u5fd7";
                 taskOutput.scrollTop = taskOutput.scrollHeight;
             }
 
@@ -900,7 +901,7 @@
                         taskProgress.classList.add("hidden");
                         taskMeta.textContent = readUserErrorMessage(
                             error,
-                            "任务状态刷新失败，请稍后重试。",
+                            "\u4efb\u52a1\u72b6\u6001\u5237\u65b0\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002",
                         );
                     }
                 };
@@ -916,12 +917,12 @@
                 });
 
                 if (!data.taskId) {
-                    throw new Error("服务端未返回任务 ID");
+                    throw new Error("\u670d\u52a1\u7aef\u672a\u8fd4\u56de\u4efb\u52a1 ID");
                 }
 
                 if (data.reused) {
                     taskMeta.textContent =
-                        "已有同类任务在执行，已切换到当前任务日志";
+                        "\u5df2\u6709\u540c\u7c7b\u4efb\u52a1\u5728\u6267\u884c\uff0c\u5df2\u5207\u6362\u5230\u5f53\u524d\u4efb\u52a1\u65e5\u5fd7";
                 }
 
                 setActiveTaskId(data.taskId);
@@ -934,7 +935,7 @@
                 const info = data.info || {};
 
                 if (statusBadges.execution) {
-                    statusBadges.execution.textContent = `执行模式: ${info.execution || "未知"}`;
+                    statusBadges.execution.textContent = `\u6267\u884c\u6a21\u5f0f: ${info.execution || "\u672a\u77e5"}`;
                 }
 
                 setLight(
@@ -954,8 +955,8 @@
                         typeof info.openclawVersion === "string" &&
                         info.openclawVersion.trim()
                             ? info.openclawVersion.trim()
-                            : "未知";
-                    statusBadges.openclawVersion.textContent = `版本: ${openclawVersion}`;
+                            : "\u672a\u77e5";
+                    statusBadges.openclawVersion.textContent = `\u7248\u672c: ${openclawVersion}`;
                 }
                 setLight(
                     statusBadges.gatewayLabel,
@@ -965,7 +966,7 @@
                 );
 
                 const browserMode =
-                    info.browserMode === "local" ? "本地" : "CDP";
+                    info.browserMode === "local" ? "\u672c\u5730" : "CDP";
                 const browserState =
                     info.browserEnabled === false
                         ? null
@@ -973,7 +974,7 @@
                 setLight(
                     statusBadges.browserLabel,
                     statusBadges.browserLight,
-                    `浏览器(${browserMode})`,
+                    `\u6d4f\u89c8\u5668(${browserMode})`,
                     browserState,
                 );
 
@@ -1018,7 +1019,7 @@
                         });
                         return;
                     default:
-                        throw new Error("暂不支持该操作。");
+                        throw new Error("\u6682\u4e0d\u652f\u6301\u8be5\u64cd\u4f5c\u3002");
                 }
             }
 
@@ -1033,7 +1034,7 @@
                         taskProgress.classList.add("hidden");
                         taskMeta.textContent = readUserErrorMessage(
                             error,
-                            "操作失败，请稍后重试。",
+                            "\u64cd\u4f5c\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002",
                         );
                     } finally {
                         button.disabled = false;
@@ -1063,7 +1064,7 @@
                     taskProgress.classList.add("hidden");
                     taskMeta.textContent = readUserErrorMessage(
                         error,
-                        "初始化失败，请刷新页面重试。",
+                        "\u521d\u59cb\u5316\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002",
                     );
                 }
                 const activeTaskId = readActiveTaskId();
@@ -1071,7 +1072,7 @@
                     await pollTask(activeTaskId);
                 }
                 await pollQwGatewayStatus().catch(() => null);
-                // 临时下线：运行状态与 Token 用量轮询暂停发布。
+                // \u4e34\u65f6\u4e0b\u7ebf\uff1a\u8fd0\u884c\u72b6\u6001\u4e0e Token \u7528\u91cf\u8f6e\u8be2\u6682\u505c\u53d1\u5e03\u3002
             })();
         </script>
     </body>
