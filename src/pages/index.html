@@ -5,22 +5,327 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>ClawOS 控制台</title>
         <link rel="stylesheet" href="/styles.css" />
+        <style>
+            body[data-theme="silk"] main > header .text-xs,
+            body[data-theme="silk"] main > header p,
+            body[data-theme="silk"] main section p,
+            body[data-theme="silk"] .badge.badge-outline.badge-lg,
+            body[data-theme="silk"] [data-qw-gateway-status-detail],
+            body[data-theme="silk"] main .btn span + span,
+            body[data-theme="silk"] section > header .text-xs,
+            body[data-theme="silk"] main section h2,
+            body[data-theme="silk"] main section h3,
+            body[data-theme="silk"] main section .mt-2.text-lg.font-semibold {
+                display: none;
+            }
+
+            body[data-theme="silk"] main > header {
+                padding: 0.75rem 1.25rem;
+            }
+
+            body[data-theme="silk"] main > header > div:last-child {
+                gap: 0.5rem;
+                align-items: center;
+            }
+
+            body[data-theme="silk"] main > header h1 {
+                font-size: 1.25rem;
+                line-height: 1.2;
+            }
+
+            body[data-theme="silk"] main > section {
+                padding: 1rem;
+            }
+
+            body[data-theme="silk"] main > section > div {
+                gap: 0.75rem;
+            }
+
+            body[data-theme="silk"] main > section > div > section {
+                border-radius: 1rem;
+                box-shadow: none;
+            }
+
+            body[data-theme="silk"] main > section > div > section:first-child > div:first-child,
+            body[data-theme="silk"] main > section > div > section:first-child > div:last-child,
+            body[data-theme="silk"] main > section > div > section:last-child > header,
+            body[data-theme="silk"] main > section > div > section:last-child > section {
+                padding: 0.75rem 1rem;
+            }
+
+            body[data-theme="silk"] main .btn {
+                min-height: 2.25rem;
+                height: 2.25rem;
+                padding: 0.25rem 0.75rem;
+                border-radius: 0.75rem;
+            }
+
+            body[data-theme="silk"] main [data-openclaw-entry],
+            body[data-theme="silk"] main [data-action="restart-gateway"],
+            body[data-theme="silk"] main [data-action="update-openclaw"],
+            body[data-theme="silk"] main [data-action="check-env"],
+            body[data-theme="silk"] main [data-action="repair-env"],
+            body[data-theme="silk"] main [data-action="restart-qw-gateway"] {
+                justify-content: flex-start;
+            }
+
+            body[data-theme="silk"] main [data-qw-gateway-status],
+            body[data-theme="silk"] main [data-openclaw-backup-summary],
+            body[data-theme="silk"] main [data-task-meta] {
+                padding: 0.5rem 0.75rem;
+                font-size: 12px;
+                border-radius: 0.75rem;
+            }
+
+            body[data-theme="silk"] main [data-openclaw-backup-detail] {
+                padding: 0.5rem 0.75rem;
+                font-size: 11px;
+                line-height: 1.35;
+                border-radius: 0.75rem;
+            }
+
+            body[data-theme="silk"] main [data-openclaw-backup-select] {
+                min-height: 2.25rem;
+                height: 2.25rem;
+                border-radius: 0.75rem;
+                font-size: 12px;
+            }
+
+            body[data-theme="silk"] main [data-task-output] {
+                min-height: 220px;
+                padding: 0.75rem;
+                line-height: 1.35;
+                border-radius: 0.75rem;
+            }
+        </style>
             </head>
-    <body class="bg-base-100 text-base-content overflow-x-auto">
-        <div class="grid min-h-screen min-w-[1280px] grid-cols-[240px_minmax(0,1fr)_360px]">
-            <aside class="flex min-h-screen flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+    <body class="overflow-x-auto bg-base-100 text-base-content">
+        <div class="min-h-screen min-w-[1180px] bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.10),transparent_28%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.12),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))]">
+            <div class="grid min-h-screen grid-cols-[240px_minmax(0,1fr)]">
+            <aside class="flex min-h-screen flex-col gap-4 border-r border-base-200/80 bg-base-100/85 px-4 py-4 backdrop-blur">
                 <div class="text-sm text-base-content/60">加载中...</div>
             </aside>
 
-            <main class="flex min-h-screen flex-col border-r border-base-200">
-                <header
-                    class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4"
-                >
+            <main class="flex min-h-screen flex-col">
+                <header class="border-b border-base-200/80 bg-base-100/70 px-5 py-3 backdrop-blur">
+                    <div class="hidden">
                     <h1 class="text-lg font-semibold">控制台</h1>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <div class="hidden text-xs font-medium uppercase tracking-[0.28em] text-base-content/45">
+                                ClawOS Console
+                            </div>
+                            <div>
+                                <h1 class="text-3xl font-semibold tracking-tight">控制台</h1>
+                                <p class="hidden mt-1 text-sm text-base-content/60">
+                                    将运行状态、常用操作和配置备份合并进一个主面板，减少切换成本。
+                                </p>
+                            </div>
+                        </div>
+                        <div hidden
+                            class="rounded-full border border-base-200 bg-base-100/90 px-4 py-2 text-xs text-base-content/70 shadow-sm"
+                            data-status="execution"
+                        >
+                            执行模式: 未知
+                        </div>
+                    </div>
                 </header>
 
-                <section class="flex-1 p-6">
-                    <div class="grid gap-4 xl:grid-cols-2">
+                <section class="flex-1 px-8 py-8">
+                    <div class="mx-auto flex w-full max-w-[1360px] flex-col gap-6">
+                        <section class="overflow-hidden rounded-[28px] border border-base-200/80 bg-base-100/92 shadow-[0_24px_60px_rgba(15,23,42,0.08)]">
+                            <div class="border-b border-base-200/80 bg-[linear-gradient(135deg,rgba(240,253,250,0.95),rgba(239,246,255,0.9))] px-6 py-6">
+                                <div class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
+                                    <div class="space-y-5">
+                                        <div class="space-y-2">
+                                            <div class="hidden text-xs font-medium uppercase tracking-[0.22em] text-base-content/45">
+                                                主控面板
+                                            </div>
+                                            <h2 class="text-2xl font-semibold tracking-tight">openclaw 与系统操作</h2>
+                                            <p class="max-w-2xl text-sm leading-6 text-base-content/65">
+                                                核心操作、环境检查和配置备份已合并到同一张卡片，日常运维就在这里完成。
+                                            </p>
+                                        </div>
+
+                                        <div class="hidden grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                            <div class="rounded-2xl border border-base-200/80 bg-base-100/85 p-4 shadow-sm">
+                                                <div class="mb-2 flex items-center gap-2">
+                                                    <span class="inline-flex h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="wsl"></span>
+                                                    <span class="text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">WSL</span>
+                                                </div>
+                                                <div class="text-sm font-medium text-base-content/80" data-status-label="wsl">WSL: 未检测</div>
+                                            </div>
+                                            <div class="rounded-2xl border border-base-200/80 bg-base-100/85 p-4 shadow-sm">
+                                                <div class="mb-2 flex items-center gap-2">
+                                                    <span class="inline-flex h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="openclaw"></span>
+                                                    <span class="text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">OpenClaw</span>
+                                                </div>
+                                                <div class="text-sm font-medium text-base-content/80" data-status-label="openclaw">openclaw: 未检测</div>
+                                            </div>
+                                            <div class="rounded-2xl border border-base-200/80 bg-base-100/85 p-4 shadow-sm">
+                                                <div class="mb-2 flex items-center gap-2">
+                                                    <span class="inline-flex h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="gateway"></span>
+                                                    <span class="text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">Gateway</span>
+                                                </div>
+                                                <div class="text-sm font-medium text-base-content/80" data-status-label="gateway">gateway: 未检测</div>
+                                            </div>
+                                            <div class="rounded-2xl border border-base-200/80 bg-base-100/85 p-4 shadow-sm">
+                                                <div class="mb-2 flex items-center gap-2">
+                                                    <span class="inline-flex h-2.5 w-2.5 rounded-full bg-base-300" data-status-light="browser"></span>
+                                                    <span class="text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">Browser</span>
+                                                </div>
+                                                <div class="text-sm font-medium text-base-content/80" data-status-label="browser">浏览器: 未检测</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col gap-4 rounded-[24px] border border-base-200/80 bg-base-100/88 p-5 shadow-sm">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div>
+                                                <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
+                                                    版本与状态
+                                                </div>
+                                                <div class="mt-2 text-lg font-semibold">openclaw</div>
+                                            </div>
+                                            <div class="hidden badge badge-outline badge-lg">Live</div>
+                                        </div>
+                                        <div
+                                            class="hidden rounded-2xl border border-base-200/80 bg-base-200/20 px-4 py-3 text-sm text-base-content/75"
+                                            data-openclaw-version
+                                        >
+                                            版本: 未知
+                                        </div>
+                                        <div
+                                            class="rounded-2xl border border-base-200/80 bg-base-200/20 px-4 py-3 text-sm text-base-content/75"
+                                            data-qw-gateway-status
+                                        >
+                                            企微网关启动状态: 未检测
+                                        </div>
+                                        <div class="hidden text-xs leading-5 text-base-content/60" data-qw-gateway-status-detail>
+                                            等待状态更新...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid gap-6 px-6 py-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                                <section class="space-y-4">
+                                    <div>
+                                        <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
+                                            快速操作
+                                        </div>
+                                        <h3 class="mt-1 text-lg font-semibold">常用命令</h3>
+                                    </div>
+                                    <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                                        <button class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" type="button" data-openclaw-entry>
+                                            <span class="block text-sm font-semibold">打开 openclaw Console</span>
+                                            <span class="mt-1 block text-xs font-normal text-base-content/60">直接进入 openclaw 控制台页面</span>
+                                        </button>
+                                        <button class="btn btn-primary h-auto min-h-24 items-start justify-start rounded-2xl px-4 py-4 text-left" data-action="restart-gateway">
+                                            <span class="block text-sm font-semibold">重启 openclaw</span>
+                                            <span class="mt-1 block text-xs font-normal text-primary-content/80">重新拉起本地网关与运行入口</span>
+                                        </button>
+                                        <button class="btn btn-warning h-auto min-h-24 items-start justify-start rounded-2xl px-4 py-4 text-left" data-action="update-openclaw">
+                                            <span class="block text-sm font-semibold">升级 openclaw</span>
+                                            <span class="mt-1 block text-xs font-normal text-warning-content/80">按仓库预设流程执行更新与构建</span>
+                                        </button>
+                                        <button hidden class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" data-action="check-env">
+                                            <span class="block text-sm font-semibold">检查环境</span>
+                                            <span class="mt-1 block text-xs font-normal text-base-content/60">刷新 WSL、gateway、浏览器连通性状态</span>
+                                        </button>
+                                        <button hidden class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" data-action="repair-env">
+                                            <span class="block text-sm font-semibold">修复环境</span>
+                                            <span class="mt-1 block text-xs font-normal text-base-content/60">处理 WSL 与基础依赖异常</span>
+                                        </button>
+                                        <button class="btn btn-outline h-auto min-h-24 items-start justify-start rounded-2xl border-base-200 px-4 py-4 text-left" data-action="restart-qw-gateway">
+                                            <span class="block text-sm font-semibold">重启企微网关</span>
+                                            <span class="mt-1 block text-xs font-normal text-base-content/60">手动拉起 QW gateway 并刷新状态</span>
+                                        </button>
+                                    </div>
+                                </section>
+
+                                <section class="rounded-[24px] border border-base-200/80 bg-base-50/80 p-5">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
+                                                配置备份
+                                            </div>
+                                            <h3 class="mt-1 text-lg font-semibold">备份切换</h3>
+                                        </div>
+                                        <button class="btn btn-ghost btn-sm rounded-full px-4" data-action="refresh-openclaw-backups">
+                                            刷新
+                                        </button>
+                                    </div>
+                                    <div class="mt-4 space-y-4">
+                                        <div
+                                            class="rounded-2xl border border-base-200/80 bg-base-100 px-4 py-3 text-sm text-base-content/75"
+                                            data-openclaw-backup-summary
+                                        >
+                                            正在加载备份列表...
+                                        </div>
+                                        <label class="form-control w-full gap-2">
+                                            <span class="label-text text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">备份文件</span>
+                                            <select
+                                                class="select select-bordered w-full rounded-2xl border-base-200 bg-base-100"
+                                                data-openclaw-backup-select
+                                            >
+                                                <option value="">正在加载...</option>
+                                            </select>
+                                        </label>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button
+                                                class="btn btn-warning rounded-full px-5"
+                                                data-action="rollback-openclaw-backup"
+                                            >
+                                                切换到该备份
+                                            </button>
+                                        </div>
+                                        <div
+                                            class="rounded-2xl border border-dashed border-base-300 bg-base-100/80 px-4 py-3 text-xs leading-6 text-base-content/70"
+                                            data-openclaw-backup-detail
+                                        >
+                                            当前备份信息：读取中...
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </section>
+
+                        <section class="overflow-hidden rounded-[28px] border border-base-200/80 bg-base-100/92 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
+                            <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200/80 px-6 py-5">
+                                <div>
+                                    <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
+                                        Tasks
+                                    </div>
+                                    <h2 class="mt-1 text-xl font-semibold">任务日志</h2>
+                                </div>
+                                <div class="hidden text-xs text-base-content/60">
+                                    长任务会自动续接到当前页面
+                                </div>
+                            </header>
+                            <section class="px-6 py-5">
+                                <div class="flex flex-col gap-4 rounded-[24px] border border-base-200/80 bg-[linear-gradient(180deg,rgba(248,250,252,0.82),rgba(255,255,255,0.96))] p-4">
+                                    <div class="rounded-2xl border border-base-200/80 bg-base-100 px-4 py-3 text-sm text-base-content/75" data-task-meta>
+                                        暂无任务
+                                    </div>
+                                    <progress
+                                        class="progress progress-neutral hidden w-full"
+                                        value="0"
+                                        max="100"
+                                        data-task-progress
+                                    ></progress>
+                                    <pre
+                                        class="min-h-[320px] overflow-auto rounded-[20px] border border-base-200/80 bg-slate-950 p-4 text-[11px] leading-6 text-slate-100"
+                                        data-task-output
+                                    >
+等待任务执行...</pre
+                                    >
+                                </div>
+                            </section>
+                        </section>
+
+                        <div class="hidden grid gap-4 xl:grid-cols-2">
                         <section
                             class="card card-compact border border-base-200 bg-base-100"
                         >
@@ -136,7 +441,7 @@
                 </section>
             </main>
 
-            <aside class="flex min-h-screen flex-col bg-base-100">
+            <aside class="hidden min-h-screen flex-col bg-base-100">
                 <header class="border-b border-base-200 px-5 py-4">
                     <h2 class="text-base font-semibold">日志</h2>
                 </header>
@@ -160,36 +465,13 @@
                     </div>
                 </section>
             </aside>
+            </div>
         </div>
 
         <script src="/sidebar-update.js"></script>
 
         <script>
             const statusBadges = {
-                execution: document.querySelector('[data-status="execution"]'),
-                openclawVersion: document.querySelector(
-                    "[data-openclaw-version]",
-                ),
-                wslLabel: document.querySelector('[data-status-label="wsl"]'),
-                openclawLabel: document.querySelector(
-                    '[data-status-label="openclaw"]',
-                ),
-                gatewayLabel: document.querySelector(
-                    '[data-status-label="gateway"]',
-                ),
-                browserLabel: document.querySelector(
-                    '[data-status-label="browser"]',
-                ),
-                wslLight: document.querySelector('[data-status-light="wsl"]'),
-                openclawLight: document.querySelector(
-                    '[data-status-light="openclaw"]',
-                ),
-                gatewayLight: document.querySelector(
-                    '[data-status-light="gateway"]',
-                ),
-                browserLight: document.querySelector(
-                    '[data-status-light="browser"]',
-                ),
                 qwGatewayStatus: document.querySelector("[data-qw-gateway-status]"),
                 qwGatewayStatusDetail: document.querySelector("[data-qw-gateway-status-detail]"),
             };
@@ -744,12 +1026,6 @@
 
             async function runAction(action) {
                 switch (action) {
-                    case "check-env":
-                        await checkEnvironment();
-                        return;
-                    case "repair-env":
-                        await startTask("/api/system/repair");
-                        return;
                     case "restart-qw-gateway":
                         await startTask("/api/gateway/action", {
                             action: "restart-qw-gateway",
@@ -826,7 +1102,6 @@
 
             (async function init() {
                 try {
-                    await checkEnvironment();
                     await refreshOpenclawBackups();
                 } catch (error) {
                     taskProgress.classList.add("hidden");

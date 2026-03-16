@@ -26,7 +26,7 @@ describe("api routes", () => {
     const req = new Request("http://clawos.desktop/api/browser/action", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "restart" }),
+      body: JSON.stringify({ action: "restart", confirmed: true }),
     });
 
     const response = await handleApiRequest(req, "/api/browser/action");
@@ -43,7 +43,7 @@ describe("api routes", () => {
     const req = new Request("http://clawos.desktop/api/browser/action", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action: "reset" }),
+      body: JSON.stringify({ action: "reset", confirmed: true }),
     });
 
     const response = await handleApiRequest(req, "/api/browser/action");
@@ -54,6 +54,22 @@ describe("api routes", () => {
     expect(payload.ok).toBe(true);
     const task = payload.task as Record<string, unknown>;
     expect(task.type).toBe("browser-cdp-reset-config");
+  });
+
+  it("requires explicit confirmation before browser repair starts", async () => {
+    const req = new Request("http://clawos.desktop/api/browser/action", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "repair" }),
+    });
+
+    const response = await handleApiRequest(req, "/api/browser/action");
+    expect(response).not.toBeNull();
+    expect(response?.status).toBe(400);
+
+    const payload = await parseJson(response as Response);
+    expect(payload.ok).toBe(false);
+    expect(String(payload.error || "")).toContain("请先确认后再继续");
   });
 
   it("ignores wework channel patch on macOS", async () => {

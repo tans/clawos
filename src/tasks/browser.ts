@@ -16,6 +16,7 @@ const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/versi
 const BROWSER_REMOTE_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_REMOTE_CDP_PORT}/json/version`;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
+const WINDOWS_ELEVATION_CANCEL_EXIT_CODE = 1223;
 
 export const DEFAULT_CHROME_EXE_PATHS = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -24,6 +25,99 @@ export const DEFAULT_CHROME_EXE_PATHS = [
 
 function escapePowerShellSingleQuoted(value: string): string {
   return value.replace(/'/g, "''");
+}
+
+function quoteWindowsCommandArg(value: string): string {
+  if (value.length === 0) {
+    return '""';
+  }
+  if (!/[\s"]/u.test(value) && !value.endsWith("\\")) {
+    return value;
+  }
+
+  let quoted = '"';
+  let backslashCount = 0;
+  for (const char of value) {
+    if (char === "\\") {
+      backslashCount += 1;
+      continue;
+    }
+    if (char === '"') {
+      quoted += "\\".repeat(backslashCount * 2 + 1);
+      quoted += '"';
+      backslashCount = 0;
+      continue;
+    }
+    if (backslashCount > 0) {
+      quoted += "\\".repeat(backslashCount);
+      backslashCount = 0;
+    }
+    quoted += char;
+  }
+  if (backslashCount > 0) {
+    quoted += "\\".repeat(backslashCount * 2);
+  }
+  quoted += '"';
+  return quoted;
+}
+
+export function buildWindowsElevationCheckArgs(): string[] {
+  return [
+    "powershell.exe",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    [
+      "$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())",
+      "if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 0 }",
+      "exit 1",
+    ].join("\n"),
+  ];
+}
+
+export function buildElevatedProcessCommand(filePath: string, argumentList: string[]): string {
+  const argumentLine = argumentList.map((arg) => quoteWindowsCommandArg(arg)).join(" ");
+  return [
+    "$ErrorActionPreference = 'Stop'",
+    "try {",
+    `  $proc = Start-Process -FilePath '${escapePowerShellSingleQuoted(filePath)}' -ArgumentList '${escapePowerShellSingleQuoted(argumentLine)}' -Verb RunAs -WindowStyle Hidden -Wait -PassThru`,
+    "  exit $proc.ExitCode",
+    "} catch {",
+    "  $message = $_.Exception.Message",
+    "  if ($message) { [Console]::Error.WriteLine($message) }",
+    "  if ($message -match 'cancelled by the user|canceled by the user') { exit 1223 }",
+    "  exit 1",
+    "}",
+  ].join("\n");
+}
+
+export function buildElevatedProcessArgs(filePath: string, argumentList: string[]): string[] {
+  return [
+    "powershell.exe",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-Command",
+    buildElevatedProcessCommand(filePath, argumentList),
+  ];
+}
+
+let cachedWindowsElevationState: boolean | null = null;
+
+async function isCurrentProcessElevated(): Promise<boolean> {
+  if (!IS_WINDOWS) {
+    return false;
+  }
+  if (cachedWindowsElevationState !== null) {
+    return cachedWindowsElevationState;
+  }
+
+  const result = await runProcess(buildWindowsElevationCheckArgs());
+  cachedWindowsElevationState = result.ok;
+  return cachedWindowsElevationState;
 }
 
 function appendProcessLogs(task: Task, result: CommandResult, treatAsSuccess: boolean): void {
@@ -71,15 +165,37 @@ function isElevationError(result: CommandResult): boolean {
   return text.includes("requires elevation");
 }
 
+function isElevationCancelled(result: CommandResult): boolean {
+  const text = `${result.stdout}\n${result.stderr}`.toLowerCase();
+  return (
+    result.code === WINDOWS_ELEVATION_CANCEL_EXIT_CODE ||
+    text.includes("operation was canceled by the user") ||
+    text.includes("operation was cancelled by the user")
+  );
+}
+
+async function runNetshCommand(task: Task, args: string[]): Promise<CommandResult> {
+  const elevated = await isCurrentProcessElevated();
+  if (elevated) {
+    return await runProcess(args);
+  }
+
+  appendTaskLog(task, "Current process is not elevated. Requesting Windows administrator approval (UAC).");
+  return await runProcess(buildElevatedProcessArgs("netsh.exe", args.slice(1)));
+}
+
 async function disableWindowsFirewall(task: Task, step: number, totalSteps: number): Promise<void> {
   task.step = step;
   const args = ["netsh", "advfirewall", "set", "allprofiles", "state", "off"];
   appendTaskLog(task, `Step ${step}/${totalSteps}: disable Windows Firewall for all profiles`);
   appendTaskLog(task, `Run: ${args.join(" ")}`);
 
-  const result = await runProcess(args);
+  const result = await runNetshCommand(task, args);
   appendProcessLogs(task, result, result.ok);
   if (!result.ok) {
+    if (isElevationCancelled(result)) {
+      throw new Error("Windows administrator permission was cancelled by the user.");
+    }
     if (isElevationError(result)) {
       throw new Error("Failed to disable Windows Firewall: admin privileges are required for netsh.");
     }
@@ -100,8 +216,11 @@ async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: n
     `name=ClawOS CDP ${BROWSER_REMOTE_CDP_PORT}`,
   ];
   appendTaskLog(task, `Run: ${deleteArgs.join(" ")}`);
-  const deleteResult = await runProcess(deleteArgs);
+  const deleteResult = await runNetshCommand(task, deleteArgs);
   appendProcessLogs(task, deleteResult, true);
+  if (!deleteResult.ok && isElevationCancelled(deleteResult)) {
+    throw new Error("Windows administrator permission was cancelled by the user.");
+  }
 
   const addArgs = [
     "netsh",
@@ -116,9 +235,12 @@ async function ensureBrowserFirewallRule(task: Task, step: number, totalSteps: n
     `localport=${BROWSER_REMOTE_CDP_PORT}`,
   ];
   appendTaskLog(task, `Run: ${addArgs.join(" ")}`);
-  const addResult = await runProcess(addArgs);
+  const addResult = await runNetshCommand(task, addArgs);
   appendProcessLogs(task, addResult, addResult.ok);
   if (!addResult.ok) {
+    if (isElevationCancelled(addResult)) {
+      throw new Error("Windows administrator permission was cancelled by the user.");
+    }
     if (isElevationError(addResult)) {
       throw new Error("Failed to configure Windows Firewall: admin privileges are required for netsh.");
     }
@@ -135,9 +257,12 @@ async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: numb
 
   const resetArgs = ["netsh", "interface", "portproxy", "reset"];
   appendTaskLog(task, `Run: ${resetArgs.join(" ")}`);
-  const resetResult = await runProcess(resetArgs);
+  const resetResult = await runNetshCommand(task, resetArgs);
   appendProcessLogs(task, resetResult, resetResult.ok);
   if (!resetResult.ok) {
+    if (isElevationCancelled(resetResult)) {
+      throw new Error("Windows administrator permission was cancelled by the user.");
+    }
     if (isElevationError(resetResult)) {
       throw new Error("Failed to reset system portproxy: admin privileges are required for netsh.");
     }
@@ -154,8 +279,11 @@ async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: numb
     `listenaddress=${listenAddress}`,
   ];
   appendTaskLog(task, `Run: ${deleteArgs.join(" ")}`);
-  const deleteResult = await runProcess(deleteArgs);
+  const deleteResult = await runNetshCommand(task, deleteArgs);
   appendProcessLogs(task, deleteResult, deleteResult.ok || isPortProxyDeleteMissing(deleteResult));
+  if (!deleteResult.ok && isElevationCancelled(deleteResult)) {
+    throw new Error("Windows administrator permission was cancelled by the user.");
+  }
 
   const addArgs = [
     "netsh",
@@ -169,9 +297,12 @@ async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: numb
     "connectaddress=127.0.0.1",
   ];
   appendTaskLog(task, `Run: ${addArgs.join(" ")}`);
-  const addResult = await runProcess(addArgs);
+  const addResult = await runNetshCommand(task, addArgs);
   appendProcessLogs(task, addResult, addResult.ok);
   if (!addResult.ok) {
+    if (isElevationCancelled(addResult)) {
+      throw new Error("Windows administrator permission was cancelled by the user.");
+    }
     if (isElevationError(addResult)) {
       throw new Error("Failed to configure system portproxy: admin privileges are required for netsh.");
     }
@@ -191,9 +322,12 @@ async function ensureBrowserPortProxy(task: Task, step: number, totalSteps: numb
     `connectport=${BROWSER_CDP_PORT}`,
   ];
   appendTaskLog(task, `Run: ${addV4ToV6Args.join(" ")}`);
-  const addV4ToV6Result = await runProcess(addV4ToV6Args);
+  const addV4ToV6Result = await runNetshCommand(task, addV4ToV6Args);
   appendProcessLogs(task, addV4ToV6Result, addV4ToV6Result.ok);
   if (!addV4ToV6Result.ok) {
+    if (isElevationCancelled(addV4ToV6Result)) {
+      throw new Error("Windows administrator permission was cancelled by the user.");
+    }
     if (isElevationError(addV4ToV6Result)) {
       throw new Error("Failed to configure v4tov6 portproxy: admin privileges are required for netsh.");
     }

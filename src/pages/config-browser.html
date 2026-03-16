@@ -268,7 +268,7 @@
 
         const data = await api("/api/browser/action", {
           method: "POST",
-          body: JSON.stringify({ action }),
+          body: JSON.stringify({ action, confirmed: true }),
         });
 
         if (!data.taskId) {
@@ -282,10 +282,34 @@
         await pollTask(data.taskId);
       }
 
+      function confirmBrowserAction(action) {
+        if (
+          action !== "repair" &&
+          action !== "restart" &&
+          action !== "restart-browser" &&
+          action !== "restart-cdp" &&
+          action !== "reset" &&
+          action !== "reset-config"
+        ) {
+          return true;
+        }
+
+        return window.confirm(
+          "浏览器修复会重启 Chrome，并修改 Windows 端口代理和防火墙。\n如果当前不是管理员运行，接下来会弹出系统授权窗口（UAC）。\n是否继续？"
+        );
+      }
+
       document.querySelectorAll("[data-browser-action]").forEach((button) => {
         button.addEventListener("click", async () => {
           const action = button.getAttribute("data-browser-action");
           if (!action) {
+            return;
+          }
+
+          if (!confirmBrowserAction(action)) {
+            browserTaskProgressEl.classList.add("hidden");
+            browserTaskMetaEl.textContent = "已取消本次浏览器修复。";
+            browserOpStatusEl.textContent = "已取消本次浏览器修复。";
             return;
           }
 

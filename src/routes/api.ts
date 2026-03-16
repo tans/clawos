@@ -669,7 +669,8 @@ async function handleBrowserAction(req: Request): Promise<Response> {
     throw new HttpError(400, "请求体必须是 JSON。");
   });
 
-  const rawAction = sanitizeIdentifier((body as Record<string, unknown>).action, "action");
+  const payload = body as Record<string, unknown>;
+  const rawAction = sanitizeIdentifier(payload.action, "action");
   const action =
     rawAction === "restart"
       ? "restart-browser"
@@ -681,6 +682,10 @@ async function handleBrowserAction(req: Request): Promise<Response> {
 
   if (!["restart-browser", "restart-cdp", "reset-config", "repair"].includes(action)) {
     throw new HttpError(400, `不支持的 action：${action}`);
+  }
+
+  if (payload.confirmed !== true) {
+    throw new HttpError(400, "浏览器修复会修改 Windows 端口代理和防火墙，请先确认后再继续。");
   }
 
   if (action === "restart-browser" || action === "restart-cdp" || action === "repair") {
