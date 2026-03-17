@@ -6,7 +6,9 @@ import configSkillsHtml from "../pages/config-skills.html" with { type: "text" }
 import configBrowserHtml from "../pages/config-browser.html" with { type: "text" };
 import configWalletHtml from "../pages/config-wallet.html" with { type: "text" };
 import configSettingsHtml from "../pages/config-settings.html" with { type: "text" };
+import configBackupsHtml from "../pages/config-backups.html" with { type: "text" };
 import sidebarUpdateJs from "../pages/sidebar-update.js" with { type: "text" };
+import pagesShellCss from "../pages/pages-shell.css" with { type: "text" };
 import cssContent from "../../dist/output.css" with { type: "text" };
 
 type SidebarNavId =
@@ -17,6 +19,7 @@ type SidebarNavId =
   | "browser"
   | "wallet"
   | "settings"
+  | "backups"
   | "sessions";
 
 const PAGES: Record<string, string> = {
@@ -34,6 +37,8 @@ const PAGES: Record<string, string> = {
   "/config/wallet/": configWalletHtml,
   "/config/settings": configSettingsHtml,
   "/config/settings/": configSettingsHtml,
+  "/config/backups": configBackupsHtml,
+  "/config/backups/": configBackupsHtml,
   "/sessions": sessionsHtml,
   "/sessions/": sessionsHtml,
 };
@@ -46,6 +51,7 @@ function resolveSidebarActive(path: string): SidebarNavId | null {
   if (path.startsWith("/config/browser")) return "browser";
   if (path.startsWith("/config/wallet")) return "wallet";
   if (path.startsWith("/config/settings")) return "settings";
+  if (path.startsWith("/config/backups")) return "backups";
   if (path.startsWith("/sessions")) return "sessions";
   return null;
 }
@@ -67,6 +73,7 @@ function renderSidebar(active: SidebarNavId | null): string {
         { id: "channels", href: "/config/channels", label: "\u6e20\u9053\u914d\u7f6e" },
         { id: "agents", href: "/config/agents", label: "\u4ee3\u7406\u914d\u7f6e" },
         { id: "settings", href: "/config/settings", label: "\u5e38\u89c4\u8bbe\u7f6e" },
+        { id: "backups", href: "/config/backups", label: "\u5907\u4efd\u7ba1\u7406" },
       ],
     },
     {
@@ -101,7 +108,7 @@ function renderSidebar(active: SidebarNavId | null): string {
     .join("");
 
   return `
-      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+      <aside class="clawos-page-sidebar flex flex-col">
         <div class="flex items-center justify-between gap-2 text-sm font-semibold">
           <a
             class="flex items-center gap-2 rounded-md px-1 py-1 transition hover:bg-base-200/60"
@@ -145,6 +152,12 @@ function withSharedSidebar(pageHtml: string, path: string): string {
 export function handlePageRequest(path: string): Response | null {
   if (path === "/styles.css") {
     return new Response(cssContent, {
+      headers: { "content-type": "text/css; charset=utf-8" },
+    });
+  }
+
+  if (path === "/pages-shell.css") {
+    return new Response(pagesShellCss, {
       headers: { "content-type": "text/css; charset=utf-8" },
     });
   }

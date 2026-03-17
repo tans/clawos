@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
@@ -7,19 +7,15 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
-    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
-      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+  <body class="clawos-page-shell">
+    <div class="clawos-page-layout">
+      <aside class="clawos-page-sidebar flex flex-col">
         <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
-      <main class="flex min-h-screen flex-col">
-        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">&#38065;&#21253;</h1>
-        </header>
-
-        <section class="flex-1 p-6">
-          <div class="card card-compact border border-base-200 bg-base-100 max-w-[980px]">
+      <main class="clawos-page-main flex min-h-screen flex-col">
+        <section class="clawos-page-content flex-1">
+          <div class="card card-compact clawos-panel max-w-[980px]">
             <div class="card-body gap-4">
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="card-title text-base">&#26412;&#22320;&#38065;&#21253;</h2>
@@ -78,7 +74,7 @@
                 <textarea class="textarea textarea-bordered h-20 w-full font-mono text-xs" readonly data-wallet-privatekey></textarea>
               </div>
 
-              <div class="text-xs text-base-content/70" data-wallet-meta>&#27491;&#22312;&#35835;&#21462;&#38065;&#21253;&#29366;&#24577;...</div>
+              <div class="clawos-meta" data-wallet-meta>&#27491;&#22312;&#35835;&#21462;&#38065;&#21253;&#29366;&#24577;...</div>
             </div>
           </div>
         </section>
@@ -278,3 +274,4 @@
     </script>
   </body>
 </html>
+

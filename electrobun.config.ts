@@ -79,6 +79,7 @@ const config: ElectrobunConfig = {
       "src/desktop-ui/shell.html": "views/clawos/shell.html",
       "src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
       "dist/output.css": "views/clawos/styles.css",
+      "src/pages/pages-shell.css": "views/clawos/pages-shell.css",
       "web/public/logo.png": "views/clawos/logo.png",
     },
     watch: ["src", "dist"],

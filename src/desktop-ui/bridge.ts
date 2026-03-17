@@ -10,6 +10,7 @@ const ALLOWED_PAGE_PATHS = new Set([
   "/config/browser",
   "/config/wallet",
   "/config/settings",
+  "/config/backups",
   "/sessions",
 ]);
 

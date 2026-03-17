@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
@@ -7,22 +7,19 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
-    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
-      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+  <body class="clawos-page-shell">
+    <div class="clawos-page-layout">
+      <aside class="clawos-page-sidebar flex flex-col">
         <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
-      <main class="flex min-h-screen flex-col">
-        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">&#36890;&#35759;&#28192;&#36947;</h1>
-          <div class="flex flex-wrap items-center gap-2">
-            <button class="btn btn-outline btn-xs" data-action="reload">&#37325;&#26032;&#21152;&#36733;</button>
-          </div>
+      <main class="clawos-page-main flex min-h-screen flex-col">
+        <header class="clawos-page-header flex flex-wrap items-center justify-end gap-2">
+          <button class="btn btn-outline btn-xs" data-action="reload">&#37325;&#26032;&#21152;&#36733;</button>
         </header>
 
-        <section class="flex-1 p-6">
-          <section class="card card-compact border border-base-200 bg-base-100" data-card-editor>
+        <section class="clawos-page-content flex-1">
+          <section class="card card-compact clawos-panel" data-card-editor>
             <div class="card-body gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h2 class="card-title text-base">&#28192;&#36947;&#24320;&#20851;&#19982;&#21442;&#25968;&#20837;&#21475;</h2>
@@ -31,7 +28,7 @@
             </div>
           </section>
 
-          <div class="mt-3 text-xs text-base-content/70" data-meta>&#23578;&#26410;&#21152;&#36733;</div>
+          <div class="clawos-meta mt-3" data-meta>&#23578;&#26410;&#21152;&#36733;</div>
         </section>
       </main>
     </div>
@@ -907,3 +904,4 @@
     </script>
   </body>
 </html>
+

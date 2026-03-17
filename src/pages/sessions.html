@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
     <meta charset="utf-8" />
@@ -7,21 +7,20 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="stylesheet" href="/pages-shell.css" />
       </head>
-  <body class="clawos-page-shell bg-base-100 text-base-content overflow-x-auto">
-    <div class="grid min-h-screen min-w-[980px] grid-cols-[240px_1fr]">
-      <aside class="flex flex-col gap-4 border-r border-base-200 bg-base-100 px-4 py-4">
+  <body class="clawos-page-shell">
+    <div class="clawos-page-layout">
+      <aside class="clawos-page-sidebar flex flex-col">
         <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
       </aside>
 
-      <main class="flex min-h-screen flex-col">
-        <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 px-6 py-4">
-          <h1 class="text-lg font-semibold">&#20250;&#35805;</h1>
+      <main class="clawos-page-main flex min-h-screen flex-col">
+        <header class="clawos-page-header flex flex-wrap items-center justify-end gap-2">
           <button class="btn btn-outline btn-xs" data-action="reload">&#21047;&#26032;</button>
         </header>
 
-        <section class="flex-1 p-6">
+        <section class="clawos-page-content flex-1">
           <div class="grid gap-3 lg:grid-cols-[280px_1fr]">
-            <div class="card card-compact border border-base-200 bg-base-100">
+            <div class="card card-compact clawos-panel">
               <div class="card-body gap-3">
                 <h2 class="text-sm font-semibold">&#25152;&#26377;&#20250;&#35805;</h2>
                 <div class="text-xs text-base-content/70" data-list-meta>&#23578;&#26410;&#21152;&#36733;</div>
@@ -29,7 +28,7 @@
               </div>
             </div>
 
-            <div class="card card-compact border border-base-200 bg-base-100">
+            <div class="card card-compact clawos-panel">
               <div class="card-body gap-3">
                 <h2 class="text-base font-semibold" data-session-title>&#26410;&#36873;&#25321;&#20250;&#35805;</h2>
                 <div class="text-xs text-base-content/70" data-detail-meta></div>
@@ -265,3 +264,4 @@
     </script>
   </body>
 </html>
+

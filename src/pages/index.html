@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="silk">
     <head>
         <meta charset="utf-8" />
@@ -6,134 +6,18 @@
         <title>ClawOS &#25511;&#21046;&#21488;</title>
         <link rel="stylesheet" href="/styles.css" />
         <link rel="stylesheet" href="/pages-shell.css" />
-        <style>
-            body[data-theme="silk"] main > header .text-xs,
-            body[data-theme="silk"] main > header p,
-            body[data-theme="silk"] main section p,
-            body[data-theme="silk"] .badge.badge-outline.badge-lg,
-            body[data-theme="silk"] [data-qw-gateway-status-detail],
-            body[data-theme="silk"] main .btn span + span,
-            body[data-theme="silk"] section > header .text-xs,
-            body[data-theme="silk"] main section h2,
-            body[data-theme="silk"] main section h3,
-            body[data-theme="silk"] main section .mt-2.text-lg.font-semibold {
-                display: none;
-            }
-
-            body[data-theme="silk"] main > header {
-                padding: 0.75rem 1.25rem;
-            }
-
-            body[data-theme="silk"] main > header > div:last-child {
-                gap: 0.5rem;
-                align-items: center;
-            }
-
-            body[data-theme="silk"] main > header h1 {
-                font-size: 1.25rem;
-                line-height: 1.2;
-            }
-
-            body[data-theme="silk"] main > section {
-                padding: 0.5rem;
-            }
-
-            body[data-theme="silk"] main > section > div {
-                gap: 0.5rem;
-            }
-
-            body[data-theme="silk"] main > section > div > section {
-                border-radius: 0.5rem;
-                box-shadow: none;
-            }
-
-            body[data-theme="silk"] main > section > div > section:first-child > div:first-child,
-            body[data-theme="silk"] main > section > div > section:first-child > div:last-child,
-            body[data-theme="silk"] main > section > div > section:last-child > header,
-            body[data-theme="silk"] main > section > div > section:last-child > section {
-                padding: 0.75rem 1rem;
-            }
-
-            body[data-theme="silk"] main .btn {
-                min-height: 2.25rem;
-                height: 2.25rem;
-                padding: 0.25rem 0.75rem;
-                border-radius: 0.75rem;
-            }
-
-            body[data-theme="silk"] main [data-openclaw-entry],
-            body[data-theme="silk"] main [data-action="restart-gateway"],
-            body[data-theme="silk"] main [data-action="update-openclaw"],
-            body[data-theme="silk"] main [data-action="check-env"],
-            body[data-theme="silk"] main [data-action="repair-env"],
-            body[data-theme="silk"] main [data-action="restart-qw-gateway"] {
-                justify-content: flex-start;
-            }
-
-            body[data-theme="silk"] main [data-qw-gateway-status],
-            body[data-theme="silk"] main [data-openclaw-backup-summary],
-            body[data-theme="silk"] main [data-task-meta] {
-                padding: 0.5rem 0.75rem;
-                font-size: 12px;
-                border-radius: 0.75rem;
-            }
-
-            body[data-theme="silk"] main [data-openclaw-backup-detail] {
-                padding: 0.5rem 0.75rem;
-                font-size: 11px;
-                line-height: 1.35;
-                border-radius: 0.75rem;
-            }
-
-            body[data-theme="silk"] main [data-openclaw-backup-select] {
-                min-height: 2.25rem;
-                height: 2.25rem;
-                border-radius: 0.75rem;
-                font-size: 12px;
-            }
-
-            body[data-theme="silk"] main [data-task-output] {
-                min-height: 220px;
-                padding: 0.75rem;
-                line-height: 1.35;
-                border-radius: 0.75rem;
-            }
-        </style>
             </head>
-    <body class="clawos-page-shell clawos-page-shell--index overflow-x-auto bg-base-100 text-base-content">
-        <div class="min-h-screen min-w-[1180px] bg-white">
-            <div class="grid min-h-screen grid-cols-[240px_minmax(0,1fr)]">
-            <aside class="flex min-h-screen flex-col gap-2 border-r border-base-200/80 bg-base-100 px-3 py-3">
+    <body class="clawos-page-shell clawos-page-shell--index">
+        <div class="clawos-page-layout">
+            <aside class="clawos-page-sidebar flex min-h-screen flex-col">
                 <div class="text-sm text-base-content/60">&#21152;&#36733;&#20013;...</div>
             </aside>
 
-            <main class="flex min-h-screen flex-col">
-                <header class="border-b border-base-200/80 bg-base-100 px-3 py-2">
-                    <div class="hidden">
-                    <h1 class="text-lg font-semibold">&#25511;&#21046;&#21488;</h1>
-                    </div>
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <div class="hidden text-xs font-medium uppercase tracking-[0.28em] text-base-content/45">
-                                ClawOS Console
-                            </div>
-                            <div>
-                                <h1 class="text-3xl font-semibold tracking-tight">&#25511;&#21046;&#21488;</h1>
-                            </div>
-                        </div>
-                        <div hidden
-                            class="rounded-full border border-base-200 bg-base-100/90 px-4 py-2 text-xs text-base-content/70 shadow-sm"
-                            data-status="execution"
-                        >
-                            &#25191;&#34892;&#27169;&#24335;: &#26410;&#30693;
-                        </div>
-                    </div>
-                </header>
-
-                <section class="flex-1 px-3 py-3">
+            <main class="clawos-page-main flex min-h-screen flex-col">
+                <section class="clawos-page-content flex-1">
                     <div class="mx-auto flex w-full max-w-[1360px] flex-col gap-3">
-                        <section class="overflow-hidden border border-base-200/80 bg-base-100">
-                            <div class="border-b border-base-200/80 px-3 py-3">
+                        <section class="space-y-4 px-1 py-1">
+                            <div class="px-3 py-2">
                                 <div class="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.9fr)]">
                                     <div class="space-y-5">
                                         <div class="space-y-2">
@@ -143,7 +27,7 @@
                                         </div> 
                                     </div>
 
-                                    <div class="flex flex-col gap-2 border border-base-200/80 bg-base-100 p-3">
+                                    <div class="flex flex-col gap-2 px-3 py-2">
                                         <div class="flex items-start justify-between gap-3">
                                             <div>
                                                 <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
@@ -160,7 +44,7 @@
                                             &#29256;&#26412;: &#26410;&#30693;
                                         </div>
                                         <div
-                                            class="rounded-2xl border border-base-200/80 bg-base-200/20 px-4 py-3 text-sm text-base-content/75"
+                                            class="rounded-xl bg-base-200/25 px-4 py-3 text-sm text-base-content/75"
                                             data-qw-gateway-status
                                         >
                                             &#20225;&#24494;&#32593;&#20851;&#21551;&#21160;&#29366;&#24577;: &#26410;&#26816;&#27979;
@@ -172,7 +56,7 @@
                                 </div>
                             </div>
 
-                            <div class="grid gap-3 px-3 py-3 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                            <div class="grid gap-4 border-t border-base-200/60 px-3 py-3">
                                 <section class="space-y-4">
                                     <div>
                                         <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
@@ -201,56 +85,11 @@
                                         </button>
                                     </div>
                                 </section>
-
-                                <section class="border border-base-200/80 bg-base-100 p-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
-                                                &#37197;&#32622;&#22791;&#20221;
-                                            </div>
-                                            <h3 class="mt-1 text-lg font-semibold">&#22791;&#20221;&#20999;&#25442;</h3>
-                                        </div>
-                                        <button class="btn btn-ghost btn-sm rounded-full px-4" data-action="refresh-openclaw-backups">
-                                            &#21047;&#26032;
-                                        </button>
-                                    </div>
-                                    <div class="mt-4 space-y-4">
-                                        <div
-                                            class="rounded-2xl border border-base-200/80 bg-base-100 px-4 py-3 text-sm text-base-content/75"
-                                            data-openclaw-backup-summary
-                                        >
-                                            &#27491;&#22312;&#21152;&#36733;&#22791;&#20221;&#21015;&#34920;...
-                                        </div>
-                                        <label class="form-control w-full gap-2">
-                                            <span class="label-text text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">&#22791;&#20221;&#25991;&#20214;</span>
-                                            <select
-                                                class="select select-bordered w-full rounded-2xl border-base-200 bg-base-100"
-                                                data-openclaw-backup-select
-                                            >
-                                                <option value="">&#27491;&#22312;&#21152;&#36733;...</option>
-                                            </select>
-                                        </label>
-                                        <div class="flex flex-wrap gap-2">
-                                            <button
-                                                class="btn btn-warning rounded-full px-5"
-                                                data-action="rollback-openclaw-backup"
-                                            >
-                                                &#20999;&#25442;&#21040;&#35813;&#22791;&#20221;
-                                            </button>
-                                        </div>
-                                        <div
-                                            class="rounded-2xl border border-dashed border-base-300 bg-base-100/80 px-4 py-3 text-xs leading-6 text-base-content/70"
-                                            data-openclaw-backup-detail
-                                        >
-                                            &#24403;&#21069;&#22791;&#20221;&#20449;&#24687;&#65306;&#35835;&#21462;&#20013;...
-                                        </div>
-                                    </div>
-                                </section>
                             </div>
                         </section>
 
-                        <section class="overflow-hidden border border-base-200/80 bg-base-100">
-                            <header class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200/80 px-3 py-2">
+                        <section class="px-1">
+                            <header class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200/60 px-3 py-2">
                                 <div>
                                     <div class="hidden text-xs font-medium uppercase tracking-[0.18em] text-base-content/45">
                                         Tasks
@@ -262,8 +101,8 @@
                                 </div>
                             </header>
                             <section class="px-3 py-2">
-                                <div class="flex flex-col gap-2 border border-base-200/80 bg-base-100 p-2">
-                                    <div class="border border-base-200/80 bg-base-100 px-3 py-2 text-sm text-base-content/75" data-task-meta>
+                                <div class="flex flex-col gap-2">
+                                    <div class="rounded-xl bg-base-200/25 px-3 py-2 text-sm text-base-content/75" data-task-meta>
                                         &#26242;&#26080;&#20219;&#21153;
                                     </div>
                                     <progress
@@ -273,7 +112,7 @@
                                         data-task-progress
                                     ></progress>
                                     <pre
-                                        class="min-h-[220px] overflow-auto border border-base-200/80 bg-white p-3 text-[11px] leading-5 text-base-content"
+                                        class="min-h-[220px] overflow-auto rounded-xl bg-base-200/15 p-3 text-[11px] leading-5 text-base-content"
                                         data-task-output
                                     >
 &#31561;&#24453;&#20219;&#21153;&#25191;&#34892;...</pre
@@ -282,119 +121,6 @@
                             </section>
                         </section>
 
-                        <div class="hidden grid gap-4 xl:grid-cols-2">
-                        <section
-                            class="card card-compact border border-base-200 bg-base-100"
-                        >
-                            <div class="card-body gap-3">
-                                <h2 class="card-title text-base">openclaw</h2>
-                                <div
-                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
-                                    data-openclaw-version
-                                >
-                                    &#29256;&#26412;: &#26410;&#30693;
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button
-                                        class="btn btn-outline btn-sm"
-                                        type="button"
-                                        data-openclaw-entry
-                                    >
-                                        &#25171;&#24320; openclaw Console
-                                    </button>
-                                    <button
-                                        class="btn btn-primary btn-sm"
-                                        data-action="restart-gateway"
-                                    >
-                                        &#37325;&#21551; openclaw
-                                    </button>
-                                    <button
-                                        class="btn btn-warning btn-sm"
-                                        data-action="update-openclaw"
-                                    >
-                                        &#21319;&#32423; openclaw
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section
-                            class="hidden card card-compact border border-base-200 bg-base-100"
-                        >
-                            <div class="card-body gap-3">
-                                <h2 class="card-title text-base">&#20225;&#24494;</h2>
-                                <div
-                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
-                                    data-qw-gateway-status
-                                >
-                                    &#21551;&#21160;&#29366;&#24577;: &#26410;&#26816;&#27979;
-                                </div>
-                                <div
-                                    class="text-[11px] text-base-content/60"
-                                    data-qw-gateway-status-detail
-                                >
-                                    &#31561;&#24453;&#29366;&#24577;&#26356;&#26032;...
-                                </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <button
-                                        class="btn btn-primary btn-sm"
-                                        data-action="restart-qw-gateway"
-                                    >
-                                        &#37325;&#21551;&#20225;&#24494;&#32593;&#20851;
-                                    </button>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section
-                            class="card card-compact border border-base-200 bg-base-100"
-                        >
-                            <div class="card-body gap-3">
-                                <h2 class="card-title text-base">&#26356;&#22810;&#35774;&#32622;</h2>
-                                <div class="text-xs text-base-content/60">&#37197;&#32622;&#22791;&#20221;&#20999;&#25442;</div>
-                                <div
-                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-xs text-base-content/75"
-                                    data-openclaw-backup-summary
-                                >
-                                    &#27491;&#22312;&#21152;&#36733;&#22791;&#20221;&#21015;&#34920;...
-                                </div>
-                                <label class="form-control w-full gap-1.5">
-                                    <span class="label-text text-xs text-base-content/70"
-                                        >&#22791;&#20221;&#25991;&#20214;</span
-                                    >
-                                    <select
-                                        class="select select-sm select-bordered w-full"
-                                        data-openclaw-backup-select
-                                    >
-                                        <option value="">&#27491;&#22312;&#21152;&#36733;...</option>
-                                    </select>
-                                </label>
-                                <div class="flex flex-wrap gap-2">
-                                    <button
-                                        class="btn btn-outline btn-sm"
-                                        data-action="refresh-openclaw-backups"
-                                    >
-                                        &#21047;&#26032;&#22791;&#20221;
-                                    </button>
-                                    <button
-                                        class="btn btn-warning btn-sm"
-                                        data-action="rollback-openclaw-backup"
-                                    >
-                                        &#20999;&#25442;&#21040;&#35813;&#22791;&#20221;
-                                    </button>
-                                </div>
-                                <div
-                                    class="rounded-md border border-base-200 bg-base-200/20 px-3 py-2 text-[11px] text-base-content/70"
-                                    data-openclaw-backup-detail
-                                >
-                                    &#24403;&#21069;&#22791;&#20221;&#20449;&#24687;&#65306;&#35835;&#21462;&#20013;...
-                                </div>
-                            </div>
-                        </section>
-
-                        <!-- &#20020;&#26102;&#19979;&#32447;&#65306;&#36816;&#34892;&#29366;&#24577;&#19982; Token &#29992;&#37327;&#38754;&#26495;&#26242;&#19981;&#21457;&#24067;&#65292;&#30456;&#20851;&#21069;&#31471;&#20195;&#30721;&#21644;&#36718;&#35810;&#24050;&#31227;&#38500;&#12290; -->
-
-                    </div>
                 </section>
             </main>
 
@@ -423,7 +149,6 @@
                 </section>
             </aside>
             </div>
-        </div>
 
         <script src="/sidebar-update.js"></script>
 
@@ -436,15 +161,6 @@
             const taskMeta = document.querySelector("[data-task-meta]");
             const taskProgress = document.querySelector("[data-task-progress]");
             const taskOutput = document.querySelector("[data-task-output]");
-            const openclawBackupUI = {
-                select: document.querySelector("[data-openclaw-backup-select]"),
-                summary: document.querySelector("[data-openclaw-backup-summary]"),
-                detail: document.querySelector("[data-openclaw-backup-detail]"),
-            };
-            const openclawBackupState = {
-                backups: [],
-                selectedPath: "",
-            };
             const ACTIVE_TASK_STORAGE_KEY = "clawos.activeTaskId";
 
             let pollTimer = null;
@@ -603,146 +319,6 @@
                     clearInterval(pollTimer);
                     pollTimer = null;
                 }
-            }
-
-            function formatBackupTime(value) {
-                if (typeof value !== "string" || !value.trim()) return "\u672a\u77e5";
-                const time = new Date(value);
-                if (!Number.isFinite(time.getTime())) return value;
-                return time.toLocaleString("zh-CN", { hour12: false });
-            }
-
-            function formatBackupSize(value) {
-                const size = Number(value);
-                if (!Number.isFinite(size) || size < 0) return "\u672a\u77e5";
-                if (size < 1024) return `${size} B`;
-                if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-                return `${(size / (1024 * 1024)).toFixed(2)} MB`;
-            }
-
-            function getSelectedOpenclawBackup() {
-                const currentPath =
-                    openclawBackupUI.select?.value ||
-                    openclawBackupState.selectedPath;
-                if (!currentPath) return null;
-                openclawBackupState.selectedPath = currentPath;
-                return (
-                    openclawBackupState.backups.find(
-                        (item) => item.path === currentPath,
-                    ) || null
-                );
-            }
-
-            function renderOpenclawBackupMeta() {
-                const selectedBackup = getSelectedOpenclawBackup();
-                if (!selectedBackup) {
-                    if (openclawBackupUI.summary) {
-                        openclawBackupUI.summary.textContent =
-                            "\u5f53\u524d\u672a\u53d1\u73b0\u914d\u7f6e\u5907\u4efd";
-                    }
-                    if (openclawBackupUI.detail) {
-                        openclawBackupUI.detail.textContent =
-                            "\u8bf7\u5148\u751f\u6210\u914d\u7f6e\u5907\u4efd\u540e\u518d\u8fdb\u884c\u5207\u6362\u3002";
-                    }
-                    return;
-                }
-
-                if (openclawBackupUI.summary) {
-                    openclawBackupUI.summary.textContent = `\u5171 ${openclawBackupState.backups.length} \u4e2a\u5907\u4efd\uff0c\u5f53\u524d\u9009\u62e9\uff1a${selectedBackup.fileName}`;
-                }
-                if (openclawBackupUI.detail) {
-                    openclawBackupUI.detail.textContent =
-                        `\u65f6\u95f4: ${formatBackupTime(selectedBackup.modifiedAt)} | \u5927\u5c0f: ${formatBackupSize(selectedBackup.size)}`;
-                }
-            }
-
-            function renderOpenclawBackupOptions(preferredPath = "") {
-                const select = openclawBackupUI.select;
-                if (!select) return;
-
-                const backups = openclawBackupState.backups;
-                select.innerHTML = "";
-                if (backups.length === 0) {
-                    const option = document.createElement("option");
-                    option.value = "";
-                    option.textContent = "\u672a\u627e\u5230\u5907\u4efd\u6587\u4ef6";
-                    select.append(option);
-                    select.disabled = true;
-                    openclawBackupState.selectedPath = "";
-                    renderOpenclawBackupMeta();
-                    return;
-                }
-
-                const matchedPath = [preferredPath, openclawBackupState.selectedPath]
-                    .filter((item) => typeof item === "string" && item.trim())
-                    .find((item) =>
-                        backups.some((backup) => backup.path === item),
-                    );
-                const selectedPath = matchedPath || backups[0].path;
-
-                for (const backup of backups) {
-                    const option = document.createElement("option");
-                    option.value = backup.path;
-                    option.textContent = `${backup.fileName} | ${formatBackupTime(backup.modifiedAt)}`;
-                    select.append(option);
-                }
-
-                select.disabled = false;
-                select.value = selectedPath;
-                openclawBackupState.selectedPath = selectedPath;
-                renderOpenclawBackupMeta();
-            }
-
-            async function refreshOpenclawBackups(preferredPath = "") {
-                taskProgress.classList.add("hidden");
-                taskMeta.textContent = "\u6b63\u5728\u8bfb\u53d6\u914d\u7f6e\u5907\u4efd\u5217\u8868...";
-                const data = await api("/api/gateway/config/backups");
-                const command =
-                    typeof data.command === "string" ? data.command.trim() : "";
-                const backups = Array.isArray(data.backups) ? data.backups : [];
-                openclawBackupState.backups = backups.filter(
-                    (item) => item && typeof item.path === "string",
-                );
-                renderOpenclawBackupOptions(preferredPath);
-
-                if (openclawBackupState.backups.length === 0) {
-                    taskMeta.textContent = "\u672a\u627e\u5230\u914d\u7f6e\u5907\u4efd";
-                    taskOutput.textContent = "\u672a\u627e\u5230\u53ef\u7528\u7684\u914d\u7f6e\u5907\u4efd\u6587\u4ef6\u3002";
-                    taskOutput.scrollTop = taskOutput.scrollHeight;
-                    return;
-                }
-
-                const selectedBackup = getSelectedOpenclawBackup();
-                if (!selectedBackup) return;
-                taskMeta.textContent = `\u5df2\u52a0\u8f7d\u5907\u4efd ${openclawBackupState.backups.length} \u4e2a`;
-                taskOutput.textContent = [
-                    command ? `\u547d\u4ee4: ${command}` : "",
-                    `\u5f53\u524d\u9009\u62e9: ${selectedBackup.fileName}`,
-                    `\u65f6\u95f4: ${formatBackupTime(selectedBackup.modifiedAt)}`,
-                    `\u5927\u5c0f: ${formatBackupSize(selectedBackup.size)}`,
-                ].filter(Boolean).join("\n");
-                taskOutput.scrollTop = taskOutput.scrollHeight;
-            }
-
-            async function rollbackOpenclawBackup() {
-                const selectedBackup = getSelectedOpenclawBackup();
-                if (!selectedBackup) {
-                    throw new Error("\u8bf7\u5148\u9009\u62e9\u53ef\u7528\u5907\u4efd\u3002");
-                }
-
-                const confirmed = window.confirm(
-                    `\u5c06\u5207\u6362\u5230\u5907\u4efd ${selectedBackup.fileName}\u3002\n\u6b64\u64cd\u4f5c\u4f1a\u8986\u76d6\u5f53\u524d\u914d\u7f6e\u5e76\u91cd\u542f\u670d\u52a1\uff0c\u662f\u5426\u7ee7\u7eed\uff1f`,
-                );
-                if (!confirmed) {
-                    taskProgress.classList.add("hidden");
-                    taskMeta.textContent = "\u5df2\u53d6\u6d88\u5907\u4efd\u5207\u6362\u3002";
-                    return;
-                }
-
-                await startTask("/api/gateway/config/rollback", {
-                    backupPath: selectedBackup.path,
-                });
-                await refreshOpenclawBackups(selectedBackup.path);
             }
 
             function formatHealthState(value) {
@@ -989,12 +565,6 @@
                         });
                         void pollQwGatewayStatus();
                         return;
-                    case "refresh-openclaw-backups":
-                        await refreshOpenclawBackups();
-                        return;
-                    case "rollback-openclaw-backup":
-                        await rollbackOpenclawBackup();
-                        return;
                     case "update-openclaw":
                         await startTask("/api/gateway/update");
                         return;
@@ -1042,14 +612,6 @@
                 });
             });
 
-            if (openclawBackupUI.select) {
-                openclawBackupUI.select.addEventListener("change", () => {
-                    openclawBackupState.selectedPath =
-                        openclawBackupUI.select.value;
-                    renderOpenclawBackupMeta();
-                });
-            }
-
             window.addEventListener("clawos:self-update-started", (event) => {
                 const taskId = event?.detail?.taskId;
                 if (typeof taskId === "string" && taskId.trim()) {
@@ -1058,15 +620,6 @@
             });
 
             (async function init() {
-                try {
-                    await refreshOpenclawBackups();
-                } catch (error) {
-                    taskProgress.classList.add("hidden");
-                    taskMeta.textContent = readUserErrorMessage(
-                        error,
-                        "\u521d\u59cb\u5316\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002",
-                    );
-                }
                 const activeTaskId = readActiveTaskId();
                 if (activeTaskId) {
                     await pollTask(activeTaskId);
@@ -1077,3 +630,4 @@
         </script>
     </body>
 </html>
+

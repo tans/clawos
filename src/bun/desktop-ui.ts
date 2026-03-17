@@ -9,6 +9,7 @@ import type {
 const DESKTOP_BASE_URL = "http://clawos.desktop";
 const DESKTOP_BRIDGE_URL = "views://clawos/bridge.js";
 const DESKTOP_STYLES_URL = "views://clawos/styles.css";
+const DESKTOP_PAGES_SHELL_URL = "views://clawos/pages-shell.css";
 const DESKTOP_SIDEBAR_SCRIPT_URL = "views://clawos/sidebar-update.js";
 
 const KNOWN_PAGE_PATHS = new Set([
@@ -20,6 +21,7 @@ const KNOWN_PAGE_PATHS = new Set([
   "/config/browser",
   "/config/wallet",
   "/config/settings",
+  "/config/backups",
   "/sessions",
 ]);
 
@@ -105,6 +107,8 @@ function appendDesktopBridge(html: string): string {
   output = output
     .replace(/href="\/styles\.css"/g, `href="${DESKTOP_STYLES_URL}"`)
     .replace(/href='\/styles\.css'/g, `href='${DESKTOP_STYLES_URL}'`)
+    .replace(/href="\/pages-shell\.css"/g, `href="${DESKTOP_PAGES_SHELL_URL}"`)
+    .replace(/href='\/pages-shell\.css'/g, `href='${DESKTOP_PAGES_SHELL_URL}'`)
     .replace(/src="\/sidebar-update\.js"/g, `src="${DESKTOP_SIDEBAR_SCRIPT_URL}"`)
     .replace(/src='\/sidebar-update\.js'/g, `src='${DESKTOP_SIDEBAR_SCRIPT_URL}'`);
 
