@@ -28,12 +28,13 @@ const stylePath = resolve(root, "dist", "output.css");
 const dataDir = resolve(root, "data");
 const orderFilePath = resolve(dataDir, "orders.json");
 
-const alipayGateway = process.env.ALIPAY_GATEWAY ?? "https://openapi.alipay.com/gateway.do";
+const alipayGateway =
+  process.env.ALIPAY_GATEWAY ?? "https://openapi.alipay.com/gateway.do";
 const alipayAppId = process.env.ALIPAY_APP_ID ?? "";
 const alipayPrivateKey = process.env.ALIPAY_PRIVATE_KEY ?? "";
 const alipayPublicKey = process.env.ALIPAY_PUBLIC_KEY ?? "";
 const adminToken = process.env.ADMIN_TOKEN ?? "geekclaw-admin";
-const presaleAmount = process.env.PRESALE_AMOUNT ?? "99.00";
+const presaleAmount = process.env.PRESALE_AMOUNT ?? "9999.00";
 const presaleSubject = process.env.PRESALE_SUBJECT ?? "GeekClaw 预售席位";
 
 const assetMap = new Map([
@@ -56,7 +57,8 @@ function nowIso(): string {
 
 function mapTradeStatusToOrderStatus(tradeStatus?: string): OrderStatus {
   if (!tradeStatus) return "pending_pay";
-  if (tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED") return "paid";
+  if (tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED")
+    return "paid";
   if (tradeStatus === "TRADE_CLOSED") return "closed";
   return "failed";
 }
@@ -114,7 +116,10 @@ async function upsertOrder(next: PresaleOrder): Promise<void> {
   await writeOrders(orders);
 }
 
-async function updateOrderByOutTradeNo(outTradeNo: string, updater: (order: PresaleOrder) => PresaleOrder): Promise<PresaleOrder | null> {
+async function updateOrderByOutTradeNo(
+  outTradeNo: string,
+  updater: (order: PresaleOrder) => PresaleOrder,
+): Promise<PresaleOrder | null> {
   const orders = await readOrders();
   const idx = orders.findIndex((item) => item.outTradeNo === outTradeNo);
   if (idx < 0) {
@@ -127,7 +132,10 @@ async function updateOrderByOutTradeNo(outTradeNo: string, updater: (order: Pres
   return updated;
 }
 
-function parseBodyForm(contentType: string, bodyText: string): Record<string, string> {
+function parseBodyForm(
+  contentType: string,
+  bodyText: string,
+): Record<string, string> {
   if (!contentType.includes("application/x-www-form-urlencoded")) {
     return {};
   }
@@ -139,7 +147,9 @@ function parseBodyForm(contentType: string, bodyText: string): Record<string, st
   return params;
 }
 
-async function parseRequestParams(req: Request): Promise<Record<string, string>> {
+async function parseRequestParams(
+  req: Request,
+): Promise<Record<string, string>> {
   const url = new URL(req.url);
   const result: Record<string, string> = {};
 
@@ -175,8 +185,10 @@ async function serveFile(path: string): Promise<Response> {
 
 function getOrigin(req: Request): string {
   const url = new URL(req.url);
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? url.host;
-  const proto = req.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
+  const host =
+    req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? url.host;
+  const proto =
+    req.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
   return `${proto}://${host}`;
 }
 
@@ -230,7 +242,6 @@ function presalePageHtml(req: Request): string {
     <main class="mx-auto w-full max-w-[720px] px-4 py-5">
       <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
         <h1 class="text-2xl font-extrabold">预售登记</h1>
-        <p class="mt-2 text-sm text-white/70">填写信息后将跳转支付宝支付，回调地址：${escapeHtml(callback)}</p>
 
         <form class="mt-5 space-y-4" method="POST" action="/api/presale">
           <label class="block">
@@ -284,14 +295,13 @@ function adminPageHtml(orders: PresaleOrder[]): string {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeekClaw 订单后台（建议版）</title>
+    <title>GeekClaw 订单后台</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body class="min-h-screen bg-[#06030f] text-white">
     <main class="mx-auto w-full max-w-[720px] px-4 py-5">
       <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
-        <h1 class="text-xl font-extrabold">订单管理后台（建议版）</h1>
-        <p class="mt-2 text-xs text-white/70">建议项：按状态筛选、导出 CSV、发货信息、客服备注、回调重放。</p>
+        <h1 class="text-xl font-extrabold">订单管理后台</h1>
         <div class="mt-4 overflow-x-auto rounded-xl border border-white/15">
           <table class="w-full min-w-[900px] border-collapse text-left">
             <thead class="bg-white/10 text-xs">
@@ -317,7 +327,8 @@ function adminPageHtml(orders: PresaleOrder[]): string {
 
 function isAdminAuthorized(req: Request): boolean {
   const url = new URL(req.url);
-  const token = url.searchParams.get("token") ?? req.headers.get("x-admin-token") ?? "";
+  const token =
+    url.searchParams.get("token") ?? req.headers.get("x-admin-token") ?? "";
   return token === adminToken;
 }
 
@@ -328,7 +339,9 @@ Bun.serve({
     const { pathname } = url;
 
     if (pathname === "/presale") {
-      return new Response(presalePageHtml(req), { headers: { "content-type": "text/html; charset=utf-8" } });
+      return new Response(presalePageHtml(req), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
     }
 
     if (pathname === "/api/presale" && req.method === "POST") {
@@ -362,7 +375,10 @@ Bun.serve({
       };
 
       await upsertOrder(order);
-      return Response.redirect(`/api/alipay/pay?out_trade_no=${encodeURIComponent(outTradeNo)}`, 302);
+      return Response.redirect(
+        `/api/alipay/pay?out_trade_no=${encodeURIComponent(outTradeNo)}`,
+        302,
+      );
     }
 
     if (pathname === "/api/alipay/pay") {
@@ -438,7 +454,9 @@ Bun.serve({
       console.log("[alipay-callback]", JSON.stringify(params));
 
       if (req.method === "POST") {
-        return new Response("success", { headers: { "content-type": "text/plain; charset=utf-8" } });
+        return new Response("success", {
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
       }
 
       return new Response(
@@ -464,7 +482,9 @@ Bun.serve({
       }
 
       const orders = await readOrders();
-      return new Response(adminPageHtml(orders), { headers: { "content-type": "text/html; charset=utf-8" } });
+      return new Response(adminPageHtml(orders), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
     }
 
     if (pathname === "/api/admin/orders") {
@@ -473,9 +493,12 @@ Bun.serve({
       }
 
       const orders = await readOrders();
-      return new Response(JSON.stringify({ ok: true, total: orders.length, orders }, null, 2), {
-        headers: { "content-type": "application/json; charset=utf-8" },
-      });
+      return new Response(
+        JSON.stringify({ ok: true, total: orders.length, orders }, null, 2),
+        {
+          headers: { "content-type": "application/json; charset=utf-8" },
+        },
+      );
     }
 
     if (pathname === "/") {
