@@ -2,14 +2,12 @@ import { afterEach, describe, expect, it } from "bun:test";
 import {
   BROWSER_BOOT_URL,
   BROWSER_CDP_PORT,
-  BROWSER_REMOTE_CDP_PORT,
   BROWSER_USER_DATA_DIR,
   buildElevatedProcessArgs,
   buildElevatedProcessCommand,
   buildChromeStartArgs,
   buildChromeStartCommand,
   buildWindowsElevationCheckArgs,
-  buildRemoteCdpUrl,
   parseFirstNameserver,
   resolveChromeExePath,
 } from "../../src/tasks/browser";
@@ -52,12 +50,12 @@ describe("browser cdp helpers", () => {
 
   it("builds powershell elevation helpers safely", () => {
     const exePath = "C:\\Windows\\System32\\netsh.exe";
-    const command = buildElevatedProcessCommand(exePath, ["advfirewall", "firewall", "add", "rule", "name=ClawOS CDP 9223"]);
-    const args = buildElevatedProcessArgs(exePath, ["advfirewall", "firewall", "add", "rule", "name=ClawOS CDP 9223"]);
+    const command = buildElevatedProcessCommand(exePath, ["advfirewall", "show", "allprofiles"]);
+    const args = buildElevatedProcessArgs(exePath, ["advfirewall", "show", "allprofiles"]);
 
     expect(command).toContain("Start-Process -FilePath 'C:\\Windows\\System32\\netsh.exe'");
     expect(command).toContain("-Verb RunAs");
-    expect(command).toContain(`-ArgumentList 'advfirewall firewall add rule "name=ClawOS CDP 9223"'`);
+    expect(command).toContain(`-ArgumentList 'advfirewall show allprofiles'`);
     expect(args).toEqual([
       "powershell.exe",
       "-NoProfile",
@@ -91,8 +89,4 @@ nameserver 8.8.8.8
     expect(nameserver).toBe("172.31.64.1");
   });
 
-  it("builds remote cdp url with remote proxy port", () => {
-    const remote = buildRemoteCdpUrl("ws://127.0.0.1:9222/devtools/browser/abc", "172.28.240.1");
-    expect(remote).toBe(`ws://172.28.240.1:${BROWSER_REMOTE_CDP_PORT}/devtools/browser/abc`);
-  });
 });

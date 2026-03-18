@@ -2,7 +2,7 @@ import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
 import { openclawCliTroubleshootingTips } from "../openclaw/cli";
 import { asObject, readNonEmptyString } from "../lib/value";
 import { runWslScript } from "../tasks/shell";
-import { BROWSER_CDP_PORT, BROWSER_REMOTE_CDP_PORT } from "../tasks/browser";
+import { BROWSER_CDP_PORT } from "../tasks/browser";
 
 type GatewayProbe =
   | {
@@ -54,7 +54,6 @@ type WslProbe =
 type CdpProbeClassification = {
   status: BrowserConnectivityStatus;
   ready: boolean;
-  recommendPortProxy: boolean;
 };
 
 async function safeGatewayProbe(method: string, params: unknown, timeoutMs = 10000): Promise<GatewayProbe> {
@@ -169,37 +168,28 @@ export function normalizeCdpJsonVersionEndpoint(cdpUrl: string): { cdpUrl: strin
   };
 }
 
-export function buildPortProxyCommand(connectPort: number): string {
-  const effectiveConnectPort = connectPort || BROWSER_CDP_PORT;
-  return `netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=${BROWSER_REMOTE_CDP_PORT} connectaddress=127.0.0.1 connectport=${effectiveConnectPort}`;
-}
-
 export function classifyCdpProbeConnectivity(direct127Ok: boolean, wslCdpOk: boolean): CdpProbeClassification {
   if (direct127Ok && wslCdpOk) {
     return {
       status: "ok",
       ready: true,
-      recommendPortProxy: false,
     };
   }
   if (direct127Ok && !wslCdpOk) {
     return {
       status: "local-only",
       ready: false,
-      recommendPortProxy: true,
     };
   }
   if (!direct127Ok && wslCdpOk) {
     return {
       status: "cdp-only",
       ready: true,
-      recommendPortProxy: false,
     };
   }
   return {
     status: "probe-error",
     ready: false,
-    recommendPortProxy: false,
   };
 }
 
@@ -316,8 +306,8 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
   const wslCdpOk = wslCdpProbe?.ok === true;
   const cdpClassification = classifyCdpProbeConnectivity(direct127Ok, wslCdpOk);
   let browserReady = shouldProbe ? cdpClassification.ready : false;
-  const portProxyCommand = cdpEndpoint ? buildPortProxyCommand(cdpEndpoint.port) : null;
-  const recommendPortProxy = shouldProbe && cdpClassification.recommendPortProxy;
+  const portProxyCommand = null;
+  const recommendPortProxy = false;
 
   const warnings: string[] = [];
   if (!configProbe.ok) {
@@ -381,8 +371,6 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
           error: wslCdpProbe.ok ? null : wslCdpProbe.error,
         }
       : null,
-    recommendPortProxy,
-    portProxyCommand,
     warnings: dedupe(warnings),
     configPayload: configProbe.ok ? configProbe.payload : null,
     probePayload: null,

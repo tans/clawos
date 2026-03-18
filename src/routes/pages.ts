@@ -80,7 +80,6 @@ function renderSidebar(active: SidebarNavId | null): string {
       title: "\u5de5\u5177",
       items: [
         { id: "browser", href: "/config/browser", label: "\u6d4f\u89c8\u5668" },
-        { id: "wallet", href: "/config/wallet", label: "\u94b1\u5305" },
         { id: "sessions", href: "/sessions", label: "\u4f1a\u8bdd" },
         { id: "skills", href: "/config/skills", label: "Skills" },
       ],

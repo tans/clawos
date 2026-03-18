@@ -34,6 +34,7 @@ import {
   startQwGatewayRestartTask,
 } from "../tasks/gateway";
 import { startSelfUpdateTask } from "../tasks/self-update";
+import { getDesktopMcpStatus, startDesktopMcpServerTask } from "../tasks/desktop-control";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 import { normalizeOutput, runWslScript, troubleshootingTips } from "../tasks/shell";
@@ -674,6 +675,8 @@ async function handleBrowserAction(req: Request): Promise<Response> {
   const action =
     rawAction === "restart"
       ? "restart-browser"
+      : rawAction === "open-cdp"
+        ? "restart-cdp"
       : rawAction === "reset"
         ? "reset-config"
         : rawAction === "repair"
@@ -713,6 +716,21 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     if (path === "/api/system/repair" && req.method === "POST") {
       const { task, reused } = startWslRepairTask();
       return jsonResponse({ ok: true, taskId: task.id, task, reused });
+    }
+
+    if (path === "/api/desktop-control/mcp/status" && req.method === "GET") {
+      return jsonResponse({ ok: true, status: getDesktopMcpStatus() });
+    }
+
+    if (path === "/api/desktop-control/mcp/start" && req.method === "POST") {
+      const { task, reused } = startDesktopMcpServerTask();
+      return jsonResponse({
+        ok: true,
+        taskId: task.id,
+        task,
+        reused,
+        status: getDesktopMcpStatus(),
+      });
     }
 
     if (path === "/api/qw-gateway/status" && req.method === "GET") {
