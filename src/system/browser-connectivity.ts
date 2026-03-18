@@ -306,7 +306,7 @@ export async function checkBrowserConnectivity(): Promise<Record<string, unknown
   const wslCdpOk = wslCdpProbe?.ok === true;
   const cdpClassification = classifyCdpProbeConnectivity(direct127Ok, wslCdpOk);
   let browserReady = shouldProbe ? cdpClassification.ready : false;
-  const portProxyCommand = null;
+  const portProxyCommand: string | null = null;
   const recommendPortProxy = false;
 
   const warnings: string[] = [];

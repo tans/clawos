@@ -7,6 +7,7 @@ import {
   buildElevatedProcessCommand,
   buildChromeStartArgs,
   buildChromeStartCommand,
+  buildRemoteCdpUrl,
   buildWindowsElevationCheckArgs,
   parseFirstNameserver,
   resolveChromeExePath,
@@ -87,6 +88,11 @@ nameserver 172.31.64.1
 nameserver 8.8.8.8
 `);
     expect(nameserver).toBe("172.31.64.1");
+  });
+
+  it("builds remote cdp url with WSL nameserver", () => {
+    const remote = buildRemoteCdpUrl("ws://127.0.0.1:9222/devtools/browser/abc", "172.31.64.1");
+    expect(remote).toBe("ws://172.31.64.1:9222/devtools/browser/abc");
   });
 
 });

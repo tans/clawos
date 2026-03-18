@@ -29,13 +29,11 @@
               <div
                 class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
                 data-browser-connectivity-status
-              >
-                &#31561;&#24453;&#26816;&#27979;...
-              </div>
+              ></div>
               <pre
                 class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
                 data-browser-connectivity-output
-              >&#26816;&#27979;&#35814;&#24773;&#20250;&#26174;&#31034;&#22312;&#36825;&#37324;...</pre>
+              ></pre>
 
               <div
                 class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
@@ -491,11 +489,7 @@
         });
       }
 
-      void checkBrowserConnectivity(true).catch((error) => {
-        if (browserConnectivityStatusEl instanceof HTMLElement) {
-          browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "\u521d\u59cb\u5316\u8fde\u901a\u6027\u68c0\u6d4b\u5931\u8d25\u3002");
-        }
-      });
+      void checkBrowserConnectivity(true).catch(() => {});
 
       void loadDesktopMcpStatus().catch((error) => {
         if (desktopMcpStatusEl instanceof HTMLElement) {

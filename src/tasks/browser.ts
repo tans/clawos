@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { applyOpenclawConfig, readOpenclawConfig } from "../gateway/config";
 import { asObject, readNonEmptyString } from "../lib/value";
-import { normalizeOutput, runProcess, type CommandResult } from "./shell";
+import { normalizeOutput, runProcess, runWslScript, type CommandResult } from "./shell";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 
 const IS_WINDOWS = process.platform === "win32";
@@ -248,6 +249,68 @@ export function parseFirstNameserver(content: string): string | null {
   return null;
 }
 
+async function readWslNameserver(task: Task, step: number, totalSteps: number): Promise<string> {
+  task.step = step;
+  appendTaskLog(task, `Step ${step}/${totalSteps}: read WSL nameserver`);
+  appendTaskLog(task, "Run: cat /etc/resolv.conf");
+
+  const script = [
+    "set -euo pipefail",
+    "if [ ! -f /etc/resolv.conf ]; then",
+    '  echo "/etc/resolv.conf not found" >&2',
+    "  exit 1",
+    "fi",
+    "cat /etc/resolv.conf",
+  ].join("\n");
+  const result = await runWslScript(script, { shellMode: "clean", loginShell: false });
+  appendProcessLogs(task, result, result.ok);
+  if (!result.ok) {
+    throw new Error(`read WSL nameserver failed (exit code ${result.code})`);
+  }
+
+  const nameserver = parseFirstNameserver(result.stdout);
+  if (!nameserver) {
+    throw new Error("Could not parse nameserver from /etc/resolv.conf.");
+  }
+
+  appendTaskLog(task, `WSL nameserver: ${nameserver}`);
+  return nameserver;
+}
+
+export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, nameserver: string): string {
+  const parsed = new URL(localWebSocketDebuggerUrl);
+  parsed.hostname = nameserver;
+  parsed.port = String(BROWSER_CDP_PORT);
+  parsed.protocol = parsed.protocol === "wss:" ? "wss:" : "ws:";
+  return parsed.toString();
+}
+
+async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Promise<void> {
+  const config = await readOpenclawConfig();
+  const currentBrowser = asObject(config.browser);
+  const nextBrowser: Record<string, unknown> = {
+    enabled: typeof currentBrowser?.enabled === "boolean" ? currentBrowser.enabled : true,
+    evaluateEnabled: typeof currentBrowser?.evaluateEnabled === "boolean" ? currentBrowser.evaluateEnabled : true,
+    attachOnly: true,
+    cdpUrl: remoteCdpUrl,
+  };
+
+  if (typeof currentBrowser?.remoteCdpTimeoutMs === "number" && Number.isFinite(currentBrowser.remoteCdpTimeoutMs)) {
+    nextBrowser.remoteCdpTimeoutMs = currentBrowser.remoteCdpTimeoutMs;
+  }
+  if (
+    typeof currentBrowser?.remoteCdpHandshakeTimeoutMs === "number" &&
+    Number.isFinite(currentBrowser.remoteCdpHandshakeTimeoutMs)
+  ) {
+    nextBrowser.remoteCdpHandshakeTimeoutMs = currentBrowser.remoteCdpHandshakeTimeoutMs;
+  }
+
+  config.browser = nextBrowser;
+  await applyOpenclawConfig(config, "ClawOS open browser CDP");
+  appendTaskLog(task, `browser.cdpUrl => ${remoteCdpUrl}`);
+  appendTaskLog(task, "browser.attachOnly => true");
+}
+
 export function resolveChromeExePath(): string {
   const envPath = process.env.CLAWOS_CHROME_EXE_PATH?.trim();
   if (envPath) {
@@ -308,7 +371,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 2;
+  const totalSteps = 3;
   const task = createTask("browser-cdp-restart", "打开浏览器 CDP", totalSteps);
   task.status = "running";
 
@@ -344,9 +407,15 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       appendTaskLog(task, `Run: GET ${BROWSER_CDP_VERSION_URL}`);
       const version = await waitForCdpVersion(task);
 
-      task.step = 2;
-      appendTaskLog(task, `Step 2/${totalSteps}: record local CDP endpoint`);
+      const nameserver = await readWslNameserver(task, 2, totalSteps);
+      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, nameserver);
+
+      task.step = 3;
+      appendTaskLog(task, `Step 3/${totalSteps}: update openclaw browser config`);
       appendTaskLog(task, `Local WebSocket endpoint: ${version.webSocketDebuggerUrl}`);
+      appendTaskLog(task, `WSL WebSocket endpoint: ${remoteCdpUrl}`);
+      appendTaskLog(task, "Run: openclaw gateway call config.apply (browser)");
+      await resetOpenclawBrowserConfig(task, remoteCdpUrl);
 
       task.status = "success";
       task.endedAt = new Date().toISOString();
