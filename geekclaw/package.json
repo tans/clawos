@@ -1,0 +1,16 @@
+{
+  "name": "geekclaw-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tailwind:build": "tailwindcss -c tailwind.config.mjs -i src/styles/input.css -o dist/output.css --minify",
+    "tailwind:watch": "tailwindcss -c tailwind.config.mjs -i src/styles/input.css -o dist/output.css --watch",
+    "dev": "bun run tailwind:watch & bun --watch src/server.ts",
+    "start": "bun run tailwind:build && bun run src/server.ts"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.18",
+    "daisyui": "^5.5.19",
+    "tailwindcss": "^4.1.18"
+  }
+}

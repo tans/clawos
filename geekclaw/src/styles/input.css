@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: silk --default;
+}
+
+@theme {
+  --animate-page-fade: page-fade 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-drift: drift 18s linear infinite;
+  --animate-soft-pulse: soft-pulse 4.8s ease-in-out infinite;
+}
+
+@layer base {
+  body {
+    @apply min-h-screen bg-[#06030f] text-white antialiased;
+  }
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(10px, -8px, 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@utility page-fade {
+  animation: var(--animate-page-fade);
+}
+
+@utility page-fade-delay-1 {
+  animation-delay: 80ms;
+}
+
+@utility page-fade-delay-2 {
+  animation-delay: 160ms;
+}
+
+@layer utilities {
+  .hero-grid {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(circle at 50% 35%, black 30%, transparent 88%);
+  }
+
+  .neon-orb {
+    position: absolute;
+    top: 20%;
+    height: 44vw;
+    width: 44vw;
+    min-height: 280px;
+    min-width: 280px;
+    border-radius: 9999px;
+    filter: blur(4px);
+    opacity: 0.75;
+  }
+
+  .neon-orb-left {
+    left: -8%;
+    background:
+      radial-gradient(circle at 35% 35%, rgb(248 161 255 / 0.95), transparent 48%),
+      radial-gradient(circle at 60% 70%, rgb(69 255 240 / 0.85), transparent 54%),
+      radial-gradient(circle at 50% 50%, rgb(116 84 255 / 0.9), transparent 62%);
+    animation: var(--animate-drift);
+  }
+
+  .neon-orb-right {
+    right: -8%;
+    background:
+      radial-gradient(circle at 65% 35%, rgb(176 145 255 / 0.95), transparent 48%),
+      radial-gradient(circle at 35% 70%, rgb(88 195 255 / 0.85), transparent 54%),
+      radial-gradient(circle at 50% 50%, rgb(115 67 255 / 0.88), transparent 62%);
+    animation: var(--animate-drift);
+    animation-delay: 1.8s;
+  }
+
+  .neon-core {
+    position: absolute;
+    left: 50%;
+    top: 38%;
+    height: 180px;
+    width: 180px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgb(255 255 255 / 0.95), rgb(157 146 255 / 0.4), transparent 68%);
+    filter: blur(3px);
+    animation: var(--animate-soft-pulse);
+  }
+
+  .product-glow {
+    background:
+      radial-gradient(circle at 50% 30%, rgb(217 113 255 / 0.38), transparent 46%),
+      radial-gradient(circle at 50% 70%, rgb(83 175 255 / 0.34), transparent 50%);
+    filter: blur(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade,
+  .page-fade-delay-1,
+  .page-fade-delay-2,
+  .neon-orb-left,
+  .neon-orb-right,
+  .neon-core {
+    animation: none;
+  }
+}
