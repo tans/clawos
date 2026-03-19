@@ -1,5 +1,4 @@
 import { VERSION } from "../app.constants";
-import { checkBrowserConnectivity } from "../system/browser-connectivity";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 import { startBrowserRestartTask } from "./browser";
 
@@ -132,6 +131,8 @@ export function getDesktopMcpStatus(): DesktopMcpStatus {
 }
 
 async function callDesktopTool(name: string, args: Record<string, unknown>, task: Task): Promise<unknown> {
+  void args;
+
   if (name === "open_browser_cdp") {
     appendTaskLog(task, "MCP tool call: open_browser_cdp");
     const started = startBrowserRestartTask();
@@ -139,16 +140,7 @@ async function callDesktopTool(name: string, args: Record<string, unknown>, task
       ok: true,
       taskId: started.task.id,
       reused: started.reused,
-      message: "浏览器 CDP 打开任务已提交。",
-    };
-  }
-
-  if (name === "check_browser_connectivity") {
-    appendTaskLog(task, "MCP tool call: check_browser_connectivity");
-    const info = await checkBrowserConnectivity();
-    return {
-      ok: true,
-      info,
+      message: "浏览器 CDP 任务已提交。",
     };
   }
 
@@ -213,15 +205,6 @@ async function handleJsonRpcRequest(
         {
           name: "open_browser_cdp",
           description: "启动桌面端浏览器 CDP 任务。",
-          inputSchema: {
-            type: "object",
-            properties: {},
-            additionalProperties: false,
-          },
-        },
-        {
-          name: "check_browser_connectivity",
-          description: "检查当前浏览器连通性。",
           inputSchema: {
             type: "object",
             properties: {},

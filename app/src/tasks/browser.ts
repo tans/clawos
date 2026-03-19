@@ -10,11 +10,14 @@ const IS_WINDOWS = process.platform === "win32";
 export const BROWSER_CDP_PORT = 9222;
 export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "about:blank";
 export const BROWSER_USER_DATA_DIR = process.env.CLAWOS_CHROME_USER_DATA_DIR?.trim() || "C:\\chrome-openclaw";
+export const WSL_WINDOWS_HOST_OVERRIDE =
+  process.env.CLAWOS_WSL_WINDOWS_HOST?.trim() || process.env.CLAWOS_WSL_CDP_HOST?.trim() || "";
 
 const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/version`;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
 const WINDOWS_ELEVATION_CANCEL_EXIT_CODE = 1223;
+const BROWSER_CDP_FIREWALL_RULE_NAME = "ClawOS Browser CDP";
 
 export const DEFAULT_CHROME_EXE_PATHS = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -177,9 +180,86 @@ async function runNetshCommand(task: Task, args: string[]): Promise<CommandResul
   return await runProcess(buildElevatedProcessArgs("netsh.exe", args.slice(1)));
 }
 
+async function runNetshStep(task: Task, args: string[], options?: { allowFailure?: boolean }): Promise<void> {
+  appendTaskLog(task, `Run: ${args.join(" ")}`);
+  const result = await runNetshCommand(task, args);
+  const treatedAsSuccess = result.ok || options?.allowFailure === true;
+  appendProcessLogs(task, result, treatedAsSuccess);
+  if (!treatedAsSuccess) {
+    if (isElevationCancelled(result)) {
+      throw new Error("Windows 管理员授权已取消，无法配置 CDP 端口映射。");
+    }
+    if (isElevationError(result)) {
+      throw new Error("配置 CDP 端口映射需要 Windows 管理员权限。");
+    }
+    throw new Error(`netsh failed (exit code ${result.code})`);
+  }
+}
+
+async function ensureWindowsCdpPortProxy(task: Task, listenAddress = "0.0.0.0"): Promise<void> {
+  appendTaskLog(task, `Prepare Windows portproxy ${listenAddress}:${BROWSER_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
+  await runNetshStep(
+    task,
+    [
+      "netsh.exe",
+      "interface",
+      "portproxy",
+      "delete",
+      "v4tov4",
+      `listenport=${BROWSER_CDP_PORT}`,
+      `listenaddress=${listenAddress}`,
+    ],
+    { allowFailure: true }
+  );
+  await runNetshStep(task, [
+    "netsh.exe",
+    "interface",
+    "portproxy",
+    "add",
+    "v4tov4",
+    `listenport=${BROWSER_CDP_PORT}`,
+    `listenaddress=${listenAddress}`,
+    `connectport=${BROWSER_CDP_PORT}`,
+    "connectaddress=127.0.0.1",
+  ]);
+}
+
+async function ensureWindowsCdpFirewallRule(task: Task): Promise<void> {
+  appendTaskLog(task, `Prepare Windows firewall rule for TCP ${BROWSER_CDP_PORT}`);
+  await runNetshStep(
+    task,
+    ["netsh.exe", "advfirewall", "firewall", "delete", "rule", `name=${BROWSER_CDP_FIREWALL_RULE_NAME}`],
+    { allowFailure: true }
+  );
+  await runNetshStep(task, [
+    "netsh.exe",
+    "advfirewall",
+    "firewall",
+    "add",
+    "rule",
+    `name=${BROWSER_CDP_FIREWALL_RULE_NAME}`,
+    "dir=in",
+    "action=allow",
+    "protocol=TCP",
+    `localport=${BROWSER_CDP_PORT}`,
+  ]);
+}
+
+async function ensureWindowsCdpIngress(task: Task): Promise<void> {
+  appendTaskLog(task, "Ensure Windows exposes local CDP to WSL");
+  await ensureWindowsCdpPortProxy(task, "0.0.0.0");
+  await ensureWindowsCdpFirewallRule(task);
+}
+
 type CdpVersionProbeResult = {
   payload: Record<string, unknown>;
   webSocketDebuggerUrl: string;
+};
+
+type WslHostProbeResult = {
+  host: string;
+  url: string;
+  command: string;
 };
 
 async function fetchCdpVersion(timeoutMs: number): Promise<CdpVersionProbeResult> {
@@ -249,37 +329,162 @@ export function parseFirstNameserver(content: string): string | null {
   return null;
 }
 
-async function readWslNameserver(task: Task, step: number, totalSteps: number): Promise<string> {
+export function parseAllNameservers(content: string): string[] {
+  const values: string[] = [];
+  for (const line of content.split(/\r?\n/g)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    const match = trimmed.match(/^nameserver\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3})$/i);
+    if (match?.[1]) {
+      values.push(match[1]);
+    }
+  }
+  return Array.from(new Set(values));
+}
+
+export function parseDefaultGateway(content: string): string | null {
+  for (const line of content.split(/\r?\n/g)) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      continue;
+    }
+    const match = trimmed.match(/^default\s+via\s+([0-9]{1,3}(?:\.[0-9]{1,3}){3})\b/i);
+    if (match?.[1]) {
+      return match[1];
+    }
+  }
+  return null;
+}
+
+function dedupeStrings(values: string[]): string[] {
+  return Array.from(
+    new Set(
+      values
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+async function readWslNetworkHints(
+  task: Task,
+  step: number,
+  totalSteps: number
+): Promise<{ gateway: string | null; nameservers: string[] }> {
   task.step = step;
-  appendTaskLog(task, `Step ${step}/${totalSteps}: read WSL nameserver`);
-  appendTaskLog(task, "Run: cat /etc/resolv.conf");
+  appendTaskLog(task, `Step ${step}/${totalSteps}: detect WSL -> Windows host route`);
+  appendTaskLog(task, "Run: ip route + cat /etc/resolv.conf");
 
   const script = [
     "set -euo pipefail",
-    "if [ ! -f /etc/resolv.conf ]; then",
-    '  echo "/etc/resolv.conf not found" >&2',
-    "  exit 1",
+    'echo "__CLAWOS_IP_ROUTE_BEGIN__"',
+    "if command -v ip >/dev/null 2>&1; then",
+    "  ip route show default 2>/dev/null || true",
     "fi",
-    "cat /etc/resolv.conf",
+    'echo "__CLAWOS_IP_ROUTE_END__"',
+    'echo "__CLAWOS_RESOLV_BEGIN__"',
+    "if [ -f /etc/resolv.conf ]; then",
+    "  cat /etc/resolv.conf",
+    "fi",
+    'echo "__CLAWOS_RESOLV_END__"',
   ].join("\n");
   const result = await runWslScript(script, { shellMode: "clean", loginShell: false });
   appendProcessLogs(task, result, result.ok);
   if (!result.ok) {
-    throw new Error(`read WSL nameserver failed (exit code ${result.code})`);
+    throw new Error(`read WSL network hints failed (exit code ${result.code})`);
   }
 
-  const nameserver = parseFirstNameserver(result.stdout);
-  if (!nameserver) {
-    throw new Error("Could not parse nameserver from /etc/resolv.conf.");
+  const stdout = result.stdout;
+  const routeMatch = stdout.match(/__CLAWOS_IP_ROUTE_BEGIN__\r?\n([\s\S]*?)\r?\n__CLAWOS_IP_ROUTE_END__/);
+  const resolvMatch = stdout.match(/__CLAWOS_RESOLV_BEGIN__\r?\n([\s\S]*?)\r?\n__CLAWOS_RESOLV_END__/);
+  const routeText = routeMatch?.[1] || "";
+  const resolvText = resolvMatch?.[1] || "";
+  const gateway = parseDefaultGateway(routeText);
+  const nameservers = parseAllNameservers(resolvText);
+
+  if (gateway) {
+    appendTaskLog(task, `WSL default gateway: ${gateway}`);
+  }
+  if (nameservers.length > 0) {
+    appendTaskLog(task, `WSL nameservers: ${nameservers.join(", ")}`);
   }
 
-  appendTaskLog(task, `WSL nameserver: ${nameserver}`);
-  return nameserver;
+  return {
+    gateway,
+    nameservers,
+  };
 }
 
-export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, nameserver: string): string {
+async function probeWslHostCdp(host: string): Promise<WslHostProbeResult> {
+  const script = [
+    "set -euo pipefail",
+    `HOST='${host.replaceAll("'", "'\"'\"'")}'`,
+    `URL="http://$HOST:${BROWSER_CDP_PORT}/json/version"`,
+    'if command -v curl >/dev/null 2>&1; then',
+    '  curl -fsS --globoff --max-time 4 "$URL" >/dev/null',
+    'elif command -v wget >/dev/null 2>&1; then',
+    '  wget -q -T 4 -O - "$URL" >/dev/null',
+    "else",
+    '  echo "curl/wget not found in WSL" >&2',
+    "  exit 127",
+    "fi",
+  ].join("\n");
+  const result = await runWslScript(script, { shellMode: "clean", loginShell: false });
+  if (!result.ok) {
+    const errorText = result.stderr.trim() || result.stdout.trim() || `exit code ${result.code}`;
+    throw new Error(`${host} => ${errorText}`);
+  }
+
+  return {
+    host,
+    url: `http://${host}:${BROWSER_CDP_PORT}/json/version`,
+    command: result.command,
+  };
+}
+
+async function resolveReachableWslWindowsHost(
+  task: Task,
+  step: number,
+  totalSteps: number
+): Promise<WslHostProbeResult> {
+  const hints = await readWslNetworkHints(task, step, totalSteps);
+  const candidates = dedupeStrings([
+    WSL_WINDOWS_HOST_OVERRIDE,
+    hints.gateway || "",
+    ...hints.nameservers,
+  ]);
+
+  if (candidates.length === 0) {
+    throw new Error(
+      "Could not determine a Windows host address from WSL. Set CLAWOS_WSL_WINDOWS_HOST to override."
+    );
+  }
+
+  const errors: string[] = [];
+  for (const host of candidates) {
+    appendTaskLog(task, `Probe WSL host candidate: ${host}`);
+    try {
+      const result = await probeWslHostCdp(host);
+      appendTaskLog(task, `WSL can reach Windows CDP via ${result.url}`);
+      appendTaskLog(task, `Run: ${result.command}`);
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      errors.push(message);
+      appendTaskLog(task, `WSL host candidate failed: ${message}`, "error");
+    }
+  }
+
+  throw new Error(
+    `WSL could not reach Windows CDP on port ${BROWSER_CDP_PORT}. Tried: ${candidates.join(", ")}. Details: ${errors.join(" | ")}`
+  );
+}
+
+export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, host: string): string {
   const parsed = new URL(localWebSocketDebuggerUrl);
-  parsed.hostname = nameserver;
+  parsed.hostname = host;
   parsed.port = String(BROWSER_CDP_PORT);
   parsed.protocol = parsed.protocol === "wss:" ? "wss:" : "ws:";
   return parsed.toString();
@@ -371,7 +576,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 3;
+  const totalSteps = 4;
   const task = createTask("browser-cdp-restart", "打开浏览器 CDP", totalSteps);
   task.status = "running";
 
@@ -407,11 +612,15 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       appendTaskLog(task, `Run: GET ${BROWSER_CDP_VERSION_URL}`);
       const version = await waitForCdpVersion(task);
 
-      const nameserver = await readWslNameserver(task, 2, totalSteps);
-      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, nameserver);
+      task.step = 2;
+      appendTaskLog(task, `Step 2/${totalSteps}: configure Windows ingress for WSL`);
+      await ensureWindowsCdpIngress(task);
 
-      task.step = 3;
-      appendTaskLog(task, `Step 3/${totalSteps}: update openclaw browser config`);
+      const reachableHost = await resolveReachableWslWindowsHost(task, 3, totalSteps);
+      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, reachableHost.host);
+
+      task.step = 4;
+      appendTaskLog(task, `Step 4/${totalSteps}: update openclaw browser config`);
       appendTaskLog(task, `Local WebSocket endpoint: ${version.webSocketDebuggerUrl}`);
       appendTaskLog(task, `WSL WebSocket endpoint: ${remoteCdpUrl}`);
       appendTaskLog(task, "Run: openclaw gateway call config.apply (browser)");

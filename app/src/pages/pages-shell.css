@@ -131,7 +131,6 @@ body.clawos-page-shell [data-wallet-meta],
 body.clawos-page-shell [data-list-meta],
 body.clawos-page-shell [data-detail-meta],
 body.clawos-page-shell [data-browser-op-status],
-body.clawos-page-shell [data-browser-connectivity-status],
 body.clawos-page-shell [data-browser-task-meta],
 body.clawos-page-shell [data-balance-updated] {
   border-color: var(--clawos-line);
@@ -145,7 +144,6 @@ body.clawos-page-shell .textarea {
 }
 
 body.clawos-page-shell pre,
-body.clawos-page-shell [data-browser-connectivity-output],
 body.clawos-page-shell [data-browser-task-output],
 body.clawos-page-shell [data-task-output] {
   background: rgba(246, 244, 238, 0.92);

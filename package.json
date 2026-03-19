@@ -38,6 +38,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@openai/codex": "^0.115.0",
     "json5": "^2.2.3",
     "viem": "^2.46.3"
   },

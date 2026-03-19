@@ -3,7 +3,6 @@ import { readLocalOpenclawExecutionEnvironment } from "../config/local";
 import { callGatewayMethodViaCli } from "../openclaw/gateway-cli";
 import { runWslScript, troubleshootingTips } from "../tasks/shell";
 import { openclawCliTroubleshootingTips, resolveOpenclawCliMode } from "../openclaw/cli";
-import { checkBrowserConnectivity } from "./browser-connectivity";
 import { checkWslCommandRequirements } from "./wsl-requirements";
 
 type GatewayProbe =
@@ -237,15 +236,7 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   const browserMode = resolveBrowserMode(browserConfig);
   const browserCdpUrl = readNonEmptyString(browserConfig?.cdpUrl) || null;
 
-  const shouldProbeBrowserConnectivity =
-    gatewayReady && browserEnabled && browserConfigured && browserMode === "cdp";
-  const browserConnectivity = shouldProbeBrowserConnectivity ? await checkBrowserConnectivity() : null;
-  const browserConnectivityWarnings = Array.isArray(browserConnectivity?.warnings)
-    ? browserConnectivity.warnings.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-    : [];
-  const browserReady = shouldProbeBrowserConnectivity
-    ? browserConnectivity?.ready === true
-    : gatewayReady && browserEnabled && browserConfigured;
+  const browserReady = gatewayReady && browserEnabled && browserConfigured;
 
   const gatewayReportedVersion = readGatewayVersionFromProbe(statusProbe) || readGatewayVersionFromProbe(healthProbe);
   const openclawVersion = packageVersionProbe.version || gatewayReportedVersion;
@@ -264,10 +255,6 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   if (configProbe.ok) {
     statusDetailBlocks.push(`config.get:\n${JSON.stringify(configProbe.payload, null, 2)}`);
   }
-  if (browserConnectivity) {
-    statusDetailBlocks.push(`browser.connectivity:\n${JSON.stringify(browserConnectivity, null, 2)}`);
-  }
-
   const warnings: string[] = [];
   if (!wslProbe.ok) {
     warnings.push(`WSL 检测失败：${wslProbe.stderr || `退出码 ${wslProbe.code}`}`);
@@ -318,8 +305,6 @@ export async function checkEnvironment(): Promise<Record<string, unknown>> {
   if (browserMode === "cdp" && browserEnabled && browserConfigured && !browserCdpUrl) {
     warnings.push("当前为 CDP 模式，但 browser.cdpUrl 为空。");
   }
-  warnings.push(...browserConnectivityWarnings);
-
   return {
     os: process.platform,
     execution: `openclaw-cli (${execMode})`,

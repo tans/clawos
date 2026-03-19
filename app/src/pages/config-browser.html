@@ -20,20 +20,10 @@
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="card-title text-base">&#26816;&#27979;&#19982;&#20462;&#22797;</h2>
                 <div class="flex flex-wrap gap-2">
-                <button class="btn btn-outline btn-sm" data-browser-connectivity-check>&#26816;&#27979;</button>
                 <button class="btn btn-outline btn-sm" data-browser-action="repair-env">&#29615;&#22659;&#20462;&#22797;</button>
                 <button class="btn btn-primary btn-sm" data-browser-action="open-cdp">&#25171;&#24320; CDP</button>
               </div>
               </div>
-
-              <div
-                class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
-                data-browser-connectivity-status
-              ></div>
-              <pre
-                class="max-h-56 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
-                data-browser-connectivity-output
-              ></pre>
 
               <div
                 class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
@@ -85,9 +75,6 @@
       const browserTaskMetaEl = document.querySelector("[data-browser-task-meta]");
       const browserTaskProgressEl = document.querySelector("[data-browser-task-progress]");
       const browserTaskOutputEl = document.querySelector("[data-browser-task-output]");
-      const browserConnectivityStatusEl = document.querySelector("[data-browser-connectivity-status]");
-      const browserConnectivityOutputEl = document.querySelector("[data-browser-connectivity-output]");
-      const browserConnectivityCheckBtn = document.querySelector("[data-browser-connectivity-check]");
       const desktopMcpStatusEl = document.querySelector("[data-desktop-mcp-status]");
       const desktopMcpMetaEl = document.querySelector("[data-desktop-mcp-meta]");
       const desktopMcpOutputEl = document.querySelector("[data-desktop-mcp-output]");
@@ -123,107 +110,6 @@
           clearInterval(taskPollTimer);
           taskPollTimer = null;
         }
-      }
-
-      function formatCheckTime(raw) {
-        if (typeof raw !== "string" || !raw.trim()) {
-          return "";
-        }
-        const time = new Date(raw);
-        if (!Number.isFinite(time.getTime())) {
-          return raw;
-        }
-        return time.toLocaleString("zh-CN", { hour12: false });
-      }
-
-      function connectivityStatusText(status) {
-        switch (status) {
-          case "ok":
-            return "\u6b63\u5e38";
-          case "local-only":
-            return "\u4ec5\u672c\u673a\u53ef\u8fbe";
-          case "cdp-only":
-            return "\u4ec5\u8fdc\u7a0b\u5165\u53e3\u53ef\u8fbe";
-          case "disabled":
-            return "\u5df2\u7981\u7528";
-          case "not-configured":
-            return "\u672a\u914d\u7f6e";
-          case "gateway-error":
-            return "\u7f51\u5173\u5f02\u5e38";
-          case "probe-error":
-            return "\u8fde\u901a\u5931\u8d25";
-          default:
-            return "\u672a\u77e5";
-        }
-      }
-
-      function renderBrowserConnectivity(info) {
-        if (!(browserConnectivityStatusEl instanceof HTMLElement) || !(browserConnectivityOutputEl instanceof HTMLElement)) {
-          return;
-        }
-
-        const mode = info?.mode === "local" ? "\u672c\u5730" : "CDP";
-        const statusText = connectivityStatusText(info?.status);
-        browserConnectivityStatusEl.textContent = `\u8fde\u901a\u72b6\u6001: ${statusText}\uff08\u6a21\u5f0f: ${mode}\uff09`;
-
-        const lines = [
-          `\u72b6\u6001: ${statusText}`,
-          `\u6a21\u5f0f: ${mode}`,
-          `\u542f\u7528: ${info?.enabled === false ? "\u5426" : "\u662f"}`,
-          `\u5df2\u914d\u7f6e: ${info?.configured === true ? "\u662f" : "\u5426"}`,
-        ];
-
-        const checkedAt = formatCheckTime(info?.checkedAt);
-        if (checkedAt) {
-          lines.push(`\u68c0\u6d4b\u65f6\u95f4: ${checkedAt}`);
-        }
-
-        if (info?.cdpUrl) {
-          lines.push(`cdpUrl: ${info.cdpUrl}`);
-        }
-
-        if (info?.direct127 && typeof info.direct127 === "object") {
-          lines.push(
-            `\u672c\u673a\u68c0\u6d4b: ${info.direct127.ok === true ? "\u6210\u529f" : "\u5931\u8d25"}${info.direct127.error ? ` (${info.direct127.error})` : ""}`
-          );
-        }
-
-        if (info?.wslCdp && typeof info.wslCdp === "object") {
-          lines.push(
-            `WSL \u68c0\u6d4b: ${info.wslCdp.ok === true ? "\u6210\u529f" : "\u5931\u8d25"}${info.wslCdp.error ? ` (${info.wslCdp.error})` : ""}`
-          );
-          if (typeof info.wslCdp.command === "string" && info.wslCdp.command.trim()) {
-            lines.push(`WSL \u547d\u4ee4: ${info.wslCdp.command}`);
-          }
-        }
-
-        if (Array.isArray(info?.warnings) && info.warnings.length > 0) {
-          lines.push("");
-          lines.push("\u63d0\u793a:");
-          for (const warning of info.warnings) {
-            if (typeof warning === "string" && warning.trim()) {
-              lines.push(`- ${warning.trim()}`);
-            }
-          }
-        }
-
-        browserConnectivityOutputEl.textContent = lines.join("\n");
-        browserConnectivityOutputEl.scrollTop = browserConnectivityOutputEl.scrollHeight;
-      }
-
-      async function checkBrowserConnectivity(silent = false) {
-        if (!(browserConnectivityStatusEl instanceof HTMLElement) || !(browserConnectivityOutputEl instanceof HTMLElement)) {
-          return;
-        }
-
-        if (!silent) {
-          browserConnectivityStatusEl.textContent = "\u8fde\u901a\u72b6\u6001: \u68c0\u6d4b\u4e2d...";
-          browserConnectivityOutputEl.textContent = "\u6b63\u5728\u68c0\u6d4b\u6d4f\u89c8\u5668\u8fde\u901a\u6027...";
-        }
-
-        const data = await api("/api/system/browser/check");
-        const info = data.info || {};
-        renderBrowserConnectivity(info);
       }
 
       function stopDesktopMcpPolling() {
@@ -459,21 +345,6 @@
         });
       });
 
-      if (browserConnectivityCheckBtn instanceof HTMLButtonElement) {
-        browserConnectivityCheckBtn.addEventListener("click", async () => {
-          browserConnectivityCheckBtn.disabled = true;
-          try {
-            await checkBrowserConnectivity(false);
-          } catch (error) {
-            if (browserConnectivityStatusEl instanceof HTMLElement) {
-              browserConnectivityStatusEl.textContent = readUserErrorMessage(error, "\u8fde\u901a\u6027\u68c0\u6d4b\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002");
-            }
-          } finally {
-            browserConnectivityCheckBtn.disabled = false;
-          }
-        });
-      }
-
       if (desktopMcpStartBtn instanceof HTMLButtonElement) {
         desktopMcpStartBtn.addEventListener("click", async () => {
           desktopMcpStartBtn.disabled = true;
@@ -488,8 +359,6 @@
           }
         });
       }
-
-      void checkBrowserConnectivity(true).catch(() => {});
 
       void loadDesktopMcpStatus().catch((error) => {
         if (desktopMcpStatusEl instanceof HTMLElement) {

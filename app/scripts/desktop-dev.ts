@@ -6,6 +6,8 @@ type ChildProcessHandle = {
   proc: Bun.Subprocess;
 };
 
+const BUN_EXECUTABLE = process.execPath;
+
 function spawnChild(name: string, cmd: string[], env?: Record<string, string>): ChildProcessHandle {
   console.log(`[desktop-dev] start ${name}: ${cmd.join(" ")}`);
   const proc = Bun.spawn({
@@ -134,8 +136,10 @@ async function main(): Promise<void> {
   await cleanupWindowsDevBuild();
 
   const children: ChildProcessHandle[] = [
-    spawnChild("tailwind", ["bun", "run", "tailwind:watch"]),
-    spawnChild("electrobun", ["bun", "run", "scripts/electrobun.ts", "dev", "--watch"], { CLAWOS_DESKTOP_DEV: "1" }),
+    spawnChild("tailwind", [BUN_EXECUTABLE, "run", "tailwind:watch"]),
+    spawnChild("electrobun", [BUN_EXECUTABLE, "run", "scripts/electrobun.ts", "dev", "--watch"], {
+      CLAWOS_DESKTOP_DEV: "1",
+    }),
   ];
 
   let shuttingDown = false;
