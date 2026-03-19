@@ -28,7 +28,7 @@ export type LocalWalletConfig = {
   createdAt?: string;
 };
 
-export type LocalFarmConfig = {
+export type LocalCompanyConfig = {
   address?: string;
   // backward compatibility for old config
   baseUrl?: string;
@@ -36,7 +36,9 @@ export type LocalFarmConfig = {
 
 export type LocalAppConfig = {
   openclawToken?: string;
-  farm?: LocalFarmConfig;
+  company?: LocalCompanyConfig;
+  // backward compatibility for old config
+  farm?: LocalCompanyConfig;
 };
 
 export type LocalClawosConfig = {
@@ -86,7 +88,7 @@ export type GeneratedLocalWallet = {
 export type LocalAppSettings = {
   openclawToken: string;
   controllerAddress: string;
-  farmAddress: string;
+  companyAddress: string;
 };
 
 export type LocalOpenclawExecutionEnvironment = {
@@ -108,7 +110,7 @@ export function localConfigTemplate(): LocalClawosConfig {
     controllerAddress: "",
     app: {
       openclawToken: DEFAULT_OPENCLAW_TOKEN,
-      farm: {
+      company: {
         address: "",
       },
     },
@@ -208,16 +210,23 @@ function looksLikeWindowsPath(value: string): boolean {
 function normalizeLocalConfig(input: LocalClawosConfig | null | undefined): LocalClawosConfig {
   const defaults = localConfigTemplate();
   const cfg = input || {};
+  const companyAddress = pickString(
+    cfg.app?.company?.address,
+    pickString(
+      cfg.app?.company?.baseUrl,
+      pickString(
+        cfg.app?.farm?.address,
+        pickString(cfg.app?.farm?.baseUrl, defaults.app?.company?.address || "")
+      )
+    )
+  );
 
   return {
     controllerAddress: pickString(cfg.controllerAddress, defaults.controllerAddress || ""),
     app: {
       openclawToken: pickString(cfg.app?.openclawToken, defaults.app?.openclawToken || DEFAULT_OPENCLAW_TOKEN),
-      farm: {
-        address: pickString(
-          cfg.app?.farm?.address,
-          pickString(cfg.app?.farm?.baseUrl, defaults.app?.farm?.address || "")
-        ),
+      company: {
+        address: companyAddress,
       },
     },
     gateway: {
@@ -355,7 +364,7 @@ export function readLocalAppSettings(): LocalAppSettings {
   return {
     openclawToken: pickString(localConfig.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
     controllerAddress: pickString(localConfig.controllerAddress, ""),
-    farmAddress: pickString(localConfig.app?.farm?.address, pickString(localConfig.app?.farm?.baseUrl, "")),
+    companyAddress: pickString(localConfig.app?.company?.address, pickString(localConfig.app?.company?.baseUrl, "")),
   };
 }
 
@@ -368,11 +377,11 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
       typeof patch.openclawToken === "string"
         ? pickString(patch.openclawToken, currentSettings.openclawToken)
         : currentSettings.openclawToken,
-    farm: {
+    company: {
       address:
-        typeof patch.farmAddress === "string"
-          ? patch.farmAddress.trim()
-          : currentSettings.farmAddress,
+        typeof patch.companyAddress === "string"
+          ? patch.companyAddress.trim()
+          : currentSettings.companyAddress,
     },
   };
 
@@ -395,7 +404,7 @@ export function updateLocalAppSettings(patch: Partial<LocalAppSettings>): LocalA
   return {
     openclawToken: pickString(next.app?.openclawToken, DEFAULT_OPENCLAW_TOKEN),
     controllerAddress: pickString(next.controllerAddress, ""),
-    farmAddress: pickString(next.app?.farm?.address, ""),
+    companyAddress: pickString(next.app?.company?.address, ""),
   };
 }
 

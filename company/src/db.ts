@@ -1,9 +1,25 @@
 import { Database } from "bun:sqlite";
-import { mkdirSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
-const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "farm.db");
-export const DB_PATH = process.env.FARM_DB_PATH?.trim() || DEFAULT_DB_PATH;
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "company.db");
+const LEGACY_DB_PATH = path.join(process.cwd(), "data", "farm.db");
+
+function resolveDbPath(): string {
+  const envPath = process.env.COMPANY_DB_PATH?.trim() || process.env.FARM_DB_PATH?.trim() || "";
+  if (envPath) {
+    return envPath;
+  }
+  if (existsSync(DEFAULT_DB_PATH)) {
+    return DEFAULT_DB_PATH;
+  }
+  if (existsSync(LEGACY_DB_PATH)) {
+    return LEGACY_DB_PATH;
+  }
+  return DEFAULT_DB_PATH;
+}
+
+export const DB_PATH = resolveDbPath();
 
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
 

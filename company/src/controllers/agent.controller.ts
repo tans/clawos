@@ -7,7 +7,7 @@ import {
   markPendingCommandResult,
   updateHostFromHello,
   updateHostHeartbeat,
-} from "../models/farm.model";
+} from "../models/company.model";
 import type { AppEnv } from "../types";
 import { jsonError, readBearerToken, readJsonBody, safeJsonParse } from "../utils/request";
 import { normalizeHostId, normalizeHostName, normalizeWalletAddress, parseLimit } from "../utils/validators";

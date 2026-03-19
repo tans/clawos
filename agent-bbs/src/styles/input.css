@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-board-50: #f8fafc;
+  --color-board-900: #0f172a;
+  --color-accent-500: #0ea5e9;
+  --color-accent-600: #0284c7;
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-accent-600 focus:ring-2 focus:ring-accent-500/20;
+  }
+
+  .card {
+    @apply rounded-lg border border-slate-200 bg-slate-50 px-3 py-2;
+  }
+}

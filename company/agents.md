@@ -1,9 +1,9 @@
-# farm 模块协作说明（agents.md）
+# company 模块协作说明（agents.md）
 
-本文档面向在 `farm/` 目录内工作的 AI/开发者，约束实现方向与协作方式。
+本文档面向在 `company/` 目录内工作的 AI/开发者，约束实现方向与协作方式。
 
 ## 模块定位
-`farm` 是 `clawos` 的云端控制面（Control Plane），负责：
+`company` 是 `clawos` 的云端控制面（Control Plane），负责：
 - 管理用户与可控主机的关系。
 - 接收桌面端 Agent 上报状态并持久化。
 - 向 Agent 下发控制命令并追踪执行结果。
@@ -14,7 +14,7 @@
 ---
 
 ## 当前优先级（P0）
-围绕“云端 farm 可以查看 openclaw 运行情况、token 使用量，同时可修改配置并重启 openclaw”实现闭环。
+围绕“云端 company 可以查看 openclaw 运行情况、token 使用量，同时可修改配置并重启 openclaw”实现闭环。
 
 ### P0 必须覆盖的能力
 1. **运行状态可见**
@@ -76,7 +76,7 @@
 
 ## 开发约定
 1. **先定义协议，再写实现**：新增命令类型需先明确 request/response 字段。
-2. **向后兼容**：Agent 与 Farm 可能不同版本并存；新增字段应可选。
+2. **向后兼容**：Agent 与 Company 可能不同版本并存；新增字段应可选。
 3. **错误信息可读**：返回给控制台的错误要可定位问题（不要只返回 `failed`）。
 4. **最小变更原则**：优先复用现有 `controller/model/view` 结构。
 

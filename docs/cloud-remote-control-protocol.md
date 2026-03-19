@@ -1,12 +1,12 @@
 # ClawOS Cloud Remote Control Protocol（CRCP）v2.2（按当前实现）
 
-> 本文档以仓库中 **已实现代码** 为准，描述 `clawos Agent <-> farm` 的真实协议。
+> 本文档以仓库中 **已实现代码** 为准，描述 `clawos Agent <-> company` 的真实协议。
 > 当前实现为 **HTTP 轮询模型**，不是 WebSocket 长连接。
 
 ## 1. 目标场景
 1. 设备端（clawos）在本机管理 openclaw。
 2. 设备通过 `controllerAddress` 声明可被哪个控制人管理。
-3. 云端（farm）按 `controllerAddress` 进行主机可见性与操作权限控制。
+3. 云端（company）按 `controllerAddress` 进行主机可见性与操作权限控制。
 4. Agent 通过 HTTP 接口完成上线、心跳、拉任务、回传结果。
 
 ## 2. 权限与绑定规则
@@ -15,13 +15,13 @@
 - `agentToken`：Agent 鉴权凭据。
 
 规则：
-- 首次 `hello`（主机不存在）时，可不带 token；Farm 会生成并返回 `agentToken`。
+- 首次 `hello`（主机不存在）时，可不带 token；Company 会生成并返回 `agentToken`。
 - 后续 `hello`（主机已存在）必须携带正确 `agentToken`，否则返回 `AGENT_AUTH_FAILED`。
 - `heartbeat / commands / result` 必须使用 `Authorization: Bearer <agentToken>`。
 
 ---
 
-## 3. Agent -> Farm：HTTP 协议
+## 3. Agent -> Company：HTTP 协议
 
 ### 3.1 上线注册 / 恢复会话
 - `POST /api/agent/hello`
@@ -168,7 +168,7 @@
 - `agentToken` 是 Agent 接口的核心鉴权凭据。
 - `controllerAddress` 是主机授权绑定关键字段。
 - 新增字段应保持可选，旧 Agent 可忽略未知字段。
-- 设置页中的 `farmAddress` 仅用于页面跳转，不参与 Agent 鉴权或任务协议。
+- 设置页中的 `companyAddress` 仅用于页面跳转，不参与 Agent 鉴权或任务协议。
 
 ---
 
@@ -177,6 +177,6 @@
 在当前仓库实现中，这些语义已映射为上文的 HTTP 接口；若未来恢复 WS，实现应另行版本化并补充迁移说明。
 
 ## 8. 仓库定位
-- 云端工程：`farm/`
-- HTTP 协议补充：`farm/AGENT_HTTP_PROTOCOL.md`
+- 云端工程：`company/`
+- HTTP 协议补充：`company/AGENT_HTTP_PROTOCOL.md`
 - 本文档：`cloud-remote-control-protocol.md`

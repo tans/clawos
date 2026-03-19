@@ -25,13 +25,13 @@
   - `bun run dev`
   - `bun run desktop:build`
 
-### 2.2 `farm/`（云端控制面）
+### 2.2 `company/`（云端控制面）
 - 职责：
   - 提供云端主机管理与任务下发能力。
   - 对接 Agent 心跳、命令拉取与结果回传。
   - 支持控制台查看运行状态与执行记录。
 - 技术栈：Bun + Hono + SQLite。
-- 本地启动：`cd farm && bun run dev`
+- 本地启动：`cd company && bun run dev`
 
 ### 2.3 `router/`（模型路由与计费）
 - 职责：
@@ -89,5 +89,5 @@
 ## 6. 文档维护规则
 
 - 本文件用于 **仓库级总览**，保持简洁、稳定，不写过细实现细节。
-- 具体模块细节应写入各子目录文档（如 `farm/README.md`、`router/README.md`、`web/README.md`）。
+- 具体模块细节应写入各子目录文档（如 `company/README.md`、`router/README.md`、`web/README.md`）。
 - 若目录结构或职责发生变化，优先更新本文件中的“Monorepo 重要项目介绍”。

@@ -12,7 +12,7 @@
 - `app/src/`: clawos 主程序（桌面 UI、任务、系统调用）
 - `freegpt/`: 本地测试 Provider（回显服务）
 - `web/`: Web 站点与下载页
-- `router/`, `farm/`: 辅助服务
+- `router/`, `company/`: 辅助服务
 
 ## free -> freegpt 约定
 - 子项目目录: `freegpt/`

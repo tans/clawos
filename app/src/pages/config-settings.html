@@ -83,12 +83,12 @@
       const metaEl = document.querySelector("[data-meta]");
       const reloadBtn = document.querySelector('[data-action="reload"]');
       const saveBtn = document.querySelector('[data-action="save"]');
-      const openFarmHomeBtn = document.querySelector('[data-action="open-farm-home"]');
-      const farmHomeLinkEl = document.querySelector('[data-link="farm-home"]');
+      const openCompanyHomeBtn = document.querySelector('[data-action="open-company-home"]');
+      const companyHomeLinkEl = document.querySelector('[data-link="company-home"]');
 
       const tokenInput = document.querySelector('[data-field="openclaw-token"]');
       const controllerAddressInput = document.querySelector('[data-field="controller-address"]');
-      const farmAddressInput = document.querySelector('[data-field="farm-address"]');
+      const companyAddressInput = document.querySelector('[data-field="company-address"]');
       
       const autoStartCheckbox = document.querySelector("#clawos-autostart");
       const autoStartStatusEl = document.querySelector("[data-autostart-status]");
@@ -129,21 +129,21 @@
       }
 
 
-      function buildFarmHomeUrl() {
-        const farmAddress = farmAddressInput ? String(farmAddressInput.value || '').trim() : '';
-        if (!farmAddress) {
+      function buildCompanyHomeUrl() {
+        const companyAddress = companyAddressInput ? String(companyAddressInput.value || '').trim() : '';
+        if (!companyAddress) {
           return null;
         }
-        return farmAddress;
+        return companyAddress;
       }
 
-      function updateFarmLinks() {
-        const farmHomeUrl = buildFarmHomeUrl();
-        const display = farmHomeUrl || '\u672a\u914d\u7f6e';
+      function updateCompanyLinks() {
+        const companyHomeUrl = buildCompanyHomeUrl();
+        const display = companyHomeUrl || '\u672a\u914d\u7f6e';
 
-        if (farmHomeLinkEl) {
-          farmHomeLinkEl.textContent = display;
-          farmHomeLinkEl.href = farmHomeUrl || '#';
+        if (companyHomeLinkEl) {
+          companyHomeLinkEl.textContent = display;
+          companyHomeLinkEl.href = companyHomeUrl || '#';
         }
       }
 
@@ -162,11 +162,16 @@
             typeof settings.controllerAddress === "string" ? settings.controllerAddress : "";
         }
 
-        if (farmAddressInput) {
+        if (companyAddressInput) {
+          const legacyCompanyBaseUrl = typeof settings.companyBaseUrl === "string" ? settings.companyBaseUrl : "";
+          const legacyFarmAddress = typeof settings.farmAddress === "string" ? settings.farmAddress : "";
           const legacyFarmBaseUrl = typeof settings.farmBaseUrl === "string" ? settings.farmBaseUrl : "";
-          farmAddressInput.value = typeof settings.farmAddress === "string" ? settings.farmAddress : legacyFarmBaseUrl;
+          companyAddressInput.value =
+            typeof settings.companyAddress === "string"
+              ? settings.companyAddress
+              : legacyCompanyBaseUrl || legacyFarmAddress || legacyFarmBaseUrl;
         }
-        updateFarmLinks();
+        updateCompanyLinks();
 
         const state = autoStartData.state || {};
         if (autoStartCheckbox) {
@@ -203,13 +208,13 @@
           throw new Error("\u6388\u6743\u63a7\u5236\u5730\u5740\u683c\u5f0f\u4e0d\u5408\u6cd5\uff0c\u5fc5\u987b\u662f 0x \u5f00\u5934\u7684 40 \u4f4d\u5341\u516d\u8fdb\u5236\u5730\u5740\u3002");
         }
 
-        const farmAddress = farmAddressInput ? farmAddressInput.value.trim() : undefined;
+        const companyAddress = companyAddressInput ? companyAddressInput.value.trim() : undefined;
         await api("/api/local/settings", {
           method: "PUT",
           body: JSON.stringify({
             openclawToken,
             controllerAddress,
-            farmAddress,
+            companyAddress,
           }),
         });
       }
@@ -227,18 +232,18 @@
         }
       }
 
-      if (farmAddressInput) {
-        farmAddressInput.addEventListener("input", updateFarmLinks);
+      if (companyAddressInput) {
+        companyAddressInput.addEventListener("input", updateCompanyLinks);
       }
 
-      if (openFarmHomeBtn) {
-        openFarmHomeBtn.addEventListener("click", () => {
-          const farmHomeUrl = buildFarmHomeUrl();
-          if (!farmHomeUrl) {
-            setMeta("\u8bf7\u5148\u586b\u5199\u517b\u867e\u573a\u901a\u8baf\u5730\u5740\u3002\u4fdd\u5b58\u540e\u53ef\u76f4\u63a5\u6253\u5f00\u9875\u9762\u3002");
+      if (openCompanyHomeBtn) {
+        openCompanyHomeBtn.addEventListener("click", () => {
+          const companyHomeUrl = buildCompanyHomeUrl();
+          if (!companyHomeUrl) {
+            setMeta("\u8bf7\u5148\u586b\u5199 Company \u901a\u8baf\u5730\u5740\u3002\u4fdd\u5b58\u540e\u53ef\u76f4\u63a5\u6253\u5f00\u9875\u9762\u3002");
             return;
           }
-          window.open(farmHomeUrl, "_blank", "noopener,noreferrer");
+          window.open(companyHomeUrl, "_blank", "noopener,noreferrer");
         });
       }
 
@@ -260,8 +265,8 @@
             setSaving(true);
             setMeta("\u6b63\u5728\u4fdd\u5b58\u8bbe\u7f6e...");
             await saveSettings();
-            updateFarmLinks();
-            setMeta("\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002openclaw Token\u3001\u6388\u6743\u63a7\u5236\u5730\u5740\u4e0e\u517b\u867e\u573a\u901a\u8baf\u5730\u5740\u5df2\u66f4\u65b0\u3002");
+            updateCompanyLinks();
+            setMeta("\u8bbe\u7f6e\u5df2\u4fdd\u5b58\u3002openclaw Token\u3001\u6388\u6743\u63a7\u5236\u5730\u5740\u4e0e Company \u901a\u8baf\u5730\u5740\u5df2\u66f4\u65b0\u3002");
           } catch (error) {
             setMeta(readUserErrorMessage(error, "\u4fdd\u5b58\u5931\u8d25\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002"));
           } finally {
@@ -302,4 +307,3 @@
     </script>
   </body>
 </html>
-

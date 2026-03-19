@@ -13,7 +13,7 @@ import {
   getHostOwnedBy,
   listHostRecentCommands,
   listHostsByControllerAddress,
-} from "../models/farm.model";
+} from "../models/company.model";
 import type { AppEnv, ConsoleUser } from "../types";
 import { readFormText } from "../utils/request";
 import { normalizeHostId, normalizeMobile } from "../utils/validators";
@@ -74,7 +74,7 @@ export function createConsoleController(): Hono<AppEnv> {
 
   controller.get("/health", (c) => {
     clearExpiredConsoleSessions();
-    return c.json({ ok: true, service: "clawos-farm", dbPath: DB_PATH, ts: new Date().toISOString() });
+    return c.json({ ok: true, service: "clawos-company", dbPath: DB_PATH, ts: new Date().toISOString() });
   });
 
   controller.get("/console/login", async (c) => {

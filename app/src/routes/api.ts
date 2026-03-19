@@ -520,19 +520,33 @@ function parseLocalSettingsBody(body: Record<string, unknown>): Partial<LocalApp
     patch.controllerAddress = trimmed;
   }
 
-  if (Object.prototype.hasOwnProperty.call(body, "farmAddress")) {
-    const rawFarmAddress = body.farmAddress;
-    if (typeof rawFarmAddress !== "string") {
+  if (Object.prototype.hasOwnProperty.call(body, "companyAddress")) {
+    const rawCompanyAddress = body.companyAddress;
+    if (typeof rawCompanyAddress !== "string") {
+      throw new HttpError(400, "companyAddress 必须是字符串。");
+    }
+    patch.companyAddress = rawCompanyAddress.trim();
+  } else if (Object.prototype.hasOwnProperty.call(body, "farmAddress")) {
+    // backward compatibility for older clients
+    const legacyFarmAddress = body.farmAddress;
+    if (typeof legacyFarmAddress !== "string") {
       throw new HttpError(400, "farmAddress 必须是字符串。");
     }
-    patch.farmAddress = rawFarmAddress.trim();
+    patch.companyAddress = legacyFarmAddress.trim();
+  } else if (Object.prototype.hasOwnProperty.call(body, "companyBaseUrl")) {
+    // backward compatibility for older clients
+    const legacyCompanyBaseUrl = body.companyBaseUrl;
+    if (typeof legacyCompanyBaseUrl !== "string") {
+      throw new HttpError(400, "companyBaseUrl 必须是字符串。");
+    }
+    patch.companyAddress = legacyCompanyBaseUrl.trim();
   } else if (Object.prototype.hasOwnProperty.call(body, "farmBaseUrl")) {
     // backward compatibility for older clients
     const legacyFarmBaseUrl = body.farmBaseUrl;
     if (typeof legacyFarmBaseUrl !== "string") {
       throw new HttpError(400, "farmBaseUrl 必须是字符串。");
     }
-    patch.farmAddress = legacyFarmBaseUrl.trim();
+    patch.companyAddress = legacyFarmBaseUrl.trim();
   }
 
   return patch;

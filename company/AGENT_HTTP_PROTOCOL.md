@@ -1,6 +1,6 @@
-# Farm ↔ ClawOS Agent HTTP 协议补充（当前实现）
+# Company ↔ ClawOS Agent HTTP 协议补充（当前实现）
 
-> 本文档描述 `farm` 与设备端 `clawos` 在当前代码中的**实际通讯协议**。
+> 本文档描述 `company` 与设备端 `clawos` 在当前代码中的**实际通讯协议**。
 > 
 > 与 `cloud-remote-control-protocol.md` 中的 WS 版本属于同一业务模型，当前落地形态为 HTTP 轮询。
 
@@ -11,7 +11,7 @@
 - Agent 鉴权：`Authorization: Bearer <agentToken>`
 
 绑定规则：
-- `hello` 首次上报时，Farm 为主机生成（或更新）`agentToken`。
+- `hello` 首次上报时，Company 为主机生成（或更新）`agentToken`。
 - 控制台仅展示 `controllerAddress == user.walletAddress` 的主机。
 
 ## 2. 上线注册（hello）
@@ -111,4 +111,4 @@
 
 - 新增字段应保持可选，旧 Agent 可忽略未知字段。
 - `controllerAddress` 继续作为唯一授权绑定字段。
-- 配置页“寄养虾场通讯地址（farmAddress）”仅影响外部页面跳转，不参与 Agent 鉴权与任务协议。
+- 配置页“Company 通讯地址（companyAddress）”仅影响外部页面跳转，不参与 Agent 鉴权与任务协议。

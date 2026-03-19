@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { listAuditLogs } from "../models/farm.model";
+import { listAuditLogs } from "../models/company.model";
 import type { AppEnv } from "../types";
 import { parseLimit } from "../utils/validators";
 import { safeJsonParse } from "../utils/request";

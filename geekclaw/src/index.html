@@ -9,7 +9,7 @@
     </head>
     <body>
         <main
-            class="relative mx-auto w-full max-w-[720px] overflow-hidden px-4 py-5"
+            class="relative mx-auto w-full max-w-[720px] overflow-hidden px-2 py-4 sm:px-4 sm:py-5"
         >
             <div
                 class="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
@@ -21,14 +21,14 @@
             </div>
 
             <header
-                class="page-fade rounded-2xl border border-white/20 bg-black/35 px-4 py-3 backdrop-blur-sm"
+                class="page-fade rounded-xl border border-white/20 bg-black/35 px-3 py-2.5 backdrop-blur-sm sm:rounded-2xl sm:px-4 sm:py-3"
             >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <img
                             src="/logo.png"
                             alt="GeekClaw Logo"
-                            class="size-10 rounded-xl object-cover"
+                            class="size-9 rounded-lg object-cover sm:size-10 sm:rounded-xl"
                         />
                         <div>
                             <p class="text-lg font-semibold tracking-tight">
@@ -38,46 +38,42 @@
                         </div>
                     </div>
                     <a
-                        href="https://www.geekclaw.ai"
-                        target="_blank"
-                        rel="noreferrer"
+                        href="/presale"
                         class="btn btn-sm border-white/30 bg-white/10 text-white hover:bg-white/20"
                     >
-                        www.geekclaw.ai
+                        预购
                     </a>
                 </div>
             </header>
 
             <section
-                class="page-fade page-fade-delay-1 relative mt-5 rounded-3xl border border-[#7f60ff]/35 bg-black/45 p-4 backdrop-blur-sm"
+                class="page-fade page-fade-delay-1 relative mt-3 rounded-2xl border border-[#7f60ff]/35 bg-black/45 p-2.5 backdrop-blur-sm sm:mt-5 sm:rounded-3xl sm:p-4"
             >
                 <div class="relative">
                     <div class="product-glow absolute inset-0 -z-10"></div>
                     <img
                         src="/screenshot2.jpg"
                         alt="极客超算魔方发布海报"
-                        class="w-full rounded-2xl border border-white/20 shadow-2xl shadow-[#6f4bff]/40"
+                        class="w-full rounded-xl border border-white/20 shadow-2xl shadow-[#6f4bff]/40 sm:rounded-2xl"
                         loading="eager"
                         decoding="async"
                     />
                 </div>
             </section>
 
-            <section class="page-fade page-fade-delay-2 mt-4 space-y-4">
+            <section class="page-fade page-fade-delay-2 mt-3 space-y-3 sm:mt-4 sm:space-y-4">
                 <img
                     src="/screenshot1.jpg"
                     alt="GeekClaw 产品视觉图"
-                    class="w-full rounded-2xl border border-white/15 object-cover"
+                    class="w-full rounded-xl border border-white/15 object-cover sm:rounded-2xl"
                     loading="lazy"
                     decoding="async"
                 />
-                <div class="rounded-2xl border border-white/15 bg-black/40 p-5">
-                    <a
-                        href="/presale"
-                        class="btn mb-4 w-full border-[#c8b8ff]/60 bg-[#6d45ff]/55 text-white hover:bg-[#7b5bff]"
-                        >立即预购</a
-                    >
-                </div>
+                <a
+                    href="/presale"
+                    class="btn h-11 w-full border-[#c8b8ff]/60 bg-[#6d45ff]/55 text-sm text-white hover:bg-[#7b5bff] sm:h-12 sm:text-base"
+                    >立即预购</a
+                >
             </section>
         </main>
     </body>
