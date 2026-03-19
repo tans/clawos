@@ -132,6 +132,19 @@ async function updateOrderByOutTradeNo(
   return updated;
 }
 
+async function findOrderByIdOrOutTradeNo(
+  key: string,
+): Promise<PresaleOrder | null> {
+  const normalized = key.trim();
+  if (!normalized) return null;
+  const orders = await readOrders();
+  return (
+    orders.find(
+      (item) => item.id === normalized || item.outTradeNo === normalized,
+    ) ?? null
+  );
+}
+
 function parseBodyForm(
   contentType: string,
   bodyText: string,
@@ -228,8 +241,9 @@ function verifyAlipayCallback(params: Record<string, string>): boolean | null {
   return verify.verify(alipayPublicKey, sign, "base64");
 }
 
-function presalePageHtml(req: Request): string {
-  const callback = `${getOrigin(req)}/api/callback`;
+function presalePageHtml(): string {
+  const submitLabel =
+    alipayAppId && alipayPrivateKey ? "提交并前往支付宝支付" : "提交预售登记";
   return `<!doctype html>
 <html lang="zh-CN" data-theme="silk">
   <head>
@@ -264,9 +278,129 @@ function presalePageHtml(req: Request): string {
           </div>
 
           <button type="submit" class="btn btn-primary w-full">
-            提交并前往支付宝支付
+            ${submitLabel}
           </button>
+
+          <a href="/" class="btn btn-ghost w-full">
+            返回首页
+          </a>
         </form>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
+function presaleSuccessPageHtml(order: PresaleOrder | null): string {
+  if (!order) {
+    return `<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeekClaw 预售登记结果</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="min-h-screen bg-[#06030f] text-white">
+    <main class="mx-auto w-full max-w-[720px] px-4 py-5">
+      <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
+        <h1 class="text-2xl font-extrabold">未找到登记信息</h1>
+        <p class="mt-3 text-sm text-white/75">请返回预售登记页重新提交。</p>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+          <a href="/presale" class="btn btn-primary flex-1">去预售登记</a>
+          <a href="/" class="btn btn-ghost flex-1">返回首页</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>`;
+  }
+
+  return `<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeekClaw 预售登记成功</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="min-h-screen bg-[#06030f] text-white">
+    <main class="mx-auto w-full max-w-[720px] px-4 py-5">
+      <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
+        <h1 class="text-2xl font-extrabold">预售登记成功</h1>
+        <p class="mt-3 text-sm text-white/80">表单 ID：<span class="font-mono">${escapeHtml(
+          order.id,
+        )}</span></p>
+        <p class="mt-2 text-sm text-white/70">订单号：<span class="font-mono">${escapeHtml(
+          order.outTradeNo,
+        )}</span></p>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+          <a href="/presale/detail?order_id=${encodeURIComponent(
+            order.id,
+          )}" class="btn btn-primary flex-1">查看详情</a>
+          <a href="/" class="btn btn-ghost flex-1">返回首页</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
+function presaleDetailPageHtml(order: PresaleOrder | null): string {
+  if (!order) {
+    return `<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeekClaw 预售详情</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="min-h-screen bg-[#06030f] text-white">
+    <main class="mx-auto w-full max-w-[720px] px-4 py-5">
+      <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
+        <h1 class="text-2xl font-extrabold">未找到登记详情</h1>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+          <a href="/presale" class="btn btn-primary flex-1">去预售登记</a>
+          <a href="/" class="btn btn-ghost flex-1">返回首页</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>`;
+  }
+
+  return `<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeekClaw 预售详情</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="min-h-screen bg-[#06030f] text-white">
+    <main class="mx-auto w-full max-w-[720px] px-4 py-5">
+      <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
+        <h1 class="text-2xl font-extrabold">预售登记详情</h1>
+        <div class="mt-5 space-y-3 text-sm">
+          <p>表单 ID：<span class="font-mono">${escapeHtml(order.id)}</span></p>
+          <p>订单号：<span class="font-mono">${escapeHtml(
+            order.outTradeNo,
+          )}</span></p>
+          <p>姓名：${escapeHtml(order.name)}</p>
+          <p>手机：${escapeHtml(maskPhone(order.phone))}</p>
+          <p>地址：${escapeHtml(order.address)}</p>
+          <p>金额：¥${escapeHtml(order.amount)}</p>
+          <p>状态：${escapeHtml(order.status)}</p>
+          <p>创建时间：${escapeHtml(order.createdAt)}</p>
+          <p>更新时间：${escapeHtml(order.updatedAt)}</p>
+        </div>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+          <a href="/presale/success?order_id=${encodeURIComponent(
+            order.id,
+          )}" class="btn btn-primary flex-1">返回成功页</a>
+          <a href="/" class="btn btn-ghost flex-1">返回首页</a>
+        </div>
       </section>
     </main>
   </body>
@@ -339,7 +473,31 @@ Bun.serve({
     const { pathname } = url;
 
     if (pathname === "/presale") {
-      return new Response(presalePageHtml(req), {
+      return new Response(presalePageHtml(), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    if (pathname === "/presale/success") {
+      const orderKey =
+        url.searchParams.get("order_id") ??
+        url.searchParams.get("id") ??
+        url.searchParams.get("out_trade_no") ??
+        "";
+      const order = await findOrderByIdOrOutTradeNo(orderKey);
+      return new Response(presaleSuccessPageHtml(order), {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    if (pathname === "/presale/detail") {
+      const orderKey =
+        url.searchParams.get("order_id") ??
+        url.searchParams.get("id") ??
+        url.searchParams.get("out_trade_no") ??
+        "";
+      const order = await findOrderByIdOrOutTradeNo(orderKey);
+      return new Response(presaleDetailPageHtml(order), {
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     }
@@ -375,6 +533,20 @@ Bun.serve({
       };
 
       await upsertOrder(order);
+      if (!alipayAppId || !alipayPrivateKey) {
+        await updateOrderByOutTradeNo(outTradeNo, (current) => ({
+          ...current,
+          status: "paid",
+          tradeStatus: "MOCK_SUCCESS_NO_ALIPAY",
+          callbackVerified: null,
+          updatedAt: nowIso(),
+        }));
+        return Response.redirect(
+          `/presale/success?order_id=${encodeURIComponent(order.id)}`,
+          302,
+        );
+      }
+
       return Response.redirect(
         `/api/alipay/pay?out_trade_no=${encodeURIComponent(outTradeNo)}`,
         302,
@@ -439,9 +611,10 @@ Bun.serve({
       const verifyResult = verifyAlipayCallback(params);
       const outTradeNo = params.out_trade_no ?? "";
       const tradeStatus = params.trade_status;
+      let updatedOrder: PresaleOrder | null = null;
 
       if (outTradeNo) {
-        await updateOrderByOutTradeNo(outTradeNo, (current) => ({
+        updatedOrder = await updateOrderByOutTradeNo(outTradeNo, (current) => ({
           ...current,
           status: mapTradeStatusToOrderStatus(tradeStatus),
           updatedAt: nowIso(),
@@ -457,6 +630,14 @@ Bun.serve({
         return new Response("success", {
           headers: { "content-type": "text/plain; charset=utf-8" },
         });
+      }
+
+      if (req.method === "GET") {
+        const orderKey = updatedOrder?.id || outTradeNo;
+        return Response.redirect(
+          `/presale/success?order_id=${encodeURIComponent(orderKey)}`,
+          302,
+        );
       }
 
       return new Response(

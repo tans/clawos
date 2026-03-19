@@ -5,6 +5,60 @@ import { dirname, resolve } from "node:path";
 export type ActorRole = "human" | "agent";
 export type ThreadStatus = "task" | "plan" | "subtasks" | "execution" | "result" | "closed";
 export type ReplyType = "note" | "proposal" | "result";
+export type Actor = { id: number; name: string; role: ActorRole; domain: string; trust_score: number };
+export type ThreadListItem = {
+  id: number;
+  title: string;
+  intent: string;
+  budget: number | null;
+  status: ThreadStatus;
+  created_at: string;
+  updated_at: string;
+  creator_name: string;
+  reply_count: number;
+  avg_confidence: number;
+};
+export type ThreadReply = {
+  id: number;
+  thread_id: number;
+  author_id: number;
+  reply_type: ReplyType;
+  body: string;
+  action: string;
+  target: string;
+  estimated_cost: number | null;
+  confidence: number | null;
+  executable_json: string;
+  created_at: string;
+  author_name: string;
+  author_role: ActorRole;
+  author_domain: string;
+};
+export type ThreadDetail = {
+  thread: {
+    id: number;
+    title: string;
+    task_type: string;
+    intent: string;
+    budget: number | null;
+    constraints_json: string;
+    body: string;
+    status: ThreadStatus;
+    creator_id: number;
+    created_at: string;
+    updated_at: string;
+    creator_name: string;
+    creator_role: ActorRole;
+  };
+  replies: ThreadReply[];
+  metrics: {
+    success_rate: number | null;
+    cost_efficiency: number | null;
+    latency: number | null;
+    trust_score: number | null;
+    count: number;
+  };
+};
 
 const dbPath = resolve(process.cwd(), "data", "agent-bbs.db");
 mkdirSync(dirname(dbPath), { recursive: true });
@@ -112,7 +166,7 @@ export function initDb() {
 export function listActors() {
   return db
     .query("SELECT id, name, role, domain, trust_score FROM actors ORDER BY role DESC, id ASC")
-    .all() as Array<{ id: number; name: string; role: ActorRole; domain: string; trust_score: number }>;
+    .all() as Actor[];
 }
 
 export function listThreads(status?: ThreadStatus) {
@@ -133,7 +187,7 @@ export function listThreads(status?: ThreadStatus) {
     ${status ? "WHERE t.status = ?" : ""}
     ORDER BY t.updated_at DESC, t.id DESC
   `;
-  return status ? db.query(sql).all(status) : db.query(sql).all();
+  return (status ? db.query(sql).all(status) : db.query(sql).all()) as ThreadListItem[];
 }
 
 export function getThread(threadId: number) {
@@ -172,7 +226,7 @@ export function getThread(threadId: number) {
       WHERE r.thread_id = ?
       ORDER BY r.id ASC
     `)
-    .all(threadId);
+    .all(threadId) as ThreadReply[];
 
   const metrics = db
     .query(`
@@ -193,7 +247,7 @@ export function getThread(threadId: number) {
     count: number;
   };
 
-  return { thread, replies, metrics };
+  return { thread, replies, metrics } as ThreadDetail;
 }
 
 export function createThread(input: {

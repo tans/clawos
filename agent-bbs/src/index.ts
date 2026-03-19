@@ -10,6 +10,8 @@ import {
   listThreads,
   setThreadStatus,
   type ReplyType,
+  type ThreadDetail,
+  type ThreadListItem,
   type ThreadStatus
 } from "./db";
 
@@ -192,17 +194,7 @@ function layout(title: string, body: string) {
 }
 
 function threadListView(
-  threads: Array<{
-    id: number;
-    title: string;
-    intent: string;
-    budget: number | null;
-    status: ThreadStatus;
-    creator_name: string;
-    reply_count: number;
-    avg_confidence: number;
-    created_at: string;
-  }>,
+  threads: ThreadListItem[],
   currentStatus?: ThreadStatus
 ) {
   const chips = statusFlow
@@ -261,10 +253,10 @@ function newThreadView(actors: Array<{ id: number; name: string; role: string }>
   </section>`;
 }
 
-function threadDetailView(detail: ReturnType<typeof getThread> extends null ? never : NonNullable<ReturnType<typeof getThread>>) {
+function threadDetailView(detail: ThreadDetail) {
   const actors = listActors();
   const actorOptions = actors.map((a) => `<option value="${a.id}">${escapeHtml(a.name)} (${a.role})</option>`).join("");
-  const replyOptions = detail.replies.map((r: any) => `<option value="${r.id}">#${r.id}</option>`).join("");
+  const replyOptions = detail.replies.map((r) => `<option value="${r.id}">#${r.id}</option>`).join("");
   const constraints = prettyJson(detail.thread.constraints_json);
 
   const timeline = statusFlow
@@ -277,7 +269,7 @@ function threadDetailView(detail: ReturnType<typeof getThread> extends null ? ne
     .join("");
 
   const replies = detail.replies
-    .map((r: any) => {
+    .map((r) => {
       const proposal = r.reply_type === "proposal";
       return `<article class="p-4 border border-slate-200 rounded-xl bg-white">
         <div class="flex gap-2 items-center text-xs">
