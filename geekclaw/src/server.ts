@@ -263,7 +263,7 @@ function presalePageHtml(req: Request): string {
             预售金额：¥${escapeHtml(presaleAmount)}
           </div>
 
-          <button type="submit" class="btn w-full border-[#c8b8ff]/60 bg-[#6d45ff]/60 text-white hover:bg-[#7b5bff]">
+          <button type="submit" class="btn btn-primary w-full">
             提交并前往支付宝支付
           </button>
         </form>
