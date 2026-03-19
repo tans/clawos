@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { buildWslRepairSteps } from "../../src/tasks/system";
+import { buildWslRepairSteps } from "../../app/src/tasks/system";
 
 describe("wsl repair steps", () => {
   it("builds combined pnpm/nrm repair step", () => {

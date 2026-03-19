@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { rmSync } from "node:fs";
-import { callGatewayMethod, gatewayTroubleshootingTips } from "../../src/gateway/sock";
-import { invalidateGatewayConnectionSettingsCache } from "../../src/gateway/settings";
-import { asObject, readNonEmptyString } from "../../src/lib/value";
+import { callGatewayMethod, gatewayTroubleshootingTips } from "../../app/src/gateway/sock";
+import { invalidateGatewayConnectionSettingsCache } from "../../app/src/gateway/settings";
+import { asObject, readNonEmptyString } from "../../app/src/lib/value";
 
 type RequestFrame = {
   type: "req";

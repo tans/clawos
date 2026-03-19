@@ -1,11 +1,11 @@
 import { describe, expect, it } from "bun:test";
-import type { CommandResult } from "../../src/tasks/shell";
+import type { CommandResult } from "../../app/src/tasks/shell";
 import {
   REQUIRED_WSL_COMMANDS,
   buildWslCommandProbeScript,
   checkWslCommandRequirements,
   parseWslCommandProbeOutput,
-} from "../../src/system/wsl-requirements";
+} from "../../app/src/system/wsl-requirements";
 
 function runnerResult(partial: Partial<CommandResult>): CommandResult {
   return {

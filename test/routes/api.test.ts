@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { handleApiRequest } from "../../src/routes/api";
+import { handleApiRequest } from "../../app/src/routes/api";
 
 async function parseJson(response: Response): Promise<Record<string, unknown>> {
   return (await response.json()) as Record<string, unknown>;

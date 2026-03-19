@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   classifyCdpProbeConnectivity,
   normalizeCdpJsonVersionEndpoint,
-} from "../../src/system/browser-connectivity";
+} from "../../app/src/system/browser-connectivity";
 
 describe("browser connectivity helpers", () => {
   it("normalizes cdp ws url to json/version endpoint", () => {

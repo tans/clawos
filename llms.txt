@@ -9,7 +9,7 @@
 - 作用: 提供本机 `http://127.0.0.1:8080` 管理界面，管理 openclaw gateway
 
 ## 关键目录
-- `src/`: clawos 主程序（桌面 UI、任务、系统调用）
+- `app/src/`: clawos 主程序（桌面 UI、任务、系统调用）
 - `freegpt/`: 本地测试 Provider（回显服务）
 - `web/`: Web 站点与下载页
 - `router/`, `farm/`: 辅助服务

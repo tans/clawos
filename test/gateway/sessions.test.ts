@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { listGatewaySessionHistory, listGatewaySessions } from "../../src/gateway/sessions";
+import { listGatewaySessionHistory, listGatewaySessions } from "../../app/src/gateway/sessions";
 
 let tempDir = "";
 let logPath = "";

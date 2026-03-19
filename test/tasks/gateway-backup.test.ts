@@ -4,7 +4,7 @@ import {
   buildOpenclawConfigRollbackSteps,
   parseOpenclawConfigBackupLine,
   resolveOpenclawBackupSearchConfigPaths,
-} from "../../src/tasks/gateway";
+} from "../../app/src/tasks/gateway";
 
 describe("gateway backup scripts", () => {
   it("builds backup list script with find + sort output", () => {

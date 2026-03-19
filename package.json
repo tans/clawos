@@ -3,8 +3,8 @@
   "version": "0.9.44",
   "type": "module",
   "scripts": {
-    "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
-    "tailwind:watch": "tailwindcss -i src/styles/input.css -o dist/output.css --watch=always",
+    "tailwind:build": "tailwindcss -i app/src/styles/input.css -o dist/output.css --minify",
+    "tailwind:watch": "tailwindcss -i app/src/styles/input.css -o dist/output.css --watch=always",
     "dev": "bun run desktop:dev",
     "electrobun:dev": "bun run scripts/electrobun.ts dev",
     "electrobun:dev:watch": "bun run scripts/electrobun.ts dev --watch",

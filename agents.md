@@ -15,8 +15,8 @@
 
 以下目录是当前 monorepo 中最重要的几个项目：
 
-### 2.1 根项目（桌面端主工程）
-- 目录：`/`、`src/`、`scripts/`
+### 2.1 `app/`（桌面端主工程）
+- 目录：`app/src/`、`scripts/`、根目录构建配置文件（如 `electrobun.config.ts`）
 - 职责：
   - ClawOS 桌面应用主逻辑（Electrobun + Bun）。
   - 本地页面与系统交互（含 WSL 调用、Gateway 相关流程）。

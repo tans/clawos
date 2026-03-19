@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { readConfigSectionSchema } from "../../src/config/schema";
+import { readConfigSectionSchema } from "../../app/src/config/schema";
 
 describe("config schema section loader", () => {
   it("reads browser section schema from config.schema.json", () => {

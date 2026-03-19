@@ -67,22 +67,22 @@ const config: ElectrobunConfig = {
   },
   build: {
     bun: {
-      entrypoint: "src/bun/index.ts",
+      entrypoint: "app/src/bun/index.ts",
     },
     views: {
       clawos: {
-        entrypoint: "src/desktop-ui/bridge.ts",
+        entrypoint: "app/src/desktop-ui/bridge.ts",
         format: "iife",
       },
     },
     copy: {
-      "src/desktop-ui/shell.html": "views/clawos/shell.html",
-      "src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
+      "app/src/desktop-ui/shell.html": "views/clawos/shell.html",
+      "app/src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
       "dist/output.css": "views/clawos/styles.css",
-      "src/pages/pages-shell.css": "views/clawos/pages-shell.css",
+      "app/src/pages/pages-shell.css": "views/clawos/pages-shell.css",
       "web/public/logo.png": "views/clawos/logo.png",
     },
-    watch: ["src", "dist"],
+    watch: ["app/src", "dist"],
     watchIgnore: [
       "build/**",
       "artifacts/**",

@@ -11,7 +11,7 @@ import {
   buildWindowsElevationCheckArgs,
   parseFirstNameserver,
   resolveChromeExePath,
-} from "../../src/tasks/browser";
+} from "../../app/src/tasks/browser";
 
 const originalChromePathEnv = process.env.CLAWOS_CHROME_EXE_PATH;
 

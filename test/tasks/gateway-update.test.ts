@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { OPENCLAW_SOURCE_DIR, buildOpenclawSourceUpdateSteps } from "../../src/tasks/gateway";
+import { OPENCLAW_SOURCE_DIR, buildOpenclawSourceUpdateSteps } from "../../app/src/tasks/gateway";
 
 describe("openclaw source update steps", () => {
   it("follows the required 8-step source update flow", () => {
