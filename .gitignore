@@ -14,3 +14,4 @@ tmp-dev-stdout.log
 tmp-dev-stderr-2.log
 tmp-dev-stdout-2.log
 data
+.env
