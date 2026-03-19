@@ -55,6 +55,31 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+const beijingDateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+});
+
+function formatBeijingDateTime(input: string): string {
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return input;
+
+  const parts = beijingDateTimeFormatter.formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      map[part.type] = part.value;
+    }
+  }
+  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
+}
+
 function mapTradeStatusToOrderStatus(tradeStatus?: string): OrderStatus {
   if (!tradeStatus) return "pending_pay";
   if (tradeStatus === "TRADE_SUCCESS" || tradeStatus === "TRADE_FINISHED")
@@ -328,60 +353,6 @@ function presaleSuccessPageHtml(order: PresaleOrder | null): string {
     <main class="mx-auto w-full max-w-[720px] px-4 py-5">
       <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
         <h1 class="text-2xl font-extrabold">预售登记成功</h1>
-        <p class="mt-3 text-sm text-white/80">表单 ID：<span class="font-mono">${escapeHtml(
-          order.id,
-        )}</span></p>
-        <p class="mt-2 text-sm text-white/70">订单号：<span class="font-mono">${escapeHtml(
-          order.outTradeNo,
-        )}</span></p>
-        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
-          <a href="/presale/detail?order_id=${encodeURIComponent(
-            order.id,
-          )}" class="btn btn-primary flex-1">查看详情</a>
-          <a href="/" class="btn btn-ghost flex-1">返回首页</a>
-        </div>
-      </section>
-    </main>
-  </body>
-</html>`;
-}
-
-function presaleDetailPageHtml(order: PresaleOrder | null): string {
-  if (!order) {
-    return `<!doctype html>
-<html lang="zh-CN" data-theme="silk">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeekClaw 预售详情</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body class="min-h-screen bg-[#06030f] text-white">
-    <main class="mx-auto w-full max-w-[720px] px-4 py-5">
-      <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
-        <h1 class="text-2xl font-extrabold">未找到登记详情</h1>
-        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
-          <a href="/presale" class="btn btn-primary flex-1">去预售登记</a>
-          <a href="/" class="btn btn-ghost flex-1">返回首页</a>
-        </div>
-      </section>
-    </main>
-  </body>
-</html>`;
-  }
-
-  return `<!doctype html>
-<html lang="zh-CN" data-theme="silk">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GeekClaw 预售详情</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body class="min-h-screen bg-[#06030f] text-white">
-    <main class="mx-auto w-full max-w-[720px] px-4 py-5">
-      <section class="rounded-2xl border border-white/20 bg-black/45 p-5">
-        <h1 class="text-2xl font-extrabold">预售登记详情</h1>
         <div class="mt-5 space-y-3 text-sm">
           <p>表单 ID：<span class="font-mono">${escapeHtml(order.id)}</span></p>
           <p>订单号：<span class="font-mono">${escapeHtml(
@@ -392,13 +363,18 @@ function presaleDetailPageHtml(order: PresaleOrder | null): string {
           <p>地址：${escapeHtml(order.address)}</p>
           <p>金额：¥${escapeHtml(order.amount)}</p>
           <p>状态：${escapeHtml(order.status)}</p>
-          <p>创建时间：${escapeHtml(order.createdAt)}</p>
-          <p>更新时间：${escapeHtml(order.updatedAt)}</p>
+          <p>创建时间：${escapeHtml(
+            formatBeijingDateTime(order.createdAt),
+          )}</p>
+          <p>更新时间：${escapeHtml(
+            formatBeijingDateTime(order.updatedAt),
+          )}</p>
         </div>
+        <p class="mt-4 text-xs text-white/60">
+          发货后，物流信息将短信通知到预留手机号，请留意查收。
+        </p>
         <div class="mt-5 flex flex-col gap-3 sm:flex-row">
-          <a href="/presale/success?order_id=${encodeURIComponent(
-            order.id,
-          )}" class="btn btn-primary flex-1">返回成功页</a>
+          <a href="/presale" class="btn btn-primary flex-1">继续登记</a>
           <a href="/" class="btn btn-ghost flex-1">返回首页</a>
         </div>
       </section>
@@ -419,7 +395,9 @@ function adminPageHtml(orders: PresaleOrder[]): string {
 <td class="px-3 py-2 text-xs">${escapeHtml(order.status)}</td>
 <td class="px-3 py-2 text-xs">${escapeHtml(order.tradeStatus ?? "-")}</td>
 <td class="px-3 py-2 text-xs">${escapeHtml(order.alipayTradeNo ?? "-")}</td>
-<td class="px-3 py-2 text-xs">${escapeHtml(order.updatedAt)}</td>
+<td class="px-3 py-2 text-xs">${escapeHtml(
+        formatBeijingDateTime(order.updatedAt),
+      )}</td>
 </tr>`;
     })
     .join("\n");
@@ -486,18 +464,6 @@ Bun.serve({
         "";
       const order = await findOrderByIdOrOutTradeNo(orderKey);
       return new Response(presaleSuccessPageHtml(order), {
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
-    }
-
-    if (pathname === "/presale/detail") {
-      const orderKey =
-        url.searchParams.get("order_id") ??
-        url.searchParams.get("id") ??
-        url.searchParams.get("out_trade_no") ??
-        "";
-      const order = await findOrderByIdOrOutTradeNo(orderKey);
-      return new Response(presaleDetailPageHtml(order), {
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     }
