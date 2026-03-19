@@ -1,6 +1,6 @@
 /** @jsxImportSource hono/jsx */
 import type { JSX } from "hono/jsx";
-import type { ConsoleUser, HostCommandRow, HostRow } from "../types";
+import type { AgentEventRow, ConsoleUser, HostCommandRow, HostInsightRow, HostRow } from "../types";
 import { renderPageShell } from "./layout.view";
 
 const HOST_OFFLINE_THRESHOLD_MS = 30 * 1000;
@@ -23,6 +23,12 @@ function statusBadge(state: "online" | "degraded" | "offline"): JSX.Element {
   if (state === "online") return <span class="badge badge-success">online</span>;
   if (state === "degraded") return <span class="badge badge-warning">degraded</span>;
   return <span class="badge">offline</span>;
+}
+
+function eventSeverityBadge(severity: string): JSX.Element {
+  if (severity === "error") return <span class="badge badge-error">error</span>;
+  if (severity === "warning") return <span class="badge badge-warning">warning</span>;
+  return <span class="badge badge-info">info</span>;
 }
 
 export function renderConsoleMessagePage(user: ConsoleUser, message: string): string {
@@ -128,7 +134,12 @@ export function renderHostListPage(user: ConsoleUser, message: string, hosts: Ho
   return renderPageShell(
     <div class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body">
-        <h1 class="card-title">主机列表</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h1 class="card-title">主机列表</h1>
+          <a class="btn btn-sm btn-outline" href="/console/insights">
+            Agent 洞察
+          </a>
+        </div>
         <p class="text-base-content/70">只展示 controllerAddress 与你账号绑定标识一致的主机。</p>
 
         {message ? (
@@ -184,17 +195,26 @@ export function renderHostListPage(user: ConsoleUser, message: string, hosts: Ho
   );
 }
 
-export function renderHostDetailPage(user: ConsoleUser, host: HostRow, message: string, commands: HostCommandRow[]): string {
+export function renderHostDetailPage(
+  user: ConsoleUser,
+  host: HostRow,
+  message: string,
+  commands: HostCommandRow[],
+  events: AgentEventRow[]
+): string {
   const state = displayHostStatus(host.status, host.lastSeenMs);
   const hostIdPath = encodeURIComponent(host.hostId);
 
   return renderPageShell(
     <>
-      <p class="mb-3">
+      <div class="mb-3 flex items-center justify-between gap-2">
         <a class="link link-primary" href="/console">
           返回主机列表
         </a>
-      </p>
+        <a class="btn btn-xs btn-outline" href="/console/insights">
+          查看洞察
+        </a>
+      </div>
 
       <div class="card bg-base-100 border border-base-300 shadow-sm mb-4">
         <div class="card-body">
@@ -299,7 +319,107 @@ export function renderHostDetailPage(user: ConsoleUser, host: HostRow, message: 
           </div>
         </div>
       </div>
+
+      <div class="card bg-base-100 border border-base-300 shadow-sm mt-4">
+        <div class="card-body">
+          <h2 class="card-title text-lg">最近监听事件</h2>
+          <div class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>时间</th>
+                  <th>级别</th>
+                  <th>事件</th>
+                  <th>摘要</th>
+                  <th>详情</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.length ? (
+                  events.map((event) => (
+                    <tr>
+                      <td>{formatDateTime(event.createdAt)}</td>
+                      <td>{eventSeverityBadge(event.severity)}</td>
+                      <td class="font-mono text-xs">{event.eventType}</td>
+                      <td>{event.title || "-"}</td>
+                      <td>
+                        <pre class="whitespace-pre-wrap break-all text-xs">{event.payload || "-"}</pre>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colspan={5} class="text-base-content/60">
+                      暂无监听事件
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </>,
     user
+  );
+}
+
+export function renderInsightsPage(user: ConsoleUser, rows: HostInsightRow[], hours: number): string {
+  return renderPageShell(
+    <div class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h1 class="card-title">Agent 洞察</h1>
+          <a class="btn btn-sm btn-outline" href="/console">
+            返回主机列表
+          </a>
+        </div>
+        <p class="text-base-content/70">统计窗口：最近 {hours} 小时。用于快速识别高风险主机与异常趋势。</p>
+        <div class="overflow-x-auto mt-3">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>主机</th>
+                <th>状态</th>
+                <th>事件总数</th>
+                <th>Warning</th>
+                <th>Error</th>
+                <th>最近事件</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length ? (
+                rows.map((row) => {
+                  const state = displayHostStatus(row.status, row.lastSeenMs);
+                  return (
+                    <tr>
+                      <td>
+                        <a class="link link-primary" href={`/console/hosts/${encodeURIComponent(row.hostId)}`}>
+                          {row.hostName}
+                        </a>
+                        <div class="font-mono text-xs opacity-70">{row.hostId}</div>
+                      </td>
+                      <td>{statusBadge(state)}</td>
+                      <td>{row.totalEvents}</td>
+                      <td>{row.warningEvents}</td>
+                      <td>{row.errorEvents}</td>
+                      <td>{formatDateTime(row.lastEventAt)}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colspan={6} class="text-base-content/60">
+                    暂无洞察数据，请等待 Agent 上报心跳或事件。
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>,
+    user,
+    "Agent 洞察"
   );
 }

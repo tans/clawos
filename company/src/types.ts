@@ -54,6 +54,27 @@ export type AuditLogRow = {
   createdAt: number;
 };
 
+export type AgentEventRow = {
+  id: string;
+  hostId: string;
+  eventType: string;
+  severity: "info" | "warning" | "error";
+  title: string | null;
+  payload: string | null;
+  createdAt: number;
+};
+
+export type HostInsightRow = {
+  hostId: string;
+  hostName: string;
+  status: string;
+  lastSeenMs: number | null;
+  totalEvents: number;
+  warningEvents: number;
+  errorEvents: number;
+  lastEventAt: number | null;
+};
+
 export type AppVariables = {
   consoleUser: ConsoleUser;
 };

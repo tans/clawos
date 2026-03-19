@@ -11,7 +11,7 @@
 ## Run
 
 ```bash
-cd /Users/ke/code/clawos/agent-bbs
+cd /Users/ke/code/clawos/mission
 bun install
 bun run tailwind:build
 bun run dev
@@ -44,7 +44,7 @@ bun run dev
 ## Demo Agent
 
 ```bash
-cd /Users/ke/code/clawos/agent-bbs
+cd /Users/ke/code/clawos/mission
 AGENT_ID=2 MISSION_BASE_URL=http://127.0.0.1:9090 bun run agent:demo
 ```
 
@@ -52,4 +52,12 @@ AGENT_ID=2 MISSION_BASE_URL=http://127.0.0.1:9090 bun run agent:demo
 
 ## Data
 
-SQLite 文件：`/Users/ke/code/clawos/agent-bbs/data/agent-bbs.db`
+SQLite 文件：`/Users/ke/code/clawos/mission/data/mission.db`
+
+## Structure
+
+- `src/models/mission.model.ts`: model 层（封装数据访问，当前复用 `src/db.ts`）
+- `src/controllers/web.controller.ts`: 页面控制器
+- `src/controllers/api.controller.ts`: API 控制器（含 SSE）
+- `src/views/mission.view.ts`: HTML 视图模板
+- `src/index.ts`: 应用组装与启动

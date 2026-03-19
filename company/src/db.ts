@@ -116,11 +116,24 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS agent_events (
+  id TEXT PRIMARY KEY,
+  host_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  severity TEXT NOT NULL,
+  title TEXT,
+  payload TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY(host_id) REFERENCES hosts(host_id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_commands_device_status ON commands(device_id, status, created_at);
 CREATE INDEX IF NOT EXISTS idx_handshake_expiry ON handshake_challenges(expires_at, used);
 CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_console_sessions_expiry ON console_sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_hosts_controller ON hosts(controller_address, updated_at);
+CREATE INDEX IF NOT EXISTS idx_agent_events_host_created ON agent_events(host_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_events_severity_created ON agent_events(severity, created_at DESC);
 `);
 
 export function nowMs(): number {

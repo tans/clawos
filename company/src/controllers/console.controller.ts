@@ -11,7 +11,9 @@ import {
   getConsoleCredentialByMobile,
   getConsoleUserBySessionToken,
   getHostOwnedBy,
+  listHostInsightsByControllerAddress,
   listHostRecentCommands,
+  listHostRecentEvents,
   listHostsByControllerAddress,
 } from "../models/company.model";
 import type { AppEnv, ConsoleUser } from "../types";
@@ -20,6 +22,7 @@ import { normalizeHostId, normalizeMobile } from "../utils/validators";
 import {
   renderConsoleMessagePage,
   renderHostDetailPage,
+  renderInsightsPage,
   renderHostListPage,
   renderLoginPage,
   renderRegisterPage,
@@ -150,6 +153,14 @@ export function createConsoleController(): Hono<AppEnv> {
     return c.html(renderHostListPage(user, message, listHostsByControllerAddress(user.walletAddress)));
   });
 
+  controller.get("/console/insights", (c) => {
+    const user = c.get("consoleUser");
+    const hours = Math.max(1, Math.min(24 * 14, Number(c.req.query("hours") || 24)));
+    const now = Date.now();
+    const rows = listHostInsightsByControllerAddress(user.walletAddress, now - hours * 60 * 60 * 1000, now);
+    return c.html(renderInsightsPage(user, rows, hours));
+  });
+
   controller.get("/console/logout", (c) => {
     clearConsoleSession(c);
     return c.redirect("/console/login");
@@ -169,7 +180,8 @@ export function createConsoleController(): Hono<AppEnv> {
 
     const message = c.req.query("msg") || "";
     const commands = listHostRecentCommands(hostId, 40);
-    return c.html(renderHostDetailPage(user, host, message, commands));
+    const events = listHostRecentEvents(hostId, 20);
+    return c.html(renderHostDetailPage(user, host, message, commands, events));
   });
 
   controller.post("/console/hosts/:hostId/tasks/wsl-exec", async (c) => {

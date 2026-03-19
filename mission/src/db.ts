@@ -110,7 +110,7 @@ export type EventRow = {
   created_at: string;
 };
 
-const dbPath = resolve(process.cwd(), "data", "agent-bbs.db");
+const dbPath = resolve(process.cwd(), "data", "mission.db");
 mkdirSync(dirname(dbPath), { recursive: true });
 
 export const db = new Database(dbPath);

@@ -18,8 +18,13 @@
 - Agent 接口：
   - 上线注册 `POST /api/agent/hello`
   - 心跳上报 `POST /api/agent/heartbeat`
+  - 监听事件上报 `POST /api/agent/events`
   - 拉取任务 `GET /api/agent/commands`
+  - 拉取主机洞察 `GET /api/agent/insights`
   - 回传结果 `POST /api/agent/commands/:id/result`
+- Agent 洞察：
+  - 控制台聚合页：`GET /console/insights`
+  - 单机详情页展示最近监听事件（心跳状态变化 + 主动上报事件）
 
 ## 本地运行
 

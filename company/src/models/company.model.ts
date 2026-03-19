@@ -1,9 +1,11 @@
 import { db, newId, nowMs } from "../db";
 import type {
+  AgentEventRow,
   AuditLogRow,
   ConsoleCredentialRow,
   ConsoleUser,
   HostCommandRow,
+  HostInsightRow,
   HostRow,
   PendingCommandRow,
 } from "../types";
@@ -237,4 +239,75 @@ export function listAuditLogs(limit: number): AuditLogRow[] {
        LIMIT ?`
     )
     .all(limit) as AuditLogRow[];
+}
+
+export function createAgentEvent(args: {
+  hostId: string;
+  eventType: string;
+  severity: "info" | "warning" | "error";
+  title?: string | null;
+  payload?: unknown;
+  now?: number;
+}): string {
+  const eventId = newId("evt");
+  db.prepare(
+    `INSERT INTO agent_events (id, host_id, event_type, severity, title, payload, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    eventId,
+    args.hostId,
+    args.eventType.trim().slice(0, 64),
+    args.severity,
+    args.title?.trim().slice(0, 160) || null,
+    args.payload === undefined ? null : JSON.stringify(args.payload),
+    args.now ?? nowMs()
+  );
+  return eventId;
+}
+
+export function listHostRecentEvents(hostId: string, limit = 30): AgentEventRow[] {
+  return db
+    .query(
+      `SELECT
+         id,
+         host_id AS hostId,
+         event_type AS eventType,
+         severity,
+         title,
+         payload,
+         created_at AS createdAt
+       FROM agent_events
+       WHERE host_id = ?
+       ORDER BY created_at DESC
+       LIMIT ?`
+    )
+    .all(hostId, limit) as AgentEventRow[];
+}
+
+export function listHostInsightsByControllerAddress(
+  walletAddress: string,
+  fromMs: number,
+  toMs: number,
+): HostInsightRow[] {
+  return db
+    .query(
+      `SELECT
+         h.host_id AS hostId,
+         h.name AS hostName,
+         h.status AS status,
+         h.last_seen_ms AS lastSeenMs,
+         COALESCE(COUNT(e.id), 0) AS totalEvents,
+         COALESCE(SUM(CASE WHEN e.severity = 'warning' THEN 1 ELSE 0 END), 0) AS warningEvents,
+         COALESCE(SUM(CASE WHEN e.severity = 'error' THEN 1 ELSE 0 END), 0) AS errorEvents,
+         MAX(e.created_at) AS lastEventAt
+       FROM hosts h
+       LEFT JOIN agent_events e
+         ON e.host_id = h.host_id
+        AND e.created_at >= ?
+        AND e.created_at <= ?
+       WHERE h.controller_address = ?
+       GROUP BY h.host_id, h.name, h.status, h.last_seen_ms
+       ORDER BY errorEvents DESC, warningEvents DESC, lastEventAt DESC, h.updated_at DESC`
+    )
+    .all(fromMs, toMs, walletAddress) as HostInsightRow[];
 }

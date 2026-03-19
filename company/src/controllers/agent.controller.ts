@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { auditLog, nowMs, newId } from "../db";
 import {
+  createAgentEvent,
   createHostFromHello,
   getHostById,
   listPendingCommands,
+  listHostRecentEvents,
   markPendingCommandResult,
   updateHostFromHello,
   updateHostHeartbeat,
@@ -11,6 +13,12 @@ import {
 import type { AppEnv } from "../types";
 import { jsonError, readBearerToken, readJsonBody, safeJsonParse } from "../utils/request";
 import { normalizeHostId, normalizeHostName, normalizeWalletAddress, parseLimit } from "../utils/validators";
+
+function parseEventSeverity(raw: unknown): "info" | "warning" | "error" {
+  if (raw === "error") return "error";
+  if (raw === "warning") return "warning";
+  return "info";
+}
 
 export function createAgentController(): Hono<AppEnv> {
   const controller = new Hono<AppEnv>();
@@ -141,7 +149,105 @@ export function createAgentController(): Hono<AppEnv> {
       now,
     });
 
+    if (host.status !== status || host.wslReady !== (wslReady ? 1 : 0) || host.gatewayReady !== (gatewayReady ? 1 : 0)) {
+      createAgentEvent({
+        hostId,
+        eventType: "heartbeat.state_changed",
+        severity: status === "degraded" ? "warning" : "info",
+        title: status === "degraded" ? "主机进入降级状态" : "主机恢复在线",
+        payload: {
+          previous: {
+            status: host.status,
+            wslReady: Boolean(host.wslReady),
+            gatewayReady: Boolean(host.gatewayReady),
+          },
+          current: { status, wslReady, gatewayReady },
+        },
+        now,
+      });
+    }
+
     return c.json({ ok: true, serverTimeMs: now, status });
+  });
+
+  controller.post("/api/agent/events", async (c) => {
+    const body = await readJsonBody(c);
+    if (!body) {
+      return jsonError(c, 400, "INVALID_REQUEST", "请求体必须是 JSON。", undefined);
+    }
+
+    const hostId = normalizeHostId(body.hostId);
+    if (!hostId) {
+      return jsonError(c, 400, "INVALID_HOST_ID", "hostId 不合法。", undefined);
+    }
+
+    const token = readBearerToken(c);
+    const host = getHostById(hostId);
+    if (!host || !token || token !== host.agentToken) {
+      return jsonError(c, 401, "AGENT_AUTH_FAILED", "agentToken 校验失败。", undefined);
+    }
+
+    const eventType = typeof body.eventType === "string" ? body.eventType.trim().slice(0, 64) : "";
+    if (!eventType) {
+      return jsonError(c, 400, "INVALID_EVENT_TYPE", "eventType 不能为空。", undefined);
+    }
+
+    const eventId = createAgentEvent({
+      hostId,
+      eventType,
+      severity: parseEventSeverity(body.severity),
+      title: typeof body.title === "string" ? body.title : null,
+      payload: body.payload ?? null,
+    });
+
+    auditLog({
+      actor: `agent:${hostId}`,
+      action: "agent_event_reported",
+      deviceId: hostId,
+      controllerAddress: host.controllerAddress,
+      detail: { eventId, eventType },
+    });
+
+    return c.json({ ok: true, eventId });
+  });
+
+  controller.get("/api/agent/insights", (c) => {
+    const hostId = normalizeHostId(c.req.query("hostId"));
+    if (!hostId) {
+      return jsonError(c, 400, "INVALID_HOST_ID", "hostId 不合法。", undefined);
+    }
+
+    const token = readBearerToken(c);
+    const host = getHostById(hostId);
+    if (!host || !token || token !== host.agentToken) {
+      return jsonError(c, 401, "AGENT_AUTH_FAILED", "agentToken 校验失败。", undefined);
+    }
+
+    const limit = parseLimit(c.req.query("limit"), 30);
+    const events = listHostRecentEvents(hostId, limit);
+    const summary = events.reduce(
+      (acc, item) => {
+        acc.total += 1;
+        if (item.severity === "warning") acc.warning += 1;
+        if (item.severity === "error") acc.error += 1;
+        return acc;
+      },
+      { total: 0, warning: 0, error: 0 }
+    );
+
+    return c.json({
+      ok: true,
+      hostId,
+      summary,
+      events: events.map((item) => ({
+        id: item.id,
+        eventType: item.eventType,
+        severity: item.severity,
+        title: item.title,
+        payload: safeJsonParse<Record<string, unknown>>(item.payload, {}),
+        createdAt: item.createdAt,
+      })),
+    });
   });
 
   controller.get("/api/agent/commands", (c) => {

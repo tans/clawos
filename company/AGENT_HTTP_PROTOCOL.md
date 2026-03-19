@@ -107,7 +107,40 @@
 - `clawos.gateway.status`
 - `clawos.gateway.action`（如 `restart`）
 
-## 7. 兼容性约定
+## 7. 监听事件上报（events）
+
+- `POST /api/agent/events`
+- Header: `Authorization: Bearer <agentToken>`
+
+请求示例：
+
+```json
+{
+  "hostId": "host-demo-01",
+  "eventType": "runtime.queue.blocked",
+  "severity": "warning",
+  "title": "任务队列阻塞",
+  "payload": {
+    "queueDepth": 42,
+    "oldestWaitSec": 180
+  }
+}
+```
+
+约束：
+- `eventType` 必填，建议使用 `domain.action` 风格。
+- `severity` 可选：`info` / `warning` / `error`，默认 `info`。
+
+## 8. Agent 侧洞察拉取（insights）
+
+- `GET /api/agent/insights?hostId=<hostId>&limit=<n>`
+- Header: `Authorization: Bearer <agentToken>`
+
+返回：
+- `summary`：最近事件总数与分级统计。
+- `events`：最近事件列表（含 `eventType/severity/title/payload/createdAt`）。
+
+## 9. 兼容性约定
 
 - 新增字段应保持可选，旧 Agent 可忽略未知字段。
 - `controllerAddress` 继续作为唯一授权绑定字段。
