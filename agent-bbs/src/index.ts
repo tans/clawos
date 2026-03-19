@@ -1,14 +1,22 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { serveStatic } from "hono/bun";
 import {
   addMetric,
+  createExecution,
+  createProposal,
   createReply,
   createThread,
   getThread,
   initDb,
   listActors,
+  listAgentTasks,
+  listEventsAfter,
+  listExecutions,
+  listProposals,
   listThreads,
+  selectProposal,
   setThreadStatus,
+  updateExecution,
   type ReplyType,
   type ThreadDetail,
   type ThreadListItem,
@@ -22,18 +30,24 @@ const statusFlow: ThreadStatus[] = ["task", "plan", "subtasks", "execution", "re
 
 app.use("/styles.css", serveStatic({ path: "./public/styles.css" }));
 
-app.get("/", (c) => c.redirect("/threads"));
+app.get("/", (c) => c.redirect("/missions"));
 
-app.get("/threads", (c) => {
+function missionsPage(c: Context) {
   const status = c.req.query("status") as ThreadStatus | undefined;
-  const threads = listThreads(status);
-  return c.html(layout("Agent BBS", threadListView(threads, status)));
-});
+  const missions = listThreads(status);
+  return c.html(layout("Agent Mission", threadListView(missions, status)));
+}
 
-app.get("/threads/new", (c) => {
+app.get("/missions", missionsPage);
+app.get("/threads", missionsPage);
+
+function newMissionPage(c: Context) {
   const actors = listActors();
-  return c.html(layout("New Task", newThreadView(actors)));
-});
+  return c.html(layout("New Mission", newThreadView(actors)));
+}
+
+app.get("/missions/new", newMissionPage);
+app.get("/threads/new", newMissionPage);
 
 app.post("/threads", async (c) => {
   const form = await c.req.formData();
@@ -64,15 +78,49 @@ app.post("/threads", async (c) => {
     constraints_json
   });
 
-  return c.redirect(`/threads/${id}`);
+  return c.redirect(`/missions/${id}`);
+});
+app.post("/missions", async (c) => {
+  const form = await c.req.formData();
+  const title = String(form.get("title") ?? "").trim();
+  const intent = String(form.get("intent") ?? "").trim();
+  const body = String(form.get("body") ?? "").trim();
+  const creator_id = Number(form.get("creator_id") ?? 0);
+  const budgetText = String(form.get("budget") ?? "").trim();
+  const constraintsInput = String(form.get("constraints_json") ?? "{}").trim();
+
+  if (!title || !intent || !creator_id) {
+    return c.text("title / intent / creator_id required", 400);
+  }
+
+  let constraints_json = "{}";
+  try {
+    constraints_json = JSON.stringify(JSON.parse(constraintsInput));
+  } catch {
+    return c.text("constraints_json must be valid JSON", 400);
+  }
+
+  const id = createThread({
+    title,
+    intent,
+    body,
+    creator_id,
+    budget: budgetText ? Number(budgetText) : null,
+    constraints_json
+  });
+
+  return c.redirect(`/missions/${id}`);
 });
 
-app.get("/threads/:id", (c) => {
+function missionDetailPage(c: Context) {
   const id = Number(c.req.param("id"));
   const detail = getThread(id);
-  if (!detail) return c.text("thread not found", 404);
+  if (!detail) return c.text("mission not found", 404);
   return c.html(layout(detail.thread.title, threadDetailView(detail)));
-});
+}
+
+app.get("/missions/:id", missionDetailPage);
+app.get("/threads/:id", missionDetailPage);
 
 app.post("/threads/:id/status", async (c) => {
   const threadId = Number(c.req.param("id"));
@@ -80,7 +128,15 @@ app.post("/threads/:id/status", async (c) => {
   const status = String(form.get("status") ?? "task") as ThreadStatus;
   if (!statusFlow.includes(status)) return c.text("invalid status", 400);
   setThreadStatus(threadId, status);
-  return c.redirect(`/threads/${threadId}`);
+  return c.redirect(`/missions/${threadId}`);
+});
+app.post("/missions/:id/status", async (c) => {
+  const threadId = Number(c.req.param("id"));
+  const form = await c.req.formData();
+  const status = String(form.get("status") ?? "task") as ThreadStatus;
+  if (!statusFlow.includes(status)) return c.text("invalid status", 400);
+  setThreadStatus(threadId, status);
+  return c.redirect(`/missions/${threadId}`);
 });
 
 app.post("/threads/:id/replies", async (c) => {
@@ -101,7 +157,27 @@ app.post("/threads/:id/replies", async (c) => {
     executable_json: String(form.get("executable_json") ?? "").trim()
   });
 
-  return c.redirect(`/threads/${threadId}`);
+  return c.redirect(`/missions/${threadId}`);
+});
+app.post("/missions/:id/replies", async (c) => {
+  const threadId = Number(c.req.param("id"));
+  const form = await c.req.formData();
+  const author_id = Number(form.get("author_id") ?? 0);
+  const reply_type = String(form.get("reply_type") ?? "note") as ReplyType;
+
+  createReply({
+    thread_id: threadId,
+    author_id,
+    reply_type,
+    body: String(form.get("body") ?? "").trim(),
+    action: String(form.get("action") ?? "").trim(),
+    target: String(form.get("target") ?? "").trim(),
+    estimated_cost: toOptionalNumber(form.get("estimated_cost")),
+    confidence: toOptionalNumber(form.get("confidence")),
+    executable_json: String(form.get("executable_json") ?? "").trim()
+  });
+
+  return c.redirect(`/missions/${threadId}`);
 });
 
 app.post("/threads/:id/metrics", async (c) => {
@@ -116,10 +192,28 @@ app.post("/threads/:id/metrics", async (c) => {
     latency: Number(form.get("latency") ?? 0),
     trust_score: Number(form.get("trust_score") ?? 0)
   });
-  return c.redirect(`/threads/${threadId}`);
+  return c.redirect(`/missions/${threadId}`);
+});
+app.post("/missions/:id/metrics", async (c) => {
+  const threadId = Number(c.req.param("id"));
+  const form = await c.req.formData();
+  addMetric({
+    thread_id: threadId,
+    reply_id: toOptionalNumber(form.get("reply_id")),
+    rater_id: Number(form.get("rater_id") ?? 0),
+    success_rate: Number(form.get("success_rate") ?? 0),
+    cost_efficiency: Number(form.get("cost_efficiency") ?? 0),
+    latency: Number(form.get("latency") ?? 0),
+    trust_score: Number(form.get("trust_score") ?? 0)
+  });
+  return c.redirect(`/missions/${threadId}`);
 });
 
 app.get("/api/threads", (c) => {
+  const status = c.req.query("status") as ThreadStatus | undefined;
+  return c.json({ items: listThreads(status) });
+});
+app.get("/api/missions", (c) => {
   const status = c.req.query("status") as ThreadStatus | undefined;
   return c.json({ items: listThreads(status) });
 });
@@ -129,8 +223,25 @@ app.get("/api/threads/:id", (c) => {
   if (!detail) return c.json({ error: "not_found" }, 404);
   return c.json(detail);
 });
+app.get("/api/missions/:id", (c) => {
+  const detail = getThread(Number(c.req.param("id")));
+  if (!detail) return c.json({ error: "not_found" }, 404);
+  return c.json(detail);
+});
 
 app.post("/api/threads", async (c) => {
+  const body = await c.req.json();
+  const id = createThread({
+    title: body.title,
+    intent: body.intent,
+    budget: body.budget ?? null,
+    constraints_json: JSON.stringify(body.constraints ?? {}),
+    body: body.body ?? "",
+    creator_id: body.creator_id
+  });
+  return c.json({ id }, 201);
+});
+app.post("/api/missions", async (c) => {
   const body = await c.req.json();
   const id = createThread({
     title: body.title,
@@ -159,9 +270,196 @@ app.post("/api/threads/:id/replies", async (c) => {
   });
   return c.json({ ok: true }, 201);
 });
+app.post("/api/missions/:id/replies", async (c) => {
+  const threadId = Number(c.req.param("id"));
+  const body = await c.req.json();
+  createReply({
+    thread_id: threadId,
+    author_id: body.author_id,
+    reply_type: body.reply_type,
+    body: body.body ?? "",
+    action: body.action,
+    target: body.target,
+    estimated_cost: body.estimated_cost,
+    confidence: body.confidence,
+    executable_json: body.executable ?? ""
+  });
+  return c.json({ ok: true }, 201);
+});
+
+app.get("/api/agent/tasks", (c) => {
+  const agentId = toOptionalNumber(c.req.query("agent_id"));
+  const limit = toOptionalNumber(c.req.query("limit")) ?? 20;
+  const intent = c.req.query("intent") ?? undefined;
+  const items = listAgentTasks({ agent_id: agentId ?? undefined, intent, limit });
+  return c.json({ items });
+});
+
+app.post("/api/proposals", async (c) => {
+  const body = await c.req.json();
+  const planJson = JSON.stringify(body.plan ?? []);
+  const proposalId = createProposal({
+    thread_id: Number(body.thread_id),
+    type: body.type ?? "proposal",
+    plan_json: planJson,
+    cost_estimate: body.cost_estimate ?? null,
+    latency_estimate: body.latency_estimate ?? null,
+    confidence: body.confidence ?? null,
+    agent_id: Number(body.agent_id)
+  });
+
+  if (body.as_reply) {
+    createReply({
+      thread_id: Number(body.thread_id),
+      author_id: Number(body.agent_id),
+      reply_type: body.type === "result" ? "result" : "proposal",
+      body: body.summary ?? "proposal submitted",
+      estimated_cost: body.cost_estimate ?? null,
+      confidence: body.confidence ?? null,
+      executable_json: JSON.stringify({ plan: body.plan ?? [] })
+    });
+  }
+
+  return c.json({ id: proposalId }, 201);
+});
+
+app.get("/api/threads/:id/proposals", (c) => {
+  const threadId = Number(c.req.param("id"));
+  return c.json({ items: listProposals(threadId) });
+});
+app.get("/api/missions/:id/proposals", (c) => {
+  const threadId = Number(c.req.param("id"));
+  return c.json({ items: listProposals(threadId) });
+});
+
+app.post("/api/threads/:id/select", async (c) => {
+  const threadId = Number(c.req.param("id"));
+  const body = await c.req.json();
+  const proposalId = Number(body.proposal_id);
+  const assignedAgentId = toOptionalNumber(body.assigned_agent_id);
+
+  const selected = selectProposal({
+    thread_id: threadId,
+    proposal_id: proposalId,
+    assigned_agent_id: assignedAgentId
+  });
+
+  if (!selected) return c.json({ error: "proposal_not_found" }, 404);
+
+  const executionId = createExecution({
+    thread_id: threadId,
+    proposal_id: proposalId,
+    executor_agent_id: selected.assigned_agent_id,
+    status: "pending"
+  });
+
+  return c.json({ ok: true, execution_id: executionId }, 201);
+});
+app.post("/api/missions/:id/select", async (c) => {
+  const threadId = Number(c.req.param("id"));
+  const body = await c.req.json();
+  const proposalId = Number(body.proposal_id);
+  const assignedAgentId = toOptionalNumber(body.assigned_agent_id);
+
+  const selected = selectProposal({
+    thread_id: threadId,
+    proposal_id: proposalId,
+    assigned_agent_id: assignedAgentId
+  });
+
+  if (!selected) return c.json({ error: "proposal_not_found" }, 404);
+
+  const executionId = createExecution({
+    thread_id: threadId,
+    proposal_id: proposalId,
+    executor_agent_id: selected.assigned_agent_id,
+    status: "pending"
+  });
+
+  return c.json({ ok: true, execution_id: executionId }, 201);
+});
+
+app.get("/api/executions", (c) => {
+  const threadId = toOptionalNumber(c.req.query("thread_id"));
+  return c.json({ items: listExecutions(threadId ?? undefined) });
+});
+
+app.post("/api/executions", async (c) => {
+  const body = await c.req.json();
+  const id = createExecution({
+    thread_id: Number(body.thread_id),
+    proposal_id: Number(body.proposal_id),
+    executor_agent_id: Number(body.executor_agent_id),
+    status: body.status ?? "pending",
+    logs_json: JSON.stringify(body.logs ?? []),
+    result_json: JSON.stringify(body.result ?? {})
+  });
+  return c.json({ id }, 201);
+});
+
+app.post("/api/executions/:id/update", async (c) => {
+  const executionId = Number(c.req.param("id"));
+  const body = await c.req.json();
+  const ret = updateExecution({
+    execution_id: executionId,
+    status: body.status,
+    logs_json: body.logs ? JSON.stringify(body.logs) : undefined,
+    result_json: body.result ? JSON.stringify(body.result) : undefined
+  });
+  if (!ret) return c.json({ error: "execution_not_found" }, 404);
+  return c.json({ ok: true, ...ret });
+});
+
+app.get("/api/events", async (c) => {
+  if (c.req.header("accept")?.includes("text/event-stream")) {
+    const encoder = new TextEncoder();
+    const startFrom = Number(c.req.query("last_id") ?? 0);
+
+    const stream = new ReadableStream({
+      start(controller) {
+        let lastId = startFrom;
+        controller.enqueue(encoder.encode(`event: hello\ndata: ${JSON.stringify({ last_id: lastId })}\n\n`));
+
+        const flush = () => {
+          const events = listEventsAfter(lastId, 100);
+          for (const ev of events) {
+            lastId = ev.id;
+            controller.enqueue(encoder.encode(`id: ${ev.id}\n`));
+            controller.enqueue(encoder.encode(`event: ${ev.type}\n`));
+            controller.enqueue(encoder.encode(`data: ${ev.payload_json}\n\n`));
+          }
+        };
+
+        flush();
+        const timer = setInterval(flush, 1500);
+
+        const heartbeat = setInterval(() => {
+          controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`));
+        }, 12000);
+
+        c.req.raw.signal.addEventListener("abort", () => {
+          clearInterval(timer);
+          clearInterval(heartbeat);
+          controller.close();
+        });
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive"
+      }
+    });
+  }
+
+  const lastId = Number(c.req.query("last_id") ?? 0);
+  return c.json({ items: listEventsAfter(lastId, 200) });
+});
 
 const port = Number(process.env.PORT ?? 9090);
-console.log(`Agent BBS running at http://127.0.0.1:${port}`);
+console.log(`Agent Mission running at http://127.0.0.1:${port}`);
 
 export default {
   port,
@@ -174,17 +472,17 @@ function layout(title: string, body: string) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>${escapeHtml(title)} - Agent BBS</title>
+  <title>${escapeHtml(title)} - Agent Mission</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body class="min-h-screen bg-board-50 text-slate-900">
   <header class="border-b border-slate-200 bg-white/90 backdrop-blur sticky top-0">
     <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-      <a href="/threads" class="font-semibold tracking-tight text-lg">Agent BBS</a>
+      <a href="/missions" class="font-semibold tracking-tight text-lg">Agent Mission</a>
       <div class="text-sm text-slate-600 flex gap-4">
-        <a href="/threads">Threads</a>
-        <a href="/threads/new">New Task</a>
-        <a href="/api/threads">JSON API</a>
+        <a href="/missions">Missions</a>
+        <a href="/missions/new">New Mission</a>
+        <a href="/api/missions">JSON API</a>
       </div>
     </div>
   </header>
@@ -193,14 +491,11 @@ function layout(title: string, body: string) {
 </html>`;
 }
 
-function threadListView(
-  threads: ThreadListItem[],
-  currentStatus?: ThreadStatus
-) {
+function threadListView(threads: ThreadListItem[], currentStatus?: ThreadStatus) {
   const chips = statusFlow
     .map((s) => {
       const active = s === currentStatus;
-      return `<a href="/threads?status=${s}" class="px-3 py-1 rounded-full text-xs border ${
+      return `<a href="/missions?status=${s}" class="px-3 py-1 rounded-full text-xs border ${
         active ? "bg-accent-500 text-white border-accent-500" : "bg-white border-slate-200"
       }">${s}</a>`;
     })
@@ -208,7 +503,7 @@ function threadListView(
 
   const rows = threads
     .map(
-      (t) => `<a href="/threads/${t.id}" class="block bg-white border border-slate-200 rounded-xl p-4 hover:border-accent-600 transition-colors">
+      (t) => `<a href="/missions/${t.id}" class="block bg-white border border-slate-200 rounded-xl p-4 hover:border-accent-600 transition-colors">
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700">${t.status}</span>
         <span class="text-xs text-slate-500">#${t.id}</span>
@@ -221,13 +516,16 @@ function threadListView(
         <span>replies: ${t.reply_count}</span>
         <span>avg confidence: ${t.avg_confidence}</span>
       </div>
+      <div class="text-xs mt-2 text-slate-500">lifecycle: ${t.lifecycle_status} | stage: ${t.stage} | selected: ${
+        t.selected_proposal_id ?? "-"
+      }</div>
     </a>`
     )
     .join("");
 
   return `<section class="space-y-4">
-    <div class="flex flex-wrap items-center gap-2">${chips}<a href="/threads" class="text-xs underline">clear</a></div>
-    <div class="grid gap-3">${rows || '<div class="text-slate-500">No threads yet.</div>'}</div>
+    <div class="flex flex-wrap items-center gap-2">${chips}<a href="/missions" class="text-xs underline">clear</a></div>
+    <div class="grid gap-3">${rows || '<div class="text-slate-500">No missions yet.</div>'}</div>
   </section>`;
 }
 
@@ -237,8 +535,8 @@ function newThreadView(actors: Array<{ id: number; name: string; role: string }>
     .join("");
 
   return `<section class="bg-white border border-slate-200 rounded-2xl p-6 max-w-3xl">
-    <h2 class="text-xl font-semibold">Create structured task thread</h2>
-    <form action="/threads" method="post" class="grid gap-4 mt-4">
+    <h2 class="text-xl font-semibold">Create structured mission</h2>
+    <form action="/missions" method="post" class="grid gap-4 mt-4">
       ${field("Title", '<input name="title" required class="input" placeholder="东京门店玫瑰采购" />')}
       ${field("Intent", '<input name="intent" required class="input" placeholder="buy_flower_batch" />')}
       ${field("Budget", '<input name="budget" type="number" class="input" placeholder="500000" />')}
@@ -309,6 +607,24 @@ function threadDetailView(detail: ThreadDetail) {
       </div>`
     : '<div class="text-sm text-slate-500">No metrics yet.</div>';
 
+  const proposalCards = detail.proposals
+    .map(
+      (p) => `<article class="p-3 border border-slate-200 rounded-lg bg-white text-sm">
+        <div class="text-xs text-slate-500">proposal #${p.id} by agent ${p.agent_id}</div>
+        <div>cost: ${p.cost_estimate ?? "-"} | latency: ${p.latency_estimate ?? "-"} | confidence: ${p.confidence ?? "-"}</div>
+      </article>`
+    )
+    .join("");
+
+  const executionCards = detail.executions
+    .map(
+      (e) => `<article class="p-3 border border-slate-200 rounded-lg bg-white text-sm">
+        <div class="text-xs text-slate-500">execution #${e.id} proposal #${e.proposal_id}</div>
+        <div>status: ${e.status}</div>
+      </article>`
+    )
+    .join("");
+
   return `<section class="space-y-5">
     <article class="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
       <div class="flex items-center gap-2 text-xs text-slate-600">
@@ -323,7 +639,11 @@ function threadDetailView(detail: ThreadDetail) {
             type: detail.thread.task_type,
             intent: detail.thread.intent,
             budget: detail.thread.budget,
-            constraints
+            constraints,
+            lifecycle_status: detail.thread.lifecycle_status,
+            stage: detail.thread.stage,
+            selected_proposal_id: detail.thread.selected_proposal_id,
+            assigned_agent_id: detail.thread.assigned_agent_id
           },
           null,
           2
@@ -331,7 +651,7 @@ function threadDetailView(detail: ThreadDetail) {
       )}</pre>
       <p class="text-sm text-slate-700 whitespace-pre-wrap">${escapeHtml(detail.thread.body)}</p>
       <div class="flex flex-wrap gap-2">${timeline}</div>
-      <form action="/threads/${detail.thread.id}/status" method="post" class="flex flex-wrap gap-2 items-center">
+      <form action="/missions/${detail.thread.id}/status" method="post" class="flex flex-wrap gap-2 items-center">
         <select name="status" class="input w-56">${statusFlow
           .map((s) => `<option ${s === detail.thread.status ? "selected" : ""} value="${s}">${s}</option>`)
           .join("")}</select>
@@ -341,14 +661,18 @@ function threadDetailView(detail: ThreadDetail) {
 
     <section class="grid lg:grid-cols-2 gap-5">
       <div class="space-y-3">
-        <h2 class="text-lg font-semibold">Replies / Proposals</h2>
+        <h2 class="text-lg font-semibold">Mission Updates / Proposals</h2>
         ${replies || '<div class="text-slate-500">No replies yet.</div>'}
+        <h3 class="text-md font-semibold mt-3">Normalized proposals</h3>
+        ${proposalCards || '<div class="text-slate-500">No proposals yet.</div>'}
+        <h3 class="text-md font-semibold mt-3">Executions</h3>
+        ${executionCards || '<div class="text-slate-500">No executions yet.</div>'}
       </div>
 
       <div class="space-y-5">
         <article class="bg-white border border-slate-200 rounded-2xl p-5">
           <h3 class="font-semibold">Add reply</h3>
-          <form action="/threads/${detail.thread.id}/replies" method="post" class="grid gap-3 mt-3">
+          <form action="/missions/${detail.thread.id}/replies" method="post" class="grid gap-3 mt-3">
             ${field("Author", `<select class="input" name="author_id">${actorOptions}</select>`)}
             ${field(
               "Type",
@@ -367,9 +691,9 @@ function threadDetailView(detail: ThreadDetail) {
         <article class="bg-white border border-slate-200 rounded-2xl p-5">
           <h3 class="font-semibold">Thread metrics</h3>
           <div class="mt-2">${metrics}</div>
-          <form action="/threads/${detail.thread.id}/metrics" method="post" class="grid gap-3 mt-3">
+          <form action="/missions/${detail.thread.id}/metrics" method="post" class="grid gap-3 mt-3">
             ${field("Rater", `<select class="input" name="rater_id">${actorOptions}</select>`)}
-            ${field("Reply id", `<select class="input" name="reply_id"><option value="">(thread-level)</option>${replyOptions}</select>`)}
+            ${field("Reply id", `<select class="input" name="reply_id"><option value="">(mission-level)</option>${replyOptions}</select>`)}
             ${field("success_rate", '<input class="input" name="success_rate" type="number" step="0.01" min="0" max="1" value="0.9" />')}
             ${field("cost_efficiency", '<input class="input" name="cost_efficiency" type="number" step="0.01" min="0" max="1" value="0.8" />')}
             ${field("latency", '<input class="input" name="latency" type="number" step="0.01" min="0" max="1" value="0.75" />')}
@@ -395,7 +719,7 @@ function escapeHtml(input: string) {
     .replaceAll("'", "&#39;");
 }
 
-function toOptionalNumber(value: FormDataEntryValue | null) {
+function toOptionalNumber(value: unknown) {
   const text = String(value ?? "").trim();
   if (!text) return null;
   const num = Number(text);

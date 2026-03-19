@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun --watch src/index.ts",
     "start": "bun run src/index.ts",
+    "agent:demo": "bun run src/simple-agent.ts",
     "tailwind:build": "bunx @tailwindcss/cli -i ./src/styles/input.css -o ./public/styles.css --minify",
     "tailwind:watch": "bunx @tailwindcss/cli -i ./src/styles/input.css -o ./public/styles.css --watch"
   },
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",
+    "bun-types": "^1.3.11",
     "tailwindcss": "^4.1.16"
   }
 }

@@ -15,3 +15,9 @@ tmp-dev-stderr-2.log
 tmp-dev-stdout-2.log
 data
 .env
+
+# Agent BBS runtime artifacts
+agent-bbs/data/
+*.db
+*.db-shm
+*.db-wal
