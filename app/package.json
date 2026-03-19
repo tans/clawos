@@ -1,0 +1,37 @@
+{
+  "name": "clawos-app",
+  "version": "0.9.44",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tailwind:build": "tailwindcss -i src/styles/input.css -o dist/output.css --minify",
+    "tailwind:watch": "tailwindcss -i src/styles/input.css -o dist/output.css --watch=always",
+    "dev": "bun run desktop:dev",
+    "electrobun:dev": "bun run scripts/electrobun.ts dev",
+    "electrobun:dev:watch": "bun run scripts/electrobun.ts dev --watch",
+    "electrobun:build": "bun run scripts/electrobun.ts build --env=dev",
+    "electrobun:build:dev": "bun run scripts/electrobun.ts build --env=dev",
+    "electrobun:build:stable": "bun run scripts/electrobun.ts build --env=stable",
+    "desktop:dev": "bun run scripts/desktop-dev.ts",
+    "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun run electrobun:dev:watch",
+    "desktop:build": "bun run tailwind:build && bun run electrobun:build",
+    "desktop:build:dev": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=dev",
+    "desktop:build:setup": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=stable",
+    "desktop:build:canary": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=canary",
+    "desktop:build:stable": "bun run tailwind:build && bun run scripts/electrobun.ts build --env=stable",
+    "build": "bun run desktop:build",
+    "start": "bun run tailwind:build && bun run electrobun:dev",
+    "test": "cd .. && bun test"
+  },
+  "dependencies": {
+    "json5": "^2.2.3",
+    "viem": "^2.46.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.16",
+    "daisyui": "^5.5.18",
+    "electrobun": "^1.13.1",
+    "png-to-ico": "^3.0.1",
+    "tailwindcss": "^4.1.16"
+  }
+}

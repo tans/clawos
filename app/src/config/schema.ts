@@ -1,4 +1,4 @@
-import configSchemaFile from "../../../config.schema.json" with { type: "json" };
+import configSchemaFile from "../../config.schema.json" with { type: "json" };
 import { HttpError } from "../lib/http";
 import { asObject } from "../lib/value";
 

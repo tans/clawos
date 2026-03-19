@@ -101,7 +101,7 @@ function printUsage(): void {
   --updater-dir <path>  Electrobun 更新产物目录（可选，默认自动探测）
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
-  --config <path>       配置文件路径，默认 ./clawos_xiake.json
+  --config <path>       配置文件路径，默认 ./app/clawos_xiake.json
   --version <version>   安装包版本（可选）
   --skip-installer      跳过安装包上传
   --skip-config         跳过配置文件上传
@@ -148,7 +148,7 @@ function parseArgs(argv: string[]): Options {
     updaterDir: process.env.CLAWOS_UPDATER_DIR?.trim()
       ? resolve(process.cwd(), process.env.CLAWOS_UPDATER_DIR.trim())
       : undefined,
-    configPath: resolvePathFromEnv(process.env.CLAWOS_CONFIG_PATH, resolve(process.cwd(), "clawos_xiake.json")),
+    configPath: resolvePathFromEnv(process.env.CLAWOS_CONFIG_PATH, resolve(process.cwd(), "app/clawos_xiake.json")),
     version: process.env.CLAWOS_VERSION?.trim() || undefined,
     skipInstaller: false,
     skipConfig: false,

@@ -15,7 +15,7 @@ type Options = {
 
 const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
 const APP_CONSTANTS_PATH = resolve(process.cwd(), "app/src/app.constants.ts");
-const XIAKE_CONFIG_PATH = resolve(process.cwd(), "clawos_xiake.json");
+const XIAKE_CONFIG_PATH = resolve(process.cwd(), "app/clawos_xiake.json");
 const SHELL_HTML_PATH = resolve(process.cwd(), "app/src/desktop-ui/shell.html");
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 
@@ -311,7 +311,7 @@ async function main(): Promise<void> {
   console.log(`[release] build env: ${options.env}`);
   console.log(`[release] release version: ${releaseVersion.version}`);
   if (releaseVersion.changed) {
-    console.log("[release] version files updated: package.json + app/src/app.constants.ts + clawos_xiake.json + app/src/desktop-ui/shell.html");
+    console.log("[release] version files updated: package.json + app/src/app.constants.ts + app/clawos_xiake.json + app/src/desktop-ui/shell.html");
   }
   if (options.skipBuild) {
     console.log("[release] 跳过构建 (--skip-build)");
