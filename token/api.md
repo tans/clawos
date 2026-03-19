@@ -1,11 +1,11 @@
-# ClawOS Router API（v1）
+# ClawOS Token API（v1）
 
 本文档为当前已实现版本，目标是给 OpenClaw 直接接入统一模型入口，并提供充值/续费能力。
 
 ## 1. 基础约定
 
-- Base URL：`https://router.clawos.cc`
-- 鉴权：`Authorization: Bearer <router_api_key>`
+- Base URL：`https://token.clawos.cc`
+- 鉴权：`Authorization: Bearer <token_api_key>`
 - 响应：`application/json; charset=utf-8`
 - 请求追踪：`x-request-id`（可选）
 
@@ -63,7 +63,7 @@
     "completion_tokens": 200,
     "total_tokens": 300
   },
-  "router": {
+  "token": {
     "resolved_model": "deepseek/deepseek-chat",
     "billing": {
       "charged_cents": 1,
@@ -79,7 +79,7 @@
 
 ### 2.4 查询余额
 
-`GET /router/v1/account/balance`
+`GET /token/v1/account/balance`
 
 示例响应：
 
@@ -101,7 +101,7 @@
 
 ### 2.5 充值
 
-`POST /router/v1/billing/recharge`
+`POST /token/v1/billing/recharge`
 
 请求体：
 
@@ -122,7 +122,7 @@
 
 ### 2.6 用量汇总
 
-`GET /router/v1/billing/usage?from=2026-03-01&to=2026-03-31&modelLimit=20`
+`GET /token/v1/billing/usage?from=2026-03-01&to=2026-03-31&modelLimit=20`
 
 参数：
 
@@ -173,7 +173,7 @@
 
 ### 2.7 续费
 
-`POST /router/v1/billing/renew`
+`POST /token/v1/billing/renew`
 
 请求体：
 
@@ -195,10 +195,10 @@
 
 ## 3. 鉴权与账户映射
 
-Router API key 与账户映射来自启动配置：
+Token API key 与账户映射来自启动配置：
 
-- `ROUTER_API_KEYS`：默认绑定到 `ROUTER_DEFAULT_ACCOUNT_ID`
-- `ROUTER_SEED_KEYS`：显式配置 `accountId -> keys`
+- `TOKEN_API_KEYS`：默认绑定到 `TOKEN_DEFAULT_ACCOUNT_ID`，兼容 `ROUTER_API_KEYS`
+- `TOKEN_SEED_KEYS`：显式配置 `accountId -> keys`，兼容 `ROUTER_SEED_KEYS`
 
 约束：
 
@@ -209,12 +209,12 @@ Router API key 与账户映射来自启动配置：
 
 - 套餐有效期内：请求可继续，`charged_cents=0`
 - 套餐过期后：按 token 计费，从余额扣除
-- `stream=true`：按 `ROUTER_STREAM_FLAT_CENTS` 固定扣费
+- `stream=true`：按 `TOKEN_STREAM_FLAT_CENTS` 固定扣费
 
 默认单价（可通过环境变量覆盖）：
 
-- 输入：`ROUTER_PRICE_INPUT_PER_1M_CENTS=200`
-- 输出：`ROUTER_PRICE_OUTPUT_PER_1M_CENTS=800`
+- 输入：`TOKEN_PRICE_INPUT_PER_1M_CENTS=200`
+- 输出：`TOKEN_PRICE_OUTPUT_PER_1M_CENTS=800`
 
 ## 5. 错误规范
 
@@ -243,18 +243,18 @@ Router API key 与账户映射来自启动配置：
 ## 6. OpenClaw 接入示例
 
 ```toml
-[models.providers.clawos_router]
+[models.providers.clawos_token]
 baseUrl = "http://127.0.0.1:8788/v1"
-apiKey = "${ROUTER_API_KEY}"
+apiKey = "${TOKEN_API_KEY}"
 api = "openai-completions"
 
-[[models.providers.clawos_router.models]]
+[[models.providers.clawos_token.models]]
 id = "auto"
-name = "ClawOS Auto Router"
+name = "ClawOS Auto Token"
 ```
 
 ```toml
 [agents.defaults.model]
-primary = "clawos_router/auto"
-fallbacks = ["clawos_router/auto-fast"]
+primary = "clawos_token/auto"
+fallbacks = ["clawos_token/auto-fast"]
 ```

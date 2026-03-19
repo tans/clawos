@@ -76,12 +76,12 @@ export class BillingError extends Error {
   }
 }
 
-const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "router.db");
-export const ROUTER_DB_PATH = process.env.ROUTER_DB_PATH?.trim() || DEFAULT_DB_PATH;
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "token.db");
+export const TOKEN_DB_PATH = process.env.TOKEN_DB_PATH?.trim() || process.env.ROUTER_DB_PATH?.trim() || DEFAULT_DB_PATH;
 
-mkdirSync(path.dirname(ROUTER_DB_PATH), { recursive: true });
+mkdirSync(path.dirname(TOKEN_DB_PATH), { recursive: true });
 
-const db = new Database(ROUTER_DB_PATH, { create: true, strict: true });
+const db = new Database(TOKEN_DB_PATH, { create: true, strict: true });
 
 db.exec(`
 PRAGMA journal_mode = WAL;

@@ -1,6 +1,6 @@
 import {
   BillingError,
-  ROUTER_DB_PATH,
+  TOKEN_DB_PATH,
   canServeRequest,
   chargeUsage,
   getUsageSummary,
@@ -77,27 +77,27 @@ class UpstreamError extends Error {
   }
 }
 
-const PORT = Number(process.env.ROUTER_PORT || "8788");
-const DEFAULT_ACCOUNT_ID = (process.env.ROUTER_DEFAULT_ACCOUNT_ID || "acct_demo").trim();
-const DEFAULT_ACCOUNT_NAME = (process.env.ROUTER_DEFAULT_ACCOUNT_NAME || "Demo Account").trim();
-const DEFAULT_CURRENCY = (process.env.ROUTER_CURRENCY || "CNY").trim().toUpperCase();
+const PORT = Number(readEnv("TOKEN_PORT", "ROUTER_PORT") || "8788");
+const DEFAULT_ACCOUNT_ID = (readEnv("TOKEN_DEFAULT_ACCOUNT_ID", "ROUTER_DEFAULT_ACCOUNT_ID") || "acct_demo").trim();
+const DEFAULT_ACCOUNT_NAME = (readEnv("TOKEN_DEFAULT_ACCOUNT_NAME", "ROUTER_DEFAULT_ACCOUNT_NAME") || "Demo Account").trim();
+const DEFAULT_CURRENCY = (readEnv("TOKEN_CURRENCY", "ROUTER_CURRENCY") || "CNY").trim().toUpperCase();
 
-const ROUTER_API_KEYS = parseCsv(process.env.ROUTER_API_KEYS || "");
-const SEEDED_API_KEYS = parseSeedApiKeys(process.env.ROUTER_SEED_KEYS || "", DEFAULT_ACCOUNT_ID, ROUTER_API_KEYS);
-const REQUIRE_AUTH = process.env.ROUTER_REQUIRE_AUTH === "1" || SEEDED_API_KEYS.length > 0;
+const TOKEN_API_KEYS = parseCsv(readEnv("TOKEN_API_KEYS", "ROUTER_API_KEYS") || "");
+const SEEDED_API_KEYS = parseSeedApiKeys(readEnv("TOKEN_SEED_KEYS", "ROUTER_SEED_KEYS") || "", DEFAULT_ACCOUNT_ID, TOKEN_API_KEYS);
+const REQUIRE_AUTH = readEnv("TOKEN_REQUIRE_AUTH", "ROUTER_REQUIRE_AUTH") === "1" || SEEDED_API_KEYS.length > 0;
 
-const PRICE_INPUT_PER_1M_CENTS = Number(process.env.ROUTER_PRICE_INPUT_PER_1M_CENTS || "200");
-const PRICE_OUTPUT_PER_1M_CENTS = Number(process.env.ROUTER_PRICE_OUTPUT_PER_1M_CENTS || "800");
-const STREAM_FLAT_CENTS = Math.max(0, Math.floor(Number(process.env.ROUTER_STREAM_FLAT_CENTS || "1")));
+const PRICE_INPUT_PER_1M_CENTS = Number(readEnv("TOKEN_PRICE_INPUT_PER_1M_CENTS", "ROUTER_PRICE_INPUT_PER_1M_CENTS") || "200");
+const PRICE_OUTPUT_PER_1M_CENTS = Number(readEnv("TOKEN_PRICE_OUTPUT_PER_1M_CENTS", "ROUTER_PRICE_OUTPUT_PER_1M_CENTS") || "800");
+const STREAM_FLAT_CENTS = Math.max(0, Math.floor(Number(readEnv("TOKEN_STREAM_FLAT_CENTS", "ROUTER_STREAM_FLAT_CENTS") || "1")));
 
 const PLAN_CATALOG: Record<string, { name: string; monthlyPriceCents: number }> = {
   "basic-monthly": {
     name: "Basic Monthly",
-    monthlyPriceCents: Number(process.env.ROUTER_PLAN_BASIC_MONTHLY_CENTS || "3900"),
+    monthlyPriceCents: Number(readEnv("TOKEN_PLAN_BASIC_MONTHLY_CENTS", "ROUTER_PLAN_BASIC_MONTHLY_CENTS") || "3900"),
   },
   "pro-monthly": {
     name: "Pro Monthly",
-    monthlyPriceCents: Number(process.env.ROUTER_PLAN_PRO_MONTHLY_CENTS || "9900"),
+    monthlyPriceCents: Number(readEnv("TOKEN_PLAN_PRO_MONTHLY_CENTS", "ROUTER_PLAN_PRO_MONTHLY_CENTS") || "9900"),
   },
 };
 
@@ -131,18 +131,18 @@ const providers: Record<ProviderName, ProviderConfig> = {
 
 const ALIASES: Record<string, Candidate[]> = {
   auto: [
-    { provider: "deepseek", model: process.env.ROUTER_MODEL_AUTO_DEEPSEEK || "deepseek-chat" },
-    { provider: "openai", model: process.env.ROUTER_MODEL_AUTO_OPENAI || "gpt-4.1-mini" },
-    { provider: "anthropic", model: process.env.ROUTER_MODEL_AUTO_ANTHROPIC || "claude-3-5-haiku-latest" },
+    { provider: "deepseek", model: readEnv("TOKEN_MODEL_AUTO_DEEPSEEK", "ROUTER_MODEL_AUTO_DEEPSEEK") || "deepseek-chat" },
+    { provider: "openai", model: readEnv("TOKEN_MODEL_AUTO_OPENAI", "ROUTER_MODEL_AUTO_OPENAI") || "gpt-4.1-mini" },
+    { provider: "anthropic", model: readEnv("TOKEN_MODEL_AUTO_ANTHROPIC", "ROUTER_MODEL_AUTO_ANTHROPIC") || "claude-3-5-haiku-latest" },
   ],
   "auto-fast": [
-    { provider: "deepseek", model: process.env.ROUTER_MODEL_FAST_DEEPSEEK || "deepseek-chat" },
-    { provider: "openai", model: process.env.ROUTER_MODEL_FAST_OPENAI || "gpt-4.1-mini" },
+    { provider: "deepseek", model: readEnv("TOKEN_MODEL_FAST_DEEPSEEK", "ROUTER_MODEL_FAST_DEEPSEEK") || "deepseek-chat" },
+    { provider: "openai", model: readEnv("TOKEN_MODEL_FAST_OPENAI", "ROUTER_MODEL_FAST_OPENAI") || "gpt-4.1-mini" },
   ],
   "auto-code": [
-    { provider: "deepseek", model: process.env.ROUTER_MODEL_CODE_DEEPSEEK || "deepseek-chat" },
-    { provider: "openai", model: process.env.ROUTER_MODEL_CODE_OPENAI || "gpt-4.1" },
-    { provider: "anthropic", model: process.env.ROUTER_MODEL_CODE_ANTHROPIC || "claude-3-5-sonnet-latest" },
+    { provider: "deepseek", model: readEnv("TOKEN_MODEL_CODE_DEEPSEEK", "ROUTER_MODEL_CODE_DEEPSEEK") || "deepseek-chat" },
+    { provider: "openai", model: readEnv("TOKEN_MODEL_CODE_OPENAI", "ROUTER_MODEL_CODE_OPENAI") || "gpt-4.1" },
+    { provider: "anthropic", model: readEnv("TOKEN_MODEL_CODE_ANTHROPIC", "ROUTER_MODEL_CODE_ANTHROPIC") || "claude-3-5-sonnet-latest" },
   ],
 };
 
@@ -163,10 +163,10 @@ const server = Bun.serve({
         json(
           {
             ok: true,
-            service: "clawos-router",
+            service: "clawos-token",
             version: "0.2.0",
             ts: Date.now(),
-            dbPath: ROUTER_DB_PATH,
+            dbPath: TOKEN_DB_PATH,
             authRequired: REQUIRE_AUTH,
             providers: {
               openai: providers.openai.keys.length > 0,
@@ -196,7 +196,7 @@ const server = Bun.serve({
       );
     }
 
-    if (url.pathname === "/router/v1/account/balance" && req.method === "GET") {
+    if (matchesPath(url.pathname, "/token/v1/account/balance", "/router/v1/account/balance") && req.method === "GET") {
       const auth = requireAuth(req);
       if (!auth) {
         return withCors(authError(req));
@@ -227,7 +227,7 @@ const server = Bun.serve({
       );
     }
 
-    if (url.pathname === "/router/v1/billing/usage" && req.method === "GET") {
+    if (matchesPath(url.pathname, "/token/v1/billing/usage", "/router/v1/billing/usage") && req.method === "GET") {
       const auth = requireAuth(req);
       if (!auth) {
         return withCors(authError(req));
@@ -310,7 +310,7 @@ const server = Bun.serve({
       }
     }
 
-    if (url.pathname === "/router/v1/billing/recharge" && req.method === "POST") {
+    if (matchesPath(url.pathname, "/token/v1/billing/recharge", "/router/v1/billing/recharge") && req.method === "POST") {
       const auth = requireAuth(req);
       if (!auth) {
         return withCors(authError(req));
@@ -374,7 +374,7 @@ const server = Bun.serve({
       }
     }
 
-    if (url.pathname === "/router/v1/billing/renew" && req.method === "POST") {
+    if (matchesPath(url.pathname, "/token/v1/billing/renew", "/router/v1/billing/renew") && req.method === "POST") {
       const auth = requireAuth(req);
       if (!auth) {
         return withCors(authError(req));
@@ -530,9 +530,11 @@ const server = Bun.serve({
             currency: DEFAULT_CURRENCY,
           });
 
-          const routerInfo = asRecord(callResult.payload.router);
-          callResult.payload.router = {
-            ...routerInfo,
+          const tokenInfo = asRecord(callResult.payload.token);
+          const legacyRouterInfo = asRecord(callResult.payload.router);
+          const tokenPayload = {
+            ...legacyRouterInfo,
+            ...tokenInfo,
             resolved_model: callResult.resolvedModel,
             billing: {
               charged_cents: charge.chargedCents,
@@ -543,10 +545,15 @@ const server = Bun.serve({
               plan_expires_at: charge.planExpiresAt,
             },
           };
+          callResult.payload.token = tokenPayload;
+          callResult.payload.router = tokenPayload;
 
           return withCors(
             json(callResult.payload, 200, {
               "x-request-id": callResult.requestId,
+              "x-token-resolved-model": callResult.resolvedModel,
+              "x-token-charged-cents": String(charge.chargedCents),
+              "x-token-balance-cents": String(charge.balanceCents),
               "x-router-resolved-model": callResult.resolvedModel,
               "x-router-charged-cents": String(charge.chargedCents),
               "x-router-balance-cents": String(charge.balanceCents),
@@ -596,11 +603,11 @@ const server = Bun.serve({
   },
 });
 
-console.log(`[router] listening on http://127.0.0.1:${server.port}`);
-console.log(`[router] db: ${ROUTER_DB_PATH}`);
-console.log(`[router] auth required: ${REQUIRE_AUTH} (seeded keys: ${SEEDED_API_KEYS.length})`);
+console.log(`[token] listening on http://127.0.0.1:${server.port}`);
+console.log(`[token] db: ${TOKEN_DB_PATH}`);
+console.log(`[token] auth required: ${REQUIRE_AUTH} (seeded keys: ${SEEDED_API_KEYS.length})`);
 console.log(
-  `[router] providers: openai=${providers.openai.keys.length}, deepseek=${providers.deepseek.keys.length}, anthropic=${providers.anthropic.keys.length}`,
+  `[token] providers: openai=${providers.openai.keys.length}, deepseek=${providers.deepseek.keys.length}, anthropic=${providers.anthropic.keys.length}`,
 );
 
 function parseCsv(value: string): string[] {
@@ -691,6 +698,24 @@ function requestIdFrom(req: Request): string {
   return rid && rid.trim() ? rid.trim() : `req_${crypto.randomUUID().replaceAll("-", "")}`;
 }
 
+function readEnv(primary: string, legacy?: string): string {
+  const value = process.env[primary];
+  if (typeof value === "string" && value.trim()) {
+    return value;
+  }
+  if (legacy) {
+    const fallback = process.env[legacy];
+    if (typeof fallback === "string" && fallback.trim()) {
+      return fallback;
+    }
+  }
+  return "";
+}
+
+function matchesPath(pathname: string, ...candidates: string[]): boolean {
+  return candidates.includes(pathname);
+}
+
 function authError(req: Request): Response {
   return json(
     {
@@ -719,9 +744,9 @@ async function parseJsonBody(req: Request): Promise<Record<string, unknown> | nu
 
 function buildModelList() {
   const aliasList = [
-    { id: "auto", object: "model", owned_by: "clawos-router" },
-    { id: "auto-fast", object: "model", owned_by: "clawos-router" },
-    { id: "auto-code", object: "model", owned_by: "clawos-router" },
+    { id: "auto", object: "model", owned_by: "clawos-token" },
+    { id: "auto-fast", object: "model", owned_by: "clawos-token" },
+    { id: "auto-code", object: "model", owned_by: "clawos-token" },
   ];
 
   const explicit: Array<{ id: string; object: string; owned_by: string }> = [];
@@ -733,7 +758,7 @@ function buildModelList() {
       explicit.push({
         id: `${alias}->${c.provider}/${c.model}`,
         object: "model",
-        owned_by: "clawos-router",
+        owned_by: "clawos-token",
       });
     }
   }
@@ -821,11 +846,15 @@ async function callOpenAICompatibleNonStream(
   }
 
   const out = data as OpenAIStylePayload;
-  const router = asRecord(out.router);
-  out.router = {
-    ...router,
+  const token = asRecord(out.token);
+  const legacyRouter = asRecord(out.router);
+  const tokenPayload = {
+    ...legacyRouter,
+    ...token,
     resolved_model: resolved,
   };
+  out.token = tokenPayload;
+  out.router = tokenPayload;
 
   return {
     payload: out,
@@ -855,6 +884,7 @@ async function callOpenAICompatibleStream(
 
   const headers = new Headers(upstream.headers);
   headers.set("x-request-id", requestId);
+  headers.set("x-token-resolved-model", resolved);
   headers.set("x-router-resolved-model", resolved);
   if (!headers.get("content-type")) {
     headers.set("content-type", "text/event-stream; charset=utf-8");
@@ -915,7 +945,7 @@ async function callAnthropicNonStream(
         completion_tokens: outputTokens,
         total_tokens: inputTokens + outputTokens,
       },
-      router: {
+      token: {
         resolved_model: `${candidate.provider}/${candidate.model}`,
       },
     },
@@ -1250,6 +1280,8 @@ function errorResponse(
 
 function attachBillingHeaders(response: Response, chargedCents: number, balanceCents: number): Response {
   const headers = new Headers(response.headers);
+  headers.set("x-token-charged-cents", String(chargedCents));
+  headers.set("x-token-balance-cents", String(balanceCents));
   headers.set("x-router-charged-cents", String(chargedCents));
   headers.set("x-router-balance-cents", String(balanceCents));
   return new Response(response.body, {
