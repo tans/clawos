@@ -33,12 +33,12 @@
 - 技术栈：Bun + Hono + SQLite。
 - 本地启动：`cd farm && bun run dev`
 
-### 2.3 `router/`（模型路由与计费）
+### 2.3 `token/`（模型路由与计费）
 - 职责：
   - 对外暴露 OpenAI 兼容接口。
   - 聚合多供应商模型并提供 fallback。
   - 提供基础余额/充值/续费与账单查询能力。
-- 本地启动：`cd router && bun run dev`
+- 本地启动：`cd token && bun run dev`
 
 ### 2.4 `web/`（官网与下载服务）
 - 职责：
@@ -89,5 +89,5 @@
 ## 6. 文档维护规则
 
 - 本文件用于 **仓库级总览**，保持简洁、稳定，不写过细实现细节。
-- 具体模块细节应写入各子目录文档（如 `farm/README.md`、`router/README.md`、`web/README.md`）。
+- 具体模块细节应写入各子目录文档（如 `farm/README.md`、`token/README.md`、`web/README.md`）。
 - 若目录结构或职责发生变化，优先更新本文件中的“Monorepo 重要项目介绍”。

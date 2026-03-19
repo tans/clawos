@@ -10,10 +10,13 @@ const IS_WINDOWS = process.platform === "win32";
 export const BROWSER_CDP_PORT = 9222;
 export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "about:blank";
 export const BROWSER_USER_DATA_DIR = process.env.CLAWOS_CHROME_USER_DATA_DIR?.trim() || "C:\\chrome-openclaw";
+// Chrome listens on all interfaces so the WSL side can reach Windows via the host LAN/gateway address.
+export const BROWSER_CDP_BIND_ADDRESS = process.env.CLAWOS_BROWSER_CDP_BIND_ADDRESS?.trim() || "0.0.0.0";
 export const WSL_WINDOWS_HOST_OVERRIDE =
   process.env.CLAWOS_WSL_WINDOWS_HOST?.trim() || process.env.CLAWOS_WSL_CDP_HOST?.trim() || "";
 
-const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/version`;
+// Probe locally from Windows first; the remote URL is derived later from the WSL-visible Windows host address.
+const BROWSER_CDP_VERSION_URL = `http://localhost:${BROWSER_CDP_PORT}/json/version`;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
 const WINDOWS_ELEVATION_CANCEL_EXIT_CODE = 1223;
@@ -196,34 +199,6 @@ async function runNetshStep(task: Task, args: string[], options?: { allowFailure
   }
 }
 
-async function ensureWindowsCdpPortProxy(task: Task, listenAddress = "0.0.0.0"): Promise<void> {
-  appendTaskLog(task, `Prepare Windows portproxy ${listenAddress}:${BROWSER_CDP_PORT} -> 127.0.0.1:${BROWSER_CDP_PORT}`);
-  await runNetshStep(
-    task,
-    [
-      "netsh.exe",
-      "interface",
-      "portproxy",
-      "delete",
-      "v4tov4",
-      `listenport=${BROWSER_CDP_PORT}`,
-      `listenaddress=${listenAddress}`,
-    ],
-    { allowFailure: true }
-  );
-  await runNetshStep(task, [
-    "netsh.exe",
-    "interface",
-    "portproxy",
-    "add",
-    "v4tov4",
-    `listenport=${BROWSER_CDP_PORT}`,
-    `listenaddress=${listenAddress}`,
-    `connectport=${BROWSER_CDP_PORT}`,
-    "connectaddress=127.0.0.1",
-  ]);
-}
-
 async function ensureWindowsCdpFirewallRule(task: Task): Promise<void> {
   appendTaskLog(task, `Prepare Windows firewall rule for TCP ${BROWSER_CDP_PORT}`);
   await runNetshStep(
@@ -246,8 +221,7 @@ async function ensureWindowsCdpFirewallRule(task: Task): Promise<void> {
 }
 
 async function ensureWindowsCdpIngress(task: Task): Promise<void> {
-  appendTaskLog(task, "Ensure Windows exposes local CDP to WSL");
-  await ensureWindowsCdpPortProxy(task, "0.0.0.0");
+  appendTaskLog(task, `Ensure Windows allows inbound CDP on ${BROWSER_CDP_BIND_ADDRESS}:${BROWSER_CDP_PORT}`);
   await ensureWindowsCdpFirewallRule(task);
 }
 
@@ -262,33 +236,61 @@ type WslHostProbeResult = {
   command: string;
 };
 
+function buildTrustedWslHostResult(host: string): WslHostProbeResult {
+  return {
+    host,
+    url: `http://${host}:${BROWSER_CDP_PORT}/json/version`,
+    command: `override:${host}`,
+  };
+}
+
+function buildWindowsCdpProbeScript(timeoutSeconds: number): string {
+  return [
+    "$ErrorActionPreference = 'Stop'",
+    `$url = '${escapePowerShellSingleQuoted(BROWSER_CDP_VERSION_URL)}'`,
+    // curl.exe is more reliable than Invoke-WebRequest against the local CDP endpoint on some Windows setups.
+    "if (Get-Command curl.exe -ErrorAction SilentlyContinue) {",
+    `  & curl.exe --silent --show-error --fail --max-time ${timeoutSeconds} $url`,
+    "} else {",
+    `  $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec ${timeoutSeconds}`,
+    "  if (-not $response -or -not $response.Content) { throw 'Empty CDP version response.' }",
+    "  $response.Content",
+    "}",
+  ].join("\n");
+}
+
 async function fetchCdpVersion(timeoutMs: number): Promise<CdpVersionProbeResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(BROWSER_CDP_VERSION_URL, {
-      method: "GET",
-      headers: { accept: "application/json" },
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const payload = asObject(await response.json().catch(() => null));
-    if (!payload) {
-      throw new Error("Invalid CDP version payload.");
-    }
-    const webSocketDebuggerUrl = readNonEmptyString(payload.webSocketDebuggerUrl);
-    if (!webSocketDebuggerUrl) {
-      throw new Error("Missing webSocketDebuggerUrl in CDP version payload.");
-    }
-    return {
-      payload,
-      webSocketDebuggerUrl,
-    };
-  } finally {
-    clearTimeout(timeout);
+  const timeoutSeconds = Math.max(1, Math.ceil(timeoutMs / 1000));
+  const result = await runProcess(
+    [
+      "powershell.exe",
+      "-NoProfile",
+      "-NonInteractive",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-Command",
+      buildWindowsCdpProbeScript(timeoutSeconds),
+    ],
+    { timeoutMs: timeoutMs + 1000 }
+  );
+
+  if (!result.ok) {
+    const message = result.stderr.trim() || result.stdout.trim() || `exit code ${result.code}`;
+    throw new Error(message);
   }
+
+  const payload = asObject(JSON.parse(result.stdout));
+  if (!payload) {
+    throw new Error("Invalid CDP version payload.");
+  }
+  const webSocketDebuggerUrl = readNonEmptyString(payload.webSocketDebuggerUrl);
+  if (!webSocketDebuggerUrl) {
+    throw new Error("Missing webSocketDebuggerUrl in CDP version payload.");
+  }
+  return {
+    payload,
+    webSocketDebuggerUrl,
+  };
 }
 
 async function waitForCdpVersion(task: Task): Promise<CdpVersionProbeResult> {
@@ -379,6 +381,7 @@ async function readWslNetworkHints(
 
   const script = [
     "set -euo pipefail",
+    // WSL usually exposes the Windows host through the default gateway and resolv.conf nameserver entries.
     'echo "__CLAWOS_IP_ROUTE_BEGIN__"',
     "if command -v ip >/dev/null 2>&1; then",
     "  ip route show default 2>/dev/null || true",
@@ -449,9 +452,27 @@ async function resolveReachableWslWindowsHost(
   step: number,
   totalSteps: number
 ): Promise<WslHostProbeResult> {
-  const hints = await readWslNetworkHints(task, step, totalSteps);
+  // When the host IP is already known, skip WSL introspection so transient WSL service issues do not block CDP setup.
+  if (WSL_WINDOWS_HOST_OVERRIDE) {
+    const trusted = buildTrustedWslHostResult(WSL_WINDOWS_HOST_OVERRIDE);
+    task.step = step;
+    appendTaskLog(task, `Step ${step}/${totalSteps}: use configured Windows host for WSL`);
+    appendTaskLog(task, `Using CLAWOS_WSL_WINDOWS_HOST override: ${trusted.host}`);
+    appendTaskLog(task, `Skip WSL route detection. Trusted URL: ${trusted.url}`);
+    return trusted;
+  }
+
+  let hints: { gateway: string | null; nameservers: string[] };
+  try {
+    hints = await readWslNetworkHints(task, step, totalSteps);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `WSL route detection failed: ${message}. If WSL is not available, start the WSL service first or set CLAWOS_WSL_WINDOWS_HOST to your Windows host IP.`
+    );
+  }
+
   const candidates = dedupeStrings([
-    WSL_WINDOWS_HOST_OVERRIDE,
     hints.gateway || "",
     ...hints.nameservers,
   ]);
@@ -484,6 +505,7 @@ async function resolveReachableWslWindowsHost(
 
 export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, host: string): string {
   const parsed = new URL(localWebSocketDebuggerUrl);
+  // Chrome reports a loopback websocket URL locally; rewrite it to the Windows host address that WSL can actually dial.
   parsed.hostname = host;
   parsed.port = String(BROWSER_CDP_PORT);
   parsed.protocol = parsed.protocol === "wss:" ? "wss:" : "ws:";
@@ -500,6 +522,7 @@ async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Pro
     cdpUrl: remoteCdpUrl,
   };
 
+  // Preserve any existing timeout tuning while forcing attach-only mode to the externally managed browser instance.
   if (typeof currentBrowser?.remoteCdpTimeoutMs === "number" && Number.isFinite(currentBrowser.remoteCdpTimeoutMs)) {
     nextBrowser.remoteCdpTimeoutMs = currentBrowser.remoteCdpTimeoutMs;
   }
@@ -544,7 +567,7 @@ export function resolveChromeWorkingDirectory(exePath: string): string {
 
 export function buildChromeStartCommand(exePath: string, workingDirectory: string): string {
   const args = [
-    "--remote-debugging-address=127.0.0.1",
+    `--remote-debugging-address=${BROWSER_CDP_BIND_ADDRESS}`,
     `--remote-debugging-port=${BROWSER_CDP_PORT}`,
     `--user-data-dir=${BROWSER_USER_DATA_DIR}`,
     "--new-window",
@@ -593,7 +616,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       const chromeWorkingDirectory = resolveChromeWorkingDirectory(chromeExePath);
 
       task.step = 1;
-      appendTaskLog(task, `Step 1/${totalSteps}: start local CDP on 127.0.0.1:${BROWSER_CDP_PORT}`);
+      appendTaskLog(task, `Step 1/${totalSteps}: start Chrome CDP on ${BROWSER_CDP_BIND_ADDRESS}:${BROWSER_CDP_PORT}`);
       appendTaskLog(task, "Run: taskkill /F /IM chrome.exe /T");
       const killResult = await runProcess(["taskkill", "/F", "/IM", "chrome.exe", "/T"]);
       appendProcessLogs(task, killResult, killResult.ok || killResult.code === 128);
@@ -613,7 +636,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       const version = await waitForCdpVersion(task);
 
       task.step = 2;
-      appendTaskLog(task, `Step 2/${totalSteps}: configure Windows ingress for WSL`);
+      appendTaskLog(task, `Step 2/${totalSteps}: allow Windows CDP access from WSL`);
       await ensureWindowsCdpIngress(task);
 
       const reachableHost = await resolveReachableWslWindowsHost(task, 3, totalSteps);

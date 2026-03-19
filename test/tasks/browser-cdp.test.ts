@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
   BROWSER_BOOT_URL,
+  BROWSER_CDP_BIND_ADDRESS,
   BROWSER_CDP_PORT,
   BROWSER_USER_DATA_DIR,
   buildElevatedProcessArgs,
@@ -35,6 +36,7 @@ describe("browser cdp helpers", () => {
     const args = buildChromeStartArgs(exePath, "C:\\Program Files\\Google\\Chrome\\Application");
 
     expect(command).toContain("Start-Process -FilePath 'C:\\Program Files\\Google\\Chrome\\Application\\chrome''s.exe'");
+    expect(command).toContain(`'--remote-debugging-address=${BROWSER_CDP_BIND_ADDRESS}'`);
     expect(command).toContain(`'--remote-debugging-port=${BROWSER_CDP_PORT}'`);
     expect(command).toContain(`'--user-data-dir=${BROWSER_USER_DATA_DIR}'`);
     expect(command).toContain(`'${BROWSER_BOOT_URL}'`);
