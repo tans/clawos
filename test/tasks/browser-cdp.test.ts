@@ -4,6 +4,9 @@ import {
   BROWSER_CDP_BIND_ADDRESS,
   BROWSER_CDP_PORT,
   BROWSER_USER_DATA_DIR,
+  buildWindowsCdpPortProxyAddArgs,
+  buildWindowsCdpPortProxyDeleteArgs,
+  buildFreshChromeUserDataDir,
   buildElevatedProcessArgs,
   buildElevatedProcessCommand,
   buildChromeStartArgs,
@@ -51,6 +54,14 @@ describe("browser cdp helpers", () => {
     ]);
   });
 
+  it("builds powershell start command with a fresh chrome profile", () => {
+    const freshDir = buildFreshChromeUserDataDir("C:\\chrome-openclaw", 42);
+    const command = buildChromeStartCommand("C:\\Chrome\\chrome.exe", "C:\\Chrome", { userDataDir: freshDir });
+
+    expect(freshDir).toBe("C:\\chrome-openclaw-cdp-42");
+    expect(command).toContain(`'--user-data-dir=${freshDir}'`);
+  });
+
   it("builds powershell elevation helpers safely", () => {
     const exePath = "C:\\Windows\\System32\\netsh.exe";
     const command = buildElevatedProcessCommand(exePath, ["advfirewall", "show", "allprofiles"]);
@@ -67,6 +78,29 @@ describe("browser cdp helpers", () => {
       "Bypass",
       "-Command",
       command,
+    ]);
+  });
+
+  it("builds netsh portproxy commands for WSL access", () => {
+    expect(buildWindowsCdpPortProxyDeleteArgs()).toEqual([
+      "netsh.exe",
+      "interface",
+      "portproxy",
+      "delete",
+      "v4tov4",
+      `listenport=${BROWSER_CDP_PORT}`,
+      "listenaddress=0.0.0.0",
+    ]);
+    expect(buildWindowsCdpPortProxyAddArgs()).toEqual([
+      "netsh.exe",
+      "interface",
+      "portproxy",
+      "add",
+      "v4tov4",
+      `listenport=${BROWSER_CDP_PORT}`,
+      "listenaddress=0.0.0.0",
+      `connectport=${BROWSER_CDP_PORT}`,
+      "connectaddress=127.0.0.1",
     ]);
   });
 
@@ -93,8 +127,8 @@ nameserver 8.8.8.8
   });
 
   it("builds remote cdp url with WSL nameserver", () => {
-    const remote = buildRemoteCdpUrl("ws://127.0.0.1:9222/devtools/browser/abc", "172.31.64.1");
-    expect(remote).toBe("ws://172.31.64.1:9222/devtools/browser/abc");
+    const remote = buildRemoteCdpUrl(`ws://127.0.0.1:${BROWSER_CDP_PORT}/devtools/browser/abc`, "172.31.64.1");
+    expect(remote).toBe(`ws://172.31.64.1:${BROWSER_CDP_PORT}/devtools/browser/abc`);
   });
 
 });
