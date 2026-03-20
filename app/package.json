@@ -30,7 +30,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",
     "daisyui": "^5.5.18",
-    "electrobun": "^1.13.1",
+    "electrobun": "^1.14.4",
     "png-to-ico": "^3.0.1",
     "tailwindcss": "^4.1.16"
   }
