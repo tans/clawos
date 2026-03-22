@@ -14,6 +14,8 @@ import type { AppEnv } from "../types";
 import { jsonError, readBearerToken, readJsonBody, safeJsonParse } from "../utils/request";
 import { normalizeHostId, normalizeHostName, normalizeWalletAddress, parseLimit } from "../utils/validators";
 
+const CLIENT_API_PREFIXES = ["/api/agent", "/api/gateway"] as const;
+
 function parseEventSeverity(raw: unknown): "info" | "warning" | "error" {
   if (raw === "error") return "error";
   if (raw === "warning") return "warning";
@@ -23,16 +25,17 @@ function parseEventSeverity(raw: unknown): "info" | "warning" | "error" {
 export function createAgentController(): Hono<AppEnv> {
   const controller = new Hono<AppEnv>();
 
-  controller.post("/api/agent/hello", async (c) => {
+  const handleHello: Parameters<typeof controller.post>[1] = async (c) => {
     const body = await readJsonBody(c);
     if (!body) {
       return jsonError(c, 400, "INVALID_REQUEST", "请求体必须是 JSON。", "请检查 Content-Type。");
     }
 
-    const hostId = normalizeHostId(body.hostId);
-    const name = normalizeHostName(body.name);
+    const hostId = normalizeHostId(body.hostId ?? body.deviceId);
+    const name = normalizeHostName(body.name ?? body.deviceName);
     const controllerAddress = normalizeWalletAddress(body.controllerAddress);
-    const providedToken = typeof body.agentToken === "string" ? body.agentToken.trim() : "";
+    const providedTokenRaw = body.clientToken ?? body.agentToken;
+    const providedToken = typeof providedTokenRaw === "string" ? providedTokenRaw.trim() : "";
 
     if (!hostId || !name || !controllerAddress) {
       return jsonError(c, 400, "INVALID_PARAMS", "hostId/name/controllerAddress 不合法。", "请检查上报字段。");
@@ -99,14 +102,22 @@ export function createAgentController(): Hono<AppEnv> {
 
     const pendingCommands = listPendingCommands(hostId, 20);
 
-    return c.json({
+      return c.json({
       ok: true,
+      accepted: true,
       serverTimeMs: now,
+      clientSessionToken: agentToken,
       host: {
         hostId,
         name,
         controllerAddress,
         agentToken,
+      },
+      client: {
+        deviceId: hostId,
+        deviceName: name,
+        controllerAddress,
+        clientToken: agentToken,
       },
       pendingCommands: pendingCommands.map((item) => ({
         id: item.id,
@@ -115,15 +126,15 @@ export function createAgentController(): Hono<AppEnv> {
         createdAt: item.createdAt,
       })),
     });
-  });
+  };
 
-  controller.post("/api/agent/heartbeat", async (c) => {
+  const handleHeartbeat: Parameters<typeof controller.post>[1] = async (c) => {
     const body = await readJsonBody(c);
     if (!body) {
       return jsonError(c, 400, "INVALID_REQUEST", "请求体必须是 JSON。", undefined);
     }
 
-    const hostId = normalizeHostId(body.hostId);
+    const hostId = normalizeHostId(body.hostId ?? body.deviceId);
     if (!hostId) {
       return jsonError(c, 400, "INVALID_HOST_ID", "hostId 不合法。", undefined);
     }
@@ -167,10 +178,15 @@ export function createAgentController(): Hono<AppEnv> {
       });
     }
 
-    return c.json({ ok: true, serverTimeMs: now, status });
-  });
+    return c.json({ ok: true, serverTimeMs: now, status, accepted: true });
+  };
 
-  controller.post("/api/agent/events", async (c) => {
+  for (const prefix of CLIENT_API_PREFIXES) {
+    controller.post(`${prefix}/hello`, handleHello);
+    controller.post(`${prefix}/heartbeat`, handleHeartbeat);
+  }
+
+  const handleEvents: Parameters<typeof controller.post>[1] = async (c) => {
     const body = await readJsonBody(c);
     if (!body) {
       return jsonError(c, 400, "INVALID_REQUEST", "请求体必须是 JSON。", undefined);
@@ -209,9 +225,9 @@ export function createAgentController(): Hono<AppEnv> {
     });
 
     return c.json({ ok: true, eventId });
-  });
+  };
 
-  controller.get("/api/agent/insights", (c) => {
+  const handleInsights: Parameters<typeof controller.get>[1] = (c) => {
     const hostId = normalizeHostId(c.req.query("hostId"));
     if (!hostId) {
       return jsonError(c, 400, "INVALID_HOST_ID", "hostId 不合法。", undefined);
@@ -248,9 +264,9 @@ export function createAgentController(): Hono<AppEnv> {
         createdAt: item.createdAt,
       })),
     });
-  });
+  };
 
-  controller.get("/api/agent/commands", (c) => {
+  const handleCommands: Parameters<typeof controller.get>[1] = (c) => {
     const hostId = normalizeHostId(c.req.query("hostId"));
     if (!hostId) {
       return jsonError(c, 400, "INVALID_HOST_ID", "hostId 不合法。", undefined);
@@ -275,9 +291,9 @@ export function createAgentController(): Hono<AppEnv> {
         createdAt: item.createdAt,
       })),
     });
-  });
+  };
 
-  controller.post("/api/agent/commands/:id/result", async (c) => {
+  const handleCommandResult: Parameters<typeof controller.post>[1] = async (c) => {
     const commandId = c.req.param("id").trim();
     if (!commandId) {
       return jsonError(c, 400, "INVALID_COMMAND_ID", "命令 ID 不能为空。", undefined);
@@ -325,7 +341,14 @@ export function createAgentController(): Hono<AppEnv> {
     });
 
     return c.json({ ok: true, command: { id: commandId, status, updatedAt: now } });
-  });
+  };
+
+  for (const prefix of CLIENT_API_PREFIXES) {
+    controller.post(`${prefix}/events`, handleEvents);
+    controller.get(`${prefix}/insights`, handleInsights);
+    controller.get(`${prefix}/commands`, handleCommands);
+    controller.post(`${prefix}/commands/:id/result`, handleCommandResult);
+  }
 
   return controller;
 }

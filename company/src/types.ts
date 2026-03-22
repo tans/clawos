@@ -25,6 +25,8 @@ export type HostCommandRow = {
   kind: string;
   payload: string;
   status: string;
+  dedupeKey: string | null;
+  expiresAt: number | null;
   result: string | null;
   createdAt: number;
   updatedAt: number;
@@ -42,6 +44,16 @@ export type ConsoleCredentialRow = {
   mobile: string;
   passwordHash: string;
   walletAddress: string;
+};
+
+export type CompanyRow = {
+  id: string;
+  ownerUserId: number;
+  name: string;
+  slug: string;
+  mode: string;
+  createdAt: number;
+  updatedAt: number;
 };
 
 export type AuditLogRow = {

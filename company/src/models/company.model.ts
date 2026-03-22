@@ -2,6 +2,7 @@ import { db, newId, nowMs } from "../db";
 import type {
   AgentEventRow,
   AuditLogRow,
+  CompanyRow,
   ConsoleCredentialRow,
   ConsoleUser,
   HostCommandRow,
@@ -106,19 +107,38 @@ export function listHostsByControllerAddress(walletAddress: string): HostRow[] {
 }
 
 export function createPendingCommand(hostId: string, kind: string, payload: Record<string, unknown>): string {
-  const commandId = newId("cmd");
+  const normalizedPayload = JSON.stringify(payload);
+  const dedupeKey = `${hostId}:${kind}:${normalizedPayload}`;
   const now = nowMs();
+  const exists = db
+    .query(
+      `SELECT id
+       FROM commands
+       WHERE device_id = ?
+         AND dedupe_key = ?
+         AND status = 'pending'
+         AND created_at >= ?
+       ORDER BY created_at DESC
+       LIMIT 1`
+    )
+    .get(hostId, dedupeKey, now - 30_000) as { id: string } | null;
+  if (exists) {
+    return exists.id;
+  }
+
+  const commandId = newId("cmd");
+  const expiresAt = now + 2 * 60 * 1000;
   db.prepare(
-    `INSERT INTO commands (id, device_id, kind, payload, status, result, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 'pending', NULL, ?, ?)`
-  ).run(commandId, hostId, kind, JSON.stringify(payload), now, now);
+    `INSERT INTO commands (id, device_id, kind, dedupe_key, payload, status, result, expires_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'pending', NULL, ?, ?, ?)`
+  ).run(commandId, hostId, kind, dedupeKey, normalizedPayload, expiresAt, now, now);
   return commandId;
 }
 
 export function listHostRecentCommands(hostId: string, limit = 40): HostCommandRow[] {
   return db
     .query(
-      `SELECT id, kind, payload, status, result, created_at AS createdAt, updated_at AS updatedAt
+      `SELECT id, kind, payload, status, dedupe_key AS dedupeKey, expires_at AS expiresAt, result, created_at AS createdAt, updated_at AS updatedAt
        FROM commands
        WHERE device_id = ?
        ORDER BY created_at DESC
@@ -195,6 +215,7 @@ export function updateHostHeartbeat(args: {
 }
 
 export function listPendingCommands(hostId: string, limit: number): PendingCommandRow[] {
+  markTimedOutCommands(hostId);
   return db
     .query(
       `SELECT id, kind, payload, created_at AS createdAt
@@ -204,6 +225,20 @@ export function listPendingCommands(hostId: string, limit: number): PendingComma
        LIMIT ?`
     )
     .all(hostId, limit) as PendingCommandRow[];
+}
+
+export function markTimedOutCommands(hostId: string, now = nowMs()): number {
+  const updated = db
+    .prepare(
+      `UPDATE commands
+       SET status = 'timeout', result = '{"error":"command timeout"}', updated_at = ?
+       WHERE device_id = ?
+         AND status = 'pending'
+         AND expires_at IS NOT NULL
+         AND expires_at < ?`
+    )
+    .run(now, hostId, now);
+  return updated.changes;
 }
 
 export function markPendingCommandResult(args: {
@@ -310,4 +345,30 @@ export function listHostInsightsByControllerAddress(
        ORDER BY errorEvents DESC, warningEvents DESC, lastEventAt DESC, h.updated_at DESC`
     )
     .all(fromMs, toMs, walletAddress) as HostInsightRow[];
+}
+
+export function listCompaniesByOwnerUserId(ownerUserId: number): CompanyRow[] {
+  return db
+    .query(
+      `SELECT id, owner_user_id AS ownerUserId, name, slug, mode, created_at AS createdAt, updated_at AS updatedAt
+       FROM companies
+       WHERE owner_user_id = ?
+       ORDER BY updated_at DESC`
+    )
+    .all(ownerUserId) as CompanyRow[];
+}
+
+export function existsCompanySlug(slug: string): boolean {
+  const row = db.query("SELECT id FROM companies WHERE slug = ? LIMIT 1").get(slug) as { id: string } | null;
+  return Boolean(row);
+}
+
+export function createCompanyForOwner(args: { ownerUserId: number; name: string; slug: string; mode: string; now?: number }): string {
+  const id = newId("co");
+  const now = args.now ?? nowMs();
+  db.prepare(
+    `INSERT INTO companies (id, owner_user_id, name, slug, mode, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, args.ownerUserId, args.name, args.slug, args.mode, now, now);
+  return id;
 }

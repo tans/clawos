@@ -1,12 +1,18 @@
 /** @jsxImportSource hono/jsx */
 import type { JSX } from "hono/jsx";
-import type { AgentEventRow, ConsoleUser, HostCommandRow, HostInsightRow, HostRow } from "../types";
+import type { AgentEventRow, CompanyRow, ConsoleUser, HostCommandRow, HostInsightRow, HostRow } from "../types";
 import { renderPageShell } from "./layout.view";
 
 const HOST_OFFLINE_THRESHOLD_MS = 30 * 1000;
 
 type RegisterPayload = {
   mobile?: string;
+};
+
+type CompanyFormPayload = {
+  name?: string;
+  slug?: string;
+  mode?: string;
 };
 
 function formatDateTime(ms: number | null): string {
@@ -130,17 +136,57 @@ export function renderRegisterPage(error = "", payload?: RegisterPayload): strin
   );
 }
 
-export function renderHostListPage(user: ConsoleUser, message: string, hosts: HostRow[]): string {
+function modeBadge(mode: string): JSX.Element {
+  return mode === "unmanned" ? <span class="badge badge-primary">无人公司</span> : <span class="badge">标准公司</span>;
+}
+
+export function renderHostListPage(user: ConsoleUser, message: string, hosts: HostRow[], companies: CompanyRow[]): string {
   return renderPageShell(
     <div class="card bg-base-100 border border-base-300 shadow-sm">
       <div class="card-body">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h1 class="card-title">主机列表</h1>
-          <a class="btn btn-sm btn-outline" href="/console/insights">
-            Agent 洞察
-          </a>
+          <div class="flex flex-wrap gap-2">
+            <a class="btn btn-sm btn-outline" href="/console/companies">
+              公司空间
+            </a>
+            <a class="btn btn-sm btn-outline" href="/console/insights">
+              Agent 洞察
+            </a>
+          </div>
         </div>
         <p class="text-base-content/70">只展示 controllerAddress 与你账号绑定标识一致的主机。</p>
+        <div class="stats stats-vertical sm:stats-horizontal border border-base-300 bg-base-200/40">
+          <div class="stat">
+            <div class="stat-title">公司数</div>
+            <div class="stat-value text-primary text-2xl">{companies.length}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">主机数</div>
+            <div class="stat-value text-secondary text-2xl">{hosts.length}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">无人公司</div>
+            <div class="stat-value text-accent text-2xl">{companies.filter((item) => item.mode === "unmanned").length}</div>
+          </div>
+        </div>
+        {companies.length ? (
+          <div class="mt-2 flex flex-wrap gap-2">
+            {companies.slice(0, 4).map((company) => (
+              <div class="badge badge-outline gap-2">
+                {company.name}
+                {modeBadge(company.mode)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="alert mt-2">
+            <span>你还没有公司空间。建议先创建“无人公司”后再接入设备。</span>
+            <a class="btn btn-xs btn-primary ml-auto" href="/console/companies/new">
+              创建无人公司
+            </a>
+          </div>
+        )}
 
         {message ? (
           <div class="alert alert-success mb-3">
@@ -192,6 +238,104 @@ export function renderHostListPage(user: ConsoleUser, message: string, hosts: Ho
       </div>
     </div>,
     user
+  );
+}
+
+export function renderCompaniesPage(user: ConsoleUser, companies: CompanyRow[], message = ""): string {
+  return renderPageShell(
+    <div class="card bg-base-100 border border-base-300 shadow-sm">
+      <div class="card-body">
+        <div class="flex items-center justify-between gap-2">
+          <h1 class="card-title">公司空间</h1>
+          <div class="flex gap-2">
+            <a class="btn btn-sm btn-outline" href="/console">
+              返回控制台
+            </a>
+            <a class="btn btn-sm btn-primary" href="/console/companies/new">
+              创建公司
+            </a>
+          </div>
+        </div>
+        {message ? (
+          <div class="alert alert-success">
+            <span>{message}</span>
+          </div>
+        ) : null}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {companies.length ? (
+            companies.map((company) => (
+              <article class="card bg-base-200 border border-base-300">
+                <div class="card-body">
+                  <div class="flex items-center justify-between">
+                    <h2 class="card-title text-lg">{company.name}</h2>
+                    {modeBadge(company.mode)}
+                  </div>
+                  <p class="text-sm opacity-70">slug: <span class="font-mono">{company.slug}</span></p>
+                  <p class="text-sm opacity-70">创建时间：{formatDateTime(company.createdAt)}</p>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div class="alert">
+              <span>暂无公司空间，请先创建一个无人公司。</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>,
+    user,
+    "公司空间"
+  );
+}
+
+export function renderCreateCompanyPage(user: ConsoleUser, error = "", payload?: CompanyFormPayload): string {
+  const mode = payload?.mode === "standard" ? "standard" : "unmanned";
+  return renderPageShell(
+    <div class="card bg-base-100 border border-base-300 shadow-sm max-w-2xl">
+      <div class="card-body">
+        <div class="flex items-center justify-between">
+          <h1 class="card-title">创建公司</h1>
+          <a class="btn btn-sm btn-outline" href="/console/companies">
+            返回公司空间
+          </a>
+        </div>
+        <p class="text-base-content/70">推荐先创建“无人公司”：适用于纯自动化运行，动作由控制台统一审计。</p>
+        {error ? (
+          <div class="alert alert-error">
+            <span>{error}</span>
+          </div>
+        ) : null}
+        <form method="post" action="/console/companies/new">
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">公司名称</span>
+            </div>
+            <input class="input input-bordered" name="name" value={payload?.name || ""} placeholder="例如：龙虾无人运营公司" />
+          </label>
+          <label class="form-control w-full mt-2">
+            <div class="label">
+              <span class="label-text">公司标识（slug）</span>
+            </div>
+            <input class="input input-bordered font-mono" name="slug" value={payload?.slug || ""} placeholder="lobster-autopilot" />
+          </label>
+          <div class="form-control mt-3">
+            <label class="label cursor-pointer justify-start gap-3">
+              <input type="radio" class="radio radio-primary" name="mode" value="unmanned" checked={mode === "unmanned"} />
+              <span class="label-text">无人公司（推荐）</span>
+            </label>
+            <label class="label cursor-pointer justify-start gap-3">
+              <input type="radio" class="radio" name="mode" value="standard" checked={mode === "standard"} />
+              <span class="label-text">标准公司</span>
+            </label>
+          </div>
+          <button class="btn btn-primary mt-4" type="submit">
+            创建公司
+          </button>
+        </form>
+      </div>
+    </div>,
+    user,
+    "创建公司"
   );
 }
 
@@ -287,6 +431,8 @@ export function renderHostDetailPage(
                   <th>类型</th>
                   <th>状态</th>
                   <th>参数</th>
+                  <th>去重键</th>
+                  <th>过期时间</th>
                   <th>结果</th>
                   <th>时间</th>
                 </tr>
@@ -301,6 +447,8 @@ export function renderHostDetailPage(
                       <td>
                         <pre class="whitespace-pre-wrap break-all text-xs">{row.payload || "{}"}</pre>
                       </td>
+                      <td class="font-mono text-[10px] max-w-xs break-all">{row.dedupeKey || "-"}</td>
+                      <td>{formatDateTime(row.expiresAt)}</td>
                       <td>
                         <pre class="whitespace-pre-wrap break-all text-xs">{row.result || "-"}</pre>
                       </td>
@@ -309,7 +457,7 @@ export function renderHostDetailPage(
                   ))
                 ) : (
                   <tr>
-                    <td colspan={6} class="text-base-content/60">
+                    <td colspan={8} class="text-base-content/60">
                       暂无任务
                     </td>
                   </tr>
