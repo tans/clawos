@@ -2,6 +2,11 @@
 
 本文档用于把 `mcp/bom-mcp` 从占位目录推进到可发布、可调用、可运维的第一版实现。
 
+> 执行进度（2026-03-22）：
+> - ✅ Milestone A（骨架）已落地：`src/index.ts`、4 个 tool、`domain/infra/types` 已建立。
+> - 🚧 Milestone B 进行中：已支持 `content/fileUrl` 输入、csv/json 解析、最小报价计算与缺失单价告警；后续继续补强持久化与导出文件落盘。
+> - ⏳ Milestone C 未开始：导出增强、测试扩展与发布联调待推进。
+
 ## 1. 目标与范围
 
 ### 1.1 目标
