@@ -757,10 +757,10 @@ async function handleEnvironmentStatus(): Promise<Response> {
 async function handleMcpBuild(req: Request): Promise<Response> {
   const body = await parseJsonBody(req);
   const name = sanitizeIdentifier(body.name, "name");
-  if (!["windows-mcp", "yingdao-mcp", "wechat-mcp"].includes(name)) {
+  if (!["windows-mcp", "yingdao-mcp", "wechat-mcp", "crm-mcp"].includes(name)) {
     throw new HttpError(400, `unsupported mcp name: ${name}`);
   }
-  const { task, reused } = startMcpBuildTask(name as "windows-mcp" | "yingdao-mcp" | "wechat-mcp");
+  const { task, reused } = startMcpBuildTask(name as "windows-mcp" | "yingdao-mcp" | "wechat-mcp" | "crm-mcp");
   return jsonResponse({ ok: true, taskId: task.id, task, reused });
 }
 

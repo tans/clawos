@@ -3,7 +3,7 @@ import path from "node:path";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 import { normalizeOutput, runProcess, type CommandResult } from "./shell";
 
-export type McpName = "windows-mcp" | "yingdao-mcp" | "wechat-mcp";
+export type McpName = "windows-mcp" | "yingdao-mcp" | "wechat-mcp" | "crm-mcp";
 
 type McpTarget = {
   name: McpName;
@@ -31,6 +31,12 @@ const MCP_TARGETS: McpTarget[] = [
     label: "微信 MCP",
     scriptPath: path.join(REPO_ROOT, "mcp", "wechat-mcp", "build.ps1"),
     distPath: path.join(REPO_ROOT, "mcp", "wechat-mcp", "dist", "wechat-mcp.exe"),
+  },
+  {
+    name: "crm-mcp",
+    label: "CRM MCP",
+    scriptPath: path.join(REPO_ROOT, "mcp", "crm-mcp", "build.ps1"),
+    distPath: path.join(REPO_ROOT, "mcp", "crm-mcp", "dist", "crm-mcp.exe"),
   },
 ];
 
