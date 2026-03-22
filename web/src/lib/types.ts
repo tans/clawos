@@ -41,3 +41,8 @@ export interface McpRelease {
   manifest: McpManifest;
   channel: ReleaseChannel;
 }
+
+export interface McpRegistryEntry {
+  latest: McpRelease;
+  versions: McpRelease[];
+}
