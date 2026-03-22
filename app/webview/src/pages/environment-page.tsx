@@ -6,6 +6,7 @@ import {
   fetchEnvironmentStatus,
   fetchMcpStatus,
   fetchTask,
+  installClawhub,
   readUserErrorMessage,
   startEnvironmentInstall,
   startMcpBuild,
@@ -157,6 +158,27 @@ export function EnvironmentPage() {
     }
   }
 
+  async function runClawhubInstall() {
+    const actionKey = "clawhub:install";
+    setBusyKey(actionKey);
+    setTaskMeta("正在安装 ClawHub...");
+    setTaskOutput("正在安装 ClawHub...");
+    try {
+      const result = await installClawhub();
+      const message = result.installed ? "ClawHub 已安装" : "ClawHub 安装状态未知";
+      setMeta(message);
+      setTaskMeta(message);
+      setTaskOutput(message);
+    } catch (error) {
+      const message = readUserErrorMessage(error, "安装 ClawHub 失败");
+      setMeta(message);
+      setTaskMeta(message);
+      setTaskOutput(message);
+    } finally {
+      setBusyKey("");
+    }
+  }
+
   return (
     <div className="settings-layout">
       <Card>
@@ -201,6 +223,10 @@ export function EnvironmentPage() {
             ))}
           </div>
           <div className="settings-actions settings-actions-start">
+            <Button variant="outline" disabled={busyKey === "clawhub:install"} onClick={() => void runClawhubInstall()}>
+              <Wrench size={14} />
+              {busyKey === "clawhub:install" ? "安装中..." : "安装 ClawHub"}
+            </Button>
             <Button variant="outline" onClick={() => void loadEnvironment(false)}>
               <RefreshCw size={14} />
               刷新环境

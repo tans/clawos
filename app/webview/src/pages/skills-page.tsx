@@ -7,7 +7,6 @@ import { Switch } from "../components/ui/switch";
 import {
   activateClawhubSkill,
   fetchConfigSection,
-  installClawhub,
   readUserErrorMessage,
   saveConfigSection,
   searchClawhubSkills,
@@ -116,18 +115,6 @@ export function SkillsPage() {
     }
   }
 
-  async function runInstall() {
-    setBusyKey("install");
-    try {
-      const result = await installClawhub();
-      setClawhubStatus(result.installed ? "ClawHub 已安装" : "ClawHub 安装状态未知");
-    } catch (error) {
-      setClawhubStatus(readUserErrorMessage(error, "安装 ClawHub 失败"));
-    } finally {
-      setBusyKey("");
-    }
-  }
-
   async function runActivate(skill: string) {
     setBusyKey(`activate:${skill}`);
     try {
@@ -144,68 +131,66 @@ export function SkillsPage() {
 
   return (
     <div className="settings-layout">
-      <Card>
-        <CardHeader>
-          <CardTitle>Tools 设置</CardTitle>
-        </CardHeader>
-        <CardContent className="settings-stack">
-          <label className="toggle-card">
-            <div>
-              <strong>开放所有权限</strong>
-            </div>
-            <Switch checked={toolsPermissionAll} onCheckedChange={setToolsPermissionAll} />
-          </label>
-          <label className="input-group">
-            <span>Tools JSON</span>
-            <textarea className="field-textarea" value={toolsRaw} onChange={(event) => setToolsRaw(event.target.value)} />
-          </label>
-          <Button disabled={busyKey === "save-tools"} onClick={() => void saveTools()}>
-            <Wrench size={14} />
-            {busyKey === "save-tools" ? "保存中..." : "保存 Tools"}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="skills-panel-grid">
+        <Card className="skills-card">
+          <CardHeader>
+            <CardTitle>Tools 设置</CardTitle>
+          </CardHeader>
+          <CardContent className="settings-stack">
+            <label className="toggle-card">
+              <div>
+                <strong>开放所有权限</strong>
+              </div>
+              <Switch checked={toolsPermissionAll} onCheckedChange={setToolsPermissionAll} />
+            </label>
+            <label className="input-group">
+              <span>Tools JSON</span>
+              <textarea className="field-textarea skills-json" value={toolsRaw} onChange={(event) => setToolsRaw(event.target.value)} />
+            </label>
+            <Button disabled={busyKey === "save-tools"} onClick={() => void saveTools()}>
+              <Wrench size={14} />
+              {busyKey === "save-tools" ? "保存中..." : "保存 Tools"}
+            </Button>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Skills 设置</CardTitle>
-        </CardHeader>
-        <CardContent className="settings-stack">
-          <label className="toggle-card">
-            <div>
-              <strong>监听技能目录</strong>
-            </div>
-            <Switch checked={skillsWatch} onCheckedChange={setSkillsWatch} />
-          </label>
-          <label className="input-group">
-            <span>watchDebounceMs</span>
-            <Input value={skillsWatchDebounceMs} onChange={(event) => setSkillsWatchDebounceMs(event.target.value)} />
-          </label>
-          <label className="input-group">
-            <span>Skills JSON</span>
-            <textarea className="field-textarea" value={skillsRaw} onChange={(event) => setSkillsRaw(event.target.value)} />
-          </label>
-          <Button disabled={busyKey === "save-skills"} onClick={() => void saveSkills()}>
-            <Sparkles size={14} />
-            {busyKey === "save-skills" ? "保存中..." : "保存 Skills"}
-          </Button>
-        </CardContent>
-      </Card>
+        <Card className="skills-card">
+          <CardHeader>
+            <CardTitle>Skills 设置</CardTitle>
+          </CardHeader>
+          <CardContent className="settings-stack">
+            <label className="toggle-card">
+              <div>
+                <strong>监听技能目录</strong>
+              </div>
+              <Switch checked={skillsWatch} onCheckedChange={setSkillsWatch} />
+            </label>
+            <label className="input-group">
+              <span>watchDebounceMs</span>
+              <Input value={skillsWatchDebounceMs} onChange={(event) => setSkillsWatchDebounceMs(event.target.value)} />
+            </label>
+            <label className="input-group">
+              <span>Skills JSON</span>
+              <textarea className="field-textarea skills-json" value={skillsRaw} onChange={(event) => setSkillsRaw(event.target.value)} />
+            </label>
+            <Button disabled={busyKey === "save-skills"} onClick={() => void saveSkills()}>
+              <Sparkles size={14} />
+              {busyKey === "save-skills" ? "保存中..." : "保存 Skills"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
           <CardTitle>ClawHub</CardTitle>
         </CardHeader>
         <CardContent className="settings-stack">
-          <div className="browser-action-row">
+          <div className="browser-action-row skills-search-row">
             <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="搜索技能" />
             <Button variant="outline" disabled={busyKey === "search"} onClick={() => void runSearch()}>
               <Search size={14} />
               {busyKey === "search" ? "搜索中..." : "搜索"}
-            </Button>
-            <Button variant="outline" disabled={busyKey === "install"} onClick={() => void runInstall()}>
-              <Wrench size={14} />
-              {busyKey === "install" ? "安装中..." : "安装 ClawHub"}
             </Button>
           </div>
           <div className="meta-banner">{clawhubStatus}</div>
