@@ -17,7 +17,7 @@ import {
 
 const ENV_TARGETS: Array<"windows" | "wsl"> = ["windows", "wsl"];
 const ENV_TOOLS: Array<"python" | "uv" | "bun"> = ["python", "uv", "bun"];
-const MCP_NAMES = ["windows-mcp", "yingdao-mcp", "wechat-mcp"];
+const MCP_NAMES = ["windows-mcp", "yingdao-mcp", "wechat-mcp", "crm-mcp"];
 
 function readTaskStatus(task: TaskRecord): string {
   if (task.status === "running" || task.status === "pending") return "执行中";

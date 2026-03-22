@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "crm-mcp",
+  "name": "crm-mcp",
+  "displayName": "CRM MCP",
+  "description": "基于 Bun + SQLite 的无界面 CRM，支持客户/跟进/商机管理与 CSV 导出。",
+  "publisher": "clawos",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "version": "0.1.0"
+}
