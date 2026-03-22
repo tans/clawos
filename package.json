@@ -11,8 +11,6 @@
     "electrobun:build": "cd app && bun run electrobun:build",
     "electrobun:build:dev": "cd app && bun run electrobun:build:dev",
     "electrobun:build:stable": "cd app && bun run electrobun:build:stable",
-    "electrobun:download": "bun run scripts/download-electrobun-assets.ts",
-    "icon:windows": "bun run scripts/generate-windows-icon.ts",
     "desktop:dev": "cd app && bun run desktop:dev",
     "desktop:dev:raw": "cd app && bun run desktop:dev:raw",
     "desktop:build": "cd app && bun run desktop:build",

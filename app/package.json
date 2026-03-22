@@ -12,6 +12,8 @@
     "electrobun:build": "bun run scripts/electrobun.ts build --env=dev",
     "electrobun:build:dev": "bun run scripts/electrobun.ts build --env=dev",
     "electrobun:build:stable": "bun run scripts/electrobun.ts build --env=stable",
+    "electrobun:download": "bun run scripts/download-electrobun-assets.ts",
+    "icon:windows": "bun run scripts/generate-windows-icon.ts",
     "desktop:dev": "bun run scripts/desktop-dev.ts",
     "desktop:dev:raw": "bun run tailwind:build && CLAWOS_DESKTOP_DEV=1 bun run electrobun:dev:watch",
     "desktop:build": "bun run tailwind:build && bun run electrobun:build",
@@ -30,7 +32,7 @@
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",
     "daisyui": "^5.5.18",
-    "electrobun": "^1.14.4",
+    "electrobun": "^1.16.0",
     "png-to-ico": "^3.0.1",
     "tailwindcss": "^4.1.16"
   }
