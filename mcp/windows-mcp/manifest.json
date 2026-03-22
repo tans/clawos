@@ -2,5 +2,11 @@
   "schemaVersion": "1.0",
   "id": "windows-mcp",
   "name": "windows-mcp",
+  "displayName": "Windows MCP",
+  "description": "将 CursorTouch/Windows-MCP 打包为可分发的 Windows 可执行文件。",
+  "publisher": "clawos",
+  "platforms": [
+    "windows"
+  ],
   "version": "0.1.0"
 }

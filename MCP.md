@@ -589,3 +589,121 @@ artifacts/mcp/windows-mcp/windows-mcp-0.1.0.tgz
 - [web/src/routes/release.ts](C:/Users/xiake/work/clawos/web/src/routes/release.ts)
 - [web/test/storage.test.ts](C:/Users/xiake/work/clawos/web/test/storage.test.ts)
 
+## 12. 接下来建议执行的工作任务（可直接排期）
+
+为便于团队直接开工，以下任务按 **P0 → P2** 分层，建议先完成 P0，再进入 P1/P2。
+
+### P0（本周可落地，目标：可用性与可观测性）
+
+1. **补齐所有 MCP 的标准 manifest**
+   - 范围：`mcp/*/manifest.json`
+   - 工作内容：
+     - 补齐 `description / displayName / publisher / platforms` 等已有扩展字段
+     - 校验 `id` 与目录名一致，`version` 为合法 semver
+   - 验收标准：
+     - 所有现有 MCP 均有 manifest，且可被 `publish-mcp.ts` 正常读取发布
+
+2. **补齐路由层集成测试（upload/download/release）**
+   - 范围：`web/test/`，新增路由测试文件
+   - 工作内容：
+     - 覆盖 `POST /api/upload/mcp`
+     - 覆盖 `GET /downloads/mcp` 与 `GET /downloads/mcp/:mcpId/latest`
+     - 覆盖 `GET /api/mcps` 与 `GET /api/mcps/:mcpId`
+   - 验收标准：
+     - 核心成功路径 + 关键失败路径（鉴权失败、manifest 不一致、超大小）均有测试
+
+3. **增加 MCP 发布后的运营可见性**
+   - 范围：`web/src/routes/*`（日志）与 `scripts/publish-mcp.ts`（CLI 输出）
+   - 工作内容：
+     - 上传成功/失败统一输出关键字段：`mcpId/version/channel/sha256`
+     - 下载 latest 失败时返回明确错误码与错误信息
+   - 验收标准：
+     - 日志能支持排查 “发布成功但下载失败” 的完整链路
+
+### P1（下个迭代，目标：版本管理能力）
+
+4. **实现历史版本索引**
+   - 范围：`web/src/lib/storage.ts`，`web/storage/releases/*` 索引格式
+   - 工作内容：
+     - 将 `mcpId -> latest` 升级为 `mcpId -> versions[] + latest`
+     - 保持对旧索引兼容（迁移逻辑或读时兼容）
+   - 验收标准：
+     - 可查询某个 MCP 的多个历史版本，latest 逻辑不受影响
+
+5. **新增版本列表与按版本下载接口**
+   - 范围：`web/src/routes/release.ts`、`web/src/routes/download.ts`
+   - 工作内容：
+     - 新增 `GET /api/mcps/:mcpId/versions`
+     - 新增 `GET /downloads/mcp/:mcpId/:version`
+   - 验收标准：
+     - App 能拉取版本列表并按指定版本下载
+
+6. **发布脚本支持历史版本模式下的回滚发布**
+   - 范围：`scripts/publish-mcp.ts`
+   - 工作内容：
+     - 增加 “仅上传不改 manifest” 选项（如 `--no-write-manifest`）
+     - 增加发布前版本存在性检查与提示
+   - 验收标准：
+     - 支持紧急回滚到旧版本包且不污染本地工作区 manifest
+
+### P2（中期建设，目标：安装协议与安全）
+
+7. **定义正式 manifest schema（vNext）**
+   - 范围：`web/src/lib/types.ts` + schema 校验模块（建议新增）
+   - 工作内容：
+     - 引入 `entry / permissions / compatibility / configSchema / installHooks`
+     - 服务端上传时执行 schema 校验并返回可读错误
+   - 验收标准：
+     - 非法 manifest 无法入库；错误信息可直接指导开发者修复
+
+8. **App 侧接入一键安装与运行管理（最小闭环）**
+   - 范围：App（不在当前仓库文档范围内）
+   - 工作内容：
+     - 从 `/api/mcps` 拉取列表
+     - 下载并解压到本地插件目录
+     - 记录安装状态与失败原因
+   - 验收标准：
+     - 至少一个 MCP 可在 App 中“安装→启用→停用→卸载”
+
+9. **补充签名与信任链**
+   - 范围：发布脚本与服务端校验链路
+   - 工作内容：
+     - 增加包签名、manifest 签名
+     - 支持公钥轮换与失效策略
+   - 验收标准：
+     - 未签名或签名不合法的包不可下载/不可安装
+
+### 建议排期方式（2 周节奏）
+
+- **第 1 周**：完成 P0-1/2/3（manifest 补齐 + 路由测试 + 可观测性）
+- **第 2 周**：完成 P1-4/5（历史版本索引 + 版本下载 API）
+- **第 3 周起**：推进 P1-6 与 P2（安装协议和签名）
+
+## 13. 执行状态自检（截至 2026-03-22）
+
+为避免遗漏，这里对第 12 节任务做一次状态核对。
+
+### 13.1 P0 状态（已完成）
+
+- [x] 所有 `mcp/*` 目录均已补齐 `manifest.json`，并补充了 `displayName/description/publisher/platforms` 等字段。
+- [x] 已有路由层测试覆盖 `POST /api/upload/mcp`、`GET /downloads/mcp`、`GET /downloads/mcp/:mcpId/latest`、`GET /api/mcps`、`GET /api/mcps/:mcpId`，并包含鉴权失败、manifest 不一致、超大小、404 等失败路径。
+- [x] 发布与下载关键链路已增加结构化日志与错误码（如 `MCP_UPLOAD_INVALID`、`MCP_LATEST_NOT_FOUND`）。
+
+### 13.2 P1 状态（已完成）
+
+- [x] 已实现 MCP 历史版本索引（每个 channel 记录 latest + versions）。
+- [x] 已实现 `GET /api/mcps/:mcpId/versions`。
+- [x] 已实现 `GET /downloads/mcp/:mcpId/:version`。
+- [x] 发布脚本已支持“仅上传不回写 manifest”参数（`--no-write-manifest`）。
+
+### 13.3 P2 状态（未启动）
+
+- [ ] 正式 manifest schema（`entry / permissions / compatibility / install hooks`）未落地。
+- [ ] App 一键安装与运行管理闭环未落地。
+- [ ] 包签名、manifest 签名、证书链能力未落地。
+
+### 13.4 下一步建议（按优先级）
+
+1. 进入 P2：先设计并落地正式 manifest schema（`entry/permissions/compatibility/install hooks`）。
+2. App 侧接入安装闭环：拉取、下载、解压、启停、卸载与状态追踪。
+3. 引入签名与证书链校验，完善企业交付安全能力。

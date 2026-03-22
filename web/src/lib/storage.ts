@@ -3,7 +3,15 @@ import { constants as fsConstants } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import { getEnv } from "./env";
 import { sha256Hex } from "./hash";
-import type { InstallerPlatform, LatestRelease, McpManifest, McpRelease, ReleaseAsset, ReleaseChannel } from "./types";
+import type {
+  InstallerPlatform,
+  LatestRelease,
+  McpManifest,
+  McpRegistryEntry,
+  McpRelease,
+  ReleaseAsset,
+  ReleaseChannel,
+} from "./types";
 
 const RELEASE_FILE_NAME = "latest.json";
 const RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
@@ -296,6 +304,32 @@ function normalizeMcpRelease(raw: unknown): McpRelease | null {
   };
 }
 
+function normalizeMcpRegistryEntry(raw: unknown, key: string): McpRegistryEntry | null {
+  const asRelease = normalizeMcpRelease(raw);
+  if (asRelease) {
+    return { latest: asRelease, versions: [asRelease] };
+  }
+
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const data = raw as Record<string, unknown>;
+  const latest = normalizeMcpRelease(data.latest);
+  if (!latest) {
+    return null;
+  }
+  const versionsRaw = Array.isArray(data.versions) ? data.versions : [];
+  const versions = versionsRaw
+    .map((item) => normalizeMcpRelease(item))
+    .filter((item): item is McpRelease => Boolean(item));
+  const hasLatest = versions.some((item) => item.version === latest.version);
+  const merged = hasLatest ? versions : [...versions, latest];
+  return {
+    latest,
+    versions: merged.filter((item) => item.id === key),
+  };
+}
+
 export async function readLatestRelease(channel: ReleaseChannel = "stable"): Promise<LatestRelease | null> {
   await ensureStorageDirs();
 
@@ -311,7 +345,7 @@ export async function readLatestRelease(channel: ReleaseChannel = "stable"): Pro
   }
 }
 
-export async function readMcpRegistry(channel: ReleaseChannel = "stable"): Promise<Record<string, McpRelease>> {
+export async function readMcpRegistry(channel: ReleaseChannel = "stable"): Promise<Record<string, McpRegistryEntry>> {
   await ensureStorageDirs();
 
   try {
@@ -319,13 +353,13 @@ export async function readMcpRegistry(channel: ReleaseChannel = "stable"): Promi
     const raw = JSON.parse(content) as Record<string, unknown>;
     const entries = Object.entries(raw)
       .map(([key, value]) => {
-        const normalized = normalizeMcpRelease(value);
+        const normalized = normalizeMcpRegistryEntry(value, key);
         if (!normalized) {
           return null;
         }
         return [key, normalized] as const;
       })
-      .filter((item): item is readonly [string, McpRelease] => Boolean(item));
+      .filter((item): item is readonly [string, McpRegistryEntry] => Boolean(item));
     return Object.fromEntries(entries);
   } catch (error) {
     const err = error as NodeJS.ErrnoException;
@@ -337,7 +371,7 @@ export async function readMcpRegistry(channel: ReleaseChannel = "stable"): Promi
 }
 
 export async function writeMcpRegistry(
-  registry: Record<string, McpRelease>,
+  registry: Record<string, McpRegistryEntry>,
   channel: ReleaseChannel = "stable"
 ): Promise<void> {
   await ensureStorageDirs();
@@ -390,10 +424,10 @@ function assertUpdaterFileName(fileName: string): string {
 function assertMcpId(raw: string): string {
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) {
-    throw new Error("mcpId 涓嶈兘涓虹┖");
+    throw new Error("mcpId 不能为空");
   }
   if (!MCP_ID_PATTERN.test(trimmed)) {
-    throw new Error("mcpId 鏍煎紡闈炴硶锛屼粎鏀寔灏忓啓瀛楁瘝銆佹暟瀛椼€佺偣銆佷笅鍒掔嚎鍜屼腑鍒掔嚎");
+    throw new Error("mcpId 格式非法，仅支持小写字母、数字、点、下划线和中划线");
   }
   return trimmed;
 }
@@ -402,7 +436,7 @@ function assertMcpPackageFileName(fileName: string): string {
   const safeName = ensureSafeFileName(fileName);
   const lower = safeName.toLowerCase();
   if (!MCP_PACKAGE_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
-    throw new Error(`MCP 鍖呮墿灞曞悕涓嶆敮鎸侊紝浠呮敮鎸? ${MCP_PACKAGE_EXTENSIONS.join(" / ")}`);
+    throw new Error(`MCP 包扩展名不支持，仅支持 ${MCP_PACKAGE_EXTENSIONS.join(" / ")}`);
   }
   return safeName;
 }
@@ -545,22 +579,22 @@ export async function storeMcpPackage(params: {
   const mcpId = assertMcpId(params.mcpId);
   const version = params.version.trim();
   if (!version) {
-    throw new Error("MCP version 涓嶈兘涓虹┖");
+    throw new Error("MCP version 不能为空");
   }
 
   const manifest = normalizeMcpManifest(params.manifest, mcpId, version);
   if (!manifest) {
-    throw new Error("MCP manifest 闈炴硶鎴栫己灏戝繀瑕佸瓧娈?");
+    throw new Error("MCP manifest 非法或缺少必要字段");
   }
   if (manifest.id !== mcpId) {
-    throw new Error(`MCP manifest.id 涓嶅尮閰? mcpId: ${manifest.id} !== ${mcpId}`);
+    throw new Error(`MCP manifest.id 不匹配 mcpId: ${manifest.id} !== ${mcpId}`);
   }
   if (manifest.version !== version) {
-    throw new Error(`MCP manifest.version 涓嶅尮閰? version: ${manifest.version} !== ${version}`);
+    throw new Error(`MCP manifest.version 不匹配 version: ${manifest.version} !== ${version}`);
   }
 
   const safeName = assertMcpPackageFileName(params.fileName);
-  assertFileSize(params.bytes.byteLength, env.maxMcpPackageSizeBytes, "MCP 鍖?");
+  assertFileSize(params.bytes.byteLength, env.maxMcpPackageSizeBytes, "MCP 包");
 
   const outputDir = getMcpDir(mcpId, version);
   await mkdir(outputDir, { recursive: true });
@@ -586,7 +620,13 @@ export async function storeMcpPackage(params: {
   };
 
   const registry = await readMcpRegistry(channel);
-  registry[mcpId] = nextRelease;
+  const existing = registry[mcpId];
+  const existingVersions = existing?.versions || [];
+  const filtered = existingVersions.filter((item) => item.version !== version);
+  registry[mcpId] = {
+    latest: nextRelease,
+    versions: [...filtered, nextRelease],
+  };
   await writeMcpRegistry(registry, channel);
 
   return { release: nextRelease, asset };
@@ -694,13 +734,37 @@ export async function resolveLatestXiakeConfig(channel: ReleaseChannel = "stable
 
 export async function listMcpReleases(channel: ReleaseChannel = "stable"): Promise<McpRelease[]> {
   const registry = await readMcpRegistry(channel);
-  return Object.values(registry).sort((a, b) => a.id.localeCompare(b.id));
+  return Object.values(registry)
+    .map((entry) => entry.latest)
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 export async function readMcpRelease(mcpId: string, channel: ReleaseChannel = "stable"): Promise<McpRelease | null> {
   const registry = await readMcpRegistry(channel);
   const normalizedId = assertMcpId(mcpId);
-  return registry[normalizedId] || null;
+  return registry[normalizedId]?.latest || null;
+}
+
+export async function listMcpReleaseVersions(
+  mcpId: string,
+  channel: ReleaseChannel = "stable"
+): Promise<McpRelease[]> {
+  const registry = await readMcpRegistry(channel);
+  const normalizedId = assertMcpId(mcpId);
+  return [...(registry[normalizedId]?.versions || [])].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+}
+
+export async function readMcpReleaseByVersion(
+  mcpId: string,
+  version: string,
+  channel: ReleaseChannel = "stable"
+): Promise<McpRelease | null> {
+  const versions = await listMcpReleaseVersions(mcpId, channel);
+  const normalizedVersion = version.trim();
+  if (!normalizedVersion) {
+    throw new Error("version 不能为空");
+  }
+  return versions.find((item) => item.version === normalizedVersion) || null;
 }
 
 export async function resolveLatestMcpPackage(
@@ -709,7 +773,26 @@ export async function resolveLatestMcpPackage(
 ): Promise<{ release: McpRelease; asset: ReleaseAsset; absolutePath: string }> {
   const release = await readMcpRelease(mcpId, channel);
   if (!release) {
-    throw new Error(`MCP 涓嶅瓨鍦? ${mcpId}`);
+    throw new Error(`MCP 不存在: ${mcpId}`);
+  }
+
+  const absolutePath = absoluteAssetPath(release.package.relativePath);
+  await ensureReadable(absolutePath);
+  return {
+    release,
+    asset: release.package,
+    absolutePath,
+  };
+}
+
+export async function resolveMcpPackageByVersion(
+  mcpId: string,
+  version: string,
+  channel: ReleaseChannel = "stable"
+): Promise<{ release: McpRelease; asset: ReleaseAsset; absolutePath: string }> {
+  const release = await readMcpReleaseByVersion(mcpId, version, channel);
+  if (!release) {
+    throw new Error(`MCP 版本不存在: ${mcpId}@${version}`);
   }
 
   const absolutePath = absoluteAssetPath(release.package.relativePath);

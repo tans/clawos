@@ -26,6 +26,7 @@ interface Options {
   token: string;
   releaseChannel: ReleaseChannel;
   version?: string;
+  writeManifest: boolean;
   timeoutMs: number;
   heartbeatMs: number;
 }
@@ -44,6 +45,7 @@ Options:
   --release-channel <name>    stable or beta, default stable
   --base-url <url>            Publish site, default https://clawos.minapp.xin
   --token <token>             Upload token, default from CLAWOS_UPLOAD_TOKEN/UPLOAD_TOKEN
+  --no-write-manifest         Do not write bumped version back to mcp/<id>/manifest.json
   --timeout-ms <ms>           Upload timeout, default 600000
   --heartbeat-ms <ms>         Upload heartbeat log interval, default 15000
   -h, --help                  Show help
@@ -62,6 +64,7 @@ function parseArgs(argv: string[]): Options {
     token: process.env.CLAWOS_UPLOAD_TOKEN?.trim() || process.env.UPLOAD_TOKEN?.trim() || "clawos",
     releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
     version: process.env.CLAWOS_VERSION?.trim() || undefined,
+    writeManifest: true,
     timeoutMs: Number.parseInt(process.env.UPLOAD_TIMEOUT_MS || "", 10) || 10 * 60 * 1000,
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
   };
@@ -103,6 +106,10 @@ function parseArgs(argv: string[]): Options {
     }
     if (arg.startsWith("--heartbeat-ms=")) {
       opts.heartbeatMs = Number.parseInt(arg.slice("--heartbeat-ms=".length), 10);
+      continue;
+    }
+    if (arg === "--no-write-manifest") {
+      opts.writeManifest = false;
       continue;
     }
 
@@ -386,7 +393,11 @@ async function main(): Promise<void> {
   manifest.version = version;
   manifest.schemaVersion = manifest.schemaVersion || "1.0";
   manifest.name = manifest.name || opts.mcpId;
-  await saveManifest(opts.mcpId, manifest);
+  if (opts.writeManifest) {
+    await saveManifest(opts.mcpId, manifest);
+  } else {
+    console.log("[publish:mcp] --no-write-manifest enabled, manifest.json will not be modified.");
+  }
 
   console.log(`[publish:mcp] mcp: ${opts.mcpId}`);
   console.log(`[publish:mcp] version: ${version}`);
