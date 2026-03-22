@@ -67,22 +67,21 @@ const config: ElectrobunConfig = {
   },
   build: {
     bun: {
-      entrypoint: "src/bun/index.ts",
+      entrypoint: "main/index.ts",
     },
     views: {
       clawos: {
-        entrypoint: "src/desktop-ui/bridge.ts",
+        entrypoint: "webview/bridge.ts",
         format: "iife",
       },
     },
     copy: {
-      "src/desktop-ui/shell.html": "views/clawos/shell.html",
-      "src/pages/sidebar-update.js": "views/clawos/sidebar-update.js",
-      "dist/output.css": "views/clawos/styles.css",
-      "src/pages/pages-shell.css": "views/clawos/pages-shell.css",
+      "webview/shell.html": "views/clawos/shell.html",
+      "webview-dist/assets/app.css": "views/clawos/app.css",
+      "webview-dist/assets/react-app.js": "views/clawos/react-app.js",
       "../web/public/logo.png": "views/clawos/logo.png",
     },
-    watch: ["src", "dist"],
+    watch: ["main", "server", "shared", "webview", "webview-dist"],
     watchIgnore: [
       "build/**",
       "artifacts/**",
