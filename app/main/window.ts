@@ -9,7 +9,8 @@ const IS_DESKTOP_DEV = ["1", "true", "yes", "on"].includes(
 const SHOULD_OPEN_DEVTOOLS = ["1", "true", "yes", "on"].includes(
   (process.env.CLAWOS_DESKTOP_OPEN_DEVTOOLS || "").trim().toLowerCase()
 );
-const APP_WINDOW_TITLE = `ClawOS v${VERSION}`;
+const OEM_BRAND_NAME = process.env.CLAWOS_OEM_BRAND_NAME?.trim() || "ClawOS";
+const APP_WINDOW_TITLE = `${OEM_BRAND_NAME} v${VERSION}`;
 
 let desktopWindow: BrowserWindow | null = null;
 
@@ -67,7 +68,7 @@ export function renderStartupErrorHtml(errorMessage: string): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ClawOS &#21551;&#21160;&#22833;&#36133;</title>
+    <title>${OEM_BRAND_NAME} &#21551;&#21160;&#22833;&#36133;</title>
     <style>
       :root { color-scheme: light; }
       body {
@@ -90,7 +91,7 @@ export function renderStartupErrorHtml(errorMessage: string): string {
   </head>
   <body>
     <main>
-      <h1>ClawOS &#21551;&#21160;&#22833;&#36133;</h1>
+      <h1>${OEM_BRAND_NAME} &#21551;&#21160;&#22833;&#36133;</h1>
       <p>&#26700;&#38754;&#22771;&#21021;&#22987;&#21270;&#22833;&#36133;&#12290;</p>
       <p>&#38169;&#35823;&#20449;&#24687;&#65306;</p>
       <code>${safeError}</code>

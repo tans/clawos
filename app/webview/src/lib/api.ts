@@ -49,6 +49,13 @@ export type AppUpdateStatus = {
   error?: string | null;
 };
 
+
+export type BrandProfile = {
+  name?: string;
+  domain?: string;
+  logoUrl?: string;
+};
+
 export type BackupRecord = {
   path: string;
   fileName: string;
@@ -219,6 +226,12 @@ export async function startGatewayUpdate() {
     method: "POST",
     body: {},
   });
+}
+
+
+export async function fetchBrandProfile(): Promise<BrandProfile> {
+  const data = await request<{ ok: true; brand: BrandProfile }>("/api/brand");
+  return data.brand || {};
 }
 
 export async function fetchHealthVersion(): Promise<string | null> {

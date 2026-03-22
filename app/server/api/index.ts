@@ -769,10 +769,28 @@ async function handleMcpStatus(): Promise<Response> {
   return jsonResponse({ ok: true, targets });
 }
 
+
+function readDesktopBrandProfile(): { name: string; domain: string; logoUrl: string } {
+  const name = process.env.CLAWOS_OEM_BRAND_NAME?.trim() || "ClawOS";
+  const domain = process.env.CLAWOS_OEM_BRAND_DOMAIN?.trim() || "clawos.cc";
+  const rawLogo = process.env.CLAWOS_OEM_BRAND_LOGO_URL?.trim();
+  const logoUrl = rawLogo
+    ? rawLogo.startsWith("http://") || rawLogo.startsWith("https://") || rawLogo.startsWith("/")
+      ? rawLogo
+      : `/${rawLogo.replace(/^\/+/, "")}`
+    : "/logo.png";
+
+  return { name, domain, logoUrl };
+}
+
 export async function handleApiRequest(req: Request, path: string): Promise<Response | null> {
   try {
     if (path === "/api/health") {
       return jsonResponse({ ok: true, version: VERSION });
+    }
+
+    if (path === "/api/brand" && req.method === "GET") {
+      return jsonResponse({ ok: true, brand: readDesktopBrandProfile() });
     }
 
     if (path === "/api/system/check" && req.method === "GET") {

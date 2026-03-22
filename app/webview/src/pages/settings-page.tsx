@@ -181,7 +181,7 @@ export function SettingsPage() {
 
           <section className="field-card">
             <div className="field-copy">
-              <h3>开机后自动启动 ClawOS</h3>
+              <h3>开机后自动启动桌面客户端</h3>
             </div>
             <div className="switch-row">
               <Switch checked={autoStart} onCheckedChange={handleAutoStartChange} disabled={!autoStartSupported || isSavingAutoStart || isLoading} />
