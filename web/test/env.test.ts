@@ -7,8 +7,11 @@ describe("validateStartupEnv", () => {
     const env: AppEnv = {
       port: 26222,
       uploadToken: null,
+      adminUsername: null,
+      adminPassword: null,
       maxInstallerSizeBytes: 1,
       maxConfigSizeBytes: 1,
+      maxMcpPackageSizeBytes: 1,
       storageDir: "/tmp/clawos-web",
     };
 
@@ -23,8 +26,11 @@ describe("validateStartupEnv", () => {
     const env: AppEnv = {
       port: 26222,
       uploadToken: "clawos",
+      adminUsername: "admin",
+      adminPassword: "123456",
       maxInstallerSizeBytes: 1,
       maxConfigSizeBytes: 1,
+      maxMcpPackageSizeBytes: 1,
       storageDir: "/tmp/clawos-web",
     };
 

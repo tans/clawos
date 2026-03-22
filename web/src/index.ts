@@ -7,6 +7,7 @@ import { pageRoutes } from "./routes/page";
 import { releaseRoutes } from "./routes/release";
 import { downloadRoutes } from "./routes/download";
 import { uploadRoutes } from "./routes/upload";
+import { adminRoutes } from "./routes/admin";
 
 export const app = new Hono();
 const cssFilePath = resolve(process.cwd(), "dist", "output.css");
@@ -71,6 +72,7 @@ app.route("/", pageRoutes);
 app.route("/", releaseRoutes);
 app.route("/", downloadRoutes);
 app.route("/", uploadRoutes);
+app.route("/", adminRoutes);
 
 app.notFound((c) => c.json({ ok: false, error: "Not Found" }, 404));
 
