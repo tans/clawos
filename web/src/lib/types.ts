@@ -46,3 +46,21 @@ export interface McpRegistryEntry {
   latest: McpRelease;
   versions: McpRelease[];
 }
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  priceCny: string;
+  link: string;
+  published: boolean;
+  updatedAt: string;
+}
+
+export interface McpShelfItem {
+  mcpId: string;
+  version: string;
+  channel: ReleaseChannel;
+  published: boolean;
+  updatedAt: string;
+}

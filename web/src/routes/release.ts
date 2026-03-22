@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import {
+  listPublishedMcpShelf,
+  listPublishedProducts,
   listMcpReleaseVersions,
   listMcpReleases,
   normalizeReleaseChannel,
@@ -68,6 +70,16 @@ releaseRoutes.get("/api/mcps", async (c) => {
   });
 });
 
+releaseRoutes.get("/api/mcps/shelf", async (c) => {
+  const channel = normalizeReleaseChannel(c.req.query("channel") || undefined) || "stable";
+  const items = await listPublishedMcpShelf(channel);
+  return c.json({
+    ok: true,
+    channel,
+    items,
+  });
+});
+
 releaseRoutes.get("/api/mcps/:mcpId", async (c) => {
   const channel = normalizeReleaseChannel(c.req.query("channel") || undefined) || "stable";
   const item = await readMcpRelease(c.req.param("mcpId"), channel);
@@ -97,5 +109,13 @@ releaseRoutes.get("/api/mcps/:mcpId/versions", async (c) => {
       ...item,
       downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/${encodeURIComponent(item.version)}${channel === "beta" ? "?channel=beta" : ""}`,
     })),
+  });
+});
+
+releaseRoutes.get("/api/products", async (c) => {
+  const items = await listPublishedProducts();
+  return c.json({
+    ok: true,
+    items,
   });
 });

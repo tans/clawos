@@ -9,6 +9,8 @@ import type {
   McpManifest,
   McpRegistryEntry,
   McpRelease,
+  McpShelfItem,
+  Product,
   ReleaseAsset,
   ReleaseChannel,
 } from "./types";
@@ -22,6 +24,8 @@ const MCP_RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
   stable: "mcps.json",
   beta: "mcps-beta.json",
 };
+const MCP_SHELF_FILE_NAME = "mcp-shelf.json";
+const PRODUCTS_FILE_NAME = "products.json";
 const CONFIG_CANONICAL_NAME = "clawos_xiake.json";
 const INSTALLER_PLATFORMS: InstallerPlatform[] = ["windows", "macos", "linux"];
 const UPDATER_ASSET_MAX_ENTRIES = 240;
@@ -69,6 +73,16 @@ function getMcpReleaseFilePath(channel: ReleaseChannel): string {
   const env = getEnv();
   const fileName = MCP_RELEASE_FILE_NAME_BY_CHANNEL[channel];
   return resolve(env.storageDir, "releases", fileName);
+}
+
+function getMcpShelfFilePath(): string {
+  const env = getEnv();
+  return resolve(env.storageDir, "releases", MCP_SHELF_FILE_NAME);
+}
+
+function getProductsFilePath(): string {
+  const env = getEnv();
+  return resolve(env.storageDir, "releases", PRODUCTS_FILE_NAME);
 }
 
 function getInstallerDir(platform?: InstallerPlatform): string {
@@ -330,6 +344,48 @@ function normalizeMcpRegistryEntry(raw: unknown, key: string): McpRegistryEntry 
   };
 }
 
+function normalizeProduct(raw: unknown): Product | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const data = raw as Record<string, unknown>;
+  if (typeof data.id !== "string" || !data.id.trim() || typeof data.name !== "string" || !data.name.trim()) {
+    return null;
+  }
+  return {
+    id: data.id.trim(),
+    name: data.name.trim(),
+    description: typeof data.description === "string" ? data.description.trim() : "",
+    priceCny: typeof data.priceCny === "string" ? data.priceCny.trim() : "",
+    link: typeof data.link === "string" ? data.link.trim() : "",
+    published: Boolean(data.published),
+    updatedAt: typeof data.updatedAt === "string" && data.updatedAt.trim() ? data.updatedAt.trim() : nowIso(),
+  };
+}
+
+function normalizeMcpShelfItem(raw: unknown): McpShelfItem | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const data = raw as Record<string, unknown>;
+  const channel = normalizeReleaseChannel(data.channel) || "stable";
+  if (
+    typeof data.mcpId !== "string" ||
+    !data.mcpId.trim() ||
+    typeof data.version !== "string" ||
+    !data.version.trim()
+  ) {
+    return null;
+  }
+  return {
+    mcpId: data.mcpId.trim(),
+    version: data.version.trim(),
+    channel,
+    published: Boolean(data.published),
+    updatedAt: typeof data.updatedAt === "string" && data.updatedAt.trim() ? data.updatedAt.trim() : nowIso(),
+  };
+}
+
 export async function readLatestRelease(channel: ReleaseChannel = "stable"): Promise<LatestRelease | null> {
   await ensureStorageDirs();
 
@@ -376,6 +432,126 @@ export async function writeMcpRegistry(
 ): Promise<void> {
   await ensureStorageDirs();
   await writeFile(getMcpReleaseFilePath(channel), `${JSON.stringify(registry, null, 2)}\n`, "utf-8");
+}
+
+export async function readProducts(): Promise<Product[]> {
+  await ensureStorageDirs();
+  try {
+    const content = await readFile(getProductsFilePath(), "utf-8");
+    const raw = JSON.parse(content);
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((item) => normalizeProduct(item))
+      .filter((item): item is Product => Boolean(item))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function writeProducts(products: Product[]): Promise<void> {
+  await ensureStorageDirs();
+  await writeFile(getProductsFilePath(), `${JSON.stringify(products, null, 2)}\n`, "utf-8");
+}
+
+export async function upsertProduct(product: Omit<Product, "updatedAt">): Promise<Product> {
+  const id = product.id.trim().toLowerCase();
+  if (!id) {
+    throw new Error("商品 ID 不能为空");
+  }
+  if (!product.name.trim()) {
+    throw new Error("商品名称不能为空");
+  }
+
+  const all = await readProducts();
+  const next: Product = {
+    ...product,
+    id,
+    name: product.name.trim(),
+    description: product.description.trim(),
+    priceCny: product.priceCny.trim(),
+    link: product.link.trim(),
+    updatedAt: nowIso(),
+  };
+  const filtered = all.filter((item) => item.id !== id);
+  await writeProducts([...filtered, next].sort((a, b) => a.id.localeCompare(b.id)));
+  return next;
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  const id = productId.trim().toLowerCase();
+  const all = await readProducts();
+  await writeProducts(all.filter((item) => item.id !== id));
+}
+
+export async function listPublishedProducts(): Promise<Product[]> {
+  const all = await readProducts();
+  return all.filter((item) => item.published);
+}
+
+export async function readMcpShelf(): Promise<McpShelfItem[]> {
+  await ensureStorageDirs();
+  try {
+    const content = await readFile(getMcpShelfFilePath(), "utf-8");
+    const raw = JSON.parse(content);
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw
+      .map((item) => normalizeMcpShelfItem(item))
+      .filter((item): item is McpShelfItem => Boolean(item))
+      .sort((a, b) => `${a.channel}:${a.mcpId}`.localeCompare(`${b.channel}:${b.mcpId}`));
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function writeMcpShelf(items: McpShelfItem[]): Promise<void> {
+  await ensureStorageDirs();
+  await writeFile(getMcpShelfFilePath(), `${JSON.stringify(items, null, 2)}\n`, "utf-8");
+}
+
+export async function setMcpShelfStatus(params: {
+  mcpId: string;
+  version: string;
+  channel: ReleaseChannel;
+  published: boolean;
+}): Promise<McpShelfItem> {
+  const item: McpShelfItem = {
+    mcpId: params.mcpId.trim(),
+    version: params.version.trim(),
+    channel: params.channel,
+    published: params.published,
+    updatedAt: nowIso(),
+  };
+  if (!item.mcpId || !item.version) {
+    throw new Error("mcpId 和 version 不能为空");
+  }
+  const all = await readMcpShelf();
+  const filtered = all.filter(
+    (current) => !(current.mcpId === item.mcpId && current.version === item.version && current.channel === item.channel)
+  );
+  await writeMcpShelf([...filtered, item]);
+  return item;
+}
+
+export async function listPublishedMcpShelf(channel: ReleaseChannel = "stable"): Promise<McpRelease[]> {
+  const [items, releases] = await Promise.all([readMcpShelf(), listMcpReleases(channel)]);
+  const index = new Map(releases.map((release) => [`${release.id}@${release.version}@${channel}`, release]));
+  return items
+    .filter((item) => item.channel === channel && item.published)
+    .map((item) => index.get(`${item.mcpId}@${item.version}@${channel}`))
+    .filter((item): item is McpRelease => Boolean(item));
 }
 
 export async function writeLatestRelease(release: LatestRelease, channel: ReleaseChannel = "stable"): Promise<void> {

@@ -120,7 +120,22 @@ web/
 - `UPLOAD_TOKEN`：上传接口鉴权 Token（默认 `clawos`，生产环境建议覆盖）
 - `MAX_INSTALLER_SIZE_MB`：安装包大小上限
 - `MAX_CONFIG_SIZE_MB`：配置文件大小上限
+- `MAX_MCP_PACKAGE_SIZE_MB`：MCP 包大小上限
 - `STORAGE_DIR`：文件存储根目录（默认 `web/storage`）
+- `ADMIN_USERNAME`：后台登录账号（用于 `/admin`）
+- `ADMIN_PASSWORD`：后台登录密码（用于 `/admin`）
+
+## 后台管理
+
+- 登录页：`GET /admin/login`
+- 后台页：`GET /admin`（需登录）
+- 商品管理：
+  - `POST /admin/products/save`
+  - `POST /admin/products/delete`
+  - `GET /api/products`（仅返回已发布商品）
+- MCP 上架管理：
+  - `POST /admin/mcp/shelf`（上架/下架）
+  - `GET /api/mcps/shelf?channel=stable|beta`
 
 ## 上传脚本示例
 

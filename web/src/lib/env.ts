@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 export interface AppEnv {
   port: number;
   uploadToken: string | null;
+  adminUsername: string | null;
+  adminPassword: string | null;
   maxInstallerSizeBytes: number;
   maxConfigSizeBytes: number;
   maxMcpPackageSizeBytes: number;
@@ -46,6 +48,8 @@ export function getEnv(): AppEnv {
   cachedEnv = {
     port,
     uploadToken: process.env.UPLOAD_TOKEN?.trim() || "clawos",
+    adminUsername: process.env.ADMIN_USERNAME?.trim() || null,
+    adminPassword: process.env.ADMIN_PASSWORD?.trim() || null,
     maxInstallerSizeBytes: mbToBytes(maxInstallerSizeMb),
     maxConfigSizeBytes: mbToBytes(maxConfigSizeMb),
     maxMcpPackageSizeBytes: mbToBytes(maxMcpPackageSizeMb),
@@ -66,6 +70,13 @@ export function validateStartupEnv(env: AppEnv): StartupEnvCheck[] {
     checks.push({
       level: "warn",
       message: "未配置 UPLOAD_TOKEN，上传接口将不可用（会返回 503）。",
+    });
+  }
+
+  if (!env.adminUsername || !env.adminPassword) {
+    checks.push({
+      level: "warn",
+      message: "未配置 ADMIN_USERNAME / ADMIN_PASSWORD，后台登录将不可用。",
     });
   }
 
