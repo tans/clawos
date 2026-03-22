@@ -1,5 +1,11 @@
 import { Hono } from "hono";
-import { listMcpReleases, normalizeReleaseChannel, readLatestRelease, readMcpRelease } from "../lib/storage";
+import {
+  listMcpReleaseVersions,
+  listMcpReleases,
+  normalizeReleaseChannel,
+  readLatestRelease,
+  readMcpRelease,
+} from "../lib/storage";
 
 export const releaseRoutes = new Hono();
 
@@ -72,5 +78,24 @@ releaseRoutes.get("/api/mcps/:mcpId", async (c) => {
     ok: true,
     channel,
     item,
+  });
+});
+
+releaseRoutes.get("/api/mcps/:mcpId/versions", async (c) => {
+  const channel = normalizeReleaseChannel(c.req.query("channel") || undefined) || "stable";
+  const mcpId = c.req.param("mcpId");
+  const versions = await listMcpReleaseVersions(mcpId, channel);
+  if (versions.length === 0) {
+    return c.json({ ok: false, error: "MCP 不存在" }, 404);
+  }
+
+  return c.json({
+    ok: true,
+    channel,
+    mcpId,
+    items: versions.map((item) => ({
+      ...item,
+      downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/${encodeURIComponent(item.version)}${channel === "beta" ? "?channel=beta" : ""}`,
+    })),
   });
 });
