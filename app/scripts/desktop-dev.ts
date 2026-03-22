@@ -136,7 +136,7 @@ async function main(): Promise<void> {
   await cleanupWindowsDevBuild();
 
   const children: ChildProcessHandle[] = [
-    spawnChild("tailwind", [BUN_EXECUTABLE, "run", "tailwind:watch"]),
+    spawnChild("webview", [BUN_EXECUTABLE, "run", "webview:watch"]),
     spawnChild("electrobun", [BUN_EXECUTABLE, "run", "scripts/electrobun.ts", "dev", "--watch"], {
       CLAWOS_DESKTOP_DEV: "1",
     }),
