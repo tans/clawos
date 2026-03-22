@@ -7,7 +7,7 @@ export interface ReleaseAsset {
 }
 
 export type InstallerPlatform = "windows" | "macos" | "linux";
-export type ReleaseChannel = "stable" | "beta";
+export type ReleaseChannel = "stable" | "beta" | "alpha";
 
 export interface LatestRelease {
   version: string;

@@ -25,6 +25,10 @@ function toUint8Array(arrayBuffer: ArrayBuffer): Uint8Array {
   return new Uint8Array(arrayBuffer);
 }
 
+function channelSuffix(channel: ReleaseChannel | undefined): string {
+  return channel && channel !== "stable" ? `?channel=${channel}` : "";
+}
+
 async function parseUploadRequest(c: Context, defaultFileName: string): Promise<{
   fileName: string;
   bytes: Uint8Array;
@@ -98,13 +102,14 @@ uploadRoutes.post("/api/upload/installer", async (c) => {
       version: result.release.version,
       platform: upload.platform || null,
       channel: upload.channel || "stable",
-      url: upload.channel === "beta"
-        ? upload.platform
-          ? `/downloads/beta/${upload.platform}`
-          : "/downloads/beta"
-        : upload.platform
-          ? `/downloads/latest/${upload.platform}`
-          : "/downloads/latest",
+      url:
+        upload.channel && upload.channel !== "stable"
+          ? upload.platform
+            ? `/downloads/${upload.channel}/${upload.platform}`
+            : `/downloads/${upload.channel}`
+          : upload.platform
+            ? `/downloads/latest/${upload.platform}`
+            : "/downloads/latest",
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);
@@ -123,7 +128,7 @@ uploadRoutes.post("/api/upload/xiake-config", async (c) => {
       sha256: result.asset.sha256,
       version: result.release.version,
       channel: upload.channel || "stable",
-      url: upload.channel === "beta" ? "/downloads/clawos_xiake.json?channel=beta" : "/downloads/clawos_xiake.json",
+      url: `/downloads/clawos_xiake.json${channelSuffix(upload.channel)}`,
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);
@@ -194,7 +199,7 @@ uploadRoutes.post("/api/upload/mcp", async (c) => {
       size: result.asset.size,
       sha256: result.asset.sha256,
       channel,
-      url: `/downloads/mcp/${encodeURIComponent(result.release.id)}/latest`,
+      url: `/downloads/mcp/${encodeURIComponent(result.release.id)}/latest${channelSuffix(upload.channel)}`,
     });
   } catch (error) {
     const message = (error as Error).message;

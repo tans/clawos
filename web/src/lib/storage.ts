@@ -19,10 +19,12 @@ const RELEASE_FILE_NAME = "latest.json";
 const RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
   stable: "latest.json",
   beta: "latest-beta.json",
+  alpha: "latest-alpha.json",
 };
 const MCP_RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
   stable: "mcps.json",
   beta: "mcps-beta.json",
+  alpha: "mcps-alpha.json",
 };
 const MCP_SHELF_FILE_NAME = "mcp-shelf.json";
 const PRODUCTS_FILE_NAME = "products.json";
@@ -169,6 +171,9 @@ export function normalizeReleaseChannel(raw: unknown): ReleaseChannel | null {
   }
   if (normalized === "beta") {
     return "beta";
+  }
+  if (normalized === "alpha") {
+    return "alpha";
   }
   return null;
 }
