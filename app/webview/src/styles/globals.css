@@ -34,6 +34,10 @@
   --destructive: oklch(0.62 0.22 25);
   --destructive-foreground: oklch(0.99 0.01 85);
   --sidebar-width: 14.5rem;
+  --space-page: 14px;
+  --space-grid: 12px;
+  --space-stack: 10px;
+  --space-inline: 8px;
 }
 
 * {
@@ -80,8 +84,8 @@ button {
 .shell-main {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: var(--space-grid);
+  padding: var(--space-page);
   min-width: 0;
   overflow-x: clip;
 }
@@ -89,7 +93,7 @@ button {
 .topbar {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: calc(var(--space-grid) + 4px);
   align-items: flex-start;
   padding: 2px 2px 6px;
   min-width: 0;
@@ -114,7 +118,7 @@ button {
 
 .topbar-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-inline);
   flex-wrap: wrap;
   max-width: 100%;
 }
@@ -122,7 +126,7 @@ button {
 .status-strip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+  gap: var(--space-stack);
   min-width: 0;
 }
 
@@ -157,7 +161,7 @@ button {
 .content-grid,
 .sessions-layout {
   display: grid;
-  gap: 12px;
+  gap: var(--space-grid);
   min-width: 0;
 }
 
@@ -172,7 +176,7 @@ button {
 .dual-column-grid,
 .triple-grid {
   display: grid;
-  gap: 12px;
+  gap: var(--space-grid);
   min-width: 0;
 }
 
@@ -198,7 +202,27 @@ button {
 .feature-stack,
 .migration-list,
 .stack-compact {
-  gap: 10px;
+  gap: var(--space-stack);
+}
+
+.skills-panel-grid {
+  display: grid;
+  gap: var(--space-grid);
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  min-width: 0;
+}
+
+.skills-card {
+  min-width: 0;
+}
+
+.skills-json {
+  min-height: 260px;
+}
+
+.skills-search-row > :first-child {
+  flex: 1 1 280px;
+  min-width: 220px;
 }
 
 .field-card,
@@ -213,7 +237,7 @@ button {
 
 .field-card {
   display: grid;
-  gap: 12px;
+  gap: var(--space-grid);
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
   align-items: center;
   padding: 12px;
@@ -261,7 +285,7 @@ button {
 .channel-head,
 .message-copy {
   display: flex;
-  gap: 10px;
+  gap: var(--space-stack);
   align-items: flex-start;
   min-width: 0;
 }
@@ -311,7 +335,7 @@ button {
 .browser-action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-inline);
   min-width: 0;
 }
 
@@ -370,7 +394,7 @@ button {
 .switch-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-stack);
   font-size: 12px;
 }
 
@@ -411,7 +435,7 @@ button {
 .settings-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--space-inline);
   padding-top: 2px;
 }
 
@@ -496,7 +520,7 @@ button {
 .message-head {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-stack);
   margin-bottom: 8px;
   font-size: 11px;
 }
@@ -510,6 +534,13 @@ button {
 }
 
 @media (max-width: 980px) {
+  :root {
+    --space-page: 12px;
+    --space-grid: 10px;
+    --space-stack: 8px;
+    --space-inline: 6px;
+  }
+
   .shell {
     grid-template-columns: 1fr;
   }

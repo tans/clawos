@@ -105,7 +105,7 @@ export function createDesktopWindow(createRpc: () => unknown): BrowserWindow {
   const windowContent = resolveUseInlineShellHtml() ? { html: shellHtml } : { url: SHELL_VIEW_URL };
   const window = new BrowserWindow({
     title: APP_WINDOW_TITLE,
-    frame: { x: 120, y: 80, width: 1360, height: 900 },
+    frame: { x: 120, y: 80, width: 980, height: 900 },
     rpc: createRpc(),
     ...windowContent,
   });
