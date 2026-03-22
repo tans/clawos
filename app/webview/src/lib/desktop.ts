@@ -60,6 +60,14 @@ export async function openExternalUrl(url: string): Promise<void> {
 }
 
 export async function openOpenclawConsole(): Promise<void> {
+  await openOpenclawPath("");
+}
+
+export async function openOpenclawSkillsConfig(): Promise<void> {
+  await openOpenclawPath("/config/skills");
+}
+
+async function openOpenclawPath(pathname: string): Promise<void> {
   let token = DEFAULT_OPENCLAW_TOKEN;
   try {
     const settings = await fetchLocalSettings();
@@ -77,5 +85,17 @@ export async function openOpenclawConsole(): Promise<void> {
     gatewayUrl = "";
   }
 
-  await openExternalUrl(normalizeOpenclawConsoleUrl(gatewayUrl, token));
+  const baseUrl = normalizeOpenclawConsoleUrl(gatewayUrl, token);
+  if (!pathname.trim()) {
+    await openExternalUrl(baseUrl);
+    return;
+  }
+
+  try {
+    const parsed = new URL(baseUrl);
+    parsed.pathname = pathname;
+    await openExternalUrl(parsed.toString());
+  } catch {
+    await openExternalUrl(baseUrl);
+  }
 }
