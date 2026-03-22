@@ -1,0 +1,213 @@
+{
+  "timestamp": "2026-03-22T08:42:49.929Z",
+  "transport": "http",
+  "payloadType": "json",
+  "payload": {
+    "account_wxid": "wxid_pgq6pdoqyqx122",
+    "content": {
+      "String": "wxid_zabr4hja7bv622:\n明天一起结算吧"
+    },
+    "createTime": 1774168968,
+    "event_desc": "群聊消息",
+    "event_type": 2000,
+    "fromUserName": {
+      "String": "43285851124@chatroom"
+    },
+    "http_port": 19088,
+    "imgBuf": {
+      "iLen": 0
+    },
+    "imgStatus": 1,
+    "member_info": {
+      "addChatRoomSceneNewXml": "<sysmsg type=\"ChatRoomMemberTraceBack\">\n\t<ChatRoomMemberTraceBack>\n\t\t<text><![CDATA[$inviter_username$邀请进群]]></text>\n\t\t<link>\n\t\t\t<username><![CDATA[wxid_av37uklor0ad22]]></username>\n\t\t</link>\n\t</ChatRoomMemberTraceBack>\n</sysmsg>\n",
+      "bigHeadImgUrl": "http://wx.qlogo.cn/mmhead/ver_1/icr6W7p7A1h5ekGTSKbLl4pYqqSoMZic8EloMLRxjHqh9wGQ4dsaRvIsibmVXTUicZQLh9TZadm869oCS7S9PyMNgNayxXXaQ0er52GhFN1rSfA/0",
+      "chatroomMemberFlag": 1,
+      "inviterUserName": "wxid_av37uklor0ad22",
+      "nickName": "嗯。",
+      "smallHeadImgUrl": "http://wx.qlogo.cn/mmhead/ver_1/icr6W7p7A1h5ekGTSKbLl4pYqqSoMZic8EloMLRxjHqh9wGQ4dsaRvIsibmVXTUicZQLh9TZadm869oCS7S9PyMNgNayxXXaQ0er52GhFN1rSfA/132",
+      "status": 0,
+      "userName": "wxid_zabr4hja7bv622"
+    },
+    "msgId": 185046594,
+    "msgSeq": 889831111,
+    "msgSource": "<msgsource>\n\t<pua>1</pua>\n\t<eggIncluded>1</eggIncluded>\n\t<silence>0</silence>\n\t<membercount>8</membercount>\n\t<signature>N0_V1_djuHhP64|v1_gjLG2Csp</signature>\n\t<tmp_node>\n\t\t<publisher-id></publisher-id>\n\t</tmp_node>\n</msgsource>\n",
+    "msgType": 1,
+    "msg_soure_xml": {
+      "msgsource": {
+        "eggIncluded": "1",
+        "membercount": "8",
+        "pua": "1",
+        "signature": "N0_V1_djuHhP64|v1_gjLG2Csp",
+        "silence": "0",
+        "tmp_node": {
+          "publisher-id": ""
+        }
+      }
+    },
+    "newMsgId": "351263192632090690",
+    "pid": 5932,
+    "pushContent": "嗯。 : 明天一起结算吧",
+    "real_content": "明天一起结算吧",
+    "recive_type": "文本消息",
+    "room_sender_by": "wxid_zabr4hja7bv622",
+    "sender_profile": {
+      "bitMask": 4294967295,
+      "bitMask2": "18446744073709551615",
+      "bitVal": 2,
+      "bitValue2": "0",
+      "chatRoomNotify": 1,
+      "chatRoomOwner": "wxid_1klafyrxebnb22",
+      "chatroomAccessType": 0,
+      "chatroomInfoVersion": 19,
+      "chatroomMaxCount": 500,
+      "chatroomStatus": 131072,
+      "chatroomVersion": 18,
+      "contactType": 0,
+      "extInfo": "",
+      "imgBuf": {
+        "buffer": "",
+        "iLen": 0
+      },
+      "imgFlag": 2,
+      "newChatroomData": {
+        "chatRoomMember": [
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_1klafyrxebnb22"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_pgq6pdoqyqx122"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_g0e4s7tdkvgf11"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_0vd3s4lcdeqt22"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_vqntiq3z0bfg22"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_cxcg8d81uvt722"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_av37uklor0ad22"
+          },
+          {
+            "chatroomMemberFlag": 0,
+            "userName": "wxid_zabr4hja7bv622"
+          }
+        ],
+        "infoMask": 1,
+        "memberCount": 8
+      },
+      "nickName": {
+        "String": "虾壳发货群"
+      },
+      "pyinitial": {
+        "String": "XKFHQ"
+      },
+      "quanPin": {
+        "String": "xiakefahuoqun"
+      },
+      "remark": {
+        "String": ""
+      },
+      "sex": 0,
+      "smallHeadImgUrl": "http://wx.qlogo.cn/mmcrhead/kWeIibOfpg4qNMGuW6N0Pzkh8D9XQCxYlt5zmJTqulnOEJr0MZMVDZvLItYZoAuKHfOhxNYR6l88/0",
+      "userName": {
+        "String": "43285851124@chatroom"
+      }
+    },
+    "status": 3,
+    "toUserName": {
+      "String": "wxid_pgq6pdoqyqx122"
+    },
+    "touser_profile": {
+      "addContactScene": 0,
+      "additionalContactList": {
+        "linkedinContactItem": {}
+      },
+      "albumFlag": 0,
+      "albumStyle": 0,
+      "bigHeadImgUrl": "https://wx.qlogo.cn/mmhead/ver_1/iaiaLOJhnLk7Nf7XJNeDDKMUctUECu25nlEQ8z5wACPI93MibUQ1FGPM8tB3AcUicSoia9wUbibX61ics03iapyIdLiaDjKibrCEhlibwtfziaRD2XwZniafWNkmC4oGUJibUGc948licKw/0",
+      "bitMask": 0,
+      "bitMask2": "0",
+      "bitVal": 0,
+      "bitValue2": "0",
+      "chatRoomBusinessType": "0",
+      "chatRoomNotify": 0,
+      "chatroomAccessType": 0,
+      "chatroomInfoVersion": 0,
+      "chatroomMaxCount": 0,
+      "chatroomStatus": 0,
+      "chatroomVersion": 0,
+      "contactExtraInfoBuf": {
+        "iLen": 0
+      },
+      "contactType": 0,
+      "customizedInfo": {
+        "brandFlag": 0
+      },
+      "deleteContactScene": 0,
+      "deleteFlag": 0,
+      "domainList": {},
+      "eraseChatRoomMemberData": 0,
+      "extFlag": 0,
+      "hasWeiXinHdHeadImg": 1,
+      "headImgMd5": "9165582df8fecb22df480c38b0c67f5d",
+      "imgBuf": {
+        "iLen": 0
+      },
+      "imgFlag": 0,
+      "isInChatRoom": 0,
+      "level": 0,
+      "newChatroomData": {
+        "chatRoomUserName": {},
+        "infoMask": 0,
+        "memberCount": 0,
+        "watchMemberCount": 0
+      },
+      "nickName": {
+        "String": "小谈"
+      },
+      "personalCard": 0,
+      "phoneNumListInfo": {
+        "count": 0
+      },
+      "pyinitial": {},
+      "quanPin": {},
+      "remark": {},
+      "remarkPyinitial": {},
+      "remarkQuanPin": {},
+      "ringBackSetting": {
+        "endTs": 0,
+        "finderObjectId": "0",
+        "startTs": 0
+      },
+      "roomInfoCount": 0,
+      "sex": 1,
+      "smallHeadImgUrl": "https://wx.qlogo.cn/mmhead/ver_1/iaiaLOJhnLk7Nf7XJNeDDKMUctUECu25nlEQ8z5wACPI93MibUQ1FGPM8tB3AcUicSoia9wUbibX61ics03iapyIdLiaDjKibrCEhlibwtfziaRD2XwZniafWNkmC4oGUJibUGc948licKw/132",
+      "snsUserInfo": {
+        "snsBgobjectId": "0",
+        "snsFlag": 0,
+        "snsFlagEx": 0,
+        "snsPrivacyRecent": 0
+      },
+      "source": 0,
+      "textStatusFlag": 2,
+      "userName": {
+        "String": "wxid_pgq6pdoqyqx122"
+      },
+      "verifyFlag": 0,
+      "weiboFlag": 0
+    }
+  },
+  "raw": "{\"account_wxid\":\"wxid_pgq6pdoqyqx122\",\"content\":{\"String\":\"wxid_zabr4hja7bv622:\\n明天一起结算吧\"},\"createTime\":1774168968,\"event_desc\":\"群聊消息\",\"event_type\":2000,\"fromUserName\":{\"String\":\"43285851124@chatroom\"},\"http_port\":19088,\"imgBuf\":{\"iLen\":0},\"imgStatus\":1,\"member_info\":{\"addChatRoomSceneNewXml\":\"<sysmsg type=\\\"ChatRoomMemberTraceBack\\\">\\n\\t<ChatRoomMemberTraceBack>\\n\\t\\t<text><![CDATA[$inviter_username$邀请进群]]></text>\\n\\t\\t<link>\\n\\t\\t\\t<username><![CDATA[wxid_av37uklor0ad22]]></username>\\n\\t\\t</link>\\n\\t</ChatRoomMemberTraceBack>\\n</sysmsg>\\n\",\"bigHeadImgUrl\":\"http://wx.qlogo.cn/mmhead/ver_1/icr6W7p7A1h5ekGTSKbLl4pYqqSoMZic8EloMLRxjHqh9wGQ4dsaRvIsibmVXTUicZQLh9TZadm869oCS7S9PyMNgNayxXXaQ0er52GhFN1rSfA/0\",\"chatroomMemberFlag\":1,\"inviterUserName\":\"wxid_av37uklor0ad22\",\"nickName\":\"嗯。\",\"smallHeadImgUrl\":\"http://wx.qlogo.cn/mmhead/ver_1/icr6W7p7A1h5ekGTSKbLl4pYqqSoMZic8EloMLRxjHqh9wGQ4dsaRvIsibmVXTUicZQLh9TZadm869oCS7S9PyMNgNayxXXaQ0er52GhFN1rSfA/132\",\"status\":0,\"userName\":\"wxid_zabr4hja7bv622\"},\"msgId\":185046594,\"msgSeq\":889831111,\"msgSource\":\"<msgsource>\\n\\t<pua>1</pua>\\n\\t<eggIncluded>1</eggIncluded>\\n\\t<silence>0</silence>\\n\\t<membercount>8</membercount>\\n\\t<signature>N0_V1_djuHhP64|v1_gjLG2Csp</signature>\\n\\t<tmp_node>\\n\\t\\t<publisher-id></publisher-id>\\n\\t</tmp_node>\\n</msgsource>\\n\",\"msgType\":1,\"msg_soure_xml\":{\"msgsource\":{\"eggIncluded\":\"1\",\"membercount\":\"8\",\"pua\":\"1\",\"signature\":\"N0_V1_djuHhP64|v1_gjLG2Csp\",\"silence\":\"0\",\"tmp_node\":{\"publisher-id\":\"\"}}},\"newMsgId\":\"351263192632090690\",\"pid\":5932,\"pushContent\":\"嗯。 : 明天一起结算吧\",\"real_content\":\"明天一起结算吧\",\"recive_type\":\"文本消息\",\"room_sender_by\":\"wxid_zabr4hja7bv622\",\"sender_profile\":{\"bitMask\":4294967295,\"bitMask2\":\"18446744073709551615\",\"bitVal\":2,\"bitValue2\":\"0\",\"chatRoomNotify\":1,\"chatRoomOwner\":\"wxid_1klafyrxebnb22\",\"chatroomAccessType\":0,\"chatroomInfoVersion\":19,\"chatroomMaxCount\":500,\"chatroomStatus\":131072,\"chatroomVersion\":18,\"contactType\":0,\"extInfo\":\"\",\"imgBuf\":{\"buffer\":\"\",\"iLen\":0},\"imgFlag\":2,\"newChatroomData\":{\"chatRoomMember\":[{\"chatroomMemberFlag\":0,\"userName\":\"wxid_1klafyrxebnb22\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_pgq6pdoqyqx122\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_g0e4s7tdkvgf11\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_0vd3s4lcdeqt22\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_vqntiq3z0bfg22\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_cxcg8d81uvt722\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_av37uklor0ad22\"},{\"chatroomMemberFlag\":0,\"userName\":\"wxid_zabr4hja7bv622\"}],\"infoMask\":1,\"memberCount\":8},\"nickName\":{\"String\":\"虾壳发货群\"},\"pyinitial\":{\"String\":\"XKFHQ\"},\"quanPin\":{\"String\":\"xiakefahuoqun\"},\"remark\":{\"String\":\"\"},\"sex\":0,\"smallHeadImgUrl\":\"http://wx.qlogo.cn/mmcrhead/kWeIibOfpg4qNMGuW6N0Pzkh8D9XQCxYlt5zmJTqulnOEJr0MZMVDZvLItYZoAuKHfOhxNYR6l88/0\",\"userName\":{\"String\":\"43285851124@chatroom\"}},\"status\":3,\"toUserName\":{\"String\":\"wxid_pgq6pdoqyqx122\"},\"touser_profile\":{\"addContactScene\":0,\"additionalContactList\":{\"linkedinContactItem\":{}},\"albumFlag\":0,\"albumStyle\":0,\"bigHeadImgUrl\":\"https://wx.qlogo.cn/mmhead/ver_1/iaiaLOJhnLk7Nf7XJNeDDKMUctUECu25nlEQ8z5wACPI93MibUQ1FGPM8tB3AcUicSoia9wUbibX61ics03iapyIdLiaDjKibrCEhlibwtfziaRD2XwZniafWNkmC4oGUJibUGc948licKw/0\",\"bitMask\":0,\"bitMask2\":\"0\",\"bitVal\":0,\"bitValue2\":\"0\",\"chatRoomBusinessType\":\"0\",\"chatRoomNotify\":0,\"chatroomAccessType\":0,\"chatroomInfoVersion\":0,\"chatroomMaxCount\":0,\"chatroomStatus\":0,\"chatroomVersion\":0,\"contactExtraInfoBuf\":{\"iLen\":0},\"contactType\":0,\"customizedInfo\":{\"brandFlag\":0},\"deleteContactScene\":0,\"deleteFlag\":0,\"domainList\":{},\"eraseChatRoomMemberData\":0,\"extFlag\":0,\"hasWeiXinHdHeadImg\":1,\"headImgMd5\":\"9165582df8fecb22df480c38b0c67f5d\",\"imgBuf\":{\"iLen\":0},\"imgFlag\":0,\"isInChatRoom\":0,\"level\":0,\"newChatroomData\":{\"chatRoomUserName\":{},\"infoMask\":0,\"memberCount\":0,\"watchMemberCount\":0},\"nickName\":{\"String\":\"小谈\"},\"personalCard\":0,\"phoneNumListInfo\":{\"count\":0},\"pyinitial\":{},\"quanPin\":{},\"remark\":{},\"remarkPyinitial\":{},\"remarkQuanPin\":{},\"ringBackSetting\":{\"endTs\":0,\"finderObjectId\":\"0\",\"startTs\":0},\"roomInfoCount\":0,\"sex\":1,\"smallHeadImgUrl\":\"https://wx.qlogo.cn/mmhead/ver_1/iaiaLOJhnLk7Nf7XJNeDDKMUctUECu25nlEQ8z5wACPI93MibUQ1FGPM8tB3AcUicSoia9wUbibX61ics03iapyIdLiaDjKibrCEhlibwtfziaRD2XwZniafWNkmC4oGUJibUGc948licKw/132\",\"snsUserInfo\":{\"snsBgobjectId\":\"0\",\"snsFlag\":0,\"snsFlagEx\":0,\"snsPrivacyRecent\":0},\"source\":0,\"textStatusFlag\":2,\"userName\":{\"String\":\"wxid_pgq6pdoqyqx122\"},\"verifyFlag\":0,\"weiboFlag\":0}}"
+}

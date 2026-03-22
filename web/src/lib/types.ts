@@ -17,3 +17,27 @@ export interface LatestRelease {
   xiakeConfig: ReleaseAsset | null;
   updaterAssets?: ReleaseAsset[];
 }
+
+export interface McpManifest {
+  schemaVersion: string;
+  id: string;
+  name: string;
+  version: string;
+  description?: string;
+  displayName?: string;
+  publisher?: {
+    name?: string;
+    website?: string;
+  };
+  platforms?: string[];
+  [key: string]: unknown;
+}
+
+export interface McpRelease {
+  id: string;
+  version: string;
+  publishedAt: string;
+  package: ReleaseAsset;
+  manifest: McpManifest;
+  channel: ReleaseChannel;
+}

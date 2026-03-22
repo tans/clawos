@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { normalizeReleaseChannel, readLatestRelease } from "../lib/storage";
+import { listMcpReleases, normalizeReleaseChannel, readLatestRelease, readMcpRelease } from "../lib/storage";
 
 export const releaseRoutes = new Hono();
 
@@ -50,4 +50,27 @@ releaseRoutes.get("/api/releases/:channel", async (c) => {
     return c.json({ ok: false, error: "不支持的发布通道" }, 400);
   }
   return c.redirect(`/api/releases/latest?channel=${encodeURIComponent(channel)}`, 302);
+});
+
+releaseRoutes.get("/api/mcps", async (c) => {
+  const channel = normalizeReleaseChannel(c.req.query("channel") || undefined) || "stable";
+  const items = await listMcpReleases(channel);
+  return c.json({
+    ok: true,
+    channel,
+    items,
+  });
+});
+
+releaseRoutes.get("/api/mcps/:mcpId", async (c) => {
+  const channel = normalizeReleaseChannel(c.req.query("channel") || undefined) || "stable";
+  const item = await readMcpRelease(c.req.param("mcpId"), channel);
+  if (!item) {
+    return c.json({ ok: false, error: "MCP 不存在" }, 404);
+  }
+  return c.json({
+    ok: true,
+    channel,
+    item,
+  });
 });

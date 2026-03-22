@@ -1,0 +1,38 @@
+﻿wechat-mcp (Bun)
+
+1) HTTP callback mode (recommended)
+
+bun .\mcp\wechat-mcp\start.ts --mode http --mcp-host 127.0.0.1 --mcp-port 5000 --upstream-base http://127.0.0.1:19088 --http-callback-url "http://127.0.0.1:5000/api/recvMsg"
+
+2) TCP callback mode (demo framing)
+
+bun .\mcp\wechat-mcp\start.ts --mode tcp --mcp-host 127.0.0.1 --mcp-port 5000 --upstream-base http://127.0.0.1:19088 --tcp-listen-host 0.0.0.0 --tcp-port 61108 --http-server-port 19088
+
+3) Do not inject, only run server
+
+bun .\mcp\wechat-mcp\start.ts --auto-inject false
+
+Common options
+
+- --weixin-path "C:\...\Weixin.exe"
+- --inject-path "C:\...\inject.exe"
+- --dll-path "C:\...\libGLESv1.dll"
+- --api-doc ".\mcp\wechat-mcp\api.md"
+- --capture-dir ".\mcp\wechat-mcp\captures"
+- --mcp-host 127.0.0.1
+- --mcp-port 5000
+- --upstream-base http://127.0.0.1:19088
+
+Built-in endpoints
+
+- GET /health
+- GET /api/_meta/stats
+- GET /api/_meta/apis
+- GET /api/_capture/latest
+- GET /api/_capture/summary
+
+Proxy behavior
+
+- Any request like POST /api/send_text_msg is matched from api.md index and forwarded to upstream.
+- Callback entries with N/A are not forwarded (returns error on active call).
+- Message callback payloads are printed and saved to captures/.

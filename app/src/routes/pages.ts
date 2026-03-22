@@ -4,6 +4,8 @@ import configChannelsHtml from "../pages/config-channels.html" with { type: "tex
 import configAgentsHtml from "../pages/config-agents.html" with { type: "text" };
 import configSkillsHtml from "../pages/config-skills.html" with { type: "text" };
 import configBrowserHtml from "../pages/config-browser.html" with { type: "text" };
+import configDesktopControlHtml from "../pages/config-desktop-control.html" with { type: "text" };
+import configEnvironmentHtml from "../pages/config-environment.html" with { type: "text" };
 import configWalletHtml from "../pages/config-wallet.html" with { type: "text" };
 import configSettingsHtml from "../pages/config-settings.html" with { type: "text" };
 import configBackupsHtml from "../pages/config-backups.html" with { type: "text" };
@@ -15,8 +17,10 @@ type SidebarNavId =
   | "dashboard"
   | "channels"
   | "agents"
+  | "environment"
   | "skills"
   | "browser"
+  | "desktop-control"
   | "wallet"
   | "settings"
   | "backups"
@@ -29,10 +33,14 @@ const PAGES: Record<string, string> = {
   "/config/channels/": configChannelsHtml,
   "/config/agents": configAgentsHtml,
   "/config/agents/": configAgentsHtml,
+  "/config/environment": configEnvironmentHtml,
+  "/config/environment/": configEnvironmentHtml,
   "/config/skills": configSkillsHtml,
   "/config/skills/": configSkillsHtml,
   "/config/browser": configBrowserHtml,
   "/config/browser/": configBrowserHtml,
+  "/config/desktop-control": configDesktopControlHtml,
+  "/config/desktop-control/": configDesktopControlHtml,
   "/config/wallet": configWalletHtml,
   "/config/wallet/": configWalletHtml,
   "/config/settings": configSettingsHtml,
@@ -47,8 +55,10 @@ function resolveSidebarActive(path: string): SidebarNavId | null {
   if (path === "/" || path === "/index") return "dashboard";
   if (path.startsWith("/config/channels")) return "channels";
   if (path.startsWith("/config/agents")) return "agents";
+  if (path.startsWith("/config/environment")) return "environment";
   if (path.startsWith("/config/skills")) return "skills";
   if (path.startsWith("/config/browser")) return "browser";
+  if (path.startsWith("/config/desktop-control")) return "desktop-control";
   if (path.startsWith("/config/wallet")) return "wallet";
   if (path.startsWith("/config/settings")) return "settings";
   if (path.startsWith("/config/backups")) return "backups";
@@ -72,6 +82,7 @@ function renderSidebar(active: SidebarNavId | null): string {
       items: [
         { id: "channels", href: "/config/channels", label: "\u6e20\u9053\u914d\u7f6e" },
         { id: "agents", href: "/config/agents", label: "\u4ee3\u7406\u914d\u7f6e" },
+        { id: "environment", href: "/config/environment", label: "\u73af\u5883\u914d\u7f6e" },
         { id: "settings", href: "/config/settings", label: "\u5e38\u89c4\u8bbe\u7f6e" },
         { id: "backups", href: "/config/backups", label: "\u5907\u4efd\u7ba1\u7406" },
       ],
@@ -80,6 +91,7 @@ function renderSidebar(active: SidebarNavId | null): string {
       title: "\u5de5\u5177",
       items: [
         { id: "browser", href: "/config/browser", label: "\u6d4f\u89c8\u5668" },
+        { id: "desktop-control", href: "/config/desktop-control", label: "\u684c\u9762\u63a7\u5236" },
         { id: "sessions", href: "/sessions", label: "\u4f1a\u8bdd" },
         { id: "skills", href: "/config/skills", label: "Skills" },
       ],

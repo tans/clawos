@@ -35,6 +35,8 @@ import {
 } from "../tasks/gateway";
 import { startSelfUpdateTask } from "../tasks/self-update";
 import { getDesktopMcpStatus, startDesktopMcpServerTask } from "../tasks/desktop-control";
+import { probeEnvironmentStatus, startEnvironmentInstallTask } from "../tasks/environment";
+import { probeMcpTargets, startMcpBuildTask } from "../tasks/mcp";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 import { normalizeOutput, runWslScript, troubleshootingTips } from "../tasks/shell";
@@ -728,6 +730,45 @@ async function handleBrowserAction(req: Request): Promise<Response> {
   return jsonResponse({ ok: true, taskId: task.id, task, reused });
 }
 
+async function handleEnvironmentInstall(req: Request): Promise<Response> {
+  const body = await parseJsonBody(req);
+  const target = sanitizeIdentifier(body.target, "target");
+  const tool = sanitizeIdentifier(body.tool, "tool");
+
+  if (!["windows", "wsl"].includes(target)) {
+    throw new HttpError(400, `unsupported target: ${target}`);
+  }
+  if (!["python", "uv", "bun"].includes(tool)) {
+    throw new HttpError(400, `unsupported tool: ${tool}`);
+  }
+
+  const { task, reused } = startEnvironmentInstallTask(
+    target as "windows" | "wsl",
+    tool as "python" | "uv" | "bun"
+  );
+  return jsonResponse({ ok: true, taskId: task.id, task, reused });
+}
+
+async function handleEnvironmentStatus(): Promise<Response> {
+  const status = await probeEnvironmentStatus();
+  return jsonResponse({ ok: true, status });
+}
+
+async function handleMcpBuild(req: Request): Promise<Response> {
+  const body = await parseJsonBody(req);
+  const name = sanitizeIdentifier(body.name, "name");
+  if (!["windows-mcp", "yingdao-mcp", "wechat-mcp"].includes(name)) {
+    throw new HttpError(400, `unsupported mcp name: ${name}`);
+  }
+  const { task, reused } = startMcpBuildTask(name as "windows-mcp" | "yingdao-mcp" | "wechat-mcp");
+  return jsonResponse({ ok: true, taskId: task.id, task, reused });
+}
+
+async function handleMcpStatus(): Promise<Response> {
+  const targets = probeMcpTargets();
+  return jsonResponse({ ok: true, targets });
+}
+
 export async function handleApiRequest(req: Request, path: string): Promise<Response | null> {
   try {
     if (path === "/api/health") {
@@ -958,6 +999,22 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
     if (path === "/api/browser/action" && req.method === "POST") {
       return await handleBrowserAction(req);
+    }
+
+    if (path === "/api/environment/install" && req.method === "POST") {
+      return await handleEnvironmentInstall(req);
+    }
+
+    if (path === "/api/environment/status" && req.method === "GET") {
+      return await handleEnvironmentStatus();
+    }
+
+    if (path === "/api/mcp/build" && req.method === "POST") {
+      return await handleMcpBuild(req);
+    }
+
+    if (path === "/api/mcp/status" && req.method === "GET") {
+      return await handleMcpStatus();
     }
 
     if (path.startsWith("/api/tasks/") && req.method === "GET") {

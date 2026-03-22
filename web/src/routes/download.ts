@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import {
+  listMcpReleases,
   normalizeInstallerPlatform,
   normalizeReleaseChannel,
   resolveLatestInstaller,
+  resolveLatestMcpPackage,
   resolveLatestXiakeConfig,
   resolveUpdaterArtifact,
 } from "../lib/storage";
@@ -135,6 +137,42 @@ downloadRoutes.get("/updates/:fileName", async (c) => {
       headers: {
         "content-type": resolveUpdaterContentType(asset.name),
         "cache-control": "public, max-age=60",
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
+downloadRoutes.get("/downloads/mcp", async (c) => {
+  const channel = resolveChannelFromRequest(c.req.query("channel"));
+  const items = await listMcpReleases(channel);
+  return c.json({
+    ok: true,
+    channel,
+    items: items.map((item) => ({
+      id: item.id,
+      version: item.version,
+      publishedAt: item.publishedAt,
+      package: item.package,
+      manifest: item.manifest,
+      downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/latest${channel === "beta" ? "?channel=beta" : ""}`,
+    })),
+  });
+});
+
+downloadRoutes.get("/downloads/mcp/:mcpId/latest", async (c) => {
+  try {
+    const channel = resolveChannelFromRequest(c.req.query("channel"));
+    const { release, asset, absolutePath } = await resolveLatestMcpPackage(c.req.param("mcpId"), channel);
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-release-channel": channel,
+        "x-mcp-id": release.id,
+        "x-mcp-version": release.version,
       },
     });
   } catch (error) {

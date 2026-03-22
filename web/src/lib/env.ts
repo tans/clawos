@@ -5,6 +5,7 @@ export interface AppEnv {
   uploadToken: string | null;
   maxInstallerSizeBytes: number;
   maxConfigSizeBytes: number;
+  maxMcpPackageSizeBytes: number;
   storageDir: string;
 }
 
@@ -40,12 +41,14 @@ export function getEnv(): AppEnv {
   const port = readInt(process.env.PORT, 26222);
   const maxInstallerSizeMb = readInt(process.env.MAX_INSTALLER_SIZE_MB, 300);
   const maxConfigSizeMb = readInt(process.env.MAX_CONFIG_SIZE_MB, 2);
+  const maxMcpPackageSizeMb = readInt(process.env.MAX_MCP_PACKAGE_SIZE_MB, maxInstallerSizeMb);
 
   cachedEnv = {
     port,
     uploadToken: process.env.UPLOAD_TOKEN?.trim() || "clawos",
     maxInstallerSizeBytes: mbToBytes(maxInstallerSizeMb),
     maxConfigSizeBytes: mbToBytes(maxConfigSizeMb),
+    maxMcpPackageSizeBytes: mbToBytes(maxMcpPackageSizeMb),
     storageDir: resolve(process.env.STORAGE_DIR || resolve(process.cwd(), "storage")),
   };
 

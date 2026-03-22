@@ -778,7 +778,7 @@ export function startBrowserDetectTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 3;
+  const totalSteps = 1;
   const task = createTask("browser-cdp-detect", "Browser Detect", totalSteps);
   task.status = "running";
 
@@ -789,24 +789,15 @@ export function startBrowserDetectTask(): { task: Task; reused: boolean } {
       }
 
       task.step = 1;
-      appendTaskLog(task, `Step 1/${totalSteps}: detect local CDP`);
+      appendTaskLog(task, `Step 1/${totalSteps}: detect local CDP port`);
       const localCdpOk = await detectLocalCdp(task);
 
-      task.step = 2;
-      appendTaskLog(task, `Step 2/${totalSteps}: detect Windows portproxy`);
-      const portProxyOk = await detectPortProxy(task);
-
-      task.step = 3;
-      appendTaskLog(task, `Step 3/${totalSteps}: detect Windows firewall rule`);
-      const firewallOk = await detectFirewallRule(task);
-
-      const passedCount = [localCdpOk, portProxyOk, firewallOk].filter(Boolean).length;
-      if (passedCount === totalSteps) {
+      if (localCdpOk) {
         task.status = "success";
-        appendTaskLog(task, "All browser checks passed.");
+        appendTaskLog(task, `CDP port check passed: 127.0.0.1:${BROWSER_CDP_PORT}`);
       } else {
         task.status = "failed";
-        task.error = `Browser checks failed: ${passedCount}/${totalSteps} passed.`;
+        task.error = `CDP port check failed: 127.0.0.1:${BROWSER_CDP_PORT} is not reachable.`;
         appendTaskLog(task, task.error, "error");
       }
       task.endedAt = new Date().toISOString();

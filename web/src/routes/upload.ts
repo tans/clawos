@@ -1,6 +1,13 @@
 import { Hono, type Context } from "hono";
 import { requireUploadAuth } from "../lib/auth";
-import { normalizeInstallerPlatform, normalizeReleaseChannel, storeInstaller, storeUpdaterArtifact, storeXiakeConfig } from "../lib/storage";
+import {
+  normalizeInstallerPlatform,
+  normalizeReleaseChannel,
+  storeInstaller,
+  storeMcpPackage,
+  storeUpdaterArtifact,
+  storeXiakeConfig,
+} from "../lib/storage";
 import type { InstallerPlatform, ReleaseChannel } from "../lib/types";
 
 export const uploadRoutes = new Hono();
@@ -24,6 +31,8 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
   version?: string;
   platform?: InstallerPlatform;
   channel?: ReleaseChannel;
+  mcpId?: string;
+  manifest?: string;
 }> {
   const contentType = c.req.header("content-type") || "";
 
@@ -40,6 +49,8 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
     const platform = normalizeInstallerPlatform(platformField);
     const channelField = firstValue(body.channel);
     const channel = normalizeReleaseChannel(channelField);
+    const mcpIdField = firstValue(body.mcpId);
+    const manifestField = firstValue(body.manifest);
 
     return {
       fileName: fileField.name || defaultFileName,
@@ -47,6 +58,8 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
       version: version || undefined,
       platform: platform || undefined,
       channel: channel || undefined,
+      mcpId: typeof mcpIdField === "string" ? mcpIdField.trim() : undefined,
+      manifest: typeof manifestField === "string" ? manifestField.trim() : undefined,
     };
   }
 
@@ -57,6 +70,8 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
   const version = c.req.header("x-version") || c.req.query("version") || undefined;
   const platform = normalizeInstallerPlatform(c.req.header("x-platform") || c.req.query("platform") || undefined);
   const channel = normalizeReleaseChannel(c.req.header("x-channel") || c.req.query("channel") || undefined);
+  const mcpId = c.req.header("x-mcp-id") || c.req.query("mcpId") || undefined;
+  const manifest = c.req.header("x-mcp-manifest") || undefined;
   const bytes = toUint8Array(await c.req.arrayBuffer());
 
   return {
@@ -65,6 +80,8 @@ async function parseUploadRequest(c: Context, defaultFileName: string): Promise<
     version,
     platform: platform || undefined,
     channel: channel || undefined,
+    mcpId,
+    manifest,
   };
 }
 
@@ -130,6 +147,44 @@ uploadRoutes.post("/api/upload/electrobun-artifact", async (c) => {
       version: result.release.version || null,
       channel: upload.channel || "stable",
       url: `/updates/${encodeURIComponent(result.asset.name)}`,
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+uploadRoutes.post("/api/upload/mcp", async (c) => {
+  try {
+    const upload = await parseUploadRequest(c, "mcp-package.zip");
+    if (!upload.mcpId) {
+      throw new Error("缂哄皯 mcpId");
+    }
+    if (!upload.version) {
+      throw new Error("缂哄皯 version");
+    }
+    if (!upload.manifest) {
+      throw new Error("缂哄皯 manifest");
+    }
+
+    const manifest = JSON.parse(upload.manifest) as Record<string, unknown>;
+    const result = await storeMcpPackage({
+      mcpId: upload.mcpId,
+      fileName: upload.fileName,
+      bytes: upload.bytes,
+      version: upload.version,
+      manifest,
+      channel: upload.channel,
+    });
+
+    return c.json({
+      ok: true,
+      mcpId: result.release.id,
+      version: result.release.version,
+      fileName: result.asset.name,
+      size: result.asset.size,
+      sha256: result.asset.sha256,
+      channel: upload.channel || "stable",
+      url: `/downloads/mcp/${encodeURIComponent(result.release.id)}/latest`,
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);

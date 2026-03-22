@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="silk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClawOS 环境配置</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/pages-shell.css" />
+  </head>
+  <body class="clawos-page-shell">
+    <div class="clawos-page-layout">
+      <aside class="clawos-page-sidebar flex flex-col">
+        <div class="text-sm text-base-content/60">加载中...</div>
+      </aside>
+
+      <main class="clawos-page-main flex min-h-screen flex-col">
+        <section class="clawos-page-content flex-1 space-y-4">
+          <section class="card card-compact clawos-panel">
+            <div class="card-body gap-4">
+              <div class="flex flex-wrap items-center justify-between gap-3">
+                <h2 class="card-title text-base">环境配置</h2>
+                <div class="flex gap-2">
+                  <button class="btn btn-outline btn-xs" type="button" data-env-refresh>刷新环境</button>
+                  <button class="btn btn-outline btn-xs" type="button" data-mcp-refresh>刷新 MCP</button>
+                </div>
+              </div>
+
+              <div
+                class="text-xs text-base-content/70 rounded-md border border-base-200 bg-base-200/20 px-3 py-2"
+                data-env-op-status
+              >
+                正在读取状态...
+              </div>
+
+              <div class="grid gap-3 lg:grid-cols-2">
+                <section class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="mb-2 text-sm font-semibold">Windows 环境</div>
+                  <div class="flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-2">
+                      <button class="btn btn-outline btn-sm" data-env-target="windows" data-env-tool="python">安装 Python</button>
+                      <span class="hidden text-xs text-base-content/70" data-env-version-target="windows" data-env-version-tool="python"></span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <button class="btn btn-outline btn-sm" data-env-target="windows" data-env-tool="uv">安装 uv</button>
+                      <span class="hidden text-xs text-base-content/70" data-env-version-target="windows" data-env-version-tool="uv"></span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <button class="btn btn-outline btn-sm" data-env-target="windows" data-env-tool="bun">安装 bun</button>
+                      <span class="hidden text-xs text-base-content/70" data-env-version-target="windows" data-env-version-tool="bun"></span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                  <div class="mb-2 text-sm font-semibold">WSL 环境</div>
+                  <div class="flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-2">
+                      <button class="btn btn-outline btn-sm" data-env-target="wsl" data-env-tool="python">安装 Python</button>
+                      <span class="hidden text-xs text-base-content/70" data-env-version-target="wsl" data-env-version-tool="python"></span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <button class="btn btn-outline btn-sm" data-env-target="wsl" data-env-tool="uv">安装 uv</button>
+                      <span class="hidden text-xs text-base-content/70" data-env-version-target="wsl" data-env-version-tool="uv"></span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <button class="btn btn-outline btn-sm" data-env-target="wsl" data-env-tool="bun">安装 bun</button>
+                      <span class="hidden text-xs text-base-content/70" data-env-version-target="wsl" data-env-version-tool="bun"></span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <section class="rounded-lg border border-base-200 bg-base-200/10 p-3">
+                <div class="mb-2 text-sm font-semibold">MCP</div>
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="text-xs font-mono">windows-mcp</div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-base-content/70" data-mcp-status-name="windows-mcp">检查中...</span>
+                      <button class="btn btn-outline btn-xs" data-mcp-build-name="windows-mcp">构建</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="text-xs font-mono">yingdao-mcp</div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-base-content/70" data-mcp-status-name="yingdao-mcp">检查中...</span>
+                      <button class="btn btn-outline btn-xs" data-mcp-build-name="yingdao-mcp">构建</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="text-xs font-mono">wechat-mcp</div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-base-content/70" data-mcp-status-name="wechat-mcp">检查中...</span>
+                      <button class="btn btn-outline btn-xs" data-mcp-build-name="wechat-mcp">构建</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div class="text-xs text-base-content/70" data-env-task-meta>当前无任务</div>
+              <progress class="progress progress-neutral hidden w-full" value="0" max="100" data-env-task-progress></progress>
+              <pre
+                class="max-h-80 overflow-auto rounded-lg border border-base-200 bg-base-200/30 p-3 text-[11px] leading-5"
+                data-env-task-output
+              >操作记录会显示在这里...</pre>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="/sidebar-update.js"></script>
+    <script>
+      const envOpStatusEl = document.querySelector("[data-env-op-status]");
+      const envTaskMetaEl = document.querySelector("[data-env-task-meta]");
+      const envTaskProgressEl = document.querySelector("[data-env-task-progress]");
+      const envTaskOutputEl = document.querySelector("[data-env-task-output]");
+      const envRefreshBtn = document.querySelector("[data-env-refresh]");
+      const mcpRefreshBtn = document.querySelector("[data-mcp-refresh]");
+      const envActionButtons = Array.from(document.querySelectorAll("[data-env-target][data-env-tool]"));
+      const mcpBuildButtons = Array.from(document.querySelectorAll("[data-mcp-build-name]"));
+      let taskPollTimer = null;
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          headers: { "content-type": "application/json" },
+          ...options,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          const apiError = new Error(data.error || `请求失败: ${res.status}`);
+          apiError.isApiError = true;
+          throw apiError;
+        }
+        return data;
+      }
+
+      function readUserErrorMessage(error, fallback) {
+        if (error && typeof error === "object" && error.isApiError === true) {
+          return fallback;
+        }
+        const message = error instanceof Error ? String(error.message || "").trim() : "";
+        return message || fallback;
+      }
+
+      function stopTaskPolling() {
+        if (taskPollTimer) {
+          clearInterval(taskPollTimer);
+          taskPollTimer = null;
+        }
+      }
+
+      function toolLabel(tool) {
+        if (tool === "python") return "Python";
+        if (tool === "uv") return "uv";
+        return "bun";
+      }
+
+      function targetLabel(target) {
+        return target === "windows" ? "Windows" : "WSL";
+      }
+
+      function findActionButton(target, tool) {
+        return document.querySelector(`[data-env-target="${target}"][data-env-tool="${tool}"]`);
+      }
+
+      function findVersionNode(target, tool) {
+        return document.querySelector(`[data-env-version-target="${target}"][data-env-version-tool="${tool}"]`);
+      }
+
+      function renderToolStatus(target, tool, status) {
+        const button = findActionButton(target, tool);
+        const versionNode = findVersionNode(target, tool);
+        if (!(button instanceof HTMLButtonElement) || !(versionNode instanceof HTMLElement)) {
+          return;
+        }
+
+        if (status && status.installed === true) {
+          button.classList.add("hidden");
+          button.disabled = true;
+          versionNode.classList.remove("hidden");
+          versionNode.textContent = `${toolLabel(tool)}: ${status.version || "已安装"}`;
+          return;
+        }
+
+        button.classList.remove("hidden");
+        button.disabled = false;
+        versionNode.classList.add("hidden");
+        versionNode.textContent = "";
+      }
+
+      async function loadEnvironmentStatus(silent = false) {
+        if (!silent) {
+          envOpStatusEl.textContent = "正在读取环境状态...";
+        }
+        try {
+          const data = await api("/api/environment/status");
+          const status = data.status || {};
+          for (const target of ["windows", "wsl"]) {
+            const targetStatus = status[target] || {};
+            for (const tool of ["python", "uv", "bun"]) {
+              renderToolStatus(target, tool, targetStatus[tool] || null);
+            }
+          }
+          envOpStatusEl.textContent = "环境状态已刷新。";
+        } catch (error) {
+          envOpStatusEl.textContent = readUserErrorMessage(error, "读取环境状态失败，请稍后重试。");
+        }
+      }
+
+      function setMcpStatus(name, text, isError = false) {
+        const node = document.querySelector(`[data-mcp-status-name="${name}"]`);
+        if (!(node instanceof HTMLElement)) {
+          return;
+        }
+        node.textContent = text;
+        node.classList.toggle("text-error", isError);
+      }
+
+      async function loadMcpStatus(silent = false) {
+        if (!silent) {
+          envOpStatusEl.textContent = "正在读取 MCP 状态...";
+        }
+        try {
+          const data = await api("/api/mcp/status");
+          const targets = Array.isArray(data.targets) ? data.targets : [];
+          for (const item of targets) {
+            const name = String(item?.name || "");
+            const scriptExists = item?.scriptExists === true;
+            const built = item?.built === true;
+            if (!name) {
+              continue;
+            }
+            if (!scriptExists) {
+              setMcpStatus(name, "未接入 build.ps1", true);
+              continue;
+            }
+            setMcpStatus(name, built ? "已构建" : "未构建");
+          }
+          envOpStatusEl.textContent = "MCP 状态已刷新。";
+        } catch (error) {
+          envOpStatusEl.textContent = readUserErrorMessage(error, "读取 MCP 状态失败，请稍后重试。");
+        }
+      }
+
+      function renderTask(task) {
+        const logs = Array.isArray(task?.logs) ? task.logs : [];
+        const step = Number.isFinite(task?.step) ? task.step : 0;
+        const totalSteps = Number.isFinite(task?.totalSteps) ? task.totalSteps : 0;
+        const percent = totalSteps > 0 ? Math.round((step / totalSteps) * 100) : 0;
+        const status = typeof task?.status === "string" ? task.status : "unknown";
+        const title = typeof task?.title === "string" ? task.title : "未知任务";
+        const running = status === "running" || status === "pending";
+        const statusText =
+          status === "running" || status === "pending"
+            ? "执行中"
+            : status === "success"
+              ? "已完成"
+              : status === "failed"
+                ? "失败"
+                : "未知";
+
+        envTaskProgressEl.value = percent;
+        envTaskProgressEl.classList.toggle("hidden", !running);
+        envTaskMetaEl.textContent = `${title}，${statusText}`;
+        envTaskOutputEl.textContent =
+          logs.map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`).join("\n") ||
+          "暂无日志";
+        envTaskOutputEl.scrollTop = envTaskOutputEl.scrollHeight;
+      }
+
+      async function pollTask(taskId, onSuccess) {
+        stopTaskPolling();
+        const tick = async () => {
+          try {
+            const data = await api(`/api/tasks/${taskId}`);
+            const task = data.task || {};
+            renderTask(task);
+            if (task.status === "success" || task.status === "failed") {
+              stopTaskPolling();
+              if (task.status === "success") {
+                envOpStatusEl.textContent = "任务完成。";
+                if (typeof onSuccess === "function") {
+                  await onSuccess();
+                }
+              } else {
+                envOpStatusEl.textContent = "任务失败，请查看日志。";
+              }
+            }
+          } catch (error) {
+            stopTaskPolling();
+            envTaskProgressEl.classList.add("hidden");
+            envTaskMetaEl.textContent = readUserErrorMessage(error, "状态刷新失败，请稍后重试。");
+            envOpStatusEl.textContent = readUserErrorMessage(error, "任务状态读取失败。");
+          }
+        };
+        await tick();
+        taskPollTimer = setInterval(tick, 1000);
+      }
+
+      async function runInstall(target, tool) {
+        envOpStatusEl.textContent = `正在安装：${targetLabel(target)} / ${toolLabel(tool)}`;
+        envTaskOutputEl.textContent = "任务启动中...";
+        envTaskMetaEl.textContent = "任务启动中...";
+        envTaskProgressEl.classList.remove("hidden");
+        envTaskProgressEl.value = 0;
+
+        const data = await api("/api/environment/install", {
+          method: "POST",
+          body: JSON.stringify({ target, tool }),
+        });
+        if (!data.taskId) {
+          throw new Error("服务端未返回任务 ID");
+        }
+        await pollTask(data.taskId, async () => {
+          await loadEnvironmentStatus(true);
+        });
+      }
+
+      async function runMcpBuild(name) {
+        envOpStatusEl.textContent = `正在构建：${name}`;
+        envTaskOutputEl.textContent = "任务启动中...";
+        envTaskMetaEl.textContent = "任务启动中...";
+        envTaskProgressEl.classList.remove("hidden");
+        envTaskProgressEl.value = 0;
+
+        const data = await api("/api/mcp/build", {
+          method: "POST",
+          body: JSON.stringify({ name }),
+        });
+        if (!data.taskId) {
+          throw new Error("服务端未返回任务 ID");
+        }
+        await pollTask(data.taskId, async () => {
+          await loadMcpStatus(true);
+        });
+      }
+
+      envActionButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+          const target = button.getAttribute("data-env-target");
+          const tool = button.getAttribute("data-env-tool");
+          if (!target || !tool) {
+            return;
+          }
+          if (!window.confirm(`确认安装 ${targetLabel(target)} 环境的 ${toolLabel(tool)} 吗？`)) {
+            return;
+          }
+          button.disabled = true;
+          try {
+            await runInstall(target, tool);
+          } catch (error) {
+            envTaskProgressEl.classList.add("hidden");
+            envTaskMetaEl.textContent = readUserErrorMessage(error, "安装请求失败，请稍后重试。");
+            envOpStatusEl.textContent = readUserErrorMessage(error, "安装请求失败，请稍后重试。");
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+
+      mcpBuildButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+          const name = button.getAttribute("data-mcp-build-name");
+          if (!name) {
+            return;
+          }
+          if (!window.confirm(`确认构建 ${name} 吗？`)) {
+            return;
+          }
+          button.disabled = true;
+          try {
+            await runMcpBuild(name);
+          } catch (error) {
+            envTaskProgressEl.classList.add("hidden");
+            envTaskMetaEl.textContent = readUserErrorMessage(error, "MCP 构建请求失败，请稍后重试。");
+            envOpStatusEl.textContent = readUserErrorMessage(error, "MCP 构建请求失败，请稍后重试。");
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+
+      if (envRefreshBtn instanceof HTMLButtonElement) {
+        envRefreshBtn.addEventListener("click", async () => {
+          envRefreshBtn.disabled = true;
+          try {
+            await loadEnvironmentStatus(false);
+          } finally {
+            envRefreshBtn.disabled = false;
+          }
+        });
+      }
+
+      if (mcpRefreshBtn instanceof HTMLButtonElement) {
+        mcpRefreshBtn.addEventListener("click", async () => {
+          mcpRefreshBtn.disabled = true;
+          try {
+            await loadMcpStatus(false);
+          } finally {
+            mcpRefreshBtn.disabled = false;
+          }
+        });
+      }
+
+      void Promise.all([loadEnvironmentStatus(false), loadMcpStatus(true)]);
+    </script>
+  </body>
+</html>

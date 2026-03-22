@@ -3,17 +3,23 @@ import { constants as fsConstants } from "node:fs";
 import { basename, extname, join, resolve } from "node:path";
 import { getEnv } from "./env";
 import { sha256Hex } from "./hash";
-import type { InstallerPlatform, LatestRelease, ReleaseAsset, ReleaseChannel } from "./types";
+import type { InstallerPlatform, LatestRelease, McpManifest, McpRelease, ReleaseAsset, ReleaseChannel } from "./types";
 
 const RELEASE_FILE_NAME = "latest.json";
 const RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
   stable: "latest.json",
   beta: "latest-beta.json",
 };
+const MCP_RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
+  stable: "mcps.json",
+  beta: "mcps-beta.json",
+};
 const CONFIG_CANONICAL_NAME = "clawos_xiake.json";
 const INSTALLER_PLATFORMS: InstallerPlatform[] = ["windows", "macos", "linux"];
 const UPDATER_ASSET_MAX_ENTRIES = 240;
 const UPDATER_FILE_NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
+const MCP_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
+const MCP_PACKAGE_EXTENSIONS = [".zip", ".tgz", ".tar.gz"];
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -51,6 +57,12 @@ function getReleaseFilePath(channel: ReleaseChannel): string {
   return resolve(env.storageDir, "releases", fileName);
 }
 
+function getMcpReleaseFilePath(channel: ReleaseChannel): string {
+  const env = getEnv();
+  const fileName = MCP_RELEASE_FILE_NAME_BY_CHANNEL[channel];
+  return resolve(env.storageDir, "releases", fileName);
+}
+
 function getInstallerDir(platform?: InstallerPlatform): string {
   const env = getEnv();
   return platform
@@ -68,6 +80,17 @@ function getUpdaterDir(): string {
   return resolve(env.storageDir, "assets", "updater");
 }
 
+function getMcpDir(mcpId?: string, version?: string): string {
+  const env = getEnv();
+  if (mcpId && version) {
+    return resolve(env.storageDir, "assets", "mcp", mcpId, version);
+  }
+  if (mcpId) {
+    return resolve(env.storageDir, "assets", "mcp", mcpId);
+  }
+  return resolve(env.storageDir, "assets", "mcp");
+}
+
 function relativeAssetPath(
   kind: "installer" | "config" | "updater",
   fileName: string,
@@ -77,6 +100,10 @@ function relativeAssetPath(
     return join("assets", kind, platform, fileName);
   }
   return join("assets", kind, fileName);
+}
+
+function relativeMcpAssetPath(mcpId: string, version: string, fileName: string): string {
+  return join("assets", "mcp", mcpId, version, fileName);
 }
 
 function absoluteAssetPath(relativePath: string): string {
@@ -89,6 +116,7 @@ async function ensureStorageDirs(): Promise<void> {
   await mkdir(getInstallerDir(), { recursive: true });
   await mkdir(getConfigDir(), { recursive: true });
   await mkdir(getUpdaterDir(), { recursive: true });
+  await mkdir(getMcpDir(), { recursive: true });
   await Promise.all(INSTALLER_PLATFORMS.map((platform) => mkdir(getInstallerDir(platform), { recursive: true })));
 }
 
@@ -206,6 +234,68 @@ function normalizeRelease(raw: unknown): LatestRelease {
   };
 }
 
+function normalizeMcpManifest(raw: unknown, fallbackId?: string, fallbackVersion?: string): McpManifest | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const data = raw as Record<string, unknown>;
+  const id = typeof data.id === "string" && data.id.trim() ? data.id.trim() : fallbackId;
+  const name =
+    typeof data.name === "string" && data.name.trim()
+      ? data.name.trim()
+      : typeof data.displayName === "string" && data.displayName.trim()
+        ? data.displayName.trim()
+        : fallbackId;
+  const version =
+    typeof data.version === "string" && data.version.trim() ? data.version.trim() : fallbackVersion;
+
+  if (!id || !name || !version) {
+    return null;
+  }
+
+  return {
+    ...data,
+    schemaVersion:
+      typeof data.schemaVersion === "string" && data.schemaVersion.trim() ? data.schemaVersion.trim() : "1.0",
+    id,
+    name,
+    version,
+  };
+}
+
+function normalizeMcpRelease(raw: unknown): McpRelease | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const data = raw as Record<string, unknown>;
+  const packageAsset = normalizeAsset(data.package);
+  const channel = normalizeReleaseChannel(data.channel) || "stable";
+  const manifest = normalizeMcpManifest(data.manifest, typeof data.id === "string" ? data.id : undefined);
+  if (
+    typeof data.id !== "string" ||
+    !data.id.trim() ||
+    typeof data.version !== "string" ||
+    !data.version.trim() ||
+    typeof data.publishedAt !== "string" ||
+    !data.publishedAt.trim() ||
+    !packageAsset ||
+    !manifest
+  ) {
+    return null;
+  }
+
+  return {
+    id: data.id.trim(),
+    version: data.version.trim(),
+    publishedAt: data.publishedAt.trim(),
+    package: packageAsset,
+    manifest,
+    channel,
+  };
+}
+
 export async function readLatestRelease(channel: ReleaseChannel = "stable"): Promise<LatestRelease | null> {
   await ensureStorageDirs();
 
@@ -219,6 +309,39 @@ export async function readLatestRelease(channel: ReleaseChannel = "stable"): Pro
     }
     throw error;
   }
+}
+
+export async function readMcpRegistry(channel: ReleaseChannel = "stable"): Promise<Record<string, McpRelease>> {
+  await ensureStorageDirs();
+
+  try {
+    const content = await readFile(getMcpReleaseFilePath(channel), "utf-8");
+    const raw = JSON.parse(content) as Record<string, unknown>;
+    const entries = Object.entries(raw)
+      .map(([key, value]) => {
+        const normalized = normalizeMcpRelease(value);
+        if (!normalized) {
+          return null;
+        }
+        return [key, normalized] as const;
+      })
+      .filter((item): item is readonly [string, McpRelease] => Boolean(item));
+    return Object.fromEntries(entries);
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") {
+      return {};
+    }
+    throw error;
+  }
+}
+
+export async function writeMcpRegistry(
+  registry: Record<string, McpRelease>,
+  channel: ReleaseChannel = "stable"
+): Promise<void> {
+  await ensureStorageDirs();
+  await writeFile(getMcpReleaseFilePath(channel), `${JSON.stringify(registry, null, 2)}\n`, "utf-8");
 }
 
 export async function writeLatestRelease(release: LatestRelease, channel: ReleaseChannel = "stable"): Promise<void> {
@@ -262,6 +385,26 @@ function assertUpdaterFileName(fileName: string): string {
     throw new Error("更新产物文件名包含非法字符，仅允许字母、数字、点、下划线和中划线");
   }
   return trimmed;
+}
+
+function assertMcpId(raw: string): string {
+  const trimmed = raw.trim().toLowerCase();
+  if (!trimmed) {
+    throw new Error("mcpId 涓嶈兘涓虹┖");
+  }
+  if (!MCP_ID_PATTERN.test(trimmed)) {
+    throw new Error("mcpId 鏍煎紡闈炴硶锛屼粎鏀寔灏忓啓瀛楁瘝銆佹暟瀛椼€佺偣銆佷笅鍒掔嚎鍜屼腑鍒掔嚎");
+  }
+  return trimmed;
+}
+
+function assertMcpPackageFileName(fileName: string): string {
+  const safeName = ensureSafeFileName(fileName);
+  const lower = safeName.toLowerCase();
+  if (!MCP_PACKAGE_EXTENSIONS.some((ext) => lower.endsWith(ext))) {
+    throw new Error(`MCP 鍖呮墿灞曞悕涓嶆敮鎸侊紝浠呮敮鎸? ${MCP_PACKAGE_EXTENSIONS.join(" / ")}`);
+  }
+  return safeName;
 }
 
 function assertFileSize(size: number, maxBytes: number, label: string): void {
@@ -388,6 +531,67 @@ export async function storeUpdaterArtifact(params: {
   return { release: latest, asset };
 }
 
+export async function storeMcpPackage(params: {
+  mcpId: string;
+  fileName: string;
+  bytes: Uint8Array;
+  version: string;
+  manifest: McpManifest;
+  channel?: ReleaseChannel;
+}): Promise<{ release: McpRelease; asset: ReleaseAsset }> {
+  const env = getEnv();
+  await ensureStorageDirs();
+
+  const mcpId = assertMcpId(params.mcpId);
+  const version = params.version.trim();
+  if (!version) {
+    throw new Error("MCP version 涓嶈兘涓虹┖");
+  }
+
+  const manifest = normalizeMcpManifest(params.manifest, mcpId, version);
+  if (!manifest) {
+    throw new Error("MCP manifest 闈炴硶鎴栫己灏戝繀瑕佸瓧娈?");
+  }
+  if (manifest.id !== mcpId) {
+    throw new Error(`MCP manifest.id 涓嶅尮閰? mcpId: ${manifest.id} !== ${mcpId}`);
+  }
+  if (manifest.version !== version) {
+    throw new Error(`MCP manifest.version 涓嶅尮閰? version: ${manifest.version} !== ${version}`);
+  }
+
+  const safeName = assertMcpPackageFileName(params.fileName);
+  assertFileSize(params.bytes.byteLength, env.maxMcpPackageSizeBytes, "MCP 鍖?");
+
+  const outputDir = getMcpDir(mcpId, version);
+  await mkdir(outputDir, { recursive: true });
+  const outputPath = resolve(outputDir, safeName);
+  await writeFile(outputPath, params.bytes);
+
+  const asset: ReleaseAsset = {
+    name: safeName,
+    relativePath: relativeMcpAssetPath(mcpId, version, safeName),
+    size: params.bytes.byteLength,
+    sha256: sha256Hex(params.bytes),
+    uploadedAt: nowIso(),
+  };
+
+  const channel = normalizeReleaseChannel(params.channel) || "stable";
+  const nextRelease: McpRelease = {
+    id: mcpId,
+    version,
+    publishedAt: nowIso(),
+    package: asset,
+    manifest,
+    channel,
+  };
+
+  const registry = await readMcpRegistry(channel);
+  registry[mcpId] = nextRelease;
+  await writeMcpRegistry(registry, channel);
+
+  return { release: nextRelease, asset };
+}
+
 export interface ResolvedDownload {
   release: LatestRelease;
   asset: ReleaseAsset;
@@ -486,4 +690,33 @@ export async function resolveLatestXiakeConfig(channel: ReleaseChannel = "stable
   const absolutePath = absoluteAssetPath(latest.xiakeConfig.relativePath);
   await ensureReadable(absolutePath);
   return { release: latest, asset: latest.xiakeConfig, absolutePath };
+}
+
+export async function listMcpReleases(channel: ReleaseChannel = "stable"): Promise<McpRelease[]> {
+  const registry = await readMcpRegistry(channel);
+  return Object.values(registry).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function readMcpRelease(mcpId: string, channel: ReleaseChannel = "stable"): Promise<McpRelease | null> {
+  const registry = await readMcpRegistry(channel);
+  const normalizedId = assertMcpId(mcpId);
+  return registry[normalizedId] || null;
+}
+
+export async function resolveLatestMcpPackage(
+  mcpId: string,
+  channel: ReleaseChannel = "stable"
+): Promise<{ release: McpRelease; asset: ReleaseAsset; absolutePath: string }> {
+  const release = await readMcpRelease(mcpId, channel);
+  if (!release) {
+    throw new Error(`MCP 涓嶅瓨鍦? ${mcpId}`);
+  }
+
+  const absolutePath = absoluteAssetPath(release.package.relativePath);
+  await ensureReadable(absolutePath);
+  return {
+    release,
+    asset: release.package,
+    absolutePath,
+  };
 }

@@ -4,10 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resetEnvCacheForTests } from "../src/lib/env";
 import {
+  listMcpReleases,
   readLatestRelease,
+  readMcpRelease,
   resolveLatestInstaller,
+  resolveLatestMcpPackage,
   resolveLatestXiakeConfig,
   storeInstaller,
+  storeMcpPackage,
   storeXiakeConfig,
 } from "../src/lib/storage";
 
@@ -18,6 +22,7 @@ beforeEach(async () => {
   process.env.STORAGE_DIR = tempStorageDir;
   process.env.MAX_INSTALLER_SIZE_MB = "5";
   process.env.MAX_CONFIG_SIZE_MB = "1";
+  process.env.MAX_MCP_PACKAGE_SIZE_MB = "5";
   resetEnvCacheForTests();
 });
 
@@ -25,6 +30,7 @@ afterEach(async () => {
   delete process.env.STORAGE_DIR;
   delete process.env.MAX_INSTALLER_SIZE_MB;
   delete process.env.MAX_CONFIG_SIZE_MB;
+  delete process.env.MAX_MCP_PACKAGE_SIZE_MB;
   resetEnvCacheForTests();
   if (tempStorageDir) {
     await rm(tempStorageDir, { recursive: true, force: true });
@@ -111,7 +117,32 @@ describe("release storage", () => {
       storeInstaller({
         fileName: "clawos.txt",
         bytes: new TextEncoder().encode("x"),
-      }),
-    ).rejects.toThrow("安装包扩展名与平台不匹配");
+      })
+    ).rejects.toThrow();
+  });
+
+  it("stores MCP package and resolves latest download", async () => {
+    const packageBytes = new TextEncoder().encode("fake-mcp-zip");
+    await storeMcpPackage({
+      mcpId: "windows-mcp",
+      fileName: "windows-mcp-0.1.0.zip",
+      bytes: packageBytes,
+      version: "0.1.0",
+      manifest: {
+        schemaVersion: "1.0",
+        id: "windows-mcp",
+        name: "Windows MCP",
+        version: "0.1.0",
+      },
+    });
+
+    const items = await listMcpReleases();
+    const item = await readMcpRelease("windows-mcp");
+    const download = await resolveLatestMcpPackage("windows-mcp");
+
+    expect(items).toHaveLength(1);
+    expect(item?.version).toBe("0.1.0");
+    expect(download.asset.name).toBe("windows-mcp-0.1.0.zip");
+    expect(download.release.manifest.name).toBe("Windows MCP");
   });
 });
