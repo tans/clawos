@@ -49,7 +49,15 @@ const LayoutRoot: FC<{
         <main class="max-w-6xl mx-auto p-4 md:p-6">
           {user ? (
             <div class="navbar bg-base-100 rounded-box shadow-sm mb-4 border border-base-300">
-              <div class="flex-1 text-sm">账号：{user.mobile} </div>
+              <div class="flex-1 text-sm flex items-center gap-2">
+                <a class="btn btn-ghost btn-sm px-2" href="/console">
+                  控制台
+                </a>
+                <a class="btn btn-ghost btn-sm px-2" href="/console/companies">
+                  公司空间
+                </a>
+                <span class="opacity-70">账号：{user.mobile}</span>
+              </div>
               <div class="flex-none">
                 <a class="btn btn-sm btn-outline" href="/console/logout">
                   退出

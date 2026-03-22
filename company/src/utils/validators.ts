@@ -52,3 +52,17 @@ export function parseLimit(raw: string | undefined, fallback = 20): number {
   }
   return Math.min(100, Math.floor(n));
 }
+
+export function normalizeCompanyName(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim();
+  if (!value || value.length > 64) return null;
+  return value;
+}
+
+export function normalizeCompanySlug(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim().toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/.test(value)) return null;
+  return value;
+}

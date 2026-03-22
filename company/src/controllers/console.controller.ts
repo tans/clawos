@@ -3,14 +3,17 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { auditLog, DB_PATH } from "../db";
 import {
   clearExpiredConsoleSessions,
+  createCompanyForOwner,
   createConsoleSession,
   createConsoleUser,
   createPendingCommand,
   deleteConsoleSession,
+  existsCompanySlug,
   existsConsoleUserByMobile,
   getConsoleCredentialByMobile,
   getConsoleUserBySessionToken,
   getHostOwnedBy,
+  listCompaniesByOwnerUserId,
   listHostInsightsByControllerAddress,
   listHostRecentCommands,
   listHostRecentEvents,
@@ -18,9 +21,11 @@ import {
 } from "../models/company.model";
 import type { AppEnv, ConsoleUser } from "../types";
 import { readFormText } from "../utils/request";
-import { normalizeHostId, normalizeMobile } from "../utils/validators";
+import { normalizeCompanyName, normalizeCompanySlug, normalizeHostId, normalizeMobile } from "../utils/validators";
 import {
+  renderCreateCompanyPage,
   renderConsoleMessagePage,
+  renderCompaniesPage,
   renderHostDetailPage,
   renderInsightsPage,
   renderHostListPage,
@@ -150,7 +155,43 @@ export function createConsoleController(): Hono<AppEnv> {
   controller.get("/console", (c) => {
     const user = c.get("consoleUser");
     const message = c.req.query("msg") || "";
-    return c.html(renderHostListPage(user, message, listHostsByControllerAddress(user.walletAddress)));
+    const companies = listCompaniesByOwnerUserId(user.id);
+    return c.html(renderHostListPage(user, message, listHostsByControllerAddress(user.walletAddress), companies));
+  });
+
+  controller.get("/console/companies", (c) => {
+    const user = c.get("consoleUser");
+    const message = c.req.query("msg") || "";
+    return c.html(renderCompaniesPage(user, listCompaniesByOwnerUserId(user.id), message));
+  });
+
+  controller.get("/console/companies/new", (c) => {
+    const user = c.get("consoleUser");
+    return c.html(renderCreateCompanyPage(user));
+  });
+
+  controller.post("/console/companies/new", async (c) => {
+    const user = c.get("consoleUser");
+    const body = (await c.req.parseBody()) as Record<string, string | File | (string | File)[]>;
+    const name = normalizeCompanyName(readFormText(body, "name"));
+    const slug = normalizeCompanySlug(readFormText(body, "slug"));
+    const mode = readFormText(body, "mode") === "standard" ? "standard" : "unmanned";
+    if (!name || !slug) {
+      return c.html(renderCreateCompanyPage(user, "公司名称或标识不合法。", { name: readFormText(body, "name"), slug: readFormText(body, "slug"), mode }), 400);
+    }
+    if (existsCompanySlug(slug)) {
+      return c.html(renderCreateCompanyPage(user, "公司标识已存在，请更换。", { name, slug, mode }), 409);
+    }
+
+    const companyId = createCompanyForOwner({ ownerUserId: user.id, name, slug, mode });
+    auditLog({
+      actor: `console:${user.mobile}`,
+      action: "company_created",
+      controllerAddress: user.walletAddress,
+      detail: { companyId, slug, mode },
+    });
+
+    return c.redirect("/console/companies?msg=公司创建成功");
   });
 
   controller.get("/console/insights", (c) => {

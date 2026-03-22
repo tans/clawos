@@ -37,6 +37,17 @@ CREATE TABLE IF NOT EXISTS console_users (
   created_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS companies (
+  id TEXT PRIMARY KEY,
+  owner_user_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  mode TEXT NOT NULL DEFAULT 'unmanned',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY(owner_user_id) REFERENCES console_users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS console_sessions (
   token TEXT PRIMARY KEY,
   user_id INTEGER NOT NULL,
@@ -99,9 +110,11 @@ CREATE TABLE IF NOT EXISTS commands (
   id TEXT PRIMARY KEY,
   device_id TEXT NOT NULL,
   kind TEXT NOT NULL,
+  dedupe_key TEXT,
   payload TEXT NOT NULL,
   status TEXT NOT NULL,
   result TEXT,
+  expires_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -134,7 +147,21 @@ CREATE INDEX IF NOT EXISTS idx_console_sessions_expiry ON console_sessions(expir
 CREATE INDEX IF NOT EXISTS idx_hosts_controller ON hosts(controller_address, updated_at);
 CREATE INDEX IF NOT EXISTS idx_agent_events_host_created ON agent_events(host_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_events_severity_created ON agent_events(severity, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_companies_owner_updated ON companies(owner_user_id, updated_at DESC);
 `);
+
+function hasColumn(table: string, column: string): boolean {
+  const rows = db.query(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  return rows.some((row) => row.name === column);
+}
+
+if (!hasColumn("commands", "dedupe_key")) {
+  db.exec("ALTER TABLE commands ADD COLUMN dedupe_key TEXT;");
+}
+if (!hasColumn("commands", "expires_at")) {
+  db.exec("ALTER TABLE commands ADD COLUMN expires_at INTEGER;");
+}
+db.exec("CREATE INDEX IF NOT EXISTS idx_commands_dedupe_key ON commands(dedupe_key, created_at);");
 
 export function nowMs(): number {
   return Date.now();
