@@ -8,8 +8,20 @@ import {
   readLatestRelease,
   readMcpRelease,
 } from "../lib/storage";
+import type { InstallerPlatform, ReleaseChannel } from "../lib/types";
 
 export const releaseRoutes = new Hono();
+
+function channelDownloadPath(channel: ReleaseChannel, platform?: InstallerPlatform): string {
+  if (channel === "stable") {
+    return platform ? `/downloads/latest/${platform}` : "/downloads/latest";
+  }
+  return platform ? `/downloads/${channel}/${platform}` : `/downloads/${channel}`;
+}
+
+function channelSuffix(channel: ReleaseChannel): string {
+  return channel === "stable" ? "" : `?channel=${channel}`;
+}
 
 releaseRoutes.get("/api/releases/latest", async (c) => {
   const channel = normalizeReleaseChannel(c.req.query("channel") || undefined) || "stable";
@@ -19,22 +31,22 @@ releaseRoutes.get("/api/releases/latest", async (c) => {
   }
 
   const links: Record<string, unknown> = {
-    installerLatest: channel === "beta" ? "/downloads/beta" : "/downloads/latest",
-    xiakeConfig: channel === "beta" ? "/downloads/clawos_xiake.json?channel=beta" : "/downloads/clawos_xiake.json",
+    installerLatest: channelDownloadPath(channel),
+    xiakeConfig: `/downloads/clawos_xiake.json${channelSuffix(channel)}`,
     updaterBaseUrl: "/updates",
   };
   const installers: Record<string, string> = {};
   if (latest.installers?.windows) {
-    links.installerWindows = channel === "beta" ? "/downloads/beta/windows" : "/downloads/latest/windows";
-    installers.windows = channel === "beta" ? "/downloads/beta/windows" : "/downloads/latest/windows";
+    links.installerWindows = channelDownloadPath(channel, "windows");
+    installers.windows = channelDownloadPath(channel, "windows");
   }
   if (latest.installers?.macos) {
-    links.installerMacos = channel === "beta" ? "/downloads/beta/macos" : "/downloads/latest/macos";
-    installers.macos = channel === "beta" ? "/downloads/beta/macos" : "/downloads/latest/macos";
+    links.installerMacos = channelDownloadPath(channel, "macos");
+    installers.macos = channelDownloadPath(channel, "macos");
   }
   if (latest.installers?.linux) {
-    links.installerLinux = channel === "beta" ? "/downloads/beta/linux" : "/downloads/latest/linux";
-    installers.linux = channel === "beta" ? "/downloads/beta/linux" : "/downloads/latest/linux";
+    links.installerLinux = channelDownloadPath(channel, "linux");
+    installers.linux = channelDownloadPath(channel, "linux");
   }
   if (Object.keys(installers).length > 0) {
     links.installers = installers;
@@ -107,7 +119,7 @@ releaseRoutes.get("/api/mcps/:mcpId/versions", async (c) => {
     mcpId,
     items: versions.map((item) => ({
       ...item,
-      downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/${encodeURIComponent(item.version)}${channel === "beta" ? "?channel=beta" : ""}`,
+      downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/${encodeURIComponent(item.version)}${channelSuffix(channel)}`,
     })),
   });
 });
