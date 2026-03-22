@@ -1,6 +1,8 @@
 /** @jsxImportSource hono/jsx */
 
 import { renderToString } from "hono/jsx/dom/server";
+import { changelogItems } from "../content/changelog";
+import { getBrandConfig } from "../lib/branding";
 
 const LOBSTER_DESKTOP_DOWNLOAD_URL = "https://ydschool-video.nosdn.127.net/1772959618633LobsterAI+Setup+0.2.2.exe";
 
@@ -53,14 +55,20 @@ function HomePage({
   latestVersion,
   hasBetaInstaller,
   betaVersion,
+  hasAlphaInstaller,
+  alphaVersion,
 }: {
   hasInstaller: boolean;
   latestVersion: string | null;
   hasBetaInstaller: boolean;
   betaVersion: string | null;
+  hasAlphaInstaller: boolean;
+  alphaVersion: string | null;
 }) {
+  const { brandName, brandDomain, brandLogoUrl } = getBrandConfig();
   const versionText = latestVersion?.trim() ? latestVersion.trim() : "dev";
   const betaVersionText = betaVersion?.trim() ? betaVersion.trim() : "dev";
+  const alphaVersionText = alphaVersion?.trim() ? alphaVersion.trim() : "dev";
   const features = [
     ["一键更新", "更新、重启、状态查看放在一起。"],
     ["模型配置", "常用模型和 provider 直接改。"],
@@ -77,8 +85,8 @@ function HomePage({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ClawOS | 可定制的 openclaw</title>
-        <link rel="icon" type="image/png" href="/public/logo.png" />
+        <title>{`${brandName} | 可定制的 openclaw`}</title>
+        <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="min-h-screen text-base-content">
@@ -86,8 +94,8 @@ function HomePage({
           <header class="page-fade surface-wash rounded-[2rem] px-5 py-4 sm:px-7">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center gap-3 text-lg font-semibold">
-                <img src="/public/logo.png" alt="ClawOS Logo" class="size-9 rounded-lg object-contain" />
-                <span>ClawOS</span>
+                <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
+                <span>{brandName}</span>
               </div>
               <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="页面导航">
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="#overview">
@@ -188,6 +196,12 @@ function HomePage({
                       {`下载 Beta v${betaVersionText}`}
                     </a>
                   ) : null}
+                  {hasAlphaInstaller ? (
+                    <a class="btn btn-ghost btn-wide border border-info/30 bg-info/10" href="/downloads/alpha">
+                      <DownloadIcon />
+                      {`下载 Alpha v${alphaVersionText}`}
+                    </a>
+                  ) : null}
                   <a
                     class="btn btn-outline btn-wide border border-base-content/15 bg-base-100/40"
                     href="https://gx50d0q123.feishu.cn/wiki/CueLw8F8TiwjEMkGiCFclxtXnnh?from=from_copylink"
@@ -203,7 +217,7 @@ function HomePage({
               <aside class="float-gentle overflow-hidden bg-base-100/35">
                 <img
                   src="/public/clawos.png"
-                  alt="ClawOS 产品截图"
+                  alt={`${brandName} 产品截图`}
                   loading="eager"
                   decoding="async"
                   class="h-auto w-full object-contain"
@@ -249,9 +263,29 @@ function HomePage({
             </div>
           </section>
 
+          <section id="changelog" class="page-fade page-fade-delay-3 mt-20 px-1 sm:mt-24">
+            <SectionTitle eyebrow="Changelog" title="更新日志（中文）" desc="记录近期版本更新，方便快速了解变化。" />
+            <div class="mt-10 space-y-4">
+              {changelogItems.map((item) => (
+                <article class="bg-base-100/45 px-5 py-4">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-base font-semibold">{item.version}</span>
+                    <span class="text-xs text-base-content/60">{item.date}</span>
+                    <span class="badge badge-outline badge-sm">{item.channel.toUpperCase()}</span>
+                  </div>
+                  <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-base-content/70">
+                    {item.highlights.map((highlight) => (
+                      <li>{highlight}</li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <footer class="page-fade page-fade-delay-3 mt-16 px-2 py-8 text-sm text-base-content/70 sm:mt-20">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p>@clawos.cc</p>
+              <p>{`@${brandDomain}`}</p>
               <p>客服联系: tianshe00</p>
             </div>
           </footer>
@@ -265,7 +299,9 @@ export function renderHomePage(
   hasInstaller: boolean,
   latestVersion: string | null,
   hasBetaInstaller = false,
-  betaVersion: string | null = null
+  betaVersion: string | null = null,
+  hasAlphaInstaller = false,
+  alphaVersion: string | null = null
 ): string {
   return `<!doctype html>${renderToString(
     <HomePage
@@ -273,6 +309,8 @@ export function renderHomePage(
       latestVersion={latestVersion}
       hasBetaInstaller={hasBetaInstaller}
       betaVersion={betaVersion}
+      hasAlphaInstaller={hasAlphaInstaller}
+      alphaVersion={alphaVersion}
     />
   )}`;
 }

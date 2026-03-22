@@ -1,6 +1,7 @@
 /** @jsxImportSource hono/jsx */
 
 import { renderToString } from "hono/jsx/dom/server";
+import { getBrandConfig } from "../lib/branding";
 import type { McpRelease, McpShelfItem, Product, ReleaseChannel } from "../lib/types";
 
 interface AdminPageProps {
@@ -12,12 +13,14 @@ interface AdminPageProps {
 }
 
 function LoginPage({ error }: { error?: string }) {
+  const { brandName } = getBrandConfig();
+
   return (
     <html lang="zh-CN" data-theme="light">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ClawOS 后台登录</title>
+        <title>{`${brandName} 后台登录`}</title>
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="min-h-screen bg-base-200">
@@ -106,6 +109,7 @@ function renderMcpTable(title: string, channel: ReleaseChannel, items: McpReleas
 }
 
 function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageProps) {
+  const { brandName } = getBrandConfig();
   const shelfSet = new Set(shelf.filter((item) => item.published).map((item) => mcpKey(item)));
 
   return (
@@ -113,13 +117,13 @@ function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageP
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>ClawOS 后台</title>
+        <title>{`${brandName} 后台`}</title>
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="bg-base-200">
         <main class="mx-auto max-w-6xl space-y-6 px-4 py-6">
           <header class="flex items-center justify-between">
-            <h1 class="text-2xl font-semibold">ClawOS 后台</h1>
+            <h1 class="text-2xl font-semibold">{`${brandName} 后台`}</h1>
             <form method="post" action="/admin/logout">
               <button class="btn btn-outline btn-sm" type="submit">
                 退出登录

@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import type { PageKey } from "@/App";
-import { fetchAppUpdateStatus, fetchHealthVersion, readUserErrorMessage, startAppUpdate } from "@/lib/api";
+import { fetchAppUpdateStatus, fetchBrandProfile, fetchHealthVersion, readUserErrorMessage, startAppUpdate } from "@/lib/api";
 import { openOpenclawConsole } from "@/lib/desktop";
 import { Button } from "../ui/button";
 import {
@@ -47,6 +47,8 @@ type Props = {
 export function AppShell({ page, title, description, onNavigate, children }: Props) {
   const [version, setVersion] = useState("v-");
   const [updateMeta, setUpdateMeta] = useState("检查更新中...");
+  const [brandName, setBrandName] = useState("ClawOS");
+  const [brandDomain, setBrandDomain] = useState("clawos.cc");
   const [remoteVersion, setRemoteVersion] = useState<string | null>(null);
   const [runningUpdate, setRunningUpdate] = useState(false);
 
@@ -59,10 +61,12 @@ export function AppShell({ page, title, description, onNavigate, children }: Pro
         if (!silent) {
           setUpdateMeta("正在获取版本信息...");
         }
-        const [currentVersion, status] = await Promise.all([fetchHealthVersion(), fetchAppUpdateStatus()]);
+        const [currentVersion, status, brand] = await Promise.all([fetchHealthVersion(), fetchAppUpdateStatus(), fetchBrandProfile()]);
         if (!active) return;
 
         setVersion(currentVersion ? `v${currentVersion}` : "v-");
+        setBrandName(typeof brand.name === "string" && brand.name.trim() ? brand.name.trim() : "ClawOS");
+        setBrandDomain(typeof brand.domain === "string" && brand.domain.trim() ? brand.domain.trim() : "clawos.cc");
 
         if (status.error || status.supported === false) {
           setRemoteVersion(null);
@@ -104,7 +108,7 @@ export function AppShell({ page, title, description, onNavigate, children }: Pro
         <SidebarHeader className="gap-3 p-4">
           <div className="flex items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar px-3 py-3">
             <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_0_4px_color-mix(in_oklab,var(--primary)_14%,transparent)]" />
-            <p className="eyebrow">ClawOS</p>
+            <p className="eyebrow">{brandName}</p>
           </div>
         </SidebarHeader>
 
@@ -131,7 +135,7 @@ export function AppShell({ page, title, description, onNavigate, children }: Pro
           <SidebarSeparator className="mx-0" />
           <div className="mt-2 rounded-lg border border-sidebar-border bg-sidebar px-3 py-3 shadow-sm">
             <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-              <span>clawos.cc</span>
+              <span>{brandDomain}</span>
               <strong className="font-semibold text-foreground">{version}</strong>
             </div>
             <div className="mt-2 text-xs leading-5 text-muted-foreground">{updateMeta}</div>
