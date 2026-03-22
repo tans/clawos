@@ -20,7 +20,8 @@
               <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="card-title text-base">&#26816;&#27979;&#19982;&#20462;&#22797;</h2>
                 <div class="flex flex-wrap gap-2">
-                <button class="btn btn-outline btn-sm" data-browser-action="repair-env">&#29615;&#22659;&#20462;&#22797;</button>
+                <button class="btn btn-outline btn-sm" data-browser-action="detect">&#26816;&#27979;</button>
+                <button class="btn btn-outline btn-sm" data-browser-action="repair">&#20462;&#22797;</button>
                 <button class="btn btn-primary btn-sm" data-browser-action="open-cdp">&#25171;&#24320; CDP</button>
               </div>
               </div>
@@ -272,19 +273,21 @@
 
       async function runBrowserAction(action) {
         const label =
-          action === "repair-env"
-            ? "\u73af\u5883\u4fee\u590d"
-            : action === "open-cdp"
-              ? "\u6253\u5f00 CDP"
-              : action;
+          action === "detect"
+            ? "\u68c0\u6d4b"
+            : action === "repair"
+              ? "\u4fee\u590d"
+              : action === "open-cdp"
+                ? "\u6253\u5f00 CDP"
+                : action;
         browserOpStatusEl.textContent = `\u6b63\u5728\u6267\u884c\uff1a${label}`;
         browserTaskOutputEl.textContent = "\u4efb\u52a1\u542f\u52a8\u4e2d...";
         browserTaskMetaEl.textContent = "\u4efb\u52a1\u542f\u52a8\u4e2d...";
         browserTaskProgressEl.classList.remove("hidden");
         browserTaskProgressEl.value = 0;
 
-        const endpoint = action === "repair-env" ? "/api/system/repair" : "/api/browser/action";
-        const body = action === "repair-env" ? {} : { action, confirmed: true };
+        const endpoint = "/api/browser/action";
+        const body = action === "detect" ? { action } : { action, confirmed: true };
         const data = await api(endpoint, {
           method: "POST",
           body: JSON.stringify(body),
@@ -303,6 +306,8 @@
 
       function confirmBrowserAction(action) {
         if (
+          action !== "detect" &&
+          action !== "repair" &&
           action !== "open-cdp" &&
           action !== "restart" &&
           action !== "restart-browser" &&
@@ -314,7 +319,9 @@
         }
 
         return window.confirm(
-          "\u6253\u5f00 CDP \u4f1a\u91cd\u542f Chrome\uff0c\u662f\u5426\u7ee7\u7eed\uff1f"
+          action === "repair"
+            ? "\u4fee\u590d\u4f1a\u914d\u7f6e 9222 \u7aef\u53e3\u8f6c\u53d1\u3001\u9632\u706b\u5899\u653e\u884c\uff0c\u5e76\u66f4\u65b0 openclaw \u6d4f\u89c8\u5668\u914d\u7f6e\uff0c\u662f\u5426\u7ee7\u7eed\uff1f"
+            : "\u6253\u5f00 CDP \u4f1a\u91cd\u542f Chrome\uff0c\u662f\u5426\u7ee7\u7eed\uff1f"
         );
       }
 

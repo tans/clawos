@@ -23,7 +23,7 @@ import { getClawosAutoStartState, setClawosAutoStartEnabled } from "../system/au
 import { checkEnvironment } from "../system/environment";
 import { getSelfUpdateStatus } from "../system/self-update";
 import { readWalletBalances } from "../system/wallet-balance";
-import { startBrowserConfigResetTask, startBrowserRestartTask } from "../tasks/browser";
+import { startBrowserConfigResetTask, startBrowserDetectTask, startBrowserRepairTask, startBrowserRestartTask } from "../tasks/browser";
 import {
   getQwGatewayStartupStatus,
   listOpenclawConfigBackups,
@@ -686,26 +686,40 @@ async function handleBrowserAction(req: Request): Promise<Response> {
 
   const payload = body as Record<string, unknown>;
   const rawAction = sanitizeIdentifier(payload.action, "action");
-  const action =
-    rawAction === "restart"
-      ? "restart-browser"
-      : rawAction === "open-cdp"
-        ? "restart-cdp"
-      : rawAction === "reset"
-        ? "reset-config"
-        : rawAction === "repair"
-          ? "repair"
-          : (rawAction as "restart-browser" | "restart-cdp" | "reset-config" | "repair");
+  let action: "restart-browser" | "restart-cdp" | "detect" | "reset-config" | "repair";
+  if (rawAction === "restart") {
+    action = "restart-browser";
+  } else if (rawAction === "open-cdp") {
+    action = "restart-cdp";
+  } else if (rawAction === "detect") {
+    action = "detect";
+  } else if (rawAction === "reset") {
+    action = "reset-config";
+  } else if (rawAction === "repair") {
+    action = "repair";
+  } else {
+    action = rawAction as "restart-browser" | "restart-cdp" | "detect" | "reset-config" | "repair";
+  }
 
-  if (!["restart-browser", "restart-cdp", "reset-config", "repair"].includes(action)) {
+  if (!["restart-browser", "restart-cdp", "detect", "reset-config", "repair"].includes(action)) {
     throw new HttpError(400, `不支持的 action：${action}`);
   }
 
-  if (payload.confirmed !== true) {
+  if (action !== "detect" && payload.confirmed !== true) {
     throw new HttpError(400, "浏览器修复会修改 Windows 端口代理和防火墙，请先确认后再继续。");
   }
 
-  if (action === "restart-browser" || action === "restart-cdp" || action === "repair") {
+  if (action === "detect") {
+    const { task, reused } = startBrowserDetectTask();
+    return jsonResponse({ ok: true, taskId: task.id, task, reused });
+  }
+
+  if (action === "repair") {
+    const { task, reused } = startBrowserRepairTask();
+    return jsonResponse({ ok: true, taskId: task.id, task, reused });
+  }
+
+  if (action === "restart-browser" || action === "restart-cdp") {
     const { task, reused } = startBrowserRestartTask();
     return jsonResponse({ ok: true, taskId: task.id, task, reused });
   }
