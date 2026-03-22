@@ -10,8 +10,9 @@ import { uploadRoutes } from "./routes/upload";
 import { adminRoutes } from "./routes/admin";
 
 export const app = new Hono();
-const cssFilePath = resolve(process.cwd(), "dist", "output.css");
-const publicDirPath = resolve(process.cwd(), "public");
+const runtimeRoot = resolve(process.env.CLAWOS_WEB_ROOT ?? process.cwd());
+const cssFilePath = resolve(runtimeRoot, "dist", "output.css");
+const publicDirPath = resolve(runtimeRoot, "public");
 
 app.get("/health", (c) => {
   return c.json({
