@@ -3,6 +3,7 @@ import {
   listMcpReleases,
   normalizeInstallerPlatform,
   normalizeReleaseChannel,
+  resolveMcpPackageByVersion,
   resolveLatestInstaller,
   resolveLatestMcpPackage,
   resolveLatestXiakeConfig,
@@ -162,9 +163,10 @@ downloadRoutes.get("/downloads/mcp", async (c) => {
 });
 
 downloadRoutes.get("/downloads/mcp/:mcpId/latest", async (c) => {
+  const mcpId = c.req.param("mcpId");
+  const channel = resolveChannelFromRequest(c.req.query("channel"));
   try {
-    const channel = resolveChannelFromRequest(c.req.query("channel"));
-    const { release, asset, absolutePath } = await resolveLatestMcpPackage(c.req.param("mcpId"), channel);
+    const { release, asset, absolutePath } = await resolveLatestMcpPackage(mcpId, channel);
     return new Response(Bun.file(absolutePath), {
       headers: {
         "content-type": "application/octet-stream",
@@ -176,6 +178,50 @@ downloadRoutes.get("/downloads/mcp/:mcpId/latest", async (c) => {
       },
     });
   } catch (error) {
-    return c.json({ ok: false, error: (error as Error).message }, 404);
+    const message = (error as Error).message;
+    console.warn("[clawos-web] mcp.download.latest.failed", { mcpId, channel, error: message });
+    return c.json(
+      {
+        ok: false,
+        code: "MCP_LATEST_NOT_FOUND",
+        error: message,
+        mcpId,
+        channel,
+      },
+      404
+    );
+  }
+});
+
+downloadRoutes.get("/downloads/mcp/:mcpId/:version", async (c) => {
+  const mcpId = c.req.param("mcpId");
+  const version = c.req.param("version");
+  const channel = resolveChannelFromRequest(c.req.query("channel"));
+  try {
+    const { release, asset, absolutePath } = await resolveMcpPackageByVersion(mcpId, version, channel);
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-release-channel": channel,
+        "x-mcp-id": release.id,
+        "x-mcp-version": release.version,
+      },
+    });
+  } catch (error) {
+    const message = (error as Error).message;
+    console.warn("[clawos-web] mcp.download.version.failed", { mcpId, version, channel, error: message });
+    return c.json(
+      {
+        ok: false,
+        code: "MCP_VERSION_NOT_FOUND",
+        error: message,
+        mcpId,
+        version,
+        channel,
+      },
+      404
+    );
   }
 });

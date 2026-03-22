@@ -5,9 +5,12 @@ import { join } from "node:path";
 import { resetEnvCacheForTests } from "../src/lib/env";
 import {
   listMcpReleases,
+  listMcpReleaseVersions,
   readLatestRelease,
+  readMcpReleaseByVersion,
   readMcpRelease,
   resolveLatestInstaller,
+  resolveMcpPackageByVersion,
   resolveLatestMcpPackage,
   resolveLatestXiakeConfig,
   storeInstaller,
@@ -144,5 +147,47 @@ describe("release storage", () => {
     expect(item?.version).toBe("0.1.0");
     expect(download.asset.name).toBe("windows-mcp-0.1.0.zip");
     expect(download.release.manifest.name).toBe("Windows MCP");
+  });
+
+  it("keeps MCP version history and resolves package by version", async () => {
+    const v1 = new TextEncoder().encode("bom-v1");
+    const v2 = new TextEncoder().encode("bom-v2");
+    await storeMcpPackage({
+      mcpId: "bom-mcp",
+      fileName: "bom-mcp-0.1.0.zip",
+      bytes: v1,
+      version: "0.1.0",
+      manifest: {
+        schemaVersion: "1.0",
+        id: "bom-mcp",
+        name: "BOM MCP",
+        version: "0.1.0",
+      },
+    });
+    await storeMcpPackage({
+      mcpId: "bom-mcp",
+      fileName: "bom-mcp-0.1.1.zip",
+      bytes: v2,
+      version: "0.1.1",
+      manifest: {
+        schemaVersion: "1.0",
+        id: "bom-mcp",
+        name: "BOM MCP",
+        version: "0.1.1",
+      },
+    });
+
+    const latest = await readMcpRelease("bom-mcp");
+    const versions = await listMcpReleaseVersions("bom-mcp");
+    const v010 = await readMcpReleaseByVersion("bom-mcp", "0.1.0");
+    const v011Download = await resolveMcpPackageByVersion("bom-mcp", "0.1.1");
+
+    expect(latest?.version).toBe("0.1.1");
+    expect(versions).toHaveLength(2);
+    expect(versions[0]?.version).toBe("0.1.1");
+    expect(versions[1]?.version).toBe("0.1.0");
+    expect(v010?.package.name).toBe("bom-mcp-0.1.0.zip");
+    expect(v011Download.release.version).toBe("0.1.1");
+    expect(v011Download.asset.size).toBe(v2.byteLength);
   });
 });

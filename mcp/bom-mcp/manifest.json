@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "bom-mcp",
+  "name": "bom-mcp",
+  "displayName": "BOM MCP",
+  "description": "BOM 报价与任务编排 MCP 占位包。",
+  "publisher": "clawos",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "version": "0.1.0"
+}

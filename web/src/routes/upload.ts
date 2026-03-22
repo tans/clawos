@@ -157,13 +157,13 @@ uploadRoutes.post("/api/upload/mcp", async (c) => {
   try {
     const upload = await parseUploadRequest(c, "mcp-package.zip");
     if (!upload.mcpId) {
-      throw new Error("缂哄皯 mcpId");
+      throw new Error("缺少 mcpId");
     }
     if (!upload.version) {
-      throw new Error("缂哄皯 version");
+      throw new Error("缺少 version");
     }
     if (!upload.manifest) {
-      throw new Error("缂哄皯 manifest");
+      throw new Error("缺少 manifest");
     }
 
     const manifest = JSON.parse(upload.manifest) as Record<string, unknown>;
@@ -176,6 +176,16 @@ uploadRoutes.post("/api/upload/mcp", async (c) => {
       channel: upload.channel,
     });
 
+    const channel = upload.channel || "stable";
+    console.info("[clawos-web] mcp.upload.ok", {
+      mcpId: result.release.id,
+      version: result.release.version,
+      channel,
+      sha256: result.asset.sha256,
+      size: result.asset.size,
+      fileName: result.asset.name,
+    });
+
     return c.json({
       ok: true,
       mcpId: result.release.id,
@@ -183,10 +193,12 @@ uploadRoutes.post("/api/upload/mcp", async (c) => {
       fileName: result.asset.name,
       size: result.asset.size,
       sha256: result.asset.sha256,
-      channel: upload.channel || "stable",
+      channel,
       url: `/downloads/mcp/${encodeURIComponent(result.release.id)}/latest`,
     });
   } catch (error) {
-    return c.json({ ok: false, error: (error as Error).message }, 400);
+    const message = (error as Error).message;
+    console.warn("[clawos-web] mcp.upload.failed", { error: message });
+    return c.json({ ok: false, code: "MCP_UPLOAD_INVALID", error: message }, 400);
   }
 });

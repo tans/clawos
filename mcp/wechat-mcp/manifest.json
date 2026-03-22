@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "id": "wechat-mcp",
+  "name": "wechat-mcp",
+  "displayName": "WeChat MCP",
+  "description": "基于 Bun 的微信 MCP 运行时，提供回调接收与消息采集。",
+  "publisher": "clawos",
+  "platforms": [
+    "windows"
+  ],
+  "version": "0.1.0"
+}

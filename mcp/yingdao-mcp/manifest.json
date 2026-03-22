@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "id": "yingdao-mcp",
+  "name": "yingdao-mcp",
+  "displayName": "Yingdao MCP",
+  "description": "影刀 MCP 打包占位目录，待接入上游实现。",
+  "publisher": "clawos",
+  "platforms": [
+    "windows"
+  ],
+  "version": "0.1.0"
+}
