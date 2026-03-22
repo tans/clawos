@@ -232,6 +232,78 @@ describe("mcp routes", () => {
     expect(await secondDownload.text()).toBe("bom-v011");
   });
 
+
+  it("exposes MCP panel read APIs for phase-1 low-code support", async () => {
+    const panelsResponse = await app.request("http://localhost/api/mcps/panels");
+    const panelsPayload = (await panelsResponse.json()) as Record<string, unknown>;
+    const panels = panelsPayload.items as Array<Record<string, unknown>>;
+
+    expect(panelsResponse.status).toBe(200);
+    expect(panelsPayload.ok).toBe(true);
+    expect(Array.isArray(panels)).toBe(true);
+    expect(panels.length).toBeGreaterThan(0);
+
+    const crmPanel = panels.find((item) => item.id === "crm-mcp");
+    expect(crmPanel).toBeDefined();
+    expect(crmPanel?.source).toBe("lowcode");
+
+    const schemaResponse = await app.request("http://localhost/api/mcps/crm-mcp/panel-schema");
+    const schemaPayload = (await schemaResponse.json()) as Record<string, unknown>;
+    const schemaItem = schemaPayload.item as Record<string, unknown>;
+
+    expect(schemaResponse.status).toBe(200);
+    expect(schemaPayload.ok).toBe(true);
+    expect(schemaItem.apiVersion).toBe("clawos/v1");
+
+    const dataResponse = await app.request("http://localhost/api/mcps/crm-mcp/panel-data");
+    const dataPayload = (await dataResponse.json()) as Record<string, unknown>;
+    const dataItem = dataPayload.item as Record<string, unknown>;
+
+    expect(dataResponse.status).toBe(200);
+    expect(dataPayload.ok).toBe(true);
+    expect(dataItem.status).toBeDefined();
+  });
+
+  it("returns MCP_PANEL_NOT_FOUND for missing panel schema", async () => {
+    const response = await app.request("http://localhost/api/mcps/not-exist/panel-schema");
+    const payload = (await response.json()) as Record<string, unknown>;
+
+    expect(response.status).toBe(404);
+    expect(payload.ok).toBe(false);
+    expect(payload.code).toBe("MCP_PANEL_NOT_FOUND");
+  });
+
+  it("supports phase-2 action execution with payload validation", async () => {
+    const invalidPayloadResponse = await app.request("http://localhost/api/mcps/crm-mcp/actions/update_config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        payload: {
+          baseUrl: "invalid-url",
+          timeoutMs: 50,
+        },
+      }),
+    });
+    const invalidPayload = (await invalidPayloadResponse.json()) as Record<string, unknown>;
+    expect(invalidPayloadResponse.status).toBe(400);
+    expect(invalidPayload.code).toBe("MCP_ACTION_PAYLOAD_INVALID");
+
+    const successResponse = await app.request("http://localhost/api/mcps/crm-mcp/actions/update_config", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        payload: {
+          baseUrl: "https://crm.example.com",
+          timeoutMs: 5000,
+        },
+      }),
+    });
+    const successPayload = (await successResponse.json()) as Record<string, unknown>;
+    expect(successResponse.status).toBe(200);
+    expect(successPayload.ok).toBe(true);
+    expect(successPayload.traceId).toBeDefined();
+  });
+
   it("returns validation error when manifest does not match mcpId", async () => {
     const response = await app.request("http://localhost/api/upload/mcp", {
       method: "POST",

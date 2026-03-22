@@ -8,6 +8,7 @@ import {
   readLatestRelease,
   readMcpRelease,
 } from "../lib/storage";
+import { executeMcpPanelAction, listMcpPanels, readMcpPanelData, readMcpPanelSchema } from "../lib/mcp-panel";
 
 export const releaseRoutes = new Hono();
 
@@ -78,6 +79,65 @@ releaseRoutes.get("/api/mcps/shelf", async (c) => {
     channel,
     items,
   });
+});
+
+
+releaseRoutes.get("/api/mcps/panels", async (c) => {
+  const items = await listMcpPanels();
+  return c.json({
+    ok: true,
+    items,
+  });
+});
+
+releaseRoutes.get("/api/mcps/:mcpId/panel-schema", async (c) => {
+  const mcpId = c.req.param("mcpId");
+  const schema = await readMcpPanelSchema(mcpId);
+  if (!schema) {
+    return c.json({ ok: false, error: "MCP Panel 不存在", code: "MCP_PANEL_NOT_FOUND" }, 404);
+  }
+
+  return c.json({
+    ok: true,
+    item: schema,
+  });
+});
+
+releaseRoutes.get("/api/mcps/:mcpId/panel-data", async (c) => {
+  const mcpId = c.req.param("mcpId");
+  const data = await readMcpPanelData(mcpId);
+  if (!data) {
+    return c.json({ ok: false, error: "MCP Panel 不存在", code: "MCP_PANEL_NOT_FOUND" }, 404);
+  }
+
+  return c.json({
+    ok: true,
+    item: data,
+  });
+});
+
+releaseRoutes.post("/api/mcps/:mcpId/actions/:actionId", async (c) => {
+  const mcpId = c.req.param("mcpId");
+  const actionId = c.req.param("actionId");
+  const body = await c.req.json().catch(() => ({}));
+
+  const ret = await executeMcpPanelAction({
+    mcpId,
+    actionId,
+    payload: body?.payload,
+  });
+
+  if (!ret.ok) {
+    const status =
+      ret.code === "MCP_PANEL_NOT_FOUND" || ret.code === "MCP_ACTION_NOT_FOUND"
+        ? 404
+        : ret.code === "MCP_ACTION_PAYLOAD_INVALID"
+            ? 400
+            : 500;
+    return c.json({ ok: false, ...ret }, status);
+  }
+
+  return c.json({ ok: true, ...ret }, 200);
 });
 
 releaseRoutes.get("/api/mcps/:mcpId", async (c) => {
