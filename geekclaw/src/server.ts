@@ -22,8 +22,10 @@ type PresaleOrder = {
 };
 
 const root = process.cwd();
+const webRoot = resolve(root, "..", "web");
+process.env.CLAWOS_WEB_ROOT ??= webRoot;
+const { app: webApp } = await import("../../web/src/index");
 const port = Number(process.env.PORT ?? "8787");
-const indexPath = resolve(root, "src", "index.html");
 const stylePath = resolve(root, "dist", "output.css");
 const dataDir = resolve(root, "data");
 const orderFilePath = resolve(dataDir, "orders.json");
@@ -649,7 +651,7 @@ Bun.serve({
     }
 
     if (pathname === "/") {
-      return serveFile(indexPath);
+      return Response.redirect("/presale", 302);
     }
 
     if (pathname === "/styles.css") {
@@ -661,7 +663,7 @@ Bun.serve({
       return serveFile(assetPath);
     }
 
-    return new Response("Not Found", { status: 404 });
+    return webApp.fetch(req);
   },
 });
 

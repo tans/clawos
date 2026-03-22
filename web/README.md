@@ -124,6 +124,9 @@ web/
 - `STORAGE_DIR`：文件存储根目录（默认 `web/storage`）
 - `ADMIN_USERNAME`：后台登录账号（用于 `/admin`）
 - `ADMIN_PASSWORD`：后台登录密码（用于 `/admin`）
+- `OEM_BRAND_NAME`：品牌名（默认 `ClawOS`，用于页面标题/导航/后台）
+- `OEM_BRAND_DOMAIN`：品牌域名或联系标识（默认 `clawos.cc`，用于页脚展示）
+- `OEM_BRAND_LOGO_URL`：品牌 Logo 地址（默认 `/public/logo.png`，支持绝对 URL 或站内路径）
 
 ## 后台管理
 
