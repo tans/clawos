@@ -22,6 +22,7 @@ interface McpManifest {
 
 interface Options {
   mcpId: string;
+  all: boolean;
   baseUrl: string;
   token: string;
   releaseChannel: ReleaseChannel;
@@ -38,9 +39,11 @@ function printUsage(): void {
 
 Usage:
   bun run scripts/publish-mcp.ts --mcp <mcp-id> [options]
+  bun run scripts/publish-mcp.ts --all [options]
 
 Options:
   --mcp <id>                  MCP directory name under ./mcp
+  --all                       Publish all MCP directories under ./mcp
   --version <version>         Explicit version, otherwise auto-bump manifest patch
   --release-channel <name>    stable or beta, default stable
   --base-url <url>            Publish site, default https://clawos.minapp.xin
@@ -60,6 +63,7 @@ function parseArgs(argv: string[]): Options {
   const args = [...argv];
   const opts: Options = {
     mcpId: "",
+    all: false,
     baseUrl: process.env.CLAWOS_PUBLISH_BASE_URL?.trim().replace(/\/+$/, "") || "https://clawos.minapp.xin",
     token: process.env.CLAWOS_UPLOAD_TOKEN?.trim() || process.env.UPLOAD_TOKEN?.trim() || "clawos",
     releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
@@ -82,6 +86,10 @@ function parseArgs(argv: string[]): Options {
 
     if (arg.startsWith("--mcp=")) {
       opts.mcpId = arg.slice("--mcp=".length).trim();
+      continue;
+    }
+    if (arg === "--all") {
+      opts.all = true;
       continue;
     }
     if (arg.startsWith("--version=")) {
@@ -146,6 +154,14 @@ function parseArgs(argv: string[]): Options {
   }
 
   if (!opts.mcpId) {
+    if (!opts.all) {
+      throw new Error("Missing --mcp <mcp-id> or --all");
+    }
+  }
+  if (opts.mcpId && opts.all) {
+    throw new Error("Please provide either --mcp <mcp-id> or --all, not both");
+  }
+  if (!opts.mcpId && !opts.all) {
     throw new Error("Missing --mcp <mcp-id>");
   }
   if (!Number.isFinite(opts.timeoutMs) || opts.timeoutMs <= 0) {
@@ -210,6 +226,15 @@ async function loadManifest(mcpId: string): Promise<McpManifest> {
       version: "0.0.0",
     };
   }
+}
+
+async function listAllMcpIds(): Promise<string[]> {
+  const mcpRoot = resolve(process.cwd(), "mcp");
+  const entries = await readdir(mcpRoot, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 async function saveManifest(mcpId: string, manifest: McpManifest): Promise<void> {
@@ -384,43 +409,49 @@ async function uploadMcpPackage(params: {
 
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
-  const mcpDir = getMcpDir(opts.mcpId);
-  await assertReadable(mcpDir, "MCP directory");
-
-  const manifest = await loadManifest(opts.mcpId);
-  const version = opts.version?.trim() || nextPatchVersion(manifest.version);
-  manifest.id = opts.mcpId;
-  manifest.version = version;
-  manifest.schemaVersion = manifest.schemaVersion || "1.0";
-  manifest.name = manifest.name || opts.mcpId;
-  if (opts.writeManifest) {
-    await saveManifest(opts.mcpId, manifest);
-  } else {
-    console.log("[publish:mcp] --no-write-manifest enabled, manifest.json will not be modified.");
+  const mcpIds = opts.all ? await listAllMcpIds() : [opts.mcpId];
+  if (mcpIds.length === 0) {
+    throw new Error("No MCP directories found under ./mcp");
   }
 
-  console.log(`[publish:mcp] mcp: ${opts.mcpId}`);
-  console.log(`[publish:mcp] version: ${version}`);
-  console.log(`[publish:mcp] channel: ${opts.releaseChannel}`);
+  console.log(`[publish:mcp] targets: ${mcpIds.join(", ")}`);
+  for (const mcpId of mcpIds) {
+    const mcpDir = getMcpDir(mcpId);
+    await assertReadable(mcpDir, "MCP directory");
 
-  const zipPath = await createTgzPackage(opts.mcpId, version);
-  await assertReadable(zipPath, "MCP package");
+    const manifest = await loadManifest(mcpId);
+    const version = opts.version?.trim() || nextPatchVersion(manifest.version);
+    manifest.id = mcpId;
+    manifest.version = version;
+    manifest.schemaVersion = manifest.schemaVersion || "1.0";
+    manifest.name = manifest.name || mcpId;
+    if (opts.writeManifest) {
+      await saveManifest(mcpId, manifest);
+    } else {
+      console.log("[publish:mcp] --no-write-manifest enabled, manifest.json will not be modified.");
+    }
 
-  const result = await uploadMcpPackage({
-    filePath: zipPath,
-    mcpId: opts.mcpId,
-    version,
-    manifest,
-    token: opts.token,
-    baseUrl: opts.baseUrl,
-    releaseChannel: opts.releaseChannel,
-    timeoutMs: opts.timeoutMs,
-    heartbeatMs: opts.heartbeatMs,
-  });
+    console.log(`[publish:mcp] mcp: ${mcpId}`);
+    console.log(`[publish:mcp] version: ${version}`);
+    console.log(`[publish:mcp] channel: ${opts.releaseChannel}`);
 
-  console.log(
-    `[publish:mcp] published ${opts.mcpId}@${version} -> ${String(result.url || `/downloads/mcp/${opts.mcpId}/latest`)}`
-  );
+    const zipPath = await createTgzPackage(mcpId, version);
+    await assertReadable(zipPath, "MCP package");
+
+    const result = await uploadMcpPackage({
+      filePath: zipPath,
+      mcpId,
+      version,
+      manifest,
+      token: opts.token,
+      baseUrl: opts.baseUrl,
+      releaseChannel: opts.releaseChannel,
+      timeoutMs: opts.timeoutMs,
+      heartbeatMs: opts.heartbeatMs,
+    });
+
+    console.log(`[publish:mcp] published ${mcpId}@${version} -> ${String(result.url || `/downloads/mcp/${mcpId}/latest`)}`);
+  }
 }
 
 main().catch((error) => {
