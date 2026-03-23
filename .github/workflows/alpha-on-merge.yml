@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build executable
-        run: bun run build:exe
+      - name: Build desktop artifact (canary)
+        run: bun run desktop:build:canary
 
       - name: Resolve alpha version
         id: alpha
