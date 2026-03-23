@@ -7,7 +7,7 @@ on:
 
 jobs:
   alpha-release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     timeout-minutes: 30
     permissions:
       contents: read
@@ -28,6 +28,11 @@ jobs:
 
       - name: Install app dependencies
         run: cd app && bun install --frozen-lockfile
+
+
+      - name: Download Electrobun assets (Windows only)
+        shell: bash
+        run: bun run electrobun:download -- --targets=win-x64
 
       - name: Build desktop artifact (canary)
         run: bun run desktop:build:canary
