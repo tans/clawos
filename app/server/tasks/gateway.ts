@@ -545,6 +545,11 @@ export function buildOpenclawSourceUpdateSteps(recordedSourceHash = ""): Step[] 
       script: buildOpenclawStepScript("pnpm run ui:build"),
     },
     {
+      name: "全局链接 openclaw（pnpm link --global）",
+      command: `cd ${OPENCLAW_SOURCE_DIR} && pnpm link --global`,
+      script: buildOpenclawStepScript("pnpm link --global"),
+    },
+    {
       name: "重启 gateway（openclaw gateway restart）",
       command: `cd ${OPENCLAW_SOURCE_DIR} && openclaw gateway restart`,
       script: buildOpenclawStepScript("openclaw gateway restart"),
