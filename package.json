@@ -29,6 +29,7 @@
     "publish:config": "bun run scripts/publish-clawos.ts --skip-installer",
     "publish:json": "bun run scripts/publish-clawos.ts --skip-installer",
     "publish:mcp": "bun run scripts/publish-mcp.ts",
+    "publish:mcp:all": "bun run scripts/publish-mcp.ts --all",
     "publish:mcp:beta": "bun run scripts/publish-mcp.ts --release-channel=beta",
     "release": "bun run scripts/release-clawos.ts --env=stable",
     "release:stable": "bun run scripts/release-clawos.ts --env=stable",
