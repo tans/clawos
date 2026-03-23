@@ -19,6 +19,7 @@ on:
         options:
           - stable
           - beta
+          - alpha
 
 jobs:
   build-and-publish:
@@ -29,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -41,35 +42,29 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build executable
-        run: bun run build:exe
+      - name: Build desktop artifact
+        env:
+          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${BUILD_ENV}" == "canary" ]]; then
+            bun run desktop:build:canary
+          else
+            bun run desktop:build:stable
+          fi
 
       - name: Build diagnostics
         shell: bash
         run: |
           set -euo pipefail
           echo "[diag] bun version: $(bun --version)"
-          echo "[diag] target file:"
-          ls -lh dist/clawos.exe
-          echo "[diag] bytes: $(stat -c '%s' dist/clawos.exe)"
-          echo "[diag] file type: $(file dist/clawos.exe)"
-          echo "[diag] sha256: $(sha256sum dist/clawos.exe | awk '{print $1}')"
-
-      - name: Resolve built version
-        id: version
-        shell: bash
-        run: |
-          set -euo pipefail
-          built_version="$(node -p "require('./package.json').version")"
-          echo "value=$built_version" >> "$GITHUB_OUTPUT"
-          echo "built_version=$built_version"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: clawos-${{ steps.version.outputs.value }}-windows-x64
-          path: dist/clawos.exe
-          if-no-files-found: error
+          for dir in artifacts build dist; do
+            if [[ -d "$dir" ]]; then
+              echo "[diag] files in $dir:"
+              find "$dir" -maxdepth 2 -type f | head -n 30 || true
+            fi
+          done
 
       - name: Publish endpoint diagnostics
         env:

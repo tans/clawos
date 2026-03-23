@@ -130,6 +130,44 @@ downloadRoutes.get("/downloads/beta/:platform", async (c) => {
   }
 });
 
+downloadRoutes.get("/downloads/alpha", async (c) => {
+  try {
+    const platform = normalizeInstallerPlatform(c.req.query("platform") || undefined) || undefined;
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, "alpha");
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-release-channel": "alpha",
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
+downloadRoutes.get("/downloads/alpha/:platform", async (c) => {
+  try {
+    const platform = normalizeInstallerPlatform(c.req.param("platform"));
+    if (!platform) {
+      return c.json({ ok: false, error: "不支持的平台" }, 400);
+    }
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, "alpha");
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-installer-platform": platform,
+        "x-release-channel": "alpha",
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
 downloadRoutes.get("/updates/:fileName", async (c) => {
   try {
     const fileName = c.req.param("fileName");
@@ -148,6 +186,7 @@ downloadRoutes.get("/updates/:fileName", async (c) => {
 downloadRoutes.get("/downloads/mcp", async (c) => {
   const channel = resolveChannelFromRequest(c.req.query("channel"));
   const items = await listMcpReleases(channel);
+  const suffix = channel === "stable" ? "" : `?channel=${channel}`;
   return c.json({
     ok: true,
     channel,
@@ -157,7 +196,7 @@ downloadRoutes.get("/downloads/mcp", async (c) => {
       publishedAt: item.publishedAt,
       package: item.package,
       manifest: item.manifest,
-      downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/latest${channel === "beta" ? "?channel=beta" : ""}`,
+      downloadUrl: `/downloads/mcp/${encodeURIComponent(item.id)}/latest${suffix}`,
     })),
   });
 });
