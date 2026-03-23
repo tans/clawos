@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "package.json"
+      - "bun.lock"
+      - "scripts/**"
+      - "desktop/**"
+      - "app/**"
+      - ".github/workflows/alpha-on-merge.yml"
+      - ".github/workflows/release-build-publish.yml"
 
 jobs:
   alpha-release:
