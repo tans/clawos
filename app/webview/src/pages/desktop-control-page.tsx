@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Play } from "lucide-react";
-import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { useTaskLogCenter } from "../components/task-log-center";
-import { fetchDesktopMcpStatus, fetchTask, readUserErrorMessage, startDesktopMcp, type DesktopMcpStatus, type TaskRecord } from "../lib/api";
+import { Switch } from "../components/ui/switch";
+import {
+  fetchDesktopMcpStatus,
+  fetchTask,
+  readUserErrorMessage,
+  startDesktopMcp,
+  stopDesktopMcp,
+  type DesktopMcpStatus,
+  type TaskRecord,
+} from "../lib/api";
 
 function readTaskStatus(task: TaskRecord): string {
   if (task.status === "running") return "运行中";
@@ -33,6 +40,13 @@ export function DesktopControlPage() {
     logCenter.reportTask("desktop-control", task, nextMeta);
   }
 
+  function applyStatus(nextStatus: DesktopMcpStatus) {
+    setStatus(nextStatus);
+    const host = nextStatus.host || "0.0.0.0";
+    const port = Number.isFinite(nextStatus.port) ? nextStatus.port : 8100;
+    setMeta(nextStatus.running ? `MCP 已启动 | ${host}:${port}` : `MCP 未启动 | ${host}:${port}`);
+  }
+
   function pollTask(taskId: string) {
     stopPolling();
     const tick = async () => {
@@ -54,10 +68,7 @@ export function DesktopControlPage() {
   async function loadStatus() {
     try {
       const nextStatus = await fetchDesktopMcpStatus();
-      setStatus(nextStatus);
-      const host = nextStatus.host || "0.0.0.0";
-      const port = Number.isFinite(nextStatus.port) ? nextStatus.port : 8100;
-      setMeta(nextStatus.running ? `MCP 已启动 | ${host}:${port}` : `MCP 未启动 | ${host}:${port}`);
+      applyStatus(nextStatus);
       if (nextStatus.taskId) {
         pollTask(nextStatus.taskId);
       } else {
@@ -75,26 +86,30 @@ export function DesktopControlPage() {
     };
   }, []);
 
-  async function handleStart() {
+  async function handleToggle(nextRunning: boolean) {
+    const previousStatus = status;
     setBusy(true);
-    setMeta("正在启动 MCP...");
-    setTaskMeta("正在提交启动请求...");
+    setStatus((current) => ({ ...current, running: nextRunning }));
+    setMeta(nextRunning ? "正在启动 MCP..." : "正在关闭 MCP...");
+    setTaskMeta(nextRunning ? "正在提交启动请求..." : "正在提交关闭请求...");
     try {
-      const data = await startDesktopMcp();
-      setStatus(data.status || {});
+      const data = nextRunning ? await startDesktopMcp() : await stopDesktopMcp();
+      applyStatus(data.status || {});
       if (data.task) {
         renderTask(data.task);
       }
-      if (data.taskId) {
+      if (nextRunning && data.taskId) {
         logCenter.startTask("desktop-control", {
           taskId: data.taskId,
           title: "桌面 MCP 启动",
         });
         pollTask(data.taskId);
+      } else {
+        stopPolling();
       }
-      setMeta("MCP 启动请求已提交");
     } catch (error) {
-      setMeta(readUserErrorMessage(error, "MCP 启动失败"));
+      applyStatus(previousStatus);
+      setMeta(readUserErrorMessage(error, nextRunning ? "MCP 启动失败" : "MCP 关闭失败"));
     } finally {
       setBusy(false);
     }
@@ -112,16 +127,13 @@ export function DesktopControlPage() {
           <CardDescription>{taskMeta}</CardDescription>
         </CardHeader>
         <CardContent className="settings-stack">
-          <div className="metric-row">
+          <label className="toggle-card">
             <div>
-              <strong>MCP 状态</strong>
+              <strong>桌面 MCP 服务</strong>
               <p>{meta}</p>
             </div>
-            <Button disabled={busy} onClick={() => void handleStart()}>
-              <Play size={14} />
-              {busy ? "启动中..." : "打开 MCP"}
-            </Button>
-          </div>
+            <Switch checked={Boolean(status.running)} onCheckedChange={(checked) => void handleToggle(checked)} disabled={busy} />
+          </label>
           <div className="meta-banner">{`接口: ${url}`}</div>
         </CardContent>
       </Card>

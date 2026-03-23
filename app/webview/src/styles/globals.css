@@ -281,7 +281,6 @@ button {
 .action-row,
 .migration-item,
 .metric-row,
-.toggle-card,
 .channel-head,
 .message-copy {
   display: flex;
@@ -290,11 +289,28 @@ button {
   min-width: 0;
 }
 
+.toggle-card {
+  display: flex;
+  gap: var(--space-stack);
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
 .action-row,
 .metric-row,
 .toggle-card {
-  justify-content: space-between;
   flex-wrap: wrap;
+}
+
+.toggle-card > :first-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.toggle-card > :last-child {
+  flex-shrink: 0;
 }
 
 .action-row h3,

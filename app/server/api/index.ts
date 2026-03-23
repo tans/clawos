@@ -34,7 +34,7 @@ import {
   startQwGatewayRestartTask,
 } from "../tasks/gateway";
 import { startSelfUpdateTask } from "../tasks/self-update";
-import { getDesktopMcpStatus, startDesktopMcpServerTask } from "../tasks/desktop-control";
+import { getDesktopMcpStatus, startDesktopMcpServerTask, stopDesktopMcpServerTask } from "../tasks/desktop-control";
 import { probeEnvironmentStatus, startEnvironmentInstallTask } from "../tasks/environment";
 import { probeMcpTargets, startMcpBuildTask } from "../tasks/mcp";
 import { startWslRepairTask } from "../tasks/system";
@@ -806,17 +806,28 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
     }
 
     if (path === "/api/desktop-control/mcp/status" && req.method === "GET") {
-      return jsonResponse({ ok: true, status: getDesktopMcpStatus() });
+      return jsonResponse({ ok: true, status: await getDesktopMcpStatus() });
     }
 
     if (path === "/api/desktop-control/mcp/start" && req.method === "POST") {
-      const { task, reused } = startDesktopMcpServerTask();
+      const { task, reused } = await startDesktopMcpServerTask();
       return jsonResponse({
         ok: true,
         taskId: task.id,
         task,
         reused,
-        status: getDesktopMcpStatus(),
+        status: await getDesktopMcpStatus(),
+      });
+    }
+
+    if (path === "/api/desktop-control/mcp/stop" && req.method === "POST") {
+      const { task, reused } = await stopDesktopMcpServerTask();
+      return jsonResponse({
+        ok: true,
+        taskId: task.id,
+        task,
+        reused,
+        status: await getDesktopMcpStatus(),
       });
     }
 

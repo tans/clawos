@@ -372,6 +372,16 @@ export async function startDesktopMcp() {
   );
 }
 
+export async function stopDesktopMcp() {
+  return await request<{ ok: true; status: DesktopMcpStatus; taskId?: string; task?: TaskRecord }>(
+    "/api/desktop-control/mcp/stop",
+    {
+      method: "POST",
+      body: {},
+    }
+  );
+}
+
 export async function fetchLocalWallet(): Promise<WalletSummary> {
   const data = await request<{ ok: true; wallet: WalletSummary }>("/api/local/wallet");
   return data.wallet || {};

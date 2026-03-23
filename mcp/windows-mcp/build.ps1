@@ -19,6 +19,62 @@ function Resolve-Tool([string]$Name) {
   return $command.Source
 }
 
+function Invoke-Native {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$FilePath,
+    [string[]]$Arguments = @()
+  )
+
+  $hasNativeErrorPreference = $null -ne (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue)
+  if ($hasNativeErrorPreference) {
+    $previousNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
+    $PSNativeCommandUseErrorActionPreference = $false
+  }
+
+  try {
+    & $FilePath @Arguments
+  } finally {
+    if ($hasNativeErrorPreference) {
+      $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
+    }
+  }
+
+  if ($LASTEXITCODE -ne 0) {
+    $commandText = if ($Arguments.Count -gt 0) {
+      "$FilePath $($Arguments -join ' ')"
+    } else {
+      $FilePath
+    }
+    throw "Command failed with exit code ${LASTEXITCODE}: $commandText"
+  }
+}
+
+function Test-NativeSuccess {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$FilePath,
+    [string[]]$Arguments = @()
+  )
+
+  $hasNativeErrorPreference = $null -ne (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue)
+  if ($hasNativeErrorPreference) {
+    $previousNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
+    $PSNativeCommandUseErrorActionPreference = $false
+  }
+
+  try {
+    & $FilePath @Arguments *> $null
+    return $LASTEXITCODE -eq 0
+  } catch {
+    return $false
+  } finally {
+    if ($hasNativeErrorPreference) {
+      $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
+    }
+  }
+}
+
 function Invoke-Step([string]$Label, [scriptblock]$Action) {
   Write-Host "==> $Label" -ForegroundColor Cyan
   & $Action
@@ -31,23 +87,72 @@ function New-Venv {
 
   $uv = Resolve-Tool "uv"
   if ($uv) {
-    & $uv venv $TargetDir --python 3.13
+    Invoke-Native -FilePath $uv -Arguments @("venv", $TargetDir, "--python", "3.13", "--seed")
     return
   }
 
   $py = Resolve-Tool "py"
   if ($py) {
-    & $py -3.13 -m venv $TargetDir
+    Invoke-Native -FilePath $py -Arguments @("-3.13", "-m", "venv", $TargetDir)
     return
   }
 
   $python = Resolve-Tool "python"
   if ($python) {
-    & $python -m venv $TargetDir
+    Invoke-Native -FilePath $python -Arguments @("-m", "venv", $TargetDir)
     return
   }
 
   throw "Python 3.13 or uv is required. Install uv, or ensure py/python is available."
+}
+
+function Ensure-VenvPip {
+  param(
+    [string]$PythonExe
+  )
+
+  if (Test-NativeSuccess -FilePath $PythonExe -Arguments @("-m", "pip", "--version")) {
+    return
+  }
+
+  if (Test-NativeSuccess -FilePath $PythonExe -Arguments @("-m", "ensurepip", "--upgrade")) {
+    if (Test-NativeSuccess -FilePath $PythonExe -Arguments @("-m", "pip", "--version")) {
+      return
+    }
+  }
+
+  $uv = Resolve-Tool "uv"
+  if ($uv) {
+    Invoke-Native -FilePath $uv -Arguments @("pip", "install", "--python", $PythonExe, "pip", "setuptools", "wheel")
+    if (Test-NativeSuccess -FilePath $PythonExe -Arguments @("-m", "pip", "--version")) {
+      return
+    }
+  }
+
+  throw "pip is unavailable in virtual environment: ${PythonExe}"
+}
+
+function Invoke-GitFetchAllowFailure {
+  param(
+    [string]$GitExe,
+    [string]$RepositoryPath
+  )
+
+  $hasNativeErrorPreference = $null -ne (Get-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue)
+  if ($hasNativeErrorPreference) {
+    $previousNativeErrorPreference = $PSNativeCommandUseErrorActionPreference
+    $PSNativeCommandUseErrorActionPreference = $false
+  }
+
+  try {
+    & $GitExe -C $RepositoryPath fetch --tags --force origin
+  } finally {
+    if ($hasNativeErrorPreference) {
+      $PSNativeCommandUseErrorActionPreference = $previousNativeErrorPreference
+    }
+  }
+
+  return $LASTEXITCODE
 }
 
 if ($env:OS -ne "Windows_NT") {
@@ -69,6 +174,7 @@ if (-not $git) {
 Invoke-Step "Preparing directories" {
   New-Item -ItemType Directory -Force -Path $buildPath | Out-Null
   New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
+  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $workPath) | Out-Null
 }
 
 Invoke-Step "Syncing upstream source ($Ref)" {
@@ -77,18 +183,27 @@ Invoke-Step "Syncing upstream source ($Ref)" {
       Remove-Item $workPath -Recurse -Force
     }
 
-    & $git clone $RepoUrl $workPath
+    Invoke-Native -FilePath $git -Arguments @("clone", $RepoUrl, $workPath)
   }
 
-  & $git -C $workPath fetch --tags --force origin
-  & $git -C $workPath checkout --force $Ref
-  & $git -C $workPath reset --hard $Ref
+  $fetchExitCode = Invoke-GitFetchAllowFailure -GitExe $git -RepositoryPath $workPath
+  if ($fetchExitCode -ne 0) {
+    Write-Host "Fetch failed; continuing with cached source at $workPath" -ForegroundColor Yellow
+  }
+
+  if (-not (Test-NativeSuccess -FilePath $git -Arguments @("-C", $workPath, "rev-parse", "--verify", $Ref))) {
+    throw "Git ref '$Ref' is unavailable in cached repository: $workPath"
+  }
+
+  Invoke-Native -FilePath $git -Arguments @("-C", $workPath, "checkout", "--force", $Ref)
 }
 
 Invoke-Step "Creating virtual environment" {
-  if (-not (Test-Path $venvPath)) {
-    New-Venv -TargetDir $venvPath
+  if (Test-Path $venvPath) {
+    Remove-Item $venvPath -Recurse -Force
   }
+
+  New-Venv -TargetDir $venvPath
 }
 
 $venvPython = Join-Path $venvPath "Scripts\\python.exe"
@@ -97,8 +212,9 @@ if (-not (Test-Path $venvPython)) {
 }
 
 Invoke-Step "Installing dependencies" {
-  & $venvPython -m pip install --upgrade pip setuptools wheel pyinstaller
-  & $venvPython -m pip install $workPath
+  Ensure-VenvPip -PythonExe $venvPython
+  Invoke-Native -FilePath $venvPython -Arguments @("-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel", "pyinstaller")
+  Invoke-Native -FilePath $venvPython -Arguments @("-m", "pip", "install", $workPath)
 }
 
 Invoke-Step "Writing PyInstaller entrypoint" {
@@ -111,18 +227,28 @@ if __name__ == "__main__":
 }
 
 Invoke-Step "Building $ExeName.exe" {
-  & $venvPython -m PyInstaller `
-    --noconfirm `
-    --clean `
-    --onefile `
-    --name $ExeName `
-    --distpath $outputPath `
-    --workpath (Join-Path $buildPath "pyinstaller") `
-    --specpath $buildPath `
-    --collect-all windows_mcp `
-    --collect-all fastmcp `
-    --copy-metadata windows-mcp `
+  Invoke-Native -FilePath $venvPython -Arguments @(
+    "-m",
+    "PyInstaller",
+    "--noconfirm",
+    "--clean",
+    "--onefile",
+    "--name",
+    $ExeName,
+    "--distpath",
+    $outputPath,
+    "--workpath",
+    (Join-Path $buildPath "pyinstaller"),
+    "--specpath",
+    $buildPath,
+    "--collect-all",
+    "windows_mcp",
+    "--collect-all",
+    "fastmcp",
+    "--copy-metadata",
+    "windows-mcp",
     $entryPath
+  )
 }
 
 $exePath = Join-Path $outputPath "$ExeName.exe"

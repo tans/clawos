@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
+import { hasDesktopMcpServiceTarget } from "./desktop-control";
 import { normalizeOutput, runProcess, type CommandResult } from "./shell";
+import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 
 export type McpName = "windows-mcp" | "yingdao-mcp" | "wechat-mcp" | "crm-mcp";
 
@@ -13,6 +14,7 @@ type McpTarget = {
 };
 
 const REPO_ROOT = path.resolve(import.meta.dir, "../../../");
+
 const MCP_TARGETS: McpTarget[] = [
   {
     name: "windows-mcp",
@@ -22,13 +24,13 @@ const MCP_TARGETS: McpTarget[] = [
   },
   {
     name: "yingdao-mcp",
-    label: "影刀 MCP",
+    label: "Yingdao MCP",
     scriptPath: path.join(REPO_ROOT, "mcp", "yingdao-mcp", "build.ps1"),
     distPath: path.join(REPO_ROOT, "mcp", "yingdao-mcp", "dist", "yingdao-mcp.exe"),
   },
   {
     name: "wechat-mcp",
-    label: "微信 MCP",
+    label: "WeChat MCP",
     scriptPath: path.join(REPO_ROOT, "mcp", "wechat-mcp", "build.ps1"),
     distPath: path.join(REPO_ROOT, "mcp", "wechat-mcp", "dist", "wechat-mcp.exe"),
   },
@@ -64,13 +66,26 @@ export function probeMcpTargets(): Array<{
   built: boolean;
   distPath: string;
 }> {
-  return MCP_TARGETS.map((target) => ({
-    name: target.name,
-    label: target.label,
-    scriptExists: existsSync(target.scriptPath),
-    built: existsSync(target.distPath),
-    distPath: target.distPath,
-  }));
+  return MCP_TARGETS.map((target) => {
+    if (target.name === "windows-mcp") {
+      const available = hasDesktopMcpServiceTarget();
+      return {
+        name: target.name,
+        label: target.label,
+        scriptExists: available,
+        built: available,
+        distPath: target.distPath,
+      };
+    }
+
+    return {
+      name: target.name,
+      label: target.label,
+      scriptExists: existsSync(target.scriptPath),
+      built: existsSync(target.distPath),
+      distPath: target.distPath,
+    };
+  });
 }
 
 export function startMcpBuildTask(name: McpName): { task: Task; reused: boolean } {
@@ -82,10 +97,20 @@ export function startMcpBuildTask(name: McpName): { task: Task; reused: boolean 
     return { task: runningTask, reused: true };
   }
 
-  const task = createTask(taskType, `构建 ${target.label}`, 1);
+  const task = createTask(taskType, `Build ${target.label}`, 1);
   task.status = "running";
 
-  (async () => {
+  if (name === "windows-mcp") {
+    task.status = "success";
+    task.step = 1;
+    task.endedAt = new Date().toISOString();
+    appendTaskLog(task, "Windows MCP now runs in local service mode.");
+    appendTaskLog(task, "Use the Desktop Control MCP switch to start or stop mcp_server/windows_mcp.");
+    appendTaskLog(task, "The legacy build step has been skipped.");
+    return { task, reused: false };
+  }
+
+  void (async () => {
     try {
       if (process.platform !== "win32") {
         throw new Error("MCP build is only supported on Windows.");
@@ -134,4 +159,3 @@ export function startMcpBuildTask(name: McpName): { task: Task; reused: boolean 
 
   return { task, reused: false };
 }
-
