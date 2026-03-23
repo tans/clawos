@@ -24,7 +24,9 @@
     "desktop:build:stable": "bun run webview:build && bun run scripts/electrobun.ts build --env=stable",
     "build": "bun run desktop:build",
     "start": "bun run webview:build && bun run electrobun:dev",
-    "test": "cd .. && bun test"
+    "test": "cd .. && bun test",
+    "publish": "bun run ../scripts/publish-clawos.ts --config=clawos_xiake.json",
+    "publish:beta": "bun run ../scripts/publish-clawos.ts --build-env=canary --release-channel=beta --config=clawos_xiake.json"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
