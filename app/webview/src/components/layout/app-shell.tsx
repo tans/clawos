@@ -112,7 +112,7 @@ export function AppShell({ page, title, description, onNavigate, children }: Pro
           </div>
         </SidebarHeader>
 
-        <SidebarContent className="px-2">
+        <SidebarContent className="px-2 overflow-hidden">
           <SidebarGroup className="p-0">
             <SidebarMenu>
               {navItems.map((item) => {
