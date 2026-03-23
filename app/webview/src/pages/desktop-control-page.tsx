@@ -123,9 +123,6 @@ export function DesktopControlPage() {
             </Button>
           </div>
           <div className="meta-banner">{`接口: ${url}`}</div>
-          <Button variant="outline" onClick={() => logCenter.openCenter()}>
-            打开日志中心
-          </Button>
         </CardContent>
       </Card>
     </div>
