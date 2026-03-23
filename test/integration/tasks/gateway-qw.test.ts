@@ -5,7 +5,7 @@ import {
   buildQwGatewayStartCommand,
   resolveQwcliWorkingDirectory,
   resolveQwcliExePath,
-} from "../../app/src/tasks/gateway";
+} from "../../../app/server/tasks/gateway";
 
 describe("qw gateway restart command", () => {
   it("always uses managed default exe path", () => {
