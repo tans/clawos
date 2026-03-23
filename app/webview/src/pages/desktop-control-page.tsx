@@ -104,6 +104,7 @@ export function DesktopControlPage() {
       <Card>
         <CardHeader>
           <CardTitle>桌面控制</CardTitle>
+          <CardDescription>{taskMeta}</CardDescription>
         </CardHeader>
         <CardContent className="settings-stack">
           <div className="metric-row">
@@ -117,15 +118,6 @@ export function DesktopControlPage() {
             </Button>
           </div>
           <div className="meta-banner">{`接口: ${url}`}</div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>调用日志</CardTitle>
-          <CardDescription>{taskMeta}</CardDescription>
-        </CardHeader>
-        <CardContent className="settings-stack">
           <pre className="log-console">{taskOutput}</pre>
         </CardContent>
       </Card>

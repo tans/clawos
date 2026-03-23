@@ -11,7 +11,6 @@ const FULL_PERMISSION_TOOLS_CONFIG = {
 };
 
 export function SkillsPage() {
-  const [toolsRaw, setToolsRaw] = useState("{}");
   const [toolsPermissionAll, setToolsPermissionAll] = useState(false);
   const [skillsRedirectStatus, setSkillsRedirectStatus] = useState("点击按钮后将打开 openclaw 后台 Skills 配置页");
   const [meta, setMeta] = useState("正在读取功能配置...");
@@ -21,7 +20,6 @@ export function SkillsPage() {
     async function load() {
       try {
         const toolsData = await fetchConfigSection<Record<string, unknown>>("tools");
-        setToolsRaw(JSON.stringify(toolsData || {}, null, 2));
         setToolsPermissionAll((toolsData.profile as string | undefined) === "full");
         setMeta("MCP 技能中心已加载");
       } catch (error) {
@@ -32,25 +30,14 @@ export function SkillsPage() {
     void load();
   }, []);
 
-  function applyToolsToggle() {
-    const nextConfig = toolsPermissionAll ? FULL_PERMISSION_TOOLS_CONFIG : {};
-    setToolsRaw(JSON.stringify(nextConfig, null, 2));
-  }
-
-  useEffect(() => {
-    applyToolsToggle();
-  }, [toolsPermissionAll]);
-
   async function saveTools() {
     setBusyKey("save-tools");
     try {
-      const parsed = JSON.parse(toolsRaw) as Record<string, unknown>;
-      const payload = toolsPermissionAll ? FULL_PERMISSION_TOOLS_CONFIG : parsed;
+      const payload = toolsPermissionAll ? FULL_PERMISSION_TOOLS_CONFIG : {};
       await saveConfigSection("tools", payload);
-      setMeta("Tools 已保存");
-      setToolsRaw(JSON.stringify(payload, null, 2));
+      setMeta("功能配置已保存");
     } catch (error) {
-      setMeta(readUserErrorMessage(error, "保存 Tools 失败"));
+      setMeta(readUserErrorMessage(error, "保存功能配置失败"));
     } finally {
       setBusyKey("");
     }
@@ -101,35 +88,24 @@ export function SkillsPage() {
       <div className="skills-panel-grid">
         <Card className="skills-card">
           <CardHeader>
-            <CardTitle>Tools 设置</CardTitle>
+            <CardTitle>功能配置</CardTitle>
           </CardHeader>
           <CardContent className="settings-stack">
             <label className="toggle-card">
               <div>
                 <strong>开放所有权限</strong>
+                <p>合并 Tools 与 Skills 配置入口，不再支持手动编辑 JSON。</p>
               </div>
               <Switch checked={toolsPermissionAll} onCheckedChange={setToolsPermissionAll} />
             </label>
-            <label className="input-group">
-              <span>Tools JSON</span>
-              <textarea className="field-textarea skills-json" value={toolsRaw} onChange={(event) => setToolsRaw(event.target.value)} />
-            </label>
             <Button disabled={busyKey === "save-tools"} onClick={() => void saveTools()}>
               <Wrench size={14} />
-              {busyKey === "save-tools" ? "保存中..." : "保存 Tools"}
+              {busyKey === "save-tools" ? "保存中..." : "保存功能配置"}
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="skills-card">
-          <CardHeader>
-            <CardTitle>Skills 配置入口</CardTitle>
-          </CardHeader>
-          <CardContent className="settings-stack">
             <label className="toggle-card">
               <div>
                 <strong>统一跳转 openclaw 后台管理</strong>
-                <p>App 内不再直接编辑 Skills，客户点击后将进入 openclaw 后台完成配置。</p>
+                <p>App 内不再直接编辑 Skills，点击后将进入 openclaw 后台完成配置。</p>
               </div>
               <Sparkles size={16} />
             </label>

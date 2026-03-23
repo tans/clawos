@@ -79,7 +79,7 @@ export function BrowserPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>检测与修复</CardTitle>
+        <CardTitle>浏览器设置</CardTitle>
       </CardHeader>
       <CardContent className="settings-stack">
         <div className="browser-action-row">
