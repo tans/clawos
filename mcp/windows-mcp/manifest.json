@@ -8,5 +8,11 @@
   "platforms": [
     "windows"
   ],
+  "runtime": {
+    "command": [
+      "dist/windows-mcp.exe"
+    ],
+    "cwd": "."
+  },
   "version": "0.1.1"
 }

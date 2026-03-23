@@ -43,3 +43,4 @@ powershell -ExecutionPolicy Bypass -File .\mcp\windows-mcp\build.ps1 -Ref v0.7.0
 - `.cache/`: upstream source cache
 - `.venv/`: local virtual environment
 - `dist/`: output directory
+- `manifest.json`: includes `runtime.command` used by MCP panel runtime actions
