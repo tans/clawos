@@ -1,0 +1,47 @@
+{
+  "apiVersion": "clawos/v1",
+  "kind": "MCPPanel",
+  "metadata": {
+    "name": "windows-mcp",
+    "title": "Windows MCP",
+    "icon": "monitor",
+    "category": "desktop",
+    "order": 10,
+    "tags": ["windows", "desktop-control"]
+  },
+  "spec": {
+    "visibility": {
+      "enabled": true,
+      "environments": ["dev", "staging", "prod"]
+    },
+    "status": {
+      "source": "runtime_registry",
+      "fields": [
+        { "key": "status", "label": "运行状态", "type": "badge" },
+        { "key": "version", "label": "版本", "type": "text" },
+        { "key": "description", "label": "描述", "type": "text" },
+        { "key": "lastHeartbeatAt", "label": "最近状态时间", "type": "datetime" }
+      ]
+    },
+    "views": [
+      {
+        "id": "overview",
+        "title": "概览",
+        "blocks": [
+          { "type": "key_value", "source": "status" },
+          {
+            "type": "markdown",
+            "source": "static",
+            "content": "用于启动/停止桌面控制 MCP 运行时。"
+          }
+        ]
+      }
+    ],
+    "actions": [
+      { "id": "start", "label": "启动", "type": "lifecycle", "executor": "mcp_runtime.start", "confirm": true },
+      { "id": "stop", "label": "停止", "type": "lifecycle", "executor": "mcp_runtime.stop", "confirm": true },
+      { "id": "reload", "label": "重载", "type": "lifecycle", "executor": "mcp_runtime.reload" },
+      { "id": "healthcheck", "label": "健康检查", "type": "observe", "executor": "mcp_observe.healthcheck" }
+    ]
+  }
+}

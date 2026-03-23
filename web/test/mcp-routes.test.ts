@@ -246,6 +246,9 @@ describe("mcp routes", () => {
     const crmPanel = panels.find((item) => item.id === "crm-mcp");
     expect(crmPanel).toBeDefined();
     expect(crmPanel?.source).toBe("lowcode");
+    const windowsPanel = panels.find((item) => item.id === "windows-mcp");
+    expect(windowsPanel).toBeDefined();
+    expect(windowsPanel?.source).toBe("lowcode");
 
     const schemaResponse = await app.request("http://localhost/api/mcps/crm-mcp/panel-schema");
     const schemaPayload = (await schemaResponse.json()) as Record<string, unknown>;
@@ -262,6 +265,22 @@ describe("mcp routes", () => {
     expect(dataResponse.status).toBe(200);
     expect(dataPayload.ok).toBe(true);
     expect(dataItem.status).toBeDefined();
+  });
+
+  it("runs windows-mcp lifecycle action through runtime executor", async () => {
+    const startResponse = await app.request("http://localhost/api/mcps/windows-mcp/actions/start", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ payload: {} }),
+    });
+    const startPayload = (await startResponse.json()) as Record<string, unknown>;
+    expect(startResponse.status).toBe(200);
+    expect(startPayload.ok).toBe(true);
+    expect(startPayload.traceId).toBeDefined();
+
+    const result = startPayload.result as Record<string, unknown>;
+    expect(result.state).toBeDefined();
+    expect(result.message).toBeDefined();
   });
 
   it("returns MCP_PANEL_NOT_FOUND for missing panel schema", async () => {

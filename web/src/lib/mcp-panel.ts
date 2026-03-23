@@ -64,6 +64,10 @@ type McpManifest = {
   displayName?: string;
   description?: string;
   version?: string;
+  runtime?: {
+    command?: string | string[];
+    cwd?: string;
+  };
 };
 
 type PanelListItem = {
@@ -333,13 +337,14 @@ export async function readMcpPanelData(mcpId: string): Promise<Record<string, un
   const manifest = manifests.find((item) => item.id === mcpId);
   if (!manifest) return null;
 
+  const running = getRunningRuntime(mcpId);
   const now = new Date().toISOString();
   return {
     status: {
-      status: "unknown",
+      status: running ? "running" : "unknown",
       version: manifest.version || "unknown",
       description: manifest.description || "",
-      lastHeartbeatAt: now,
+      lastHeartbeatAt: running ? running.startedAt : now,
     },
     recent_logs: [],
   };
@@ -355,28 +360,153 @@ type ActionExecutorContext = {
 
 type ActionExecutor = (ctx: ActionExecutorContext) => Promise<Record<string, unknown>>;
 
-const BUILTIN_EXECUTORS: Record<string, ActionExecutor> = {
-  "mcp_runtime.start": async (ctx) => ({
+type RuntimeEntry = {
+  process: ReturnType<typeof Bun.spawn>;
+  command: string[];
+  cwd: string;
+  startedAt: string;
+};
+
+const runtimeRegistry = new Map<string, RuntimeEntry>();
+
+async function readManifestById(mcpId: string): Promise<McpManifest | null> {
+  const manifests = await readManifestMcpList();
+  return manifests.find((item) => item.id === mcpId) || null;
+}
+
+function asCommandArray(input: string | string[] | undefined): string[] {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.filter((part) => typeof part === "string" && part.trim().length > 0);
+  return input
+    .split(" ")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+}
+
+async function resolveRuntimeCommand(manifest: McpManifest): Promise<{ command: string[]; cwd: string } | null> {
+  const root = findRepoRoot();
+  const mcpDir = resolve(root, "mcp", manifest.id);
+  const runtimeCommand = asCommandArray(manifest.runtime?.command);
+  const runtimeCwd = manifest.runtime?.cwd ? resolve(mcpDir, manifest.runtime.cwd) : mcpDir;
+
+  if (runtimeCommand.length > 0) {
+    return { command: runtimeCommand, cwd: runtimeCwd };
+  }
+
+  const defaultExecutable = process.platform === "win32"
+    ? resolve(mcpDir, "dist", `${manifest.id}.exe`)
+    : resolve(mcpDir, "dist", manifest.id);
+  if (await Bun.file(defaultExecutable).exists()) {
+    return { command: [defaultExecutable], cwd: mcpDir };
+  }
+
+  return null;
+}
+
+function getRunningRuntime(mcpId: string): RuntimeEntry | null {
+  const entry = runtimeRegistry.get(mcpId);
+  if (!entry) return null;
+  if (entry.process.exitCode !== null) {
+    runtimeRegistry.delete(mcpId);
+    return null;
+  }
+  return entry;
+}
+
+async function startRuntime(mcpId: string): Promise<Record<string, unknown>> {
+  const running = getRunningRuntime(mcpId);
+  if (running) {
+    return {
+      state: "started",
+      message: `MCP ${mcpId} 已在运行`,
+      command: running.command.join(" "),
+      startedAt: running.startedAt,
+    };
+  }
+
+  const manifest = await readManifestById(mcpId);
+  if (!manifest) {
+    return { state: "error", message: `MCP ${mcpId} 不存在` };
+  }
+
+  const runtime = await resolveRuntimeCommand(manifest);
+  if (!runtime) {
+    return {
+      state: "error",
+      message: `MCP ${mcpId} 缺少可执行入口，请在 manifest.runtime.command 配置启动命令`,
+    };
+  }
+
+  let proc: ReturnType<typeof Bun.spawn>;
+  try {
+    proc = Bun.spawn({
+      cmd: runtime.command,
+      cwd: runtime.cwd,
+      stdin: "ignore",
+      stdout: "ignore",
+      stderr: "ignore",
+    });
+  } catch (error) {
+    return {
+      state: "error",
+      message: `MCP ${mcpId} 启动失败: ${error instanceof Error ? error.message : String(error)}`,
+      command: runtime.command.join(" "),
+    };
+  }
+
+  const startedAt = new Date().toISOString();
+  runtimeRegistry.set(mcpId, {
+    process: proc,
+    command: runtime.command,
+    cwd: runtime.cwd,
+    startedAt,
+  });
+
+  return {
     state: "started",
-    message: `MCP ${ctx.mcpId} 已启动（phase-2 mock）`,
-  }),
-  "mcp_runtime.stop": async (ctx) => ({
-    state: "stopped",
-    message: `MCP ${ctx.mcpId} 已停止（phase-2 mock）`,
-  }),
-  "mcp_runtime.reload": async (ctx) => ({
+    message: `MCP ${mcpId} 已启动`,
+    pid: proc.pid,
+    command: runtime.command.join(" "),
+    startedAt,
+  };
+}
+
+async function stopRuntime(mcpId: string): Promise<Record<string, unknown>> {
+  const running = getRunningRuntime(mcpId);
+  if (!running) {
+    return { state: "stopped", message: `MCP ${mcpId} 当前未运行` };
+  }
+
+  running.process.kill();
+  await running.process.exited;
+  runtimeRegistry.delete(mcpId);
+  return { state: "stopped", message: `MCP ${mcpId} 已停止` };
+}
+
+async function reloadRuntime(mcpId: string): Promise<Record<string, unknown>> {
+  const stopResult = await stopRuntime(mcpId);
+  const startResult = await startRuntime(mcpId);
+  return {
     state: "reloaded",
-    message: `MCP ${ctx.mcpId} 已重载配置（phase-2 mock）`,
-  }),
+    message: `MCP ${mcpId} 已重载配置`,
+    stop: stopResult,
+    start: startResult,
+  };
+}
+
+const BUILTIN_EXECUTORS: Record<string, ActionExecutor> = {
+  "mcp_runtime.start": async (ctx) => startRuntime(ctx.mcpId),
+  "mcp_runtime.stop": async (ctx) => stopRuntime(ctx.mcpId),
+  "mcp_runtime.reload": async (ctx) => reloadRuntime(ctx.mcpId),
   "mcp_config.update": async (ctx) => ({
     state: "updated",
     message: `MCP ${ctx.mcpId} 配置更新成功（phase-2 mock）`,
     payload: ctx.payload,
   }),
   "mcp_observe.healthcheck": async (ctx) => ({
-    state: "healthy",
+    state: getRunningRuntime(ctx.mcpId) ? "healthy" : "unknown",
     checkedAt: new Date().toISOString(),
-    message: `MCP ${ctx.mcpId} 健康检查成功（phase-2 mock）`,
+    message: getRunningRuntime(ctx.mcpId) ? `MCP ${ctx.mcpId} 运行正常` : `MCP ${ctx.mcpId} 当前未运行`,
   }),
 };
 
