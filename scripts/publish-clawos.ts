@@ -4,7 +4,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 type PublishPlatform = "windows" | "macos" | "linux";
 type BuildEnv = "dev" | "canary" | "stable";
-type ReleaseChannel = "stable" | "beta";
+type ReleaseChannel = "stable" | "beta" | "alpha";
 
 const VERSION_PATTERN = /(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/;
 const PLATFORM_TOKEN: Record<PublishPlatform, string> = {
@@ -81,6 +81,9 @@ function parseReleaseChannel(raw: string | undefined): ReleaseChannel {
   if (value === "beta") {
     return "beta";
   }
+  if (value === "alpha") {
+    return "alpha";
+  }
   return "stable";
 }
 
@@ -97,7 +100,7 @@ function printUsage(): void {
 选项:
   --installer <path>    安装包路径（可选，未传则自动探测）
   --build-env <env>     构建环境 dev/canary/stable，默认 stable
-  --release-channel <channel>  发布通道 stable/beta，默认 stable
+  --release-channel <channel>  发布通道 stable/beta/alpha，默认 stable
   --updater-dir <path>  Electrobun 更新产物目录（可选，默认自动探测）
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
