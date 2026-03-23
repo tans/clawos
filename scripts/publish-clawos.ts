@@ -117,6 +117,7 @@ function printUsage(): void {
   1) artifacts/（优先 Electrobun 产物）
   2) build/
   3) dist/
+  4) app/artifacts、app/build、app/dist
 
 环境变量（可替代部分参数）:
   CLAWOS_PUBLISH_BASE_URL
@@ -323,15 +324,26 @@ function looksLikeUpdaterArtifact(fileName: string, prefix: string): boolean {
   return UPDATER_ALLOWED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
 }
 
+function candidateArtifactRoots(): string[] {
+  const cwd = process.cwd();
+  const roots = [
+    resolve(cwd, "artifacts"),
+    resolve(cwd, "build"),
+    resolve(cwd, "dist"),
+    resolve(cwd, "app", "artifacts"),
+    resolve(cwd, "app", "build"),
+    resolve(cwd, "app", "dist"),
+  ];
+  return Array.from(new Set(roots));
+}
+
 async function detectUpdaterArtifacts(
   platform: PublishPlatform,
   buildEnv: BuildEnv,
   updaterDir?: string
 ): Promise<string[]> {
   const prefix = `${buildEnv}-${PLATFORM_TOKEN[platform]}-`;
-  const roots = updaterDir
-    ? [resolve(process.cwd(), updaterDir)]
-    : [resolve(process.cwd(), "artifacts"), resolve(process.cwd(), "build"), resolve(process.cwd(), "dist")];
+  const roots = updaterDir ? [resolve(process.cwd(), updaterDir)] : candidateArtifactRoots();
 
   const byName = new Map<string, { path: string; mtimeMs: number }>();
 
@@ -466,7 +478,7 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
 async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv): Promise<InstallerResolution | null> {
   const allowed = allowedInstallerExt(platform);
   const defaultName = defaultInstallerFileName(platform).toLowerCase();
-  const roots = [resolve(process.cwd(), "artifacts"), resolve(process.cwd(), "build"), resolve(process.cwd(), "dist")];
+  const roots = candidateArtifactRoots();
   const candidates: Array<{ path: string; score: number; mtimeMs: number }> = [];
 
   for (const root of roots) {
@@ -535,7 +547,7 @@ async function resolveInstallerPathForPublish(
     return { path: fallback, source: "default-dist" };
   } catch {
     throw new Error(
-      `自动探测安装包失败：未在 artifacts/build/dist 找到 ${platform} 可发布文件。` +
+      `自动探测安装包失败：未在 artifacts/build/dist（含 app 子目录）找到 ${platform} 可发布文件。` +
         `\n你可以手动指定 --installer <path>。`
     );
   }
