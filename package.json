@@ -11,6 +11,7 @@
     "electrobun:build": "cd app && bun run electrobun:build",
     "electrobun:build:dev": "cd app && bun run electrobun:build:dev",
     "electrobun:build:stable": "cd app && bun run electrobun:build:stable",
+    "electrobun:download": "cd app && bun run electrobun:download",
     "desktop:dev": "cd app && bun run desktop:dev",
     "desktop:dev:raw": "cd app && bun run desktop:dev:raw",
     "desktop:build": "cd app && bun run desktop:build",
