@@ -4,8 +4,6 @@ import { renderToString } from "hono/jsx/dom/server";
 import { changelogItems } from "../content/changelog";
 import { getBrandConfig } from "../lib/branding";
 
-const LOBSTER_DESKTOP_DOWNLOAD_URL = "https://ydschool-video.nosdn.127.net/1772959618633LobsterAI+Setup+0.2.2.exe";
-
 function DownloadIcon() {
   return (
     <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -70,24 +68,28 @@ function HomePage({
   const betaVersionText = betaVersion?.trim() ? betaVersion.trim() : "dev";
   const alphaVersionText = alphaVersion?.trim() ? alphaVersion.trim() : "dev";
   const coreCapabilities = [
-    ["AI 员工职能介绍", "按 CEO / COO / CMO / CTO 等角色配置职责，任务自动分派。"],
-    ["无人公司集中管理", "统一控制台查看目标、预算、心跳任务和关键 KPI。"],
-    ["统一监控", "单页追踪每个员工的执行状态、工单链路与成本变化。"],
-    ["虚拟公司架构", "支持投资公司、营销广告公司、IT 解决方案公司并行运营。"],
-    ["硬件产品：虾壳 3.0", "软硬一体交付，结合边缘设备实现本地代理与远程协同。"],
+    ["AI 员工职责体系", "围绕 CEO / COO / CMO / CTO 建立角色、汇报线与岗位说明。"],
+    ["目标对齐", "任务从公司目标逐层拆解到项目、团队与员工，执行路径清晰可追溯。"],
+    ["心跳调度", "员工按计划周期自动唤醒，处理例行任务并完成跨团队协作。"],
+    ["统一监控", "在同一控制台查看任务状态、工单链路、预算消耗与风险告警。"],
+    ["硬件产品：虾壳 3.0", "软硬一体交付，支持边缘执行与云端协同。"],
   ] as const;
   const mcpCapabilities = [
-    ["Marketing MCP", "管理广告投放、素材生成、渠道排期与转化复盘。"],
-    ["Investment MCP", "进行市场扫描、风险提示、组合跟踪与周报生成。"],
-    ["IT Solution MCP", "承接需求拆解、研发协作、测试发布与运维巡检。"],
-    ["Ops & Monitor MCP", "统一告警、审计日志、预算阈值和异常工单升级。"],
+    ["Marketing MCP", "覆盖选题、创作、投放、复盘全链路，统一管理增长漏斗。"],
+    ["Investment MCP", "支持研究、交易、风控协同，形成可审计的投资执行闭环。"],
+    ["IT Solution MCP", "贯通需求分析、开发测试、发布运维，提升项目交付效率。"],
+    ["Ops & Monitor MCP", "集中告警、审计日志、预算阈值与异常工单升级流程。"],
   ] as const;
   const virtualOrg = [
-    "董事会 / Owner：审批战略、预算和关键 hires。",
-    "总部运营中心：统一监控、财务与风险控制。",
+    "董事会 / Owner：审批招聘、战略和预算。",
+    "总部运营中心：统一监控、审计和风险控制。",
     "投资公司：研究、交易、风控三层代理协作。",
     "营销广告公司：内容、投放、增长代理按漏斗协同。",
     "IT 解决方案公司：产品、开发、测试、运维全链路自动化。",
+  ] as const;
+  const comparisonItems = [
+    ["传统方式", "多工具分散协作，任务状态难追踪，执行成本不透明。"],
+    ["无人公司模式", "以工单为核心，组织架构清晰，执行与成本全程可观测。"],
   ] as const;
   const oemFlow = [
     "OEM 定制 GTA（Go-To-Agent）方案评估。",
@@ -140,27 +142,15 @@ function HomePage({
             </div>
           </header>
 
-          <div class="page-fade page-fade-delay-1 mt-5 flex justify-center">
-            <a
-              class="btn btn-primary btn-wide"
-              href={LOBSTER_DESKTOP_DOWNLOAD_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <DownloadIcon />
-              简易版龙虾下载
-            </a>
-          </div>
-
           <section
             id="overview"
             class="page-fade page-fade-delay-1 ambient-shell mt-8 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-18"
           >
             <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
               <div class="max-w-2xl">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">无人公司 / AI 员工 / MCP 编排 / OEM 定制</div>
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">无人公司 / AI 员工 / 目标对齐 / MCP 编排 / OEM 定制</div>
                 <h1 class="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                  Web 改版：{" "}
+                  企业级{" "}
                   <span class="text-rotate text-primary" style="--duration: 9s;">
                     <span>
                       <span>无人公司控制台</span>
@@ -170,26 +160,26 @@ function HomePage({
                   </span>
                 </h1>
                 <p class="mt-6 max-w-xl text-base leading-8 text-base-content/72 sm:text-lg">
-                  像管理真实公司一样管理 AI 组织。
+                  以组织管理方法运营 AI 员工体系。
                   <br />
-                  从任务到执行再到复盘，全部在同一控制台完成。
+                  从目标设定、任务执行到复盘治理，全部在同一控制台完成。
                 </p>
                 <p class="mt-4 max-w-xl text-sm leading-7 text-base-content/62 sm:text-base">支持多公司并行运营，适配投资、营销广告与 IT 解决方案等业务形态。</p>
 
                 <div class="mt-8 flex flex-wrap gap-3">
                   <span class="bg-base-100/70 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">基础功能 + 进阶功能</span>
-                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">各 MCP 职能可视化</span>
+                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">组织图 + 工单 + 预算治理</span>
                   <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">OEM 定制 GTA</span>
                 </div>
 
                 <div class="mt-12 grid gap-6 sm:grid-cols-3">
                   <div>
-                    <div class="text-2xl font-semibold">1 个中控台</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">集中管理多家公司与全部 AI 员工。</div>
+                    <div class="text-2xl font-semibold">1 个控制平面</div>
+                    <div class="mt-2 text-sm leading-7 text-base-content/65">统一管理多家公司与全部 AI 员工。</div>
                   </div>
                   <div>
-                    <div class="text-2xl font-semibold">2 层能力</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">基础功能 + 各 MCP 进阶编排能力。</div>
+                    <div class="text-2xl font-semibold">2 层能力模型</div>
+                    <div class="mt-2 text-sm leading-7 text-base-content/65">基础运行能力 + MCP 业务编排能力。</div>
                   </div>
                   <div>
                     <div class="text-2xl font-semibold">虾壳 3.0</div>
@@ -271,8 +261,21 @@ function HomePage({
             </div>
           </section>
 
+          <section class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
+            <SectionTitle eyebrow="Operating Model" title="管理目标，而非临时任务" desc="参考无人公司产品叙事：从‘工具堆叠’转向‘组织化运营’。" />
+
+            <div class="mt-10 grid gap-6 md:grid-cols-2">
+              {comparisonItems.map(([title, desc]) => (
+                <article class="space-y-2 bg-base-100/35 px-5 py-4">
+                  <h3 class="text-base font-semibold">{title}</h3>
+                  <p class="text-sm leading-7 text-base-content/68">{desc}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section id="oem" class="page-fade page-fade-delay-3 mt-20 px-1 sm:mt-24">
-            <SectionTitle eyebrow="Virtual Company Blueprint" title="无人公司架构参考（Paperclip 风格）" desc="基于‘多公司 + 统一控制平面’思路，构建可扩展的虚拟公司矩阵。" />
+            <SectionTitle eyebrow="Virtual Company Blueprint" title="无人公司架构蓝图" desc="基于“多公司 + 统一控制平面”思路，构建可扩展的虚拟公司矩阵。" />
 
             <div class="mt-8 space-y-3 bg-base-100/35 px-5 py-5">
               {virtualOrg.map((item) => (
@@ -280,7 +283,7 @@ function HomePage({
               ))}
             </div>
 
-            <SectionTitle eyebrow="OEM Solution" title="6. OEM 定制 GTA" desc="按场景输出可落地的 Go-To-Agent 交付方案。" />
+            <SectionTitle eyebrow="OEM Solution" title="6. OEM 定制 GTA" desc="面向不同场景提供可落地的 Go-To-Agent 交付方案。" />
 
             <div class="mt-12 grid gap-12 pt-8 lg:grid-cols-[1.2fr_0.8fr]">
               <div>
