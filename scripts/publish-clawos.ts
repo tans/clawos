@@ -326,6 +326,7 @@ function looksLikeUpdaterArtifact(fileName: string, prefix: string): boolean {
 
 function candidateArtifactRoots(): string[] {
   const cwd = process.cwd();
+  const parent = dirname(cwd);
   const roots = [
     resolve(cwd, "artifacts"),
     resolve(cwd, "build"),
@@ -334,6 +335,12 @@ function candidateArtifactRoots(): string[] {
     resolve(cwd, "app", "build"),
     resolve(cwd, "app", "dist"),
   ];
+
+  // 支持在 repo 根目录或 app 目录内执行发布脚本。
+  if (basename(cwd).toLowerCase() === "app") {
+    roots.push(resolve(parent, "artifacts"), resolve(parent, "build"), resolve(parent, "dist"));
+  }
+
   return Array.from(new Set(roots));
 }
 
