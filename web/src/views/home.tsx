@@ -69,16 +69,32 @@ function HomePage({
   const versionText = latestVersion?.trim() ? latestVersion.trim() : "dev";
   const betaVersionText = betaVersion?.trim() ? betaVersion.trim() : "dev";
   const alphaVersionText = alphaVersion?.trim() ? alphaVersion.trim() : "dev";
-  const features = [
-    ["一键更新", "更新、重启、状态查看放在一起。"],
-    ["模型配置", "常用模型和 provider 直接改。"],
-    ["功能模板", "常见场景可直接启用。"],
-    ["渠道接入", "常见消息渠道统一管理。"],
-    ["网页自动化", "把重复网页操作整理成流程。"],
-    ["环境自检", "端口、WSL、权限问题更快定位。"],
+  const coreCapabilities = [
+    ["AI 员工职能介绍", "按 CEO / COO / CMO / CTO 等角色配置职责，任务自动分派。"],
+    ["无人公司集中管理", "统一控制台查看目标、预算、心跳任务和关键 KPI。"],
+    ["统一监控", "单页追踪每个员工的执行状态、工单链路与成本变化。"],
+    ["虚拟公司架构", "支持投资公司、营销广告公司、IT 解决方案公司并行运营。"],
+    ["硬件产品：虾壳 3.0", "软硬一体交付，结合边缘设备实现本地代理与远程协同。"],
   ] as const;
-  const oemFlow = ["确定品牌和配置。", "按定制内容和起订量报价。", "支持批量发货或一件代发。", "降低实施难度，缩短上线周期。"] as const;
-  const industries = ["教育", "医疗", "SaaS / 咨询"] as const;
+  const mcpCapabilities = [
+    ["Marketing MCP", "管理广告投放、素材生成、渠道排期与转化复盘。"],
+    ["Investment MCP", "进行市场扫描、风险提示、组合跟踪与周报生成。"],
+    ["IT Solution MCP", "承接需求拆解、研发协作、测试发布与运维巡检。"],
+    ["Ops & Monitor MCP", "统一告警、审计日志、预算阈值和异常工单升级。"],
+  ] as const;
+  const virtualOrg = [
+    "董事会 / Owner：审批战略、预算和关键 hires。",
+    "总部运营中心：统一监控、财务与风险控制。",
+    "投资公司：研究、交易、风控三层代理协作。",
+    "营销广告公司：内容、投放、增长代理按漏斗协同。",
+    "IT 解决方案公司：产品、开发、测试、运维全链路自动化。",
+  ] as const;
+  const oemFlow = [
+    "OEM 定制 GTA（Go-To-Agent）方案评估。",
+    "确认品牌形象、MCP 组合与虚拟公司架构。",
+    "按设备数量与交付周期报价，支持批量部署。",
+    "上线后提供监控模板、告警规则和运营陪跑。",
+  ] as const;
 
   return (
     <html lang="zh-CN" data-theme="silk">
@@ -101,8 +117,11 @@ function HomePage({
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="#overview">
                   介绍
                 </a>
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#features">
-                  功能
+                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#core-features">
+                  基础功能
+                </a>
+                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#advanced-features">
+                  进阶功能
                 </a>
                 <a class="btn btn-ghost btn-sm border border-base-content/15" href="#oem">
                   定制
@@ -139,42 +158,42 @@ function HomePage({
           >
             <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
               <div class="max-w-2xl">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">兼容多平台 / 可视化管理 / 行业定制</div>
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">无人公司 / AI 员工 / MCP 编排 / OEM 定制</div>
                 <h1 class="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                  可定制的{" "}
+                  Web 改版：{" "}
                   <span class="text-rotate text-primary" style="--duration: 9s;">
                     <span>
-                      <span>openclaw</span>
-                      <span>Gateway 面板</span>
-                      <span>Windows 工作台</span>
+                      <span>无人公司控制台</span>
+                      <span>AI 员工调度中心</span>
+                      <span>虾壳 3.0 软硬一体平台</span>
                     </span>
                   </span>
                 </h1>
                 <p class="mt-6 max-w-xl text-base leading-8 text-base-content/72 sm:text-lg">
-                  像普通软件一样使用 openclaw。
+                  像管理真实公司一样管理 AI 组织。
                   <br />
-                  支持 Windows / Linux / macOS，常用能力开箱即用。
+                  从任务到执行再到复盘，全部在同一控制台完成。
                 </p>
-                <p class="mt-4 max-w-xl text-sm leading-7 text-base-content/62 sm:text-base">安装后直接启动，更新也保持同样简单。</p>
+                <p class="mt-4 max-w-xl text-sm leading-7 text-base-content/62 sm:text-base">支持多公司并行运营，适配投资、营销广告与 IT 解决方案等业务形态。</p>
 
                 <div class="mt-8 flex flex-wrap gap-3">
-                  <span class="bg-base-100/70 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">中文用户友好</span>
-                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">Windows / Linux / macOS</span>
-                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">Gateway Protocol 可视化</span>
+                  <span class="bg-base-100/70 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">基础功能 + 进阶功能</span>
+                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">各 MCP 职能可视化</span>
+                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">OEM 定制 GTA</span>
                 </div>
 
                 <div class="mt-12 grid gap-6 sm:grid-cols-3">
                   <div>
-                    <div class="text-2xl font-semibold">1 个入口</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">升级、配置、排障集中处理。</div>
+                    <div class="text-2xl font-semibold">1 个中控台</div>
+                    <div class="mt-2 text-sm leading-7 text-base-content/65">集中管理多家公司与全部 AI 员工。</div>
                   </div>
                   <div>
-                    <div class="text-2xl font-semibold">6 类能力</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">覆盖更新、配置、自动化与自检。</div>
+                    <div class="text-2xl font-semibold">2 层能力</div>
+                    <div class="mt-2 text-sm leading-7 text-base-content/65">基础功能 + 各 MCP 进阶编排能力。</div>
                   </div>
                   <div>
-                    <div class="text-2xl font-semibold">支持定制</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">适合 OEM 和行业交付。</div>
+                    <div class="text-2xl font-semibold">虾壳 3.0</div>
+                    <div class="mt-2 text-sm leading-7 text-base-content/65">支持软硬件一体化 OEM 交付。</div>
                   </div>
                 </div>
 
@@ -226,11 +245,24 @@ function HomePage({
             </div>
           </section>
 
-          <section class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
-            <SectionTitle eyebrow="Ready To Use" title="你能直接用的功能" desc="少配置，快上手。用更少的字，把能做的事说清楚。" />
+          <section id="core-features" class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
+            <SectionTitle eyebrow="Basic Features" title="1. 基础功能" desc="围绕 AI 员工、无人公司和虾壳 3.0 的核心能力。" />
 
-            <div id="features" class="mt-12 grid gap-x-12 gap-y-10 pt-8 md:grid-cols-2">
-              {features.map(([title, desc]) => (
+            <div class="mt-12 grid gap-x-12 gap-y-10 pt-8 md:grid-cols-2">
+              {coreCapabilities.map(([title, desc]) => (
+                <article class="rise-on-hover space-y-2 bg-base-100/35 px-4 py-4">
+                  <h3 class="text-lg font-semibold tracking-tight">{title}</h3>
+                  <p class="max-w-md text-sm leading-7 text-base-content/68">{desc}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section id="advanced-features" class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
+            <SectionTitle eyebrow="Advanced Features" title="2. 进阶功能（各 MCP 介绍）" desc="把每个业务域做成独立 MCP，按公司级目标协同运行。" />
+
+            <div class="mt-12 grid gap-x-12 gap-y-10 pt-8 md:grid-cols-2">
+              {mcpCapabilities.map(([title, desc]) => (
                 <article class="rise-on-hover space-y-2 bg-base-100/35 px-4 py-4">
                   <h3 class="text-lg font-semibold tracking-tight">{title}</h3>
                   <p class="max-w-md text-sm leading-7 text-base-content/68">{desc}</p>
@@ -240,7 +272,15 @@ function HomePage({
           </section>
 
           <section id="oem" class="page-fade page-fade-delay-3 mt-20 px-1 sm:mt-24">
-            <SectionTitle eyebrow="OEM Solution" title="openclaw OEM 定制" desc="面向行业客户，支持品牌、功能和交付方式的定制组合。" />
+            <SectionTitle eyebrow="Virtual Company Blueprint" title="无人公司架构参考（Paperclip 风格）" desc="基于‘多公司 + 统一控制平面’思路，构建可扩展的虚拟公司矩阵。" />
+
+            <div class="mt-8 space-y-3 bg-base-100/35 px-5 py-5">
+              {virtualOrg.map((item) => (
+                <p class="text-sm leading-7 text-base-content/72">{item}</p>
+              ))}
+            </div>
+
+            <SectionTitle eyebrow="OEM Solution" title="6. OEM 定制 GTA" desc="按场景输出可落地的 Go-To-Agent 交付方案。" />
 
             <div class="mt-12 grid gap-12 pt-8 lg:grid-cols-[1.2fr_0.8fr]">
               <div>
@@ -253,11 +293,11 @@ function HomePage({
               </div>
 
               <div>
-                <h3 class="text-lg font-semibold">适用行业</h3>
+                <h3 class="text-lg font-semibold">硬件产品</h3>
                 <div class="mt-5 space-y-3">
-                  {industries.map((industry) => (
-                    <p class="text-sm leading-7 text-base-content/70">{industry}</p>
-                  ))}
+                  <p class="text-sm leading-7 text-base-content/70">虾壳 3.0：支持本地推理与云端协同，适配无人公司边缘节点。</p>
+                  <p class="text-sm leading-7 text-base-content/70">支持批量预装企业模板，开箱即用接入控制台。</p>
+                  <p class="text-sm leading-7 text-base-content/70">可按行业提供 OEM 外观与启动流程定制。</p>
                 </div>
               </div>
             </div>
