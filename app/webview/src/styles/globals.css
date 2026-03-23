@@ -494,6 +494,135 @@ button {
   white-space: pre-wrap;
 }
 
+.log-center-chip {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 35;
+  border: 1px solid color-mix(in oklab, var(--primary) 30%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--primary) 92%, white 8%);
+  color: var(--primary-foreground);
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  box-shadow: 0 10px 28px color-mix(in oklab, var(--primary) 26%, transparent);
+}
+
+.log-center-chip:hover {
+  filter: brightness(1.03);
+}
+
+.log-center-sheet {
+  width: min(92vw, 960px) !important;
+  max-width: 960px !important;
+  padding: 14px 14px 10px;
+}
+
+.log-center-header {
+  padding-right: 36px;
+}
+
+.log-center-body {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: var(--space-grid);
+  height: calc(100vh - 120px);
+  min-height: 420px;
+}
+
+.log-center-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 8px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.log-center-item {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  text-align: left;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.log-center-item:hover {
+  background: color-mix(in oklab, var(--accent) 82%, white 18%);
+}
+
+.log-center-item.is-active {
+  border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  background: color-mix(in oklab, var(--primary) 8%, white 92%);
+}
+
+.log-center-item-copy strong {
+  display: block;
+  font-size: 12px;
+}
+
+.log-center-item-copy span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+
+.log-center-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.log-center-detail {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.log-center-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.log-center-detail-head strong {
+  display: block;
+  margin: 0;
+  font-size: 13px;
+}
+
+.log-center-detail-head p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.log-center-console {
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 12px;
+}
+
 .session-item {
   display: flex;
   justify-content: space-between;
@@ -584,8 +713,19 @@ button {
   .dual-column-grid,
   .sessions-layout,
   .triple-grid,
-  .wallet-mini-grid {
+  .log-center-body {
     grid-template-columns: 1fr;
+  }
+
+  .log-center-sheet {
+    width: 96vw !important;
+  }
+
+  .log-center-chip {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    text-align: center;
   }
 
   .topbar,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { useTaskLogCenter } from "../components/task-log-center";
 import { fetchBackups, fetchTask, readUserErrorMessage, startBackupRollback, type BackupRecord, type TaskRecord } from "../lib/api";
 
 function formatBackupTime(value?: number | null): string {
@@ -30,12 +31,12 @@ function taskStatusText(task: TaskRecord): string {
 }
 
 export function BackupsPage() {
+  const logCenter = useTaskLogCenter();
   const [backups, setBackups] = useState<BackupRecord[]>([]);
   const [command, setCommand] = useState<string | null>(null);
   const [selectedPath, setSelectedPath] = useState("");
   const [meta, setMeta] = useState("正在读取备份列表...");
   const [taskMeta, setTaskMeta] = useState("暂无任务");
-  const [taskOutput, setTaskOutput] = useState("等待任务执行...");
   const [isRollingBack, setIsRollingBack] = useState(false);
   const taskTimerRef = useRef<number | null>(null);
 
@@ -49,9 +50,9 @@ export function BackupsPage() {
   }
 
   function renderTask(task: TaskRecord) {
-    setTaskMeta(`${task.title} | ${taskStatusText(task)} | ${task.step}/${task.totalSteps}`);
-    const lines = (task.logs || []).map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
-    setTaskOutput(lines.join("\n") || "暂无日志");
+    const nextMeta = `${task.title} | ${taskStatusText(task)} | ${task.step}/${task.totalSteps}`;
+    setTaskMeta(nextMeta);
+    logCenter.reportTask("backups", task, nextMeta);
   }
 
   function startTaskPolling(taskId: string, selectedBackupPath: string) {
@@ -92,7 +93,6 @@ export function BackupsPage() {
       setMeta(nextBackups.length > 0 ? `已加载 ${nextBackups.length} 个备份` : "当前没有可用备份");
       if (nextBackups.length === 0) {
         setTaskMeta("未找到配置备份");
-        setTaskOutput("未找到可用的 openclaw 配置备份文件");
       }
     } catch (error) {
       setMeta(readUserErrorMessage(error, "读取备份失败"));
@@ -118,9 +118,12 @@ export function BackupsPage() {
 
     setIsRollingBack(true);
     setTaskMeta("任务启动中...");
-    setTaskOutput("任务启动中...");
     try {
       const data = await startBackupRollback(selectedBackup.path);
+      logCenter.startTask("backups", {
+        taskId: data.taskId,
+        title: `回滚 ${selectedBackup.fileName}`,
+      });
       setMeta(data.reused ? "已复用当前任务" : "回滚任务已启动");
       startTaskPolling(data.taskId, selectedBackup.path);
     } catch (error) {
@@ -190,7 +193,9 @@ export function BackupsPage() {
           <CardDescription>{taskMeta}</CardDescription>
         </CardHeader>
         <CardContent>
-          <pre className="log-console">{taskOutput}</pre>
+          <Button variant="outline" onClick={() => logCenter.openCenter()}>
+            打开日志中心
+          </Button>
         </CardContent>
       </Card>
     </div>
