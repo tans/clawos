@@ -89,12 +89,12 @@ export function WalletPage() {
 
   return (
     <div className="settings-layout">
-      <Card>
-        <CardHeader>
+      <Card className="wallet-card-compact">
+        <CardHeader className="wallet-card-compact-header">
           <CardTitle>本地钱包</CardTitle>
         </CardHeader>
-        <CardContent className="settings-stack">
-          <div className="settings-actions settings-actions-start">
+        <CardContent className="wallet-card-compact-content">
+          <div className="settings-actions settings-actions-start wallet-actions-compact">
             <Button disabled={busy || wallet.exists === true} onClick={() => void handleGenerate()}>
               <Wallet size={14} />
               {wallet.exists ? "已生成" : busy ? "生成中..." : "生成钱包"}
@@ -104,7 +104,7 @@ export function WalletPage() {
               刷新
             </Button>
           </div>
-          <div className="dual-column-grid">
+          <div className="wallet-mini-grid">
             <div className="info-tile">
               <span>钱包地址</span>
               <strong className="mono-break">{wallet.exists ? wallet.address || "-" : "未生成"}</strong>
