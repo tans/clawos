@@ -104,9 +104,6 @@ export function BrowserPage() {
         </div>
 
         <div className="meta-banner">{taskMeta}</div>
-        <Button variant="outline" onClick={() => logCenter.openCenter()}>
-          打开日志中心
-        </Button>
       </CardContent>
     </Card>
   );
