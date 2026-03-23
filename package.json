@@ -35,7 +35,8 @@
     "release:canary": "bun run scripts/release-clawos.ts --env=canary",
     "release:dev": "bun run scripts/release-clawos.ts --env=dev",
     "start": "bun --cwd app run start",
-    "test": "bun test"
+    "test": "bun test test",
+    "prepare": "bash scripts/setup-git-hooks.sh"
   },
   "dependencies": {
     "@openai/codex": "^0.115.0",

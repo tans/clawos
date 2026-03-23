@@ -4,7 +4,7 @@ import {
   decodeProcessOutput,
   parseWslDistroList,
   selectPreferredWslDistro,
-} from "../../app/src/tasks/shell";
+} from "../../../app/server/tasks/shell";
 
 describe("runWslScript shell mode", () => {
   it("uses interactive bash in windows path", () => {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runTool } from "../../mcp/crm-mcp/src/index";
+import { runTool } from "../../../mcp/crm-mcp/src/index";
 
 describe("crm-mcp tools", () => {
   it("supports customer/deal/interaction and csv export", async () => {

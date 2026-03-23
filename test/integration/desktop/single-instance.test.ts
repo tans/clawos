@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { computeDesktopControlPort } from "../../app/src/bun/single-instance";
+import { computeDesktopControlPort } from "../../../app/main/single-instance";
 
 describe("desktop single-instance control port", () => {
   it("uses env control port when valid", () => {

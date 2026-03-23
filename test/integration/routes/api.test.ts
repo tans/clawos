@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { handleApiRequest } from "../../app/src/routes/api";
+import { handleApiRequest } from "../../../app/server/api";
 
 async function parseJson(response: Response): Promise<Record<string, unknown>> {
   return (await response.json()) as Record<string, unknown>;
@@ -70,7 +70,7 @@ describe("api routes", () => {
     const payload = await parseJson(response as Response);
     expect(payload.ok).toBe(true);
     const task = payload.task as Record<string, unknown>;
-    expect(task.type).toBe("browser-cdp-restart");
+    expect(task.type).toBe("browser-cdp-repair");
   });
 
   it("requires explicit confirmation before browser repair starts", async () => {

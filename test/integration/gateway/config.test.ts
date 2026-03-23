@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { ALLOWED_CONFIG_SECTIONS, configTemplate, ensureChannelPluginsForEnabledChannels } from "../../app/src/gateway/config";
+import { ALLOWED_CONFIG_SECTIONS, configTemplate, ensureChannelPluginsForEnabledChannels } from "../../../app/server/gateway/config";
 
 describe("ensureChannelPluginsForEnabledChannels", () => {
   it("includes tools as a root-level configurable section", () => {

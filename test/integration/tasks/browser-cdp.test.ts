@@ -1,12 +1,10 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import {
   BROWSER_BOOT_URL,
-  BROWSER_CDP_BIND_ADDRESS,
   BROWSER_CDP_PORT,
   BROWSER_USER_DATA_DIR,
   buildWindowsCdpPortProxyAddArgs,
   buildWindowsCdpPortProxyDeleteArgs,
-  buildFreshChromeUserDataDir,
   buildElevatedProcessArgs,
   buildElevatedProcessCommand,
   buildChromeStartArgs,
@@ -15,7 +13,7 @@ import {
   buildWindowsElevationCheckArgs,
   parseFirstNameserver,
   resolveChromeExePath,
-} from "../../app/src/tasks/browser";
+} from "../../../app/server/tasks/browser";
 
 const originalChromePathEnv = process.env.CLAWOS_CHROME_EXE_PATH;
 
@@ -39,7 +37,6 @@ describe("browser cdp helpers", () => {
     const args = buildChromeStartArgs(exePath, "C:\\Program Files\\Google\\Chrome\\Application");
 
     expect(command).toContain("Start-Process -FilePath 'C:\\Program Files\\Google\\Chrome\\Application\\chrome''s.exe'");
-    expect(command).toContain(`'--remote-debugging-address=${BROWSER_CDP_BIND_ADDRESS}'`);
     expect(command).toContain(`'--remote-debugging-port=${BROWSER_CDP_PORT}'`);
     expect(command).toContain(`'--user-data-dir=${BROWSER_USER_DATA_DIR}'`);
     expect(command).toContain(`'${BROWSER_BOOT_URL}'`);
@@ -52,14 +49,6 @@ describe("browser cdp helpers", () => {
       "-Command",
       command,
     ]);
-  });
-
-  it("builds powershell start command with a fresh chrome profile", () => {
-    const freshDir = buildFreshChromeUserDataDir("C:\\chrome-openclaw", 42);
-    const command = buildChromeStartCommand("C:\\Chrome\\chrome.exe", "C:\\Chrome", { userDataDir: freshDir });
-
-    expect(freshDir).toBe("C:\\chrome-openclaw-cdp-42");
-    expect(command).toContain(`'--user-data-dir=${freshDir}'`);
   });
 
   it("builds powershell elevation helpers safely", () => {
@@ -130,5 +119,4 @@ nameserver 8.8.8.8
     const remote = buildRemoteCdpUrl(`ws://127.0.0.1:${BROWSER_CDP_PORT}/devtools/browser/abc`, "172.31.64.1");
     expect(remote).toBe(`ws://172.31.64.1:${BROWSER_CDP_PORT}/devtools/browser/abc`);
   });
-
 });
