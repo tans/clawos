@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "id": "wallet-mcp",
+  "name": "wallet-mcp",
+  "displayName": "Wallet MCP",
+  "description": "本地钱包读取与生成工具，便于 Agent 快速调用。",
+  "publisher": "clawos",
+  "platforms": [
+    "windows",
+    "macos",
+    "linux"
+  ],
+  "version": "0.1.0"
+}

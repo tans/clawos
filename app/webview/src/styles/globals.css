@@ -443,6 +443,35 @@ button {
   justify-content: flex-start;
 }
 
+.wallet-card-compact-header {
+  padding-bottom: 8px;
+}
+
+.wallet-card-compact-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 0;
+}
+
+.wallet-actions-compact {
+  padding-top: 0;
+}
+
+.wallet-mini-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.wallet-card-compact .info-tile {
+  padding: 8px 10px;
+}
+
+.wallet-card-compact .info-tile span {
+  margin-bottom: 4px;
+}
+
 .meta-banner {
   padding: 10px 12px;
   font-size: 12px;
@@ -554,7 +583,8 @@ button {
   .status-strip,
   .dual-column-grid,
   .sessions-layout,
-  .triple-grid {
+  .triple-grid,
+  .wallet-mini-grid {
     grid-template-columns: 1fr;
   }
 
@@ -569,6 +599,12 @@ button {
     width: 100%;
     justify-content: flex-start;
     flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 840px) {
+  .wallet-mini-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
