@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Hammer, RefreshCw, Wrench } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { useTaskLogCenter } from "../components/task-log-center";
 import {
   fetchEnvironmentStatus,
   fetchMcpStatus,
@@ -45,11 +46,11 @@ function readToolVersion(status: EnvironmentStatus, target: "windows" | "wsl", t
 }
 
 export function EnvironmentPage() {
+  const logCenter = useTaskLogCenter();
   const [environmentStatus, setEnvironmentStatus] = useState<EnvironmentStatus>({});
   const [mcpTargets, setMcpTargets] = useState<McpTargetStatus[]>([]);
   const [meta, setMeta] = useState("正在读取环境状态...");
   const [taskMeta, setTaskMeta] = useState("当前无任务");
-  const [taskOutput, setTaskOutput] = useState("操作日志会显示在这里...");
   const [busyKey, setBusyKey] = useState("");
   const taskTimerRef = useRef<number | null>(null);
 
@@ -61,9 +62,9 @@ export function EnvironmentPage() {
   }
 
   function renderTask(task: TaskRecord) {
-    setTaskMeta(`${task.title} | ${readTaskStatus(task)}`);
-    const lines = (task.logs || []).map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
-    setTaskOutput(lines.join("\n") || "暂无日志");
+    const nextMeta = `${task.title} | ${readTaskStatus(task)}`;
+    setTaskMeta(nextMeta);
+    logCenter.reportTask("environment", task, nextMeta);
   }
 
   function startTaskPolling(taskId: string, onSuccess?: () => Promise<void> | void) {
@@ -124,9 +125,12 @@ export function EnvironmentPage() {
     const actionKey = `${target}:${tool}`;
     setBusyKey(actionKey);
     setTaskMeta("任务启动中...");
-    setTaskOutput("任务启动中...");
     try {
       const data = await startEnvironmentInstall(target, tool);
+      logCenter.startTask("environment", {
+        taskId: data.taskId,
+        title: `${targetLabel(target)} / ${toolLabel(tool)} 安装`,
+      });
       startTaskPolling(data.taskId, async () => {
         await loadEnvironment(true);
       });
@@ -143,9 +147,12 @@ export function EnvironmentPage() {
     const actionKey = `mcp:${name}`;
     setBusyKey(actionKey);
     setTaskMeta("任务启动中...");
-    setTaskOutput("任务启动中...");
     try {
       const data = await startMcpBuild(name);
+      logCenter.startTask("environment", {
+        taskId: data.taskId,
+        title: `${name} 构建`,
+      });
       startTaskPolling(data.taskId, async () => {
         await loadMcp(true);
       });
@@ -162,18 +169,15 @@ export function EnvironmentPage() {
     const actionKey = "clawhub:install";
     setBusyKey(actionKey);
     setTaskMeta("正在安装 ClawHub...");
-    setTaskOutput("正在安装 ClawHub...");
     try {
       const result = await installClawhub();
       const message = result.installed ? "ClawHub 已安装" : "ClawHub 安装状态未知";
       setMeta(message);
       setTaskMeta(message);
-      setTaskOutput(message);
     } catch (error) {
       const message = readUserErrorMessage(error, "安装 ClawHub 失败");
       setMeta(message);
       setTaskMeta(message);
-      setTaskOutput(message);
     } finally {
       setBusyKey("");
     }
@@ -279,7 +283,9 @@ export function EnvironmentPage() {
           <CardDescription>{taskMeta}</CardDescription>
         </CardHeader>
         <CardContent>
-          <pre className="log-console">{taskOutput}</pre>
+          <Button variant="outline" onClick={() => logCenter.openCenter()}>
+            打开日志中心
+          </Button>
         </CardContent>
       </Card>
     </div>

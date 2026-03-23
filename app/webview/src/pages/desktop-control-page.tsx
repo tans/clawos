@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Play } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { useTaskLogCenter } from "../components/task-log-center";
 import { fetchDesktopMcpStatus, fetchTask, readUserErrorMessage, startDesktopMcp, type DesktopMcpStatus, type TaskRecord } from "../lib/api";
 
 function readTaskStatus(task: TaskRecord): string {
@@ -12,10 +13,10 @@ function readTaskStatus(task: TaskRecord): string {
 }
 
 export function DesktopControlPage() {
+  const logCenter = useTaskLogCenter();
   const [status, setStatus] = useState<DesktopMcpStatus>({});
   const [meta, setMeta] = useState("正在读取 MCP 状态...");
   const [taskMeta, setTaskMeta] = useState("等待启动");
-  const [taskOutput, setTaskOutput] = useState("MCP 调用记录会显示在这里...");
   const [busy, setBusy] = useState(false);
   const timerRef = useRef<number | null>(null);
 
@@ -27,9 +28,9 @@ export function DesktopControlPage() {
   }
 
   function renderTask(task: TaskRecord) {
-    setTaskMeta(`任务状态 | ${readTaskStatus(task)}`);
-    const lines = (task.logs || []).map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
-    setTaskOutput(lines.join("\n") || "暂无调用记录");
+    const nextMeta = `任务状态 | ${readTaskStatus(task)}`;
+    setTaskMeta(nextMeta);
+    logCenter.reportTask("desktop-control", task, nextMeta);
   }
 
   function pollTask(taskId: string) {
@@ -85,6 +86,10 @@ export function DesktopControlPage() {
         renderTask(data.task);
       }
       if (data.taskId) {
+        logCenter.startTask("desktop-control", {
+          taskId: data.taskId,
+          title: "桌面 MCP 启动",
+        });
         pollTask(data.taskId);
       }
       setMeta("MCP 启动请求已提交");
@@ -118,7 +123,9 @@ export function DesktopControlPage() {
             </Button>
           </div>
           <div className="meta-banner">{`接口: ${url}`}</div>
-          <pre className="log-console">{taskOutput}</pre>
+          <Button variant="outline" onClick={() => logCenter.openCenter()}>
+            打开日志中心
+          </Button>
         </CardContent>
       </Card>
     </div>

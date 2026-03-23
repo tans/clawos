@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Activity, RefreshCw, Wrench } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { useTaskLogCenter } from "../components/task-log-center";
 import { startBrowserAction, fetchTask, readUserErrorMessage, type TaskRecord } from "../lib/api";
 
 const actionMap = [
@@ -11,8 +12,8 @@ const actionMap = [
 ] as const;
 
 export function BrowserPage() {
+  const logCenter = useTaskLogCenter();
   const [taskMeta, setTaskMeta] = useState("当前无任务");
-  const [taskOutput, setTaskOutput] = useState("操作记录会显示在这里...");
   const [busyAction, setBusyAction] = useState("");
   const taskTimerRef = useRef<number | null>(null);
 
@@ -32,9 +33,9 @@ export function BrowserPage() {
           : task.status === "failed"
             ? "失败"
             : "未知";
-    setTaskMeta(`${task.title} | ${status}`);
-    const lines = (task.logs || []).map((item) => `[${item.timestamp}] ${String(item.level || "info").toUpperCase()} ${item.message}`);
-    setTaskOutput(lines.join("\n") || "暂无日志");
+    const nextMeta = `${task.title} | ${status}`;
+    setTaskMeta(nextMeta);
+    logCenter.reportTask("browser", task, nextMeta);
   }
 
   function startTaskPolling(taskId: string) {
@@ -59,12 +60,15 @@ export function BrowserPage() {
   async function runAction(action: (typeof actionMap)[number]["key"]) {
     setBusyAction(action);
     setTaskMeta(`正在执行 ${action}`);
-    setTaskOutput("任务启动中...");
     try {
       const data = await startBrowserAction(action);
       if (!data.taskId) {
         throw new Error("服务端未返回任务 ID");
       }
+      logCenter.startTask("browser", {
+        taskId: data.taskId,
+        title: `浏览器${action}`,
+      });
       if (data.reused) {
         setTaskMeta("已复用当前任务");
       }
@@ -100,7 +104,9 @@ export function BrowserPage() {
         </div>
 
         <div className="meta-banner">{taskMeta}</div>
-        <pre className="log-console">{taskOutput}</pre>
+        <Button variant="outline" onClick={() => logCenter.openCenter()}>
+          打开日志中心
+        </Button>
       </CardContent>
     </Card>
   );

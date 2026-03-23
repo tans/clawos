@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, RefreshCw, ShieldAlert } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { useTaskLogCenter } from "../components/task-log-center";
 import {
   fetchQwGatewayStatus,
   fetchRecentTasks,
@@ -24,6 +25,7 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 export function DashboardPage() {
+  const logCenter = useTaskLogCenter();
   const [gatewayStatus, setGatewayStatus] = useState<QwGatewayStatus>({});
   const [task, setTask] = useState<TaskRecord | null>(null);
   const [taskMeta, setTaskMeta] = useState("暂无任务");
@@ -107,6 +109,7 @@ export function DashboardPage() {
         const nextTask = await fetchTask(taskId);
         setTask(nextTask);
         setTaskMeta(buildTaskMeta(nextTask));
+        logCenter.reportTask("dashboard", nextTask, buildTaskMeta(nextTask));
         if (nextTask.status === "success" || nextTask.status === "failed") {
           stopTaskPolling();
         }
@@ -130,6 +133,10 @@ export function DashboardPage() {
 
       if (data.taskId) {
         setTaskMeta(data.reused ? "已复用当前任务" : "任务已启动");
+        logCenter.startTask("dashboard", {
+          taskId: data.taskId,
+          title: action === "update-openclaw" ? "升级 openclaw" : action === "restart-gateway" ? "重启 openclaw" : "重启 qw gateway",
+        });
         startTaskPolling(data.taskId);
       }
     } catch (error) {
@@ -147,9 +154,6 @@ export function DashboardPage() {
 
   const gatewayStateText = STATUS_TEXT[gatewayStatus.state || "idle"] || String(gatewayStatus.state || "未知");
   const gatewayMessage = gatewayStatus.message?.trim() || "等待状态更新...";
-  const taskLines =
-    task?.logs?.map((item) => `[${item.timestamp}] ${String(item.level || "").toUpperCase()} ${item.message}`) || [];
-
   return (
     <>
       <section className="status-strip">
@@ -209,7 +213,9 @@ export function DashboardPage() {
             <CardDescription>{taskMeta}</CardDescription>
           </CardHeader>
           <CardContent className="migration-list">
-            <pre className="log-console">{taskLines.join("\n") || "等待任务执行..."}</pre>
+            <Button variant="outline" onClick={() => logCenter.openCenter(task?.id)}>
+              打开日志中心
+            </Button>
           </CardContent>
         </Card>
       </section>

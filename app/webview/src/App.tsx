@@ -7,6 +7,7 @@ import { ChannelsPage } from "./pages/channels-page";
 import { DashboardPage } from "./pages/dashboard-page";
 import { DesktopControlPage } from "./pages/desktop-control-page";
 import { EnvironmentPage } from "./pages/environment-page";
+import { TaskLogCenterDock, TaskLogCenterProvider } from "./components/task-log-center";
 import { SettingsPage } from "./pages/settings-page";
 import { SkillsPage } from "./pages/skills-page";
 import { WalletPage } from "./pages/wallet-page";
@@ -117,29 +118,32 @@ export function App() {
   const config = PAGE_CONFIG[page];
 
   return (
-    <AppShell
-      page={page}
-      title={config.title}
-      description={config.description}
-      onNavigate={(next) => {
-        const href = toHref(next);
-        if (window.location.pathname !== href) {
-          window.history.pushState({}, "", href);
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        }
-      }}
-    >
-      {page === "settings" ? (
-        <MoreSettingsPage />
-      ) : page === "channels" ? (
-        <ChannelsPage />
-      ) : page === "agents" ? (
-        <AgentsPage />
-      ) : page === "skills" ? (
-        <SkillsConfigPage />
-      ) : (
-        <DashboardPage />
-      )}
-    </AppShell>
+    <TaskLogCenterProvider>
+      <AppShell
+        page={page}
+        title={config.title}
+        description={config.description}
+        onNavigate={(next) => {
+          const href = toHref(next);
+          if (window.location.pathname !== href) {
+            window.history.pushState({}, "", href);
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          }
+        }}
+      >
+        {page === "settings" ? (
+          <MoreSettingsPage />
+        ) : page === "channels" ? (
+          <ChannelsPage />
+        ) : page === "agents" ? (
+          <AgentsPage />
+        ) : page === "skills" ? (
+          <SkillsConfigPage />
+        ) : (
+          <DashboardPage />
+        )}
+      </AppShell>
+      <TaskLogCenterDock />
+    </TaskLogCenterProvider>
   );
 }
