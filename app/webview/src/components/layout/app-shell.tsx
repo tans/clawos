@@ -32,7 +32,7 @@ const navItems: Array<{ key: PageKey; label: string; icon: ComponentType<{ size?
   { key: "dashboard", label: "控制台", icon: SquareTerminal },
   { key: "channels", label: "通讯设置", icon: Globe },
   { key: "agents", label: "模型配置", icon: Bot },
-  { key: "skills", label: "技能配置", icon: Sparkles },
+  { key: "skills", label: "功能配置", icon: Sparkles },
   { key: "settings", label: "更多设置", icon: Settings2 },
 ];
 

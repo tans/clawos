@@ -16,7 +16,7 @@ const PAGE_CONFIG = {
   settings: { title: "更多设置", description: "" },
   channels: { title: "通讯设置", description: "" },
   agents: { title: "模型配置", description: "" },
-  skills: { title: "技能配置", description: "" },
+  skills: { title: "功能配置", description: "" },
 } as const;
 
 export type PageKey = keyof typeof PAGE_CONFIG;
@@ -93,8 +93,8 @@ function MoreSettingsPage() {
 function SkillsConfigPage() {
   return (
     <>
-      <SkillsPage />
       <BrowserPage />
+      <SkillsPage />
       <DesktopControlPage />
       <WalletPage />
     </>
