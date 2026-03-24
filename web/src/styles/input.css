@@ -127,15 +127,9 @@
     min-height: 100svh;
     isolation: isolate;
     overflow: clip;
-  }
-
-  .hero-image-drift {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
+    background-image: url("/xiake3.0.jpg");
+    background-size: cover;
+    background-position: center;
     animation: var(--animate-drift);
   }
 
@@ -204,7 +198,7 @@
   .float-gentle,
   .ambient-shell::before,
   .ambient-shell::after,
-  .hero-image-drift {
+  .hero-fullbleed {
     animation: none;
   }
 
