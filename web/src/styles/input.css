@@ -21,7 +21,7 @@
 
   body {
     background: #fff;
-    color: #111827;
+    color: #1a1a1a;
     font-family:
       Inter,
       "Segoe UI",
@@ -50,17 +50,53 @@
 
 @layer utilities {
   .glass-nav {
-    backdrop-filter: blur(10px);
-    background: rgb(255 255 255 / 78%);
+    backdrop-filter: blur(12px);
+    background: rgb(255 255 255 / 88%);
+  }
+
+  .site-bg {
+    background:
+      radial-gradient(circle at 8% -8%, rgb(233 84 98 / 14%), transparent 30%),
+      radial-gradient(circle at 92% 0%, rgb(251 191 36 / 12%), transparent 32%),
+      linear-gradient(180deg, #fff 0%, #fff7f7 38%, #fff 100%);
+  }
+
+  .hero-glow {
+    background:
+      radial-gradient(circle at 15% 20%, rgb(233 84 98 / 18%), transparent 36%),
+      radial-gradient(circle at 90% 10%, rgb(244 114 182 / 16%), transparent 40%),
+      linear-gradient(145deg, #ffffff 0%, #fff6f7 44%, #fff 100%);
+  }
+
+  .aqua-glow {
+    background: linear-gradient(120deg, #fff4f4 0%, #f3fbff 100%);
   }
 
   .bento-card {
-    border-radius: 16px;
-    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    border: 1px solid #f1d7da;
     background: #fff;
     box-shadow:
-      0 1px 3px rgb(17 24 39 / 0.08),
-      0 1px 2px rgb(17 24 39 / 0.04);
+      0 1px 2px rgb(26 26 26 / 0.04),
+      0 10px 24px rgb(233 84 98 / 0.06);
+  }
+
+  .section-title {
+    @apply text-2xl font-bold tracking-tight text-[#1a1a1a] sm:text-3xl;
+  }
+
+  .section-marker {
+    color: #e95462;
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+
+  .subcaps {
+    color: #e95462;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
   }
 
   .primary-button {
@@ -68,22 +104,24 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 1px solid transparent;
-    background: #6366f1;
-    padding: 0.625rem 1rem;
+    background: #e95462;
+    padding: 0.65rem 1.05rem;
     font-size: 0.875rem;
     font-weight: 600;
     color: #fff;
-    transition: transform 120ms ease, background-color 180ms ease;
+    transition: transform 140ms ease, box-shadow 200ms ease, background-color 200ms ease;
   }
 
   .primary-button:hover {
-    background: #5558e8;
+    background: #dc4a59;
+    box-shadow: 0 8px 18px rgb(233 84 98 / 24%);
+    transform: translateY(-1px);
   }
 
   .primary-button:active {
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   .secondary-button {
@@ -91,46 +129,67 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    border: 1px solid #f2c7cc;
     background: #fff;
-    padding: 0.625rem 1rem;
+    padding: 0.65rem 1.05rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
-    transition: transform 120ms ease, background-color 180ms ease;
+    color: #5f5354;
+    transition: transform 140ms ease, box-shadow 200ms ease, background-color 180ms ease;
   }
 
   .secondary-button:hover {
-    background: #f9fafb;
+    background: #fff7f8;
+    box-shadow: 0 8px 16px rgb(17 24 39 / 0.08);
+    transform: translateY(-1px);
   }
 
   .secondary-button:active {
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   .channel-badge {
     border-radius: 999px;
-    border: 1px solid #c7d2fe;
-    background: #eef2ff;
+    border: 1px solid #f2b8bf;
+    background: #fff1f3;
     padding: 0.125rem 0.5rem;
     font-size: 0.7rem;
-    font-weight: 600;
-    color: #4f46e5;
+    font-weight: 700;
+    color: #e95462;
     letter-spacing: 0.03em;
+  }
+
+  .brand-link {
+    color: #e95462;
+    font-weight: 600;
+    transition: transform 120ms ease;
+  }
+
+  .brand-link:hover {
+    transform: translateX(2px);
+  }
+
+  .panel-card {
+    border-radius: 14px;
+    border: 1px solid #f0d8db;
+    background: linear-gradient(180deg, #fff 0%, #fff9fa 100%);
+    box-shadow: 0 10px 30px rgb(233 84 98 / 7%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page-fade,
   .primary-button,
-  .secondary-button {
+  .secondary-button,
+  .brand-link {
     animation: none;
     transition: none;
   }
 
-  .primary-button:active,
-  .secondary-button:active {
+  .primary-button:hover,
+  .secondary-button:hover,
+  .brand-link:hover {
     transform: none;
   }
 }
