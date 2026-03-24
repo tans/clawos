@@ -714,10 +714,14 @@ async function uploadFile(params: {
 }): Promise<Record<string, unknown>> {
   const file = Bun.file(params.filePath);
   const fileSize = file.size;
+  const fileName = basename(params.filePath);
   const chunkSizeMb = Number.parseInt(process.env.UPLOAD_CHUNK_SIZE_MB || "", 10) || 16;
   const chunkThresholdMb = Number.parseInt(process.env.UPLOAD_CHUNK_THRESHOLD_MB || "", 10) || 20;
   const chunkSizeBytes = Math.max(1, chunkSizeMb) * 1024 * 1024;
   const chunkThresholdBytes = Math.max(1, chunkThresholdMb) * 1024 * 1024;
+  console.log(
+    `[publish] 上传策略: file=${fileName}, size=${formatBytes(fileSize)}, threshold=${formatBytes(chunkThresholdBytes)}, chunkSize=${formatBytes(chunkSizeBytes)}`
+  );
 
   if (fileSize >= chunkThresholdBytes) {
     return await uploadFileByChunks({
@@ -743,7 +747,7 @@ async function uploadFile(params: {
   }
   endpointUrl.searchParams.set("channel", params.channel);
   const url = endpointUrl.toString();
-  console.log(`[publish] 开始上传: ${basename(params.filePath)} (${formatBytes(fileSize)}) -> ${url}`);
+  console.log(`[publish] 开始上传(单请求): ${fileName} (${formatBytes(fileSize)}) -> ${url}`);
 
   const startedAt = Date.now();
   const controller = new AbortController();
@@ -752,7 +756,7 @@ async function uploadFile(params: {
   }, params.timeoutMs);
   const heartbeatHandle = setInterval(() => {
     const elapsed = Date.now() - startedAt;
-    console.log(`[publish] 上传中: ${basename(params.filePath)}，已耗时 ${formatDuration(elapsed)}...`);
+    console.log(`[publish] 上传中(单请求): ${fileName}，已耗时 ${formatDuration(elapsed)}（等待服务器返回中）...`);
   }, params.heartbeatMs);
 
   let res: Response;
@@ -795,8 +799,9 @@ async function uploadFile(params: {
   }
 
   const elapsed = Date.now() - startedAt;
+  const speed = elapsed > 0 ? `${formatBytes((fileSize / elapsed) * 1000)}/s` : "n/a";
   console.log(
-    `[publish] 上传完成: ${basename(params.filePath)} (${formatBytes(fileSize)}), HTTP ${res.status}, 耗时 ${formatDuration(elapsed)}`
+    `[publish] 上传完成(单请求): ${fileName} (${formatBytes(fileSize)}), HTTP ${res.status}, 耗时 ${formatDuration(elapsed)}, 平均速率 ${speed}`
   );
 
   return data;
@@ -847,18 +852,28 @@ async function uploadFileByChunks(params: {
   }
   const uploadId = initData.uploadId;
   console.log(
-    `[publish] 分片上传启用: ${fileName} (${formatBytes(params.fileSize)}), chunks=${totalChunks}, chunk=${formatBytes(params.chunkSizeBytes)}`
+    `[publish] 分片上传启用: ${fileName} (${formatBytes(params.fileSize)}), uploadId=${uploadId}, chunks=${totalChunks}, chunk=${formatBytes(params.chunkSizeBytes)}`
   );
 
+  let uploadedBytes = 0;
+  let completedChunks = 0;
   const heartbeatHandle = setInterval(() => {
     const elapsed = Date.now() - startedAt;
-    console.log(`[publish] 分片上传中: ${fileName}，已耗时 ${formatDuration(elapsed)}...`);
+    const progress = ((uploadedBytes / params.fileSize) * 100).toFixed(1);
+    const speed = elapsed > 0 ? `${formatBytes((uploadedBytes / elapsed) * 1000)}/s` : "n/a";
+    console.log(
+      `[publish] 分片上传中: ${fileName}，chunk=${completedChunks}/${totalChunks}, uploaded=${formatBytes(uploadedBytes)}/${formatBytes(params.fileSize)} (${progress}%), avg=${speed}, elapsed=${formatDuration(elapsed)}`
+    );
   }, params.heartbeatMs);
 
   try {
     for (let index = 0; index < totalChunks; index += 1) {
       const start = index * params.chunkSizeBytes;
       const end = Math.min(start + params.chunkSizeBytes, params.fileSize);
+      const chunkBytes = end - start;
+      console.log(
+        `[publish] 分片开始: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, bytes=${formatBytes(chunkBytes)}, range=[${start}, ${end})`
+      );
       const chunkBlob = Bun.file(params.filePath).slice(start, end);
       const chunkData = await chunkBlob.arrayBuffer();
 
@@ -869,6 +884,7 @@ async function uploadFileByChunks(params: {
         attempt += 1;
         const controller = new AbortController();
         const timeoutHandle = setTimeout(() => controller.abort(), params.timeoutMs);
+        const chunkStartedAt = Date.now();
         try {
           const chunkRes = await fetch(
             `${params.baseUrl}/api/upload/chunk/${encodeURIComponent(uploadId)}/part/${index}`,
@@ -885,23 +901,41 @@ async function uploadFileByChunks(params: {
           const chunkJson = (await chunkRes.json()) as Record<string, unknown>;
           if (!chunkRes.ok || chunkJson.ok !== true) {
             lastErr = typeof chunkJson.error === "string" ? chunkJson.error : `HTTP ${chunkRes.status}`;
+            console.warn(
+              `[publish] 分片失败待重试: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, attempt=${attempt}/3, status=${chunkRes.status}, error=${lastErr}`
+            );
             continue;
           }
           uploaded = true;
+          const chunkElapsed = Date.now() - chunkStartedAt;
+          const speed = chunkElapsed > 0 ? `${formatBytes((chunkBytes / chunkElapsed) * 1000)}/s` : "n/a";
+          console.log(
+            `[publish] 分片成功: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, attempt=${attempt}/3, status=${chunkRes.status}, chunkElapsed=${formatDuration(chunkElapsed)}, speed=${speed}`
+          );
         } catch (error) {
           lastErr = error instanceof Error ? error.message : String(error);
+          console.warn(
+            `[publish] 分片请求异常: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, attempt=${attempt}/3, error=${lastErr}`
+          );
         } finally {
           clearTimeout(timeoutHandle);
         }
       }
       if (!uploaded) {
-        throw new Error(`分片上传失败: chunk=${index}/${totalChunks - 1}, error=${lastErr}`);
+        throw new Error(`分片上传失败: uploadId=${uploadId}, chunk=${index + 1}/${totalChunks}, error=${lastErr}`);
       }
 
-      const progress = (((index + 1) / totalChunks) * 100).toFixed(1);
-      console.log(`[publish] 分片上传进度: ${fileName} ${index + 1}/${totalChunks} (${progress}%)`);
+      uploadedBytes += chunkBytes;
+      completedChunks += 1;
+      const progress = ((uploadedBytes / params.fileSize) * 100).toFixed(1);
+      const elapsed = Date.now() - startedAt;
+      const speed = elapsed > 0 ? `${formatBytes((uploadedBytes / elapsed) * 1000)}/s` : "n/a";
+      console.log(
+        `[publish] 分片上传进度: ${fileName} uploadId=${uploadId} chunk=${completedChunks}/${totalChunks}, uploaded=${formatBytes(uploadedBytes)}/${formatBytes(params.fileSize)} (${progress}%), avg=${speed}`
+      );
     }
 
+    console.log(`[publish] 分片合并开始: ${fileName} uploadId=${uploadId}`);
     const completeRes = await fetch(`${params.baseUrl}/api/upload/chunk/${encodeURIComponent(uploadId)}/complete`, {
       method: "POST",
       headers: {
@@ -921,7 +955,10 @@ async function uploadFileByChunks(params: {
     }
 
     const elapsed = Date.now() - startedAt;
-    console.log(`[publish] 分片上传完成: ${fileName}, 耗时 ${formatDuration(elapsed)}`);
+    const speed = elapsed > 0 ? `${formatBytes((params.fileSize / elapsed) * 1000)}/s` : "n/a";
+    console.log(
+      `[publish] 分片上传完成: ${fileName}, uploadId=${uploadId}, total=${formatBytes(params.fileSize)}, 耗时 ${formatDuration(elapsed)}, 平均速率 ${speed}`
+    );
     return completeData;
   } finally {
     clearInterval(heartbeatHandle);
