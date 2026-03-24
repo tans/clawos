@@ -3,6 +3,7 @@
   "version": "0.9.44",
   "type": "module",
   "scripts": {
+    "publish": "bun run scripts/publish-clawos.ts",
     "publish:all": "bun run scripts/publish-clawos.ts",
     "publish:installer": "bun run scripts/publish-clawos.ts --skip-config",
     "publish:config": "bun run scripts/publish-clawos.ts --skip-installer",
