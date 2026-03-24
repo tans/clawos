@@ -101,6 +101,78 @@
 }
 
 @layer utilities {
+  .hero-nav-overlay {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(10px);
+    background: linear-gradient(to bottom, rgb(0 0 0 / 42%), rgb(0 0 0 / 10%), transparent);
+  }
+
+  .hero-nav-link {
+    border: 1px solid rgb(255 255 255 / 28%);
+    color: rgb(255 255 255 / 92%);
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    transition: background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .hero-nav-link:hover {
+    background: rgb(255 255 255 / 16%);
+  }
+
+  .hero-fullbleed {
+    position: relative;
+    min-height: 100svh;
+    isolation: isolate;
+    overflow: clip;
+  }
+
+  .hero-image-drift {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    animation: var(--animate-drift);
+  }
+
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 25%, rgb(0 0 0 / 18%), transparent 52%),
+      linear-gradient(to bottom, rgb(0 0 0 / 22%), rgb(0 0 0 / 62%));
+  }
+
+  .hero-content-wrap {
+    position: relative;
+    z-index: 1;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    padding-top: 5.5rem;
+    padding-inline: 1.25rem;
+  }
+
+  .hero-copy-col {
+    max-width: 44rem;
+  }
+
+  @media (min-width: 640px) {
+    .hero-content-wrap {
+      padding-inline: 2rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .hero-content-wrap {
+      padding-inline: 3rem;
+    }
+  }
+
   .ambient-shell {
     position: relative;
   }
@@ -131,7 +203,8 @@
   .page-fade-delay-3,
   .float-gentle,
   .ambient-shell::before,
-  .ambient-shell::after {
+  .ambient-shell::after,
+  .hero-image-drift {
     animation: none;
   }
 
