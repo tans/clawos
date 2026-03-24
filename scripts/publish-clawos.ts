@@ -474,9 +474,16 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
     if (name.endsWith(".exe") && name.includes("setup")) {
       score += 30;
     }
+    if (name.endsWith(".zip") && name.includes(`${buildEnv}-${platformToken}-`)) {
+      score += 55;
+    }
     if (name.endsWith(".exe") && !name.includes("setup")) {
       score -= 120;
     }
+  }
+
+  if (name.includes("update") || name.includes("metadata") || name.includes("patch")) {
+    score -= 180;
   }
 
   return score;
@@ -484,7 +491,6 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
 
 async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv): Promise<InstallerResolution | null> {
   const allowed = allowedInstallerExt(platform);
-  const defaultName = defaultInstallerFileName(platform).toLowerCase();
   const roots = candidateArtifactRoots();
   const candidates: Array<{ path: string; score: number; mtimeMs: number }> = [];
 
@@ -497,14 +503,6 @@ async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv
         continue;
       }
       if (platform === "windows" && lowerName.endsWith(".exe") && !lowerName.includes("setup")) {
-        continue;
-      }
-      if (
-        platform === "windows" &&
-        lowerName !== defaultName &&
-        !lowerName.includes("clawos") &&
-        !lowerName.includes("setup")
-      ) {
         continue;
       }
       const score = candidateScore(filePath, platform, buildEnv);

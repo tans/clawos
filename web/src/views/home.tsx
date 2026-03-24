@@ -6,7 +6,15 @@ import { getBrandConfig } from "../lib/branding";
 
 function DownloadIcon() {
   return (
-    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      class="size-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 4v10" />
       <path d="M8 10l4 4 4-4" />
       <rect x="4" y="17" width="16" height="3" rx="1" />
@@ -16,7 +24,15 @@ function DownloadIcon() {
 
 function SunIcon() {
   return (
-    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      class="size-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="12" cy="12" r="4" />
       <path d="M12 2v2" />
       <path d="M12 20v2" />
@@ -32,16 +48,34 @@ function SunIcon() {
 
 function MoonIcon() {
   return (
-    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      class="size-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M20 15.5A8.5 8.5 0 1 1 8.5 4 6.5 6.5 0 0 0 20 15.5z" />
     </svg>
   );
 }
 
-function SectionTitle({ eyebrow, title, desc }: { eyebrow: string; title: string; desc: string }) {
+function SectionTitle({
+  eyebrow,
+  title,
+  desc,
+}: {
+  eyebrow: string;
+  title: string;
+  desc: string;
+}) {
   return (
     <div class="max-w-3xl space-y-3">
-      <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">{eyebrow}</div>
+      <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">
+        {eyebrow}
+      </div>
       <h2 class="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h2>
       <p class="text-sm leading-7 text-base-content/70 sm:text-base">{desc}</p>
     </div>
@@ -67,35 +101,63 @@ function HomePage({
   const versionText = latestVersion?.trim() ? latestVersion.trim() : "dev";
   const betaVersionText = betaVersion?.trim() ? betaVersion.trim() : "dev";
   const alphaVersionText = alphaVersion?.trim() ? alphaVersion.trim() : "dev";
-  const coreCapabilities = [
-    ["AI 员工职责体系", "围绕 CEO / COO / CMO / CTO 建立角色、汇报线与岗位说明。"],
-    ["目标对齐", "任务从公司目标逐层拆解到项目、团队与员工，执行路径清晰可追溯。"],
-    ["心跳调度", "员工按计划周期自动唤醒，处理例行任务并完成跨团队协作。"],
-    ["统一监控", "在同一控制台查看任务状态、工单链路、预算消耗与风险告警。"],
-    ["硬件产品：虾壳 3.0", "软硬一体交付，支持边缘执行与云端协同。"],
+
+  const hostProductLines = [
+    {
+      title: "通用 OpenClaw 主机",
+      subtitle: "入门学习，自主设置",
+      bullets: [
+        "适合开发者与爱好者",
+        "可按需安装技能与流程",
+        "低门槛启动，快速熟悉 OpenClaw",
+      ],
+    },
+    {
+      title: "行业主机",
+      subtitle: "预设技能，开箱即用",
+      bullets: [
+        "适合专业团队使用",
+        "内置行业模板，减少配置成本",
+        "直接进入可运营状态",
+      ],
+    },
   ] as const;
-  const mcpCapabilities = [
-    ["Marketing MCP", "覆盖选题、创作、投放、复盘全链路，统一管理增长漏斗。"],
-    ["Investment MCP", "支持研究、交易、风控协同，形成可审计的投资执行闭环。"],
-    ["IT Solution MCP", "贯通需求分析、开发测试、发布运维，提升项目交付效率。"],
-    ["Ops & Monitor MCP", "集中告警、审计日志、预算阈值与异常工单升级流程。"],
+
+  const industryHosts = [
+    "视频剪辑主机",
+    "客户管理主机",
+    "行业专家主机",
   ] as const;
-  const virtualOrg = [
-    "董事会 / Owner：审批招聘、战略和预算。",
-    "总部运营中心：统一监控、审计和风险控制。",
-    "投资公司：研究、交易、风控三层代理协作。",
-    "营销广告公司：内容、投放、增长代理按漏斗协同。",
-    "IT 解决方案公司：产品、开发、测试、运维全链路自动化。",
+
+  const clawosCapabilities = [
+    "目标拆解与任务编排",
+    "多角色 AI 员工协同",
+    "执行可视化、审计可追踪",
   ] as const;
-  const comparisonItems = [
-    ["传统方式", "多工具分散协作，任务状态难追踪，执行成本不透明。"],
-    ["无人公司模式", "以工单为核心，组织架构清晰，执行与成本全程可观测。"],
+
+  const openclawExtensions = [
+    "MCP 能力接入",
+    "企业系统与 API 集成",
+    "流程模板与角色权限定制",
   ] as const;
-  const oemFlow = [
-    "OEM 定制 GTA（Go-To-Agent）方案评估。",
-    "确认品牌形象、MCP 组合与虚拟公司架构。",
-    "按设备数量与交付周期报价，支持批量部署。",
-    "上线后提供监控模板、告警规则和运营陪跑。",
+
+  const clusterAndCompany = [
+    "多节点统一纳管与任务分发",
+    "状态巡检、异常告警与风险治理",
+    "Owner / 管理层 / 业务单元 / AI 员工分层协作",
+  ] as const;
+
+  const oemOdmScopes = [
+    "软件定制：界面、流程、角色、权限、MCP 组合",
+    "硬件定制：外观、规格、预装系统、启动流程",
+    "交付定制：部署、培训、运维、持续升级",
+  ] as const;
+
+  const cooperationFlow = [
+    "需求评估",
+    "方案确认",
+    "打样部署",
+    "批量交付",
   ] as const;
 
   return (
@@ -103,7 +165,7 @@ function HomePage({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{`${brandName} | 可定制的 openclaw`}</title>
+        <title>{`${brandName} | 主机 + ClawOS + OpenClaw + OEM/ODM`}</title>
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
@@ -112,28 +174,60 @@ function HomePage({
           <header class="page-fade surface-wash rounded-[2rem] px-5 py-4 sm:px-7">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center gap-3 text-lg font-semibold">
-                <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
+                <img
+                  src={brandLogoUrl}
+                  alt={`${brandName} Logo`}
+                  class="size-9 rounded-lg object-contain"
+                />
                 <span>{brandName}</span>
               </div>
-              <nav class="flex flex-wrap items-center gap-2 text-sm" aria-label="页面导航">
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#overview">
-                  介绍
+              <nav
+                class="flex flex-wrap items-center gap-2 text-sm"
+                aria-label="页面导航"
+              >
+                <a
+                  class="btn btn-ghost btn-sm border border-base-content/15"
+                  href="#host-business"
+                >
+                  主机
                 </a>
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#core-features">
-                  基础功能
+                <a
+                  class="btn btn-ghost btn-sm border border-base-content/15"
+                  href="#clawos-software"
+                >
+                  ClawOS
                 </a>
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#advanced-features">
-                  进阶功能
-                </a>
-                <a class="btn btn-ghost btn-sm border border-base-content/15" href="#oem">
+                <a
+                  class="btn btn-ghost btn-sm border border-base-content/15"
+                  href="#openclaw-extension"
+                >
                   定制
                 </a>
+                <a
+                  class="btn btn-ghost btn-sm border border-base-content/15"
+                  href="#cluster-company"
+                >
+                  集群
+                </a>
+                <a
+                  class="btn btn-ghost btn-sm border border-base-content/15"
+                  href="#oem-odm"
+                >
+                  OEM
+                </a>
                 <div class="inline-flex items-center rounded-full border border-base-content/15 bg-base-100/55 p-1">
-                  <a class="inline-flex items-center gap-2 rounded-full bg-warning/18 px-3 py-2 text-xs font-semibold text-base-content" href="/" aria-current="page">
+                  <a
+                    class="inline-flex items-center gap-2 rounded-full bg-warning/18 px-3 py-2 text-xs font-semibold text-base-content"
+                    href="/"
+                    aria-current="page"
+                  >
                     <SunIcon />
                     Human
                   </a>
-                  <a class="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-base-content/58 transition-colors hover:text-base-content" href="/to-agent">
+                  <a
+                    class="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold text-base-content/58 transition-colors hover:text-base-content"
+                    href="/to-agent"
+                  >
                     <MoonIcon />
                     Agent
                   </a>
@@ -142,84 +236,60 @@ function HomePage({
             </div>
           </header>
 
-          <section
-            id="overview"
-            class="page-fade page-fade-delay-1 ambient-shell mt-8 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-18"
-          >
+          <section class="page-fade page-fade-delay-1 ambient-shell mt-8 px-6 py-10 sm:px-10 sm:py-14 lg:px-14 lg:py-18">
             <div class="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14">
               <div class="max-w-2xl">
-                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">无人公司 / AI 员工 / 目标对齐 / MCP 编排 / OEM 定制</div>
+                <div class="text-xs font-semibold uppercase tracking-[0.24em] text-base-content/45">
+                  主机 / ClawOS / OpenClaw 扩展 / 集群管理 / OEM ODM
+                </div>
                 <h1 class="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                  企业级{" "}
-                  <span class="text-rotate text-primary" style="--duration: 9s;">
-                    <span>
-                      <span>无人公司控制台</span>
-                      <span>AI 员工调度中心</span>
-                      <span>虾壳 3.0 软硬一体平台</span>
-                    </span>
-                  </span>
+                  企业级 AI 业务落地平台
                 </h1>
                 <p class="mt-6 max-w-xl text-base leading-8 text-base-content/72 sm:text-lg">
-                  以组织管理方法运营 AI 员工体系。
-                  <br />
-                  从目标设定、任务执行到复盘治理，全部在同一控制台完成。
+                  以主机业务为入口，基于 ClawOS 统一控制平面，通过 OpenClaw
+                  完成行业扩展，支持集群化与无人公司搭建，最终提供 OEM/ODM
+                  软硬件深度定制方案。
                 </p>
-                <p class="mt-4 max-w-xl text-sm leading-7 text-base-content/62 sm:text-base">支持多公司并行运营，适配投资、营销广告与 IT 解决方案等业务形态。</p>
 
                 <div class="mt-8 flex flex-wrap gap-3">
-                  <span class="bg-base-100/70 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">基础功能 + 进阶功能</span>
-                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">组织图 + 工单 + 预算治理</span>
-                  <span class="bg-base-100/60 px-3 py-2 text-xs font-medium tracking-[0.16em] text-base-content/70 uppercase">OEM 定制 GTA</span>
-                </div>
-
-                <div class="mt-12 grid gap-6 sm:grid-cols-3">
-                  <div>
-                    <div class="text-2xl font-semibold">1 个控制平面</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">统一管理多家公司与全部 AI 员工。</div>
-                  </div>
-                  <div>
-                    <div class="text-2xl font-semibold">2 层能力模型</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">基础运行能力 + MCP 业务编排能力。</div>
-                  </div>
-                  <div>
-                    <div class="text-2xl font-semibold">虾壳 3.0</div>
-                    <div class="mt-2 text-sm leading-7 text-base-content/65">支持软硬件一体化 OEM 交付。</div>
-                  </div>
-                </div>
-
-                <div class="mt-10 flex flex-wrap gap-3">
                   {hasInstaller ? (
-                    <a class="btn btn-ghost btn-wide border border-base-content/15 bg-base-100/60" href="/downloads/latest">
+                    <a
+                      class="btn btn-ghost border border-base-content/15 bg-base-100/60"
+                      href="#clawos-software"
+                    >
                       <DownloadIcon />
-                      {`下载 v${versionText}`}
+                      {`下载 ClawOS v${versionText}`}
                     </a>
                   ) : (
-                    <button class="btn btn-ghost btn-wide border border-base-content/15 bg-base-100/60" type="button" disabled>
+                    <button
+                      class="btn btn-ghost border border-base-content/15 bg-base-100/60"
+                      type="button"
+                      disabled
+                    >
                       <DownloadIcon />
                       安装包暂未发布
                     </button>
                   )}
-                  {hasBetaInstaller ? (
-                    <a class="btn btn-ghost btn-wide border border-warning/30 bg-warning/10" href="/downloads/beta">
-                      <DownloadIcon />
-                      {`下载 Beta v${betaVersionText}`}
-                    </a>
-                  ) : null}
-                  {hasAlphaInstaller ? (
-                    <a class="btn btn-ghost btn-wide border border-info/30 bg-info/10" href="/downloads/alpha">
-                      <DownloadIcon />
-                      {`下载 Alpha v${alphaVersionText}`}
-                    </a>
-                  ) : null}
                   <a
-                    class="btn btn-outline btn-wide border border-base-content/15 bg-base-100/40"
+                    class="btn btn-outline border border-base-content/15 bg-base-100/40"
                     href="https://gx50d0q123.feishu.cn/wiki/CueLw8F8TiwjEMkGiCFclxtXnnh?from=from_copylink"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <DownloadIcon />
-                    使用手册
+                    咨询定制方案
                   </a>
+                </div>
+
+                <div class="mt-10 grid gap-4 sm:grid-cols-3">
+                  <div class="bg-base-100/45 px-4 py-3 text-sm">
+                    硬件入口：主机业务
+                  </div>
+                  <div class="bg-base-100/45 px-4 py-3 text-sm">
+                    软件大脑：ClawOS 控制平面
+                  </div>
+                  <div class="bg-base-100/45 px-4 py-3 text-sm">
+                    深度合作：OEM / ODM
+                  </div>
                 </div>
               </div>
 
@@ -235,86 +305,196 @@ function HomePage({
             </div>
           </section>
 
-          <section id="core-features" class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
-            <SectionTitle eyebrow="Basic Features" title="1. 基础功能" desc="围绕 AI 员工、无人公司和虾壳 3.0 的核心能力。" />
-
-            <div class="mt-12 grid gap-x-12 gap-y-10 pt-8 md:grid-cols-2">
-              {coreCapabilities.map(([title, desc]) => (
-                <article class="rise-on-hover space-y-2 bg-base-100/35 px-4 py-4">
-                  <h3 class="text-lg font-semibold tracking-tight">{title}</h3>
-                  <p class="max-w-md text-sm leading-7 text-base-content/68">{desc}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section id="advanced-features" class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
-            <SectionTitle eyebrow="Advanced Features" title="2. 进阶功能（各 MCP 介绍）" desc="把每个业务域做成独立 MCP，按公司级目标协同运行。" />
-
-            <div class="mt-12 grid gap-x-12 gap-y-10 pt-8 md:grid-cols-2">
-              {mcpCapabilities.map(([title, desc]) => (
-                <article class="rise-on-hover space-y-2 bg-base-100/35 px-4 py-4">
-                  <h3 class="text-lg font-semibold tracking-tight">{title}</h3>
-                  <p class="max-w-md text-sm leading-7 text-base-content/68">{desc}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
-            <SectionTitle eyebrow="Operating Model" title="管理目标，而非临时任务" desc="参考无人公司产品叙事：从‘工具堆叠’转向‘组织化运营’。" />
-
+          <section
+            id="host-business"
+            class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24"
+          >
+            <SectionTitle
+              eyebrow="Host Business"
+              title="1. 主机业务"
+              desc="分为通用 OpenClaw 主机与行业主机两条产品线，覆盖入门学习与业务落地。"
+            />
             <div class="mt-10 grid gap-6 md:grid-cols-2">
-              {comparisonItems.map(([title, desc]) => (
-                <article class="space-y-2 bg-base-100/35 px-5 py-4">
-                  <h3 class="text-base font-semibold">{title}</h3>
-                  <p class="text-sm leading-7 text-base-content/68">{desc}</p>
+              {hostProductLines.map((line) => (
+                <article class="space-y-3 bg-base-100/35 px-5 py-5">
+                  <h3 class="text-lg font-semibold">{line.title}</h3>
+                  <p class="text-sm text-base-content/70">{line.subtitle}</p>
+                  <ul class="list-disc space-y-1 pl-5 text-sm text-base-content/72">
+                    {line.bullets.map((bullet) => (
+                      <li>{bullet}</li>
+                    ))}
+                  </ul>
                 </article>
               ))}
             </div>
+            <div class="mt-6 bg-base-100/35 px-5 py-4">
+              <p class="text-sm font-semibold">行业主机方向</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                {industryHosts.map((host) => (
+                  <span class="bg-base-100/70 px-3 py-2 text-xs font-medium tracking-[0.08em]">
+                    {host}
+                  </span>
+                ))}
+              </div>
+            </div>
           </section>
 
-          <section id="oem" class="page-fade page-fade-delay-3 mt-20 px-1 sm:mt-24">
-            <SectionTitle eyebrow="Virtual Company Blueprint" title="无人公司架构蓝图" desc="基于“多公司 + 统一控制平面”思路，构建可扩展的虚拟公司矩阵。" />
-
-            <div class="mt-8 space-y-3 bg-base-100/35 px-5 py-5">
-              {virtualOrg.map((item) => (
-                <p class="text-sm leading-7 text-base-content/72">{item}</p>
-              ))}
+          <section
+            id="clawos-software"
+            class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24"
+          >
+            <SectionTitle
+              eyebrow="ClawOS"
+              title="2. ClawOS 软件"
+              desc="统一控制平面，负责目标、任务、流程、监控与告警。"
+            />
+            <div class="mt-10 grid gap-6 md:grid-cols-2">
+              <article class="bg-base-100/35 px-5 py-5">
+                <h3 class="text-base font-semibold">核心能力</h3>
+                <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-base-content/72">
+                  {clawosCapabilities.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </article>
+              <article class="bg-base-100/35 px-5 py-5">
+                <h3 class="text-base font-semibold">下载通道</h3>
+                <div class="mt-4 flex flex-wrap gap-3">
+                  {hasInstaller ? (
+                    <a
+                      class="btn btn-ghost border border-base-content/15 bg-base-100/60"
+                      href="/downloads/latest"
+                    >
+                      <DownloadIcon />
+                      {`稳定版 v${versionText}`}
+                    </a>
+                  ) : (
+                    <button
+                      class="btn btn-ghost border border-base-content/15 bg-base-100/60"
+                      type="button"
+                      disabled
+                    >
+                      安装包暂未发布
+                    </button>
+                  )}
+                  {hasBetaInstaller ? (
+                    <a
+                      class="btn btn-ghost border border-warning/30 bg-warning/10"
+                      href="/downloads/beta"
+                    >
+                      <DownloadIcon />
+                      {`Beta v${betaVersionText}`}
+                    </a>
+                  ) : null}
+                  {hasAlphaInstaller ? (
+                    <a
+                      class="btn btn-ghost border border-info/30 bg-info/10"
+                      href="/downloads/alpha"
+                    >
+                      <DownloadIcon />
+                      {`Alpha v${alphaVersionText}`}
+                    </a>
+                  ) : null}
+                </div>
+              </article>
             </div>
+          </section>
 
-            <SectionTitle eyebrow="OEM Solution" title="6. OEM 定制 GTA" desc="面向不同场景提供可落地的 Go-To-Agent 交付方案。" />
+          <section
+            id="openclaw-extension"
+            class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24"
+          >
+            <SectionTitle
+              eyebrow="OpenClaw Extension"
+              title="3. 定制扩展 OpenClaw"
+              desc="把通用能力转化为你的行业流程与业务资产。"
+            />
+            <div class="mt-10 bg-base-100/35 px-5 py-5">
+              <ul class="list-disc space-y-2 pl-5 text-sm text-base-content/72">
+                {openclawExtensions.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+              <div class="mt-5">
+                <a
+                  class="btn btn-outline border border-base-content/15"
+                  href="#oem-odm"
+                >
+                  咨询定制开发
+                </a>
+              </div>
+            </div>
+          </section>
 
-            <div class="mt-12 grid gap-12 pt-8 lg:grid-cols-[1.2fr_0.8fr]">
-              <div>
-                <h3 class="text-lg font-semibold">流程</h3>
-                <div class="mt-5 grid gap-5 sm:grid-cols-2">
-                  {oemFlow.map((item) => (
-                    <p class="text-sm leading-7 text-base-content/70">{item}</p>
+          <section
+            id="cluster-company"
+            class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24"
+          >
+            <SectionTitle
+              eyebrow="Cluster & Company"
+              title="4. 集群管理 / 无人公司搭建"
+              desc="从单点部署走向可治理、可审计、可复制的公司级运营。"
+            />
+            <div class="mt-10 bg-base-100/35 px-5 py-5">
+              <ul class="list-disc space-y-2 pl-5 text-sm text-base-content/72">
+                {clusterAndCompany.map((item) => (
+                  <li>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          <section
+            id="oem-odm"
+            class="page-fade page-fade-delay-3 mt-16 sm:mt-20 lg:mt-24"
+          >
+            <SectionTitle
+              eyebrow="OEM / ODM"
+              title="5. OEM / ODM 合作"
+              desc="软件硬件深度定制，支持从 PoC 到规模化商用。"
+            />
+            <div class="mt-10 grid gap-6 lg:grid-cols-2">
+              <article class="bg-base-100/35 px-5 py-5">
+                <h3 class="text-base font-semibold">定制范围</h3>
+                <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-base-content/72">
+                  {oemOdmScopes.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              </article>
+              <article class="bg-base-100/35 px-5 py-5">
+                <h3 class="text-base font-semibold">合作流程</h3>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                  {cooperationFlow.map((item) => (
+                    <p class="bg-base-100/55 px-3 py-2 text-sm text-base-content/75">
+                      {item}
+                    </p>
                   ))}
                 </div>
-              </div>
-
-              <div>
-                <h3 class="text-lg font-semibold">硬件产品</h3>
-                <div class="mt-5 space-y-3">
-                  <p class="text-sm leading-7 text-base-content/70">虾壳 3.0：支持本地推理与云端协同，适配无人公司边缘节点。</p>
-                  <p class="text-sm leading-7 text-base-content/70">支持批量预装企业模板，开箱即用接入控制台。</p>
-                  <p class="text-sm leading-7 text-base-content/70">可按行业提供 OEM 外观与启动流程定制。</p>
-                </div>
-              </div>
+              </article>
             </div>
           </section>
 
-          <section id="changelog" class="page-fade page-fade-delay-3 mt-20 px-1 sm:mt-24">
-            <SectionTitle eyebrow="Changelog" title="更新日志（中文）" desc="记录近期版本更新，方便快速了解变化。" />
+          <section
+            id="changelog"
+            class="page-fade page-fade-delay-3 mt-20 px-1 sm:mt-24"
+          >
+            <SectionTitle
+              eyebrow="Changelog"
+              title="更新日志"
+              desc="记录近期版本变化，便于快速了解更新。"
+            />
             <div class="mt-10 space-y-4">
               {changelogItems.map((item) => (
                 <article class="bg-base-100/45 px-5 py-4">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="text-base font-semibold">{item.version}</span>
-                    <span class="text-xs text-base-content/60">{item.date}</span>
-                    <span class="badge badge-outline badge-sm">{item.channel.toUpperCase()}</span>
+                    <span class="text-xs text-base-content/60">
+                      {item.date}
+                    </span>
+                    <span class="badge badge-outline badge-sm">
+                      {item.channel.toUpperCase()}
+                    </span>
                   </div>
                   <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-base-content/70">
                     {item.highlights.map((highlight) => (
@@ -344,7 +524,7 @@ export function renderHomePage(
   hasBetaInstaller = false,
   betaVersion: string | null = null,
   hasAlphaInstaller = false,
-  alphaVersion: string | null = null
+  alphaVersion: string | null = null,
 ): string {
   return `<!doctype html>${renderToString(
     <HomePage
@@ -354,6 +534,6 @@ export function renderHomePage(
       betaVersion={betaVersion}
       hasAlphaInstaller={hasAlphaInstaller}
       alphaVersion={alphaVersion}
-    />
+    />,
   )}`;
 }
