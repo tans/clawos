@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
+import { renderCeoLetterPage } from "../views/ceo-letter";
 import { renderHomePage } from "../views/home";
 
 export const pageRoutes = new Hono();
@@ -39,4 +40,8 @@ pageRoutes.get("/install-guide", (c) => {
 
 pageRoutes.get("/to-agent", (c) => {
   return c.html(renderAgentPage());
+});
+
+pageRoutes.get("/ceo-letter", (c) => {
+  return c.html(renderCeoLetterPage());
 });

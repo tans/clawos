@@ -160,6 +160,25 @@ function HomePage({
     "批量交付",
   ] as const;
 
+  const executionGoals = [
+    {
+      title: "客户成功目标",
+      desc: "让客户在最短周期内完成上线并看到经营结果，而不是停留在概念验证。",
+    },
+    {
+      title: "交付效率目标",
+      desc: "通过标准化主机与能力包缩短部署时间，降低首次落地与后续复制成本。",
+    },
+    {
+      title: "运营稳定目标",
+      desc: "依托 ClawOS 实现统一维护、配置治理与持续演进，保障长期稳定运行。",
+    },
+    {
+      title: "生态增长目标",
+      desc: "以 OEM 与行业方案形成渠道化扩张能力，推动从项目交付走向规模复制。",
+    },
+  ] as const;
+
   return (
     <html lang="zh-CN" data-theme="silk">
       <head>
@@ -243,12 +262,12 @@ function HomePage({
                   主机 / ClawOS / OpenClaw 扩展 / 集群管理 / OEM ODM
                 </div>
                 <h1 class="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                  企业级 AI 业务落地平台
+                  开箱即用、可规模复制的企业智能执行平台
                 </h1>
                 <p class="mt-6 max-w-xl text-base leading-8 text-base-content/72 sm:text-lg">
-                  以主机业务为入口，基于 ClawOS 统一控制平面，通过 OpenClaw
-                  完成行业扩展，支持集群化与无人公司搭建，最终提供 OEM/ODM
-                  软硬件深度定制方案。
+                  我们以虾壳主机作为交付入口，以 ClawOS 作为业务操作系统，
+                  结合 OpenClaw 扩展能力，为企业提供从单机落地到集群管控、
+                  从行业主机到 OEM 生态合作的一体化增长路径。
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-3">
@@ -282,13 +301,13 @@ function HomePage({
 
                 <div class="mt-10 grid gap-4 sm:grid-cols-3">
                   <div class="bg-base-100/45 px-4 py-3 text-sm">
-                    硬件入口：主机业务
+                    交付入口：虾壳主机
                   </div>
                   <div class="bg-base-100/45 px-4 py-3 text-sm">
-                    软件大脑：ClawOS 控制平面
+                    平台中枢：ClawOS
                   </div>
                   <div class="bg-base-100/45 px-4 py-3 text-sm">
-                    深度合作：OEM / ODM
+                    规模增长：行业方案 + OEM
                   </div>
                 </div>
               </div>
@@ -302,6 +321,24 @@ function HomePage({
                   class="h-auto w-full object-contain"
                 />
               </aside>
+            </div>
+          </section>
+
+          <section class="page-fade page-fade-delay-2 mt-16 sm:mt-20 lg:mt-24">
+            <SectionTitle
+              eyebrow="Execution Goals"
+              title="统一执行目标"
+              desc="官网内容与产品路径围绕同一经营目标：让智能体能力成为客户可持续购买与复购的业务产能。"
+            />
+            <div class="mt-10 grid gap-6 md:grid-cols-2">
+              {executionGoals.map((goal) => (
+                <article class="bg-base-100/35 px-5 py-5">
+                  <h3 class="text-base font-semibold">{goal.title}</h3>
+                  <p class="mt-3 text-sm leading-7 text-base-content/72">
+                    {goal.desc}
+                  </p>
+                </article>
+              ))}
             </div>
           </section>
 
@@ -509,7 +546,15 @@ function HomePage({
           <footer class="page-fade page-fade-delay-3 mt-16 px-2 py-8 text-sm text-base-content/70 sm:mt-20">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p>{`@${brandDomain}`}</p>
-              <p>客服联系: tianshe00</p>
+              <div class="flex items-center gap-4">
+                <a
+                  class="underline decoration-base-content/35 underline-offset-4 hover:decoration-base-content/80"
+                  href="/ceo-letter"
+                >
+                  CEO agent&apos;s letter
+                </a>
+                <p>客服联系: tianshe00</p>
+              </div>
             </div>
           </footer>
         </main>
