@@ -16,23 +16,10 @@ interface DownloadChannelCard {
 }
 
 function formatPublishedAt(value: string | null): string {
-  if (!value) {
-    return "暂无发布时间";
-  }
-
+  if (!value) return "暂无发布时间";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "暂无发布时间";
-  }
-
-  return date.toLocaleString("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  if (Number.isNaN(date.getTime())) return "暂无发布时间";
+  return date.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
@@ -47,33 +34,34 @@ export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body class="min-h-screen bg-base-100 text-base-content">
+      <body class="site-bg min-h-screen text-[#1a1a1a]">
         <main class="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12 lg:px-12 lg:py-16">
-          <header class="glass-nav rounded-2xl border border-slate-200 px-5 py-5 sm:px-7">
+          <header class="hero-glow bento-card px-5 py-5 sm:px-7">
             <div class="flex flex-wrap items-center justify-between gap-4">
               <div class="flex items-center gap-3">
                 <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
                 <div>
-                  <h1 class="text-xl font-semibold tracking-tight">下载中心</h1>
-                  <p class="text-sm text-base-content/65">按版本通道与系统平台选择安装包。</p>
+                  <p class="subcaps">Downloads</p>
+                  <h1 class="mt-1 text-xl font-bold tracking-tight">下载中心</h1>
+                  <p class="text-sm text-[#666]">按版本通道与系统平台选择安装包。</p>
                 </div>
               </div>
               <div class="flex flex-wrap gap-2">
                 <a class="secondary-button" href="/">返回首页</a>
-                <a class="primary-button" href="/contact">联系我们</a>
+                <a class="primary-button" href="/contact">联系我们 →</a>
               </div>
             </div>
           </header>
 
-          <section class="mt-8 grid gap-5 lg:grid-cols-3">
+          <section class="mt-10 page-fade grid gap-5 lg:grid-cols-3">
             {cards.map((card) => (
               <article class="bento-card p-5">
                 <div class="flex items-center justify-between gap-3">
                   <h2 class="text-lg font-semibold">{card.label}</h2>
-                  <span class={`badge ${card.badgeClass}`}>{card.id.toUpperCase()}</span>
+                  <span class="channel-badge">{card.id.toUpperCase()}</span>
                 </div>
-                <p class="mt-2 text-sm text-base-content/70">{`版本：${card.version}`}</p>
-                <p class="mt-1 text-xs text-base-content/55">{`发布时间：${card.publishedAt}`}</p>
+                <p class="mt-2 text-sm text-[#666]">{`版本：${card.version}`}</p>
+                <p class="mt-1 text-xs text-[#666]">{`发布时间：${card.publishedAt}`}</p>
 
                 {card.hasInstaller ? (
                   <div class="mt-5 grid gap-2">
