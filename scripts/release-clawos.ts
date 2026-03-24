@@ -15,10 +15,14 @@ type Options = {
   publishArgs: string[];
 };
 
-const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
-const APP_CONSTANTS_PATH = resolve(process.cwd(), "app/src/app.constants.ts");
+type StepOptions = {
+  cwd?: string;
+};
+
+const PACKAGE_JSON_PATH = resolve(process.cwd(), "app/package.json");
+const APP_CONSTANTS_PATH = resolve(process.cwd(), "app/shared/constants/app.ts");
 const XIAKE_CONFIG_PATH = resolve(process.cwd(), "app/clawos_xiake.json");
-const SHELL_HTML_PATH = resolve(process.cwd(), "app/src/desktop-ui/shell.html");
+const SHELL_HTML_PATH = resolve(process.cwd(), "app/webview/shell.html");
 const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:\.\d+)?$/;
 
 function parseEnv(raw: string | undefined): BuildEnv {
@@ -335,13 +339,16 @@ async function resolveReleaseVersion(options: Options): Promise<{ version: strin
   return { version: bumped, changed: true };
 }
 
-async function runStep(name: string, cmd: string[]): Promise<void> {
+async function runStep(name: string, cmd: string[], stepOptions?: StepOptions): Promise<void> {
   console.log(`[release] ${name}`);
   console.log(`[release] cmd: ${cmd.join(" ")}`);
+  if (stepOptions?.cwd) {
+    console.log(`[release] cwd: ${stepOptions.cwd}`);
+  }
 
   await new Promise<void>((resolvePromise, reject) => {
     const child = spawn(cmd[0], cmd.slice(1), {
-      cwd: process.cwd(),
+      cwd: stepOptions?.cwd || process.cwd(),
       env: process.env,
       stdio: "inherit",
     });
@@ -369,7 +376,7 @@ async function main(): Promise<void> {
   console.log(`[release] release channel: ${options.releaseChannel}`);
   console.log(`[release] release version: ${releaseVersion.version}`);
   if (releaseVersion.changed) {
-    console.log("[release] version files updated: package.json + app/src/app.constants.ts + app/clawos_xiake.json + app/src/desktop-ui/shell.html");
+    console.log("[release] version files updated: app/package.json + app/shared/constants/app.ts + app/clawos_xiake.json + app/webview/shell.html");
   }
   if (options.skipBuild) {
     console.log("[release] 跳过构建 (--skip-build)");
@@ -379,8 +386,11 @@ async function main(): Promise<void> {
   }
 
   if (!options.skipBuild) {
-    await runStep("构建 UI 样式", ["bun", "run", "tailwind:build"]);
-    await runStep("构建 Electrobun", ["bun", "run", "scripts/electrobun.ts", "build", `--env=${options.env}`]);
+    const appDir = resolve(process.cwd(), "app");
+    await runStep("Build Webview", ["bun", "run", "webview:build"], { cwd: appDir });
+    await runStep("Build Electrobun", ["bun", "run", "scripts/electrobun.ts", "build", `--env=${options.env}`], {
+      cwd: appDir,
+    });
   }
 
   if (!options.skipPublish) {

@@ -1,6 +1,6 @@
 {
   "name": "clawos",
-  "version": "0.9.44",
+  "version": "0.9.45.0",
   "type": "module",
   "scripts": {
     "publish": "bun run scripts/publish-clawos.ts",
