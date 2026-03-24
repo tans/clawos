@@ -44,8 +44,6 @@ function HomePage({
 }) {
   const { brandName, brandDomain, brandLogoUrl } = getBrandConfig();
   const versionText = latestVersion?.trim() ? latestVersion.trim() : "dev";
-  const betaVersionText = betaVersion?.trim() ? betaVersion.trim() : "dev";
-  const alphaVersionText = alphaVersion?.trim() ? alphaVersion.trim() : "dev";
 
   const architecture = ["开箱即用", "一站式管理", "可扩展能力", "多场景支持"] as const;
   const executionGoals = ["上手快", "省时间", "更稳定", "更省心"] as const;
@@ -84,12 +82,12 @@ function HomePage({
           <section class="hero-glow page-fade bento-card p-6 sm:p-10">
             <p class="subcaps">THE AI THAT ACTUALLY DOES THINGS.</p>
             <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-[#1a1a1a] sm:text-5xl">把复杂功能变成人人都能用的简单操作</h1>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">不管你是个人用户还是小团队，都可以快速上手，把常见任务更轻松地跑起来。</p>
+            <p class="mt-4 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">个人或团队都能快速上手，常见任务一键完成。</p>
             <div class="mt-8 flex flex-wrap gap-3">
               {hasInstaller ? (
                 <a class="primary-button" href="/downloads">
                   <DownloadIcon />
-                  {`下载 ClawOS v${versionText} →`}
+                  {`下载稳定版 v${versionText} →`}
                 </a>
               ) : (
                 <button class="secondary-button" type="button" disabled>安装包暂未发布</button>
@@ -98,15 +96,11 @@ function HomePage({
                 查看使用手册
               </a>
             </div>
-            <p class="mt-4 text-xs text-[#666]">
-              {hasBetaInstaller ? `测试版 v${betaVersionText} 已开放` : "测试版通道筹备中"}
-              {" · "}
-              {hasAlphaInstaller ? `内测版 v${alphaVersionText} 可申请体验` : "内测版通道进行中"}
-            </p>
+            <p class="mt-4 text-xs text-[#666]">首页下载默认指向稳定版；测试版与内测版请在下载中心查看。</p>
           </section>
 
           <section id="architecture" class="mt-20 page-fade">
-            <SectionTitle eyebrow="Why Choose Us" title="为什么普通用户也能轻松用" desc="把原本复杂的设置、更新和使用流程做成更直观的体验。" />
+            <SectionTitle eyebrow="Why Choose Us" title="为什么普通用户也能轻松用" desc="复杂设置被简化为可视化操作。" />
             <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {architecture.map((item) => (
                 <article class="bento-card p-5">
@@ -118,12 +112,12 @@ function HomePage({
           </section>
 
           <section id="solutions" class="mt-20 page-fade">
-            <SectionTitle eyebrow="User Benefits" title="你能得到什么" desc="从下载安装到日常使用，重点都是让你更快、更稳、更省心。" />
+            <SectionTitle eyebrow="User Benefits" title="你能得到什么" desc="更快上手，更稳运行。"/>
             <div class="mt-8 grid gap-4 md:grid-cols-2">
               {executionGoals.map((goal) => (
                 <article class="bento-card p-5">
                   <p class="text-lg font-semibold text-[#1a1a1a]">{goal}</p>
-                  <p class="mt-2 text-sm text-[#666]">基于统一界面和稳定交互，降低学习与执行成本。</p>
+                  <p class="mt-2 text-sm text-[#666]">统一界面，减少学习成本。</p>
                 </article>
               ))}
               {solutionTracks.map((track) => (
@@ -136,7 +130,7 @@ function HomePage({
           </section>
 
           <section id="changelog" class="mt-20 page-fade">
-            <SectionTitle eyebrow="Changelog" title="更新日志" desc="记录近期版本变化，便于快速了解更新。" />
+            <SectionTitle eyebrow="Changelog" title="更新日志" desc="近期版本变化一目了然。" />
             <div class="mt-8 space-y-4">
               {changelogItems.map((item) => (
                 <article class="bento-card p-5">
@@ -160,7 +154,7 @@ function HomePage({
               <span class="section-marker">&gt;</span>
               准备开始体验了吗？
             </h2>
-            <p class="mt-3 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">可以先下载试用，也可以先看使用手册；如果你有合作或采购需求，欢迎随时联系我们。</p>
+            <p class="mt-3 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">先下载试用，或先查看手册；合作需求可直接联系我们。</p>
             <div class="mt-6 flex flex-wrap gap-3">
               <a class="primary-button" href="/contact">联系我们 →</a>
               <a class="secondary-button" href="/ceo-letter">阅读 CEO agent&apos;s letter</a>
