@@ -71,9 +71,7 @@ describe("publish flows (action simulation)", () => {
       expect(canaryWorkflow).toContain(arg);
     }
 
-    expect(releaseWorkflow).toContain('if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then bun run publish -- --base-url "${PUBLISH_BASE_URL}"');
-    expect(canaryWorkflow).toContain('if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then bun run publish -- --base-url "${PUBLISH_BASE_URL}"');
-    expect(releaseWorkflow).toContain("else bun run publish -- --build-env");
-    expect(canaryWorkflow).toContain("else bun run publish -- --build-env");
+    expect(releaseWorkflow).toContain('bun run publish -- --base-url "https://relay.global.minapp.xin"');
+    expect(canaryWorkflow).toContain('bun run publish -- --base-url "https://relay.global.minapp.xin"');
   });
 });
