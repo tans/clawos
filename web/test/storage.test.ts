@@ -96,6 +96,19 @@ describe("release storage", () => {
     expect(betaDownload.asset.name).toBe("clawos-beta-3.1.0.exe");
   });
 
+  it("supports canary channel and keeps alpha compatibility", async () => {
+    await storeInstaller({
+      fileName: "clawos-canary-3.2.0.exe",
+      bytes: new TextEncoder().encode("canary-installer"),
+      channel: "canary",
+    });
+
+    const canary = await readLatestRelease("canary");
+    const alpha = await readLatestRelease("alpha");
+    expect(canary?.installer?.name).toBe("clawos-canary-3.2.0.exe");
+    expect(alpha?.installer?.name).toBe("clawos-canary-3.2.0.exe");
+  });
+
   it("stores xiake config and resolves downloadable file", async () => {
     await storeInstaller({
       fileName: "clawos-setup-2.0.0.exe",

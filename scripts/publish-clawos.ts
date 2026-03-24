@@ -132,6 +132,8 @@ function printUsage(): void {
   CLAWOS_RELEASE_CHANNEL
   CLAWOS_UPDATER_DIR
   CLAWOS_ARTIFACT_ROOTS
+  UPLOAD_CHUNK_SIZE_MB（分片上传每片大小，默认 16）
+  UPLOAD_CHUNK_THRESHOLD_MB（超过该大小启用分片上传，默认 20）
 `);
 }
 
@@ -712,6 +714,19 @@ async function uploadFile(params: {
 }): Promise<Record<string, unknown>> {
   const file = Bun.file(params.filePath);
   const fileSize = file.size;
+  const chunkSizeMb = Number.parseInt(process.env.UPLOAD_CHUNK_SIZE_MB || "", 10) || 16;
+  const chunkThresholdMb = Number.parseInt(process.env.UPLOAD_CHUNK_THRESHOLD_MB || "", 10) || 20;
+  const chunkSizeBytes = Math.max(1, chunkSizeMb) * 1024 * 1024;
+  const chunkThresholdBytes = Math.max(1, chunkThresholdMb) * 1024 * 1024;
+
+  if (fileSize >= chunkThresholdBytes) {
+    return await uploadFileByChunks({
+      ...params,
+      fileSize,
+      chunkSizeBytes,
+    });
+  }
+
   const form = new FormData();
   form.append("file", file, basename(params.filePath));
   if (params.version) {
@@ -785,6 +800,132 @@ async function uploadFile(params: {
   );
 
   return data;
+}
+
+async function uploadFileByChunks(params: {
+  endpoint: string;
+  filePath: string;
+  token: string;
+  baseUrl: string;
+  version?: string;
+  platform?: PublishPlatform;
+  channel: ReleaseChannel;
+  timeoutMs: number;
+  heartbeatMs: number;
+  fileSize: number;
+  chunkSizeBytes: number;
+}): Promise<Record<string, unknown>> {
+  const fileName = basename(params.filePath);
+  const totalChunks = Math.ceil(params.fileSize / params.chunkSizeBytes);
+  const startedAt = Date.now();
+  const baseHeaders = {
+    Authorization: `Bearer ${params.token}`,
+    ...(params.platform ? { "x-platform": params.platform } : {}),
+    "x-channel": params.channel,
+  };
+
+  const initRes = await fetch(`${params.baseUrl}/api/upload/chunk/init`, {
+    method: "POST",
+    headers: {
+      ...baseHeaders,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      target: params.endpoint,
+      fileName,
+      totalSize: params.fileSize,
+      totalChunks,
+      version: params.version,
+      platform: params.platform,
+      channel: params.channel,
+    }),
+  });
+  const initData = (await initRes.json()) as Record<string, unknown>;
+  if (!initRes.ok || initData.ok !== true || typeof initData.uploadId !== "string") {
+    const err = typeof initData.error === "string" ? initData.error : `HTTP ${initRes.status}`;
+    throw new Error(`初始化分片上传失败: ${err}`);
+  }
+  const uploadId = initData.uploadId;
+  console.log(
+    `[publish] 分片上传启用: ${fileName} (${formatBytes(params.fileSize)}), chunks=${totalChunks}, chunk=${formatBytes(params.chunkSizeBytes)}`
+  );
+
+  const heartbeatHandle = setInterval(() => {
+    const elapsed = Date.now() - startedAt;
+    console.log(`[publish] 分片上传中: ${fileName}，已耗时 ${formatDuration(elapsed)}...`);
+  }, params.heartbeatMs);
+
+  try {
+    for (let index = 0; index < totalChunks; index += 1) {
+      const start = index * params.chunkSizeBytes;
+      const end = Math.min(start + params.chunkSizeBytes, params.fileSize);
+      const chunkBlob = Bun.file(params.filePath).slice(start, end);
+      const chunkData = await chunkBlob.arrayBuffer();
+
+      let uploaded = false;
+      let attempt = 0;
+      let lastErr = "";
+      while (!uploaded && attempt < 3) {
+        attempt += 1;
+        const controller = new AbortController();
+        const timeoutHandle = setTimeout(() => controller.abort(), params.timeoutMs);
+        try {
+          const chunkRes = await fetch(
+            `${params.baseUrl}/api/upload/chunk/${encodeURIComponent(uploadId)}/part/${index}`,
+            {
+              method: "POST",
+              headers: {
+                ...baseHeaders,
+                "content-type": "application/octet-stream",
+              },
+              body: chunkData,
+              signal: controller.signal,
+            }
+          );
+          const chunkJson = (await chunkRes.json()) as Record<string, unknown>;
+          if (!chunkRes.ok || chunkJson.ok !== true) {
+            lastErr = typeof chunkJson.error === "string" ? chunkJson.error : `HTTP ${chunkRes.status}`;
+            continue;
+          }
+          uploaded = true;
+        } catch (error) {
+          lastErr = error instanceof Error ? error.message : String(error);
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
+      }
+      if (!uploaded) {
+        throw new Error(`分片上传失败: chunk=${index}/${totalChunks - 1}, error=${lastErr}`);
+      }
+
+      const progress = (((index + 1) / totalChunks) * 100).toFixed(1);
+      console.log(`[publish] 分片上传进度: ${fileName} ${index + 1}/${totalChunks} (${progress}%)`);
+    }
+
+    const completeRes = await fetch(`${params.baseUrl}/api/upload/chunk/${encodeURIComponent(uploadId)}/complete`, {
+      method: "POST",
+      headers: {
+        ...baseHeaders,
+      },
+    });
+    const completeText = await completeRes.text();
+    let completeData: Record<string, unknown> = {};
+    try {
+      completeData = completeText ? (JSON.parse(completeText) as Record<string, unknown>) : {};
+    } catch {
+      throw new Error(`完成分片上传返回非 JSON: ${completeText}`);
+    }
+    if (!completeRes.ok || completeData.ok !== true) {
+      const err = typeof completeData.error === "string" ? completeData.error : `HTTP ${completeRes.status}`;
+      throw new Error(`完成分片上传失败: ${err}`);
+    }
+
+    const elapsed = Date.now() - startedAt;
+    console.log(`[publish] 分片上传完成: ${fileName}, 耗时 ${formatDuration(elapsed)}`);
+    return completeData;
+  } finally {
+    clearInterval(heartbeatHandle);
+  }
 }
 
 function formatBytes(size: number): string {
