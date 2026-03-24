@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
+import { createServer } from "node:net";
 import path from "node:path";
 import { applyOpenclawConfig, readOpenclawConfig } from "../gateway/config";
-import { asObject, readNonEmptyString } from "../lib/value";
+import { asObject, readNonEmptyString, toFiniteNumber } from "../lib/value";
 import { normalizeOutput, runProcess, runWslScript, type CommandResult } from "./shell";
 import { appendTaskLog, createTask, findRunningTask, type Task } from "./store";
 
@@ -11,12 +12,12 @@ export const BROWSER_CDP_PORT = 9222;
 export const BROWSER_BOOT_URL = process.env.CLAWOS_BROWSER_BOOT_URL?.trim() || "about:blank";
 export const BROWSER_USER_DATA_DIR = process.env.CLAWOS_CHROME_USER_DATA_DIR?.trim() || "C:\\chrome-openclaw";
 
-const BROWSER_CDP_VERSION_URL = `http://127.0.0.1:${BROWSER_CDP_PORT}/json/version`;
+const BROWSER_CDP_PORT_SEARCH_LIMIT = 20;
 const BROWSER_CDP_PROBE_TIMEOUT_MS = 20_000;
 const BROWSER_CDP_PROBE_INTERVAL_MS = 800;
 const WINDOWS_ELEVATION_CANCEL_EXIT_CODE = 1223;
 const BROWSER_CDP_FIREWALL_RULE_NAME = "ClawOS Browser CDP";
-const BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS = "0.0.0.0";
+const BROWSER_CDP_PORTPROXY_LEGACY_LISTEN_ADDRESS = "0.0.0.0";
 const BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS = "127.0.0.1";
 const WSL_HOST_PROBE_TIMEOUT_MS = 30_000;
 const WSL_HOST_PROBE_INTERVAL_MS = 1_000;
@@ -26,6 +27,135 @@ export const DEFAULT_CHROME_EXE_PATHS = [
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
 ];
+
+type BrowserTaskConfig = {
+  cdpPort: number;
+};
+
+type WslWindowsHostHints = {
+  candidates: string[];
+  preferredHost: string | null;
+};
+
+function isValidPortNumber(value: number): boolean {
+  return Number.isInteger(value) && value >= 1 && value <= 65535;
+}
+
+export function normalizeBrowserCdpPort(value: unknown, fallback = BROWSER_CDP_PORT): number {
+  const parsed = toFiniteNumber(value);
+  if (parsed === undefined) {
+    return fallback;
+  }
+
+  const normalized = Math.floor(parsed);
+  return isValidPortNumber(normalized) ? normalized : fallback;
+}
+
+function inferBrowserCdpPortFromUrl(value: unknown): number | undefined {
+  const text = readNonEmptyString(value);
+  if (!text) {
+    return undefined;
+  }
+
+  try {
+    const parsed = new URL(text);
+    if (!parsed.port) {
+      return undefined;
+    }
+    return normalizeBrowserCdpPort(parsed.port, NaN);
+  } catch {
+    return undefined;
+  }
+}
+
+export function resolveBrowserCdpPort(config: Record<string, unknown> | null, fallback = BROWSER_CDP_PORT): number {
+  if (!config) {
+    return fallback;
+  }
+
+  const explicit = normalizeBrowserCdpPort(config.cdpPort, NaN);
+  if (Number.isFinite(explicit) && isValidPortNumber(explicit)) {
+    return explicit;
+  }
+
+  const inferred = inferBrowserCdpPortFromUrl(config.cdpUrl);
+  if (inferred !== undefined && isValidPortNumber(inferred)) {
+    return inferred;
+  }
+
+  return fallback;
+}
+
+function buildCdpVersionUrl(cdpPort: number): string {
+  return `http://127.0.0.1:${cdpPort}/json/version`;
+}
+
+async function readBrowserTaskConfig(): Promise<BrowserTaskConfig> {
+  const config = await readOpenclawConfig();
+  const browserConfig = asObject(config.browser);
+  return {
+    cdpPort: resolveBrowserCdpPort(browserConfig),
+  };
+}
+
+async function saveBrowserCdpPort(task: Task, cdpPort: number): Promise<void> {
+  const config = await readOpenclawConfig();
+  const currentBrowser = asObject(config.browser) || {};
+  const previousPort = resolveBrowserCdpPort(currentBrowser);
+  const hasExplicitPort = isValidPortNumber(normalizeBrowserCdpPort(currentBrowser.cdpPort, NaN));
+
+  if (hasExplicitPort && previousPort === cdpPort) {
+    return;
+  }
+
+  config.browser = {
+    ...currentBrowser,
+    cdpPort,
+  };
+  await applyOpenclawConfig(config, "ClawOS browser port update");
+  appendTaskLog(task, `browser.cdpPort => ${cdpPort}`);
+}
+
+async function canBindLoopbackPort(cdpPort: number): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const server = createServer();
+    let settled = false;
+
+    const finish = (available: boolean) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve(available);
+    };
+
+    server.once("error", () => finish(false));
+    server.once("listening", () => {
+      server.close(() => finish(true));
+    });
+
+    server.listen({
+      host: "127.0.0.1",
+      port: cdpPort,
+      exclusive: true,
+    });
+  });
+}
+
+async function resolveAvailableBrowserCdpPort(task: Task, preferredPort: number): Promise<number> {
+  const maxPort = Math.min(65535, preferredPort + BROWSER_CDP_PORT_SEARCH_LIMIT - 1);
+  for (let candidate = preferredPort; candidate <= maxPort; candidate += 1) {
+    if (await canBindLoopbackPort(candidate)) {
+      if (candidate !== preferredPort) {
+        appendTaskLog(task, `CDP port ${preferredPort} is occupied; using ${candidate} instead.`);
+      }
+      return candidate;
+    }
+    appendTaskLog(task, `CDP port ${candidate} is occupied; try next port.`);
+  }
+
+  throw new Error(`No available CDP port found between ${preferredPort} and ${maxPort}.`);
+}
 
 function escapePowerShellSingleQuoted(value: string): string {
   return value.replace(/'/g, "''");
@@ -214,11 +344,12 @@ type CdpVersionProbeResult = {
   webSocketDebuggerUrl: string;
 };
 
-async function fetchCdpVersion(timeoutMs: number): Promise<CdpVersionProbeResult> {
+async function fetchCdpVersion(timeoutMs: number, cdpPort = BROWSER_CDP_PORT): Promise<CdpVersionProbeResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const versionUrl = buildCdpVersionUrl(cdpPort);
   try {
-    const response = await fetch(BROWSER_CDP_VERSION_URL, {
+    const response = await fetch(versionUrl, {
       method: "GET",
       headers: { accept: "application/json" },
       signal: controller.signal,
@@ -243,16 +374,17 @@ async function fetchCdpVersion(timeoutMs: number): Promise<CdpVersionProbeResult
   }
 }
 
-async function waitForCdpVersion(task: Task): Promise<CdpVersionProbeResult> {
+async function waitForCdpVersion(task: Task, cdpPort = BROWSER_CDP_PORT): Promise<CdpVersionProbeResult> {
   const deadline = Date.now() + BROWSER_CDP_PROBE_TIMEOUT_MS;
   let lastError = "unknown error";
   let attempt = 0;
+  const versionUrl = buildCdpVersionUrl(cdpPort);
 
   while (Date.now() < deadline) {
     attempt += 1;
     try {
-      const result = await fetchCdpVersion(3_000);
-      appendTaskLog(task, `CDP ready: ${BROWSER_CDP_VERSION_URL}`);
+      const result = await fetchCdpVersion(3_000, cdpPort);
+      appendTaskLog(task, `CDP ready: ${versionUrl}`);
       appendTaskLog(task, `CDP WebSocket: ${result.webSocketDebuggerUrl}`);
       return result;
     } catch (error) {
@@ -263,7 +395,25 @@ async function waitForCdpVersion(task: Task): Promise<CdpVersionProbeResult> {
     }
   }
 
-  throw new Error(`CDP port ${BROWSER_CDP_PORT} timed out: ${lastError}`);
+  throw new Error(`CDP port ${cdpPort} timed out: ${lastError}`);
+}
+
+async function probeWslWindowsHost(host: string, cdpPort: number): Promise<CommandResult> {
+  const probeScript = [
+    "set -euo pipefail",
+    `HOST='${host.replace(/'/g, `'\"'\"'`)}'`,
+    `URL="http://$HOST:${cdpPort}/json/version"`,
+    'if command -v curl >/dev/null 2>&1; then',
+    '  curl -fsS --globoff --max-time 4 "$URL" >/dev/null',
+    'elif command -v wget >/dev/null 2>&1; then',
+    '  wget -q -T 4 -O - "$URL" >/dev/null',
+    "else",
+    '  echo "curl/wget not found in WSL" >&2',
+    "  exit 127",
+    "fi",
+  ].join("\n");
+
+  return await runWslScript(probeScript, { shellMode: "clean", loginShell: false });
 }
 
 function summarizeProbeError(error: unknown): string {
@@ -273,16 +423,17 @@ function summarizeProbeError(error: unknown): string {
   return String(error);
 }
 
-function hasPortProxyMapping(output: string): boolean {
+function hasPortProxyMapping(output: string, cdpPort = BROWSER_CDP_PORT, listenAddress?: string): boolean {
   const normalized = output.toLowerCase().replace(/\s+/g, " ");
+  const expectedListenAddress = (listenAddress || BROWSER_CDP_PORTPROXY_LEGACY_LISTEN_ADDRESS).toLowerCase();
   return (
-    normalized.includes(`${BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS} ${BROWSER_CDP_PORT}`) &&
-    normalized.includes(`${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS} ${BROWSER_CDP_PORT}`)
+    normalized.includes(`${expectedListenAddress} ${cdpPort}`) &&
+    normalized.includes(`${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS} ${cdpPort}`)
   );
 }
 
-async function ensureWindowsCdpFirewallRule(task: Task): Promise<void> {
-  appendTaskLog(task, `Prepare Windows firewall rule for TCP ${BROWSER_CDP_PORT}`);
+async function ensureWindowsCdpFirewallRule(task: Task, cdpPort = BROWSER_CDP_PORT): Promise<void> {
+  appendTaskLog(task, `Prepare Windows firewall rule for TCP ${cdpPort}`);
   await runNetshStep(
     task,
     ["netsh.exe", "advfirewall", "firewall", "delete", "rule", `name=${BROWSER_CDP_FIREWALL_RULE_NAME}`],
@@ -298,43 +449,49 @@ async function ensureWindowsCdpFirewallRule(task: Task): Promise<void> {
     "dir=in",
     "action=allow",
     "protocol=TCP",
-    `localport=${BROWSER_CDP_PORT}`,
+    `localport=${cdpPort}`,
   ]);
 }
 
-export function buildWindowsCdpPortProxyDeleteArgs(): string[] {
+export function buildWindowsCdpPortProxyDeleteArgs(
+  cdpPort = BROWSER_CDP_PORT,
+  listenAddress = BROWSER_CDP_PORTPROXY_LEGACY_LISTEN_ADDRESS
+): string[] {
   return [
     "netsh.exe",
     "interface",
     "portproxy",
     "delete",
     "v4tov4",
-    `listenport=${BROWSER_CDP_PORT}`,
-    `listenaddress=${BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS}`,
+    `listenport=${cdpPort}`,
+    `listenaddress=${listenAddress}`,
   ];
 }
 
-export function buildWindowsCdpPortProxyAddArgs(): string[] {
+export function buildWindowsCdpPortProxyAddArgs(cdpPort = BROWSER_CDP_PORT, listenAddress: string): string[] {
   return [
     "netsh.exe",
     "interface",
     "portproxy",
     "add",
     "v4tov4",
-    `listenport=${BROWSER_CDP_PORT}`,
-    `listenaddress=${BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS}`,
-    `connectport=${BROWSER_CDP_PORT}`,
+    `listenport=${cdpPort}`,
+    `listenaddress=${listenAddress}`,
+    `connectport=${cdpPort}`,
     `connectaddress=${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}`,
   ];
 }
 
-async function ensureWindowsCdpPortProxy(task: Task): Promise<void> {
+async function ensureWindowsCdpPortProxy(task: Task, cdpPort = BROWSER_CDP_PORT, listenAddress: string): Promise<void> {
+  const deleteAddresses = dedupeStrings([BROWSER_CDP_PORTPROXY_LEGACY_LISTEN_ADDRESS, listenAddress]);
   appendTaskLog(
     task,
-    `Prepare Windows portproxy ${BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS}:${BROWSER_CDP_PORT} -> ${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}:${BROWSER_CDP_PORT}`
+    `Prepare Windows portproxy ${listenAddress}:${cdpPort} -> ${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}:${cdpPort}`
   );
-  await runNetshStep(task, buildWindowsCdpPortProxyDeleteArgs(), { allowFailure: true });
-  await runNetshStep(task, buildWindowsCdpPortProxyAddArgs());
+  for (const address of deleteAddresses) {
+    await runNetshStep(task, buildWindowsCdpPortProxyDeleteArgs(cdpPort, address), { allowFailure: true });
+  }
+  await runNetshStep(task, buildWindowsCdpPortProxyAddArgs(cdpPort, listenAddress));
 }
 
 type FirewallRuleProbeItem = {
@@ -354,7 +511,7 @@ function normalizeFirewallRuleItems(value: unknown): FirewallRuleProbeItem[] {
   return objectValue ? [objectValue as FirewallRuleProbeItem] : [];
 }
 
-function isAllowedInboundTcpRule(item: FirewallRuleProbeItem): boolean {
+function isAllowedInboundTcpRule(item: FirewallRuleProbeItem, cdpPort = BROWSER_CDP_PORT): boolean {
   const direction = String(item.direction ?? "").toLowerCase();
   const action = String(item.action ?? "").toLowerCase();
   const protocol = String(item.protocol ?? "").toLowerCase();
@@ -364,14 +521,14 @@ function isAllowedInboundTcpRule(item: FirewallRuleProbeItem): boolean {
     (direction === "inbound" || direction === "1") &&
     (action === "allow" || action === "2") &&
     (protocol === "tcp" || protocol === "6") &&
-    localPort === String(BROWSER_CDP_PORT)
+    localPort === String(cdpPort)
   );
 }
 
-async function probeFirewallRules(task: Task): Promise<FirewallRuleProbeItem[]> {
+async function probeFirewallRules(task: Task, cdpPort = BROWSER_CDP_PORT): Promise<FirewallRuleProbeItem[]> {
   const command = [
     "$ErrorActionPreference = 'Stop'",
-    `$port = '${BROWSER_CDP_PORT}'`,
+    `$port = '${cdpPort}'`,
     "$rules = Get-NetFirewallRule -PolicyStore ActiveStore -ErrorAction Stop |",
     "  Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' } |",
     "  Get-NetFirewallPortFilter -ErrorAction Stop |",
@@ -405,22 +562,27 @@ async function probeFirewallRules(task: Task): Promise<FirewallRuleProbeItem[]> 
   }
 }
 
-async function detectLocalCdp(task: Task): Promise<boolean> {
-  appendTaskLog(task, `Probe local CDP: ${BROWSER_CDP_VERSION_URL}`);
+async function detectLocalCdp(task: Task, cdpPort = BROWSER_CDP_PORT): Promise<boolean> {
+  const versionUrl = buildCdpVersionUrl(cdpPort);
+  appendTaskLog(task, `Probe local CDP: ${versionUrl}`);
   try {
-    const result = await fetchCdpVersion(3_000);
+    const result = await fetchCdpVersion(3_000, cdpPort);
     const browserText = readNonEmptyString(result.payload.Browser) || "unknown browser";
-    appendTaskLog(task, `PASS 127.0.0.1:${BROWSER_CDP_PORT} CDP is open`);
+    appendTaskLog(task, `PASS 127.0.0.1:${cdpPort} CDP is open`);
     appendTaskLog(task, `Browser: ${browserText}`);
     appendTaskLog(task, `WebSocket: ${result.webSocketDebuggerUrl}`);
     return true;
   } catch (error) {
-    appendTaskLog(task, `FAIL 127.0.0.1:${BROWSER_CDP_PORT} CDP is not reachable: ${summarizeProbeError(error)}`, "error");
+    appendTaskLog(task, `FAIL 127.0.0.1:${cdpPort} CDP is not reachable: ${summarizeProbeError(error)}`, "error");
     return false;
   }
 }
 
-async function detectPortProxy(task: Task): Promise<boolean> {
+async function detectPortProxy(
+  task: Task,
+  cdpPort = BROWSER_CDP_PORT,
+  listenAddress = BROWSER_CDP_PORTPROXY_LEGACY_LISTEN_ADDRESS
+): Promise<boolean> {
   const result = await runNetshReadCommand(task, ["netsh.exe", "interface", "portproxy", "show", "v4tov4"]);
   if (!result.ok) {
     if (isElevationCancelled(result)) {
@@ -433,31 +595,31 @@ async function detectPortProxy(task: Task): Promise<boolean> {
     return false;
   }
 
-  const mapped = hasPortProxyMapping(result.stdout);
+  const mapped = hasPortProxyMapping(result.stdout, cdpPort, listenAddress);
   appendTaskLog(
     task,
     mapped
-      ? `PASS ${BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS}:${BROWSER_CDP_PORT} forwards to ${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}:${BROWSER_CDP_PORT}`
-      : `FAIL missing portproxy ${BROWSER_CDP_PORTPROXY_LISTEN_ADDRESS}:${BROWSER_CDP_PORT} -> ${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}:${BROWSER_CDP_PORT}`,
+      ? `PASS ${listenAddress}:${cdpPort} forwards to ${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}:${cdpPort}`
+      : `FAIL missing portproxy ${listenAddress}:${cdpPort} -> ${BROWSER_CDP_PORTPROXY_CONNECT_ADDRESS}:${cdpPort}`,
     mapped ? "info" : "error"
   );
   return mapped;
 }
 
-async function detectFirewallRule(task: Task): Promise<boolean> {
-  const rules = await probeFirewallRules(task);
-  const allowed = rules.some((item) => isAllowedInboundTcpRule(item));
+async function detectFirewallRule(task: Task, cdpPort = BROWSER_CDP_PORT): Promise<boolean> {
+  const rules = await probeFirewallRules(task, cdpPort);
+  const allowed = rules.some((item) => isAllowedInboundTcpRule(item, cdpPort));
   const namedRule = rules.find((item) => item.displayName === BROWSER_CDP_FIREWALL_RULE_NAME);
   if (namedRule) {
     appendTaskLog(task, `Matched firewall rule: ${namedRule.displayName}`);
   } else if (rules.length > 0) {
-    appendTaskLog(task, `Matched ${rules.length} inbound allow rule(s) for TCP ${BROWSER_CDP_PORT}`);
+    appendTaskLog(task, `Matched ${rules.length} inbound allow rule(s) for TCP ${cdpPort}`);
   }
   appendTaskLog(
     task,
     allowed
-      ? `PASS Windows firewall allows inbound TCP ${BROWSER_CDP_PORT}`
-      : `FAIL Windows firewall does not have an enabled inbound allow rule for TCP ${BROWSER_CDP_PORT}`,
+      ? `PASS Windows firewall allows inbound TCP ${cdpPort}`
+      : `FAIL Windows firewall does not have an enabled inbound allow rule for TCP ${cdpPort}`,
     allowed ? "info" : "error"
   );
   return allowed;
@@ -511,15 +673,19 @@ function dedupeStrings(values: string[]): string[] {
   return Array.from(new Set(values.map((item) => item.trim()).filter(Boolean)));
 }
 
-export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, host: string): string {
+export function buildRemoteCdpUrl(localWebSocketDebuggerUrl: string, host: string, cdpPort = BROWSER_CDP_PORT): string {
   const parsed = new URL(localWebSocketDebuggerUrl);
+  // OpenClaw/Codex expects an HTTP(S) CDP base URL here, not the raw DevTools WebSocket endpoint.
   parsed.hostname = host;
-  parsed.port = String(BROWSER_CDP_PORT);
-  parsed.protocol = parsed.protocol === "wss:" ? "wss:" : "ws:";
+  parsed.port = String(cdpPort);
+  parsed.protocol = parsed.protocol === "wss:" ? "https:" : "http:";
+  parsed.pathname = "/";
+  parsed.search = "";
+  parsed.hash = "";
   return parsed.toString();
 }
 
-async function resolveReachableWslWindowsHost(task: Task): Promise<string> {
+async function readWslWindowsHostHints(task: Task): Promise<WslWindowsHostHints> {
   appendTaskLog(task, "Run: read WSL default route and nameservers");
   const script = [
     "set -euo pipefail",
@@ -546,29 +712,32 @@ async function resolveReachableWslWindowsHost(task: Task): Promise<string> {
   }
 
   appendTaskLog(task, `WSL Windows host candidates: ${candidates.join(", ")}`);
+  return {
+    candidates,
+    preferredHost: candidates[0] || null,
+  };
+}
+
+async function ensureWslReachablePortProxy(
+  task: Task,
+  cdpPort: number,
+  hints: WslWindowsHostHints
+): Promise<string> {
+  if (hints.candidates.length === 0) {
+    throw new Error("Could not determine Windows host IP from WSL.");
+  }
+
   appendTaskLog(task, `Wait ${WSL_HOST_PROBE_INITIAL_DELAY_MS}ms before probing WSL connectivity.`);
   await Bun.sleep(WSL_HOST_PROBE_INITIAL_DELAY_MS);
 
   const deadline = Date.now() + WSL_HOST_PROBE_TIMEOUT_MS;
   let lastError = "unknown error";
   while (Date.now() < deadline) {
-    for (const host of candidates) {
-      const probeScript = [
-        "set -euo pipefail",
-        `HOST='${host.replace(/'/g, `'\"'\"'`)}'`,
-        `URL="http://$HOST:${BROWSER_CDP_PORT}/json/version"`,
-        'if command -v curl >/dev/null 2>&1; then',
-        '  curl -fsS --globoff --max-time 4 "$URL" >/dev/null',
-        'elif command -v wget >/dev/null 2>&1; then',
-        '  wget -q -T 4 -O - "$URL" >/dev/null',
-        "else",
-        '  echo "curl/wget not found in WSL" >&2',
-        "  exit 127",
-        "fi",
-      ].join("\n");
-      const probeResult = await runWslScript(probeScript, { shellMode: "clean", loginShell: false });
+    for (const host of hints.candidates) {
+      await ensureWindowsCdpPortProxy(task, cdpPort, host);
+      const probeResult = await probeWslWindowsHost(host, cdpPort);
       if (probeResult.ok) {
-        appendTaskLog(task, `WSL can reach Windows CDP via ${host}:${BROWSER_CDP_PORT}`);
+        appendTaskLog(task, `WSL can reach Windows CDP via ${host}:${cdpPort}`);
         return host;
       }
       lastError = probeResult.stderr.trim() || probeResult.stdout.trim() || `exit code ${probeResult.code}`;
@@ -577,16 +746,17 @@ async function resolveReachableWslWindowsHost(task: Task): Promise<string> {
     await Bun.sleep(WSL_HOST_PROBE_INTERVAL_MS);
   }
 
-  throw new Error(`WSL could not reach Windows CDP on port ${BROWSER_CDP_PORT}: ${lastError}`);
+  throw new Error(`WSL could not reach Windows CDP on port ${cdpPort}: ${lastError}`);
 }
 
-async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Promise<void> {
+async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string, cdpPort: number): Promise<void> {
   const config = await readOpenclawConfig();
   const currentBrowser = asObject(config.browser);
   const nextBrowser: Record<string, unknown> = {
     enabled: typeof currentBrowser?.enabled === "boolean" ? currentBrowser.enabled : true,
     evaluateEnabled: typeof currentBrowser?.evaluateEnabled === "boolean" ? currentBrowser.evaluateEnabled : true,
     attachOnly: true,
+    cdpPort,
     cdpUrl: remoteCdpUrl,
   };
 
@@ -602,6 +772,7 @@ async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Pro
 
   config.browser = nextBrowser;
   await applyOpenclawConfig(config, "ClawOS browser repair");
+  appendTaskLog(task, `browser.cdpPort => ${cdpPort}`);
   appendTaskLog(task, `browser.cdpUrl => ${remoteCdpUrl}`);
   appendTaskLog(task, "browser.attachOnly => true");
 }
@@ -632,10 +803,10 @@ export function resolveChromeWorkingDirectory(exePath: string): string {
   return path.win32.dirname(exePath);
 }
 
-export function buildChromeStartCommand(exePath: string, workingDirectory: string): string {
+export function buildChromeStartCommand(exePath: string, workingDirectory: string, cdpPort = BROWSER_CDP_PORT): string {
   const args = [
     "--remote-debugging-address=127.0.0.1",
-    `--remote-debugging-port=${BROWSER_CDP_PORT}`,
+    `--remote-debugging-port=${cdpPort}`,
     `--user-data-dir=${BROWSER_USER_DATA_DIR}`,
     "--new-window",
     "--no-first-run",
@@ -647,7 +818,7 @@ export function buildChromeStartCommand(exePath: string, workingDirectory: strin
   return `Start-Process -FilePath '${escapePowerShellSingleQuoted(exePath)}' -WorkingDirectory '${escapePowerShellSingleQuoted(workingDirectory)}' -ArgumentList ${argumentList} -WindowStyle Hidden`;
 }
 
-export function buildChromeStartArgs(exePath: string, workingDirectory: string): string[] {
+export function buildChromeStartArgs(exePath: string, workingDirectory: string, cdpPort = BROWSER_CDP_PORT): string[] {
   return [
     "powershell.exe",
     "-NoProfile",
@@ -655,7 +826,7 @@ export function buildChromeStartArgs(exePath: string, workingDirectory: string):
     "-ExecutionPolicy",
     "Bypass",
     "-Command",
-    buildChromeStartCommand(exePath, workingDirectory),
+    buildChromeStartCommand(exePath, workingDirectory, cdpPort),
   ];
 }
 
@@ -666,7 +837,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
     return { task: runningTask, reused: true };
   }
 
-  const totalSteps = 2;
+  const totalSteps = 4;
   const task = createTask("browser-cdp-restart", "打开浏览器 CDP", totalSteps);
   task.status = "running";
 
@@ -676,6 +847,8 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
         throw new Error("Browser CDP restart is only supported on Windows.");
       }
 
+      const browserConfig = await readBrowserTaskConfig();
+      const hostHints = await readWslWindowsHostHints(task);
       const chromeExePath = resolveChromeExePath();
       if (!existsSync(chromeExePath)) {
         throw new Error(`chrome.exe not found: ${chromeExePath}`);
@@ -683,7 +856,8 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       const chromeWorkingDirectory = resolveChromeWorkingDirectory(chromeExePath);
 
       task.step = 1;
-      appendTaskLog(task, `Step 1/${totalSteps}: start local CDP on 127.0.0.1:${BROWSER_CDP_PORT}`);
+      appendTaskLog(task, `Step 1/${totalSteps}: start local CDP`);
+      appendTaskLog(task, `Preferred CDP port: ${browserConfig.cdpPort}`);
       appendTaskLog(task, "Run: taskkill /F /IM chrome.exe /T");
       const killResult = await runProcess(["taskkill", "/F", "/IM", "chrome.exe", "/T"]);
       appendProcessLogs(task, killResult, killResult.ok || killResult.code === 128);
@@ -691,19 +865,35 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
         throw new Error(`stop chrome.exe failed (exit code ${killResult.code})`);
       }
 
+      const cdpPort = await resolveAvailableBrowserCdpPort(task, browserConfig.cdpPort);
+      appendTaskLog(task, `Selected CDP port: ${cdpPort}`);
+
       await runProcessStep(task, {
         step: 1,
         totalSteps,
-        name: `start Chrome with CDP on ${BROWSER_CDP_PORT}`,
-        command: `powershell.exe ... ${buildChromeStartCommand(chromeExePath, chromeWorkingDirectory)}`,
-        args: buildChromeStartArgs(chromeExePath, chromeWorkingDirectory),
+        name: `start Chrome with CDP on ${cdpPort}`,
+        command: `powershell.exe ... ${buildChromeStartCommand(chromeExePath, chromeWorkingDirectory, cdpPort)}`,
+        args: buildChromeStartArgs(chromeExePath, chromeWorkingDirectory, cdpPort),
       });
 
-      appendTaskLog(task, `Run: GET ${BROWSER_CDP_VERSION_URL}`);
-      const version = await waitForCdpVersion(task);
+      appendTaskLog(task, `Run: GET ${buildCdpVersionUrl(cdpPort)}`);
+      const version = await waitForCdpVersion(task, cdpPort);
+      await saveBrowserCdpPort(task, cdpPort);
 
       task.step = 2;
-      appendTaskLog(task, `Step 2/${totalSteps}: record local CDP endpoint`);
+      appendTaskLog(task, `Step 2/${totalSteps}: ensure Windows firewall rule`);
+      await ensureWindowsCdpFirewallRule(task, cdpPort);
+
+      task.step = 3;
+      appendTaskLog(task, `Step 3/${totalSteps}: ensure WSL portproxy access`);
+      const windowsHost = await ensureWslReachablePortProxy(task, cdpPort, hostHints);
+      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, windowsHost, cdpPort);
+      await resetOpenclawBrowserConfig(task, remoteCdpUrl, cdpPort);
+
+      task.step = 4;
+      appendTaskLog(task, `Step 4/${totalSteps}: record local CDP endpoint`);
+      appendTaskLog(task, `CDP port: ${cdpPort}`);
+      appendTaskLog(task, `WSL Windows host: ${windowsHost}`);
       appendTaskLog(task, `Local WebSocket endpoint: ${version.webSocketDebuggerUrl}`);
 
       task.status = "success";
@@ -738,23 +928,27 @@ export function startBrowserRepairTask(): { task: Task; reused: boolean } {
         throw new Error("Browser repair is only supported on Windows.");
       }
 
+      const browserConfig = await readBrowserTaskConfig();
+      const hostHints = await readWslWindowsHostHints(task);
+      const cdpPort = browserConfig.cdpPort;
+
       task.step = 1;
-      appendTaskLog(task, `Step 1/${totalSteps}: ensure Windows portproxy`);
-      await ensureWindowsCdpPortProxy(task);
+      appendTaskLog(task, `Step 1/${totalSteps}: ensure Windows firewall rule`);
+      appendTaskLog(task, `CDP port: ${cdpPort}`);
+      await ensureWindowsCdpFirewallRule(task, cdpPort);
 
       task.step = 2;
-      appendTaskLog(task, `Step 2/${totalSteps}: ensure Windows firewall rule`);
-      await ensureWindowsCdpFirewallRule(task);
+      appendTaskLog(task, `Step 2/${totalSteps}: ensure WSL portproxy access`);
+      const windowsHost = await ensureWslReachablePortProxy(task, cdpPort, hostHints);
 
       task.step = 3;
       appendTaskLog(task, `Step 3/${totalSteps}: read local CDP endpoint`);
-      const version = await waitForCdpVersion(task);
+      const version = await waitForCdpVersion(task, cdpPort);
 
       task.step = 4;
       appendTaskLog(task, `Step 4/${totalSteps}: update openclaw browser config`);
-      const windowsHost = await resolveReachableWslWindowsHost(task);
-      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, windowsHost);
-      await resetOpenclawBrowserConfig(task, remoteCdpUrl);
+      const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, windowsHost, cdpPort);
+      await resetOpenclawBrowserConfig(task, remoteCdpUrl, cdpPort);
 
       task.status = "success";
       task.endedAt = new Date().toISOString();
@@ -788,16 +982,20 @@ export function startBrowserDetectTask(): { task: Task; reused: boolean } {
         throw new Error("Browser detection is only supported on Windows.");
       }
 
+      const browserConfig = await readBrowserTaskConfig();
+      const cdpPort = browserConfig.cdpPort;
+
       task.step = 1;
       appendTaskLog(task, `Step 1/${totalSteps}: detect local CDP port`);
-      const localCdpOk = await detectLocalCdp(task);
+      appendTaskLog(task, `CDP port: ${cdpPort}`);
+      const localCdpOk = await detectLocalCdp(task, cdpPort);
 
       if (localCdpOk) {
         task.status = "success";
-        appendTaskLog(task, `CDP port check passed: 127.0.0.1:${BROWSER_CDP_PORT}`);
+        appendTaskLog(task, `CDP port check passed: 127.0.0.1:${cdpPort}`);
       } else {
         task.status = "failed";
-        task.error = `CDP port check failed: 127.0.0.1:${BROWSER_CDP_PORT} is not reachable.`;
+        task.error = `CDP port check failed: 127.0.0.1:${cdpPort} is not reachable.`;
         appendTaskLog(task, task.error, "error");
       }
       task.endedAt = new Date().toISOString();

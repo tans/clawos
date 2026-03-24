@@ -355,6 +355,14 @@ button {
   min-width: 0;
 }
 
+.browser-port-field {
+  width: min(148px, 100%);
+}
+
+.browser-port-input {
+  width: 100%;
+}
+
 .field-input,
 .field-textarea,
 .log-console,

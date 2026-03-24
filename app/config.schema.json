@@ -311,6 +311,11 @@
           "cdpUrl": {
             "type": "string"
           },
+          "cdpPort": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
           "remoteCdpTimeoutMs": {
             "type": "integer",
             "minimum": 0,
@@ -9218,6 +9223,10 @@
     },
     "browser.evaluateEnabled": {
       "label": "Browser Evaluate Enabled"
+    },
+    "browser.cdpPort": {
+      "label": "Browser CDP Port",
+      "help": "Preferred local Chrome DevTools port. If occupied, ClawOS will try the next available port and save it here."
     },
     "browser.snapshotDefaults": {
       "label": "Browser Snapshot Defaults"

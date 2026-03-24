@@ -7,6 +7,10 @@ type ChildProcessHandle = {
 };
 
 const BUN_EXECUTABLE = process.execPath;
+const WEBVIEW_BUILD_OUTPUTS = [
+  join(process.cwd(), "webview-dist", "assets", "app.css"),
+  join(process.cwd(), "webview-dist", "assets", "react-app.js"),
+];
 
 function spawnChild(name: string, cmd: string[], env?: Record<string, string>): ChildProcessHandle {
   console.log(`[desktop-dev] start ${name}: ${cmd.join(" ")}`);
@@ -66,6 +70,35 @@ function runBestEffortCommand(name: string, cmd: string[]): void {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`[desktop-dev] ${name} skipped: ${message}`);
   }
+}
+
+async function runRequiredCommand(name: string, cmd: string[]): Promise<void> {
+  console.log(`[desktop-dev] run ${name}: ${cmd.join(" ")}`);
+  const proc = Bun.spawn({
+    cmd,
+    cwd: process.cwd(),
+    env: process.env,
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+
+  const exitCode = await proc.exited;
+  if (exitCode !== 0) {
+    throw new Error(`${name} failed with exit code ${exitCode}`);
+  }
+}
+
+function assertWebviewBuildOutputs(): void {
+  const missing = WEBVIEW_BUILD_OUTPUTS.filter((filePath) => !existsSync(filePath));
+  if (missing.length > 0) {
+    throw new Error(`webview build outputs are missing: ${missing.join(", ")}`);
+  }
+}
+
+async function ensureInitialWebviewBuild(): Promise<void> {
+  await runRequiredCommand("initial webview build", [BUN_EXECUTABLE, "run", "webview:build"]);
+  assertWebviewBuildOutputs();
 }
 
 async function cleanupWindowsDevBuild(): Promise<void> {
@@ -134,6 +167,7 @@ async function cleanupWindowsDevBuild(): Promise<void> {
 
 async function main(): Promise<void> {
   await cleanupWindowsDevBuild();
+  await ensureInitialWebviewBuild();
 
   const children: ChildProcessHandle[] = [
     spawnChild("webview", [BUN_EXECUTABLE, "run", "webview:watch"]),

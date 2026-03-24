@@ -11,7 +11,9 @@ import {
   buildChromeStartCommand,
   buildRemoteCdpUrl,
   buildWindowsElevationCheckArgs,
+  normalizeBrowserCdpPort,
   parseFirstNameserver,
+  resolveBrowserCdpPort,
   resolveChromeExePath,
 } from "../../../app/server/tasks/browser";
 
@@ -33,11 +35,11 @@ describe("browser cdp helpers", () => {
 
   it("builds powershell start command and args safely", () => {
     const exePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome's.exe";
-    const command = buildChromeStartCommand(exePath, "C:\\Program Files\\Google\\Chrome\\Application");
-    const args = buildChromeStartArgs(exePath, "C:\\Program Files\\Google\\Chrome\\Application");
+    const command = buildChromeStartCommand(exePath, "C:\\Program Files\\Google\\Chrome\\Application", 9333);
+    const args = buildChromeStartArgs(exePath, "C:\\Program Files\\Google\\Chrome\\Application", 9333);
 
     expect(command).toContain("Start-Process -FilePath 'C:\\Program Files\\Google\\Chrome\\Application\\chrome''s.exe'");
-    expect(command).toContain(`'--remote-debugging-port=${BROWSER_CDP_PORT}'`);
+    expect(command).toContain("'--remote-debugging-port=9333'");
     expect(command).toContain(`'--user-data-dir=${BROWSER_USER_DATA_DIR}'`);
     expect(command).toContain(`'${BROWSER_BOOT_URL}'`);
     expect(args).toEqual([
@@ -71,24 +73,24 @@ describe("browser cdp helpers", () => {
   });
 
   it("builds netsh portproxy commands for WSL access", () => {
-    expect(buildWindowsCdpPortProxyDeleteArgs()).toEqual([
+    expect(buildWindowsCdpPortProxyDeleteArgs(9333, "172.31.64.1")).toEqual([
       "netsh.exe",
       "interface",
       "portproxy",
       "delete",
       "v4tov4",
-      `listenport=${BROWSER_CDP_PORT}`,
-      "listenaddress=0.0.0.0",
+      "listenport=9333",
+      "listenaddress=172.31.64.1",
     ]);
-    expect(buildWindowsCdpPortProxyAddArgs()).toEqual([
+    expect(buildWindowsCdpPortProxyAddArgs(9333, "172.31.64.1")).toEqual([
       "netsh.exe",
       "interface",
       "portproxy",
       "add",
       "v4tov4",
-      `listenport=${BROWSER_CDP_PORT}`,
-      "listenaddress=0.0.0.0",
-      `connectport=${BROWSER_CDP_PORT}`,
+      "listenport=9333",
+      "listenaddress=172.31.64.1",
+      "connectport=9333",
       "connectaddress=127.0.0.1",
     ]);
   });
@@ -116,7 +118,19 @@ nameserver 8.8.8.8
   });
 
   it("builds remote cdp url with WSL nameserver", () => {
-    const remote = buildRemoteCdpUrl(`ws://127.0.0.1:${BROWSER_CDP_PORT}/devtools/browser/abc`, "172.31.64.1");
-    expect(remote).toBe(`ws://172.31.64.1:${BROWSER_CDP_PORT}/devtools/browser/abc`);
+    const remote = buildRemoteCdpUrl("ws://127.0.0.1:9333/devtools/browser/abc", "172.31.64.1", 9333);
+    expect(remote).toBe("http://172.31.64.1:9333/");
+  });
+
+  it("normalizes configured browser cdp ports safely", () => {
+    expect(normalizeBrowserCdpPort("9333")).toBe(9333);
+    expect(normalizeBrowserCdpPort(0)).toBe(BROWSER_CDP_PORT);
+    expect(normalizeBrowserCdpPort("abc")).toBe(BROWSER_CDP_PORT);
+  });
+
+  it("resolves browser cdp port from config or cdpUrl", () => {
+    expect(resolveBrowserCdpPort({ cdpPort: 9333 })).toBe(9333);
+    expect(resolveBrowserCdpPort({ cdpUrl: "http://172.31.64.1:18801/" })).toBe(18801);
+    expect(resolveBrowserCdpPort({})).toBe(BROWSER_CDP_PORT);
   });
 });
