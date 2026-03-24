@@ -35,15 +35,17 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install app dependencies
-        run: cd app && bun install --frozen-lockfile
+        working-directory: app
+        run: bun install --frozen-lockfile
 
 
       - name: Download Electrobun assets (Windows only)
-        shell: bash
+        working-directory: app
         run: bun run electrobun:download -- --targets=win-x64
 
       - name: Build desktop artifact (canary)
-        run: bun run desktop:build:canary
+        working-directory: app
+        run: bun run desktop:build
 
       - name: Resolve alpha version
         id: alpha

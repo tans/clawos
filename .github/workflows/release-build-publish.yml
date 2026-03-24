@@ -42,23 +42,16 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install app dependencies
-        run: cd app && bun install --frozen-lockfile
+        working-directory: app
+        run: bun install --frozen-lockfile
 
       - name: Download Electrobun assets (Windows only)
-        shell: bash
-        run: cd app && bun run electrobun:download -- --targets=win-x64
+        working-directory: app
+        run: bun run electrobun:download -- --targets=win-x64
 
       - name: Build desktop artifact
-        env:
-          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "${BUILD_ENV}" == "canary" ]]; then
-            bun run desktop:build:canary
-          else
-            bun run desktop:build:stable
-          fi
+        working-directory: app
+        run: bun run desktop:build
 
       - name: Resolve release version
         id: release
