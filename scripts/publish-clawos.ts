@@ -355,6 +355,18 @@ function looksLikeUpdaterArtifact(fileName: string, prefix: string): boolean {
   return UPDATER_ALLOWED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
 }
 
+function looksLikeUpdaterArtifactByPlatform(fileName: string, platform: PublishPlatform, version?: string): boolean {
+  const lower = fileName.toLowerCase();
+  const platformToken = `-${PLATFORM_TOKEN[platform]}-`;
+  if (!lower.includes(platformToken)) {
+    return false;
+  }
+  if (version?.trim() && !lower.includes(version.trim().toLowerCase())) {
+    return false;
+  }
+  return UPDATER_ALLOWED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
+}
+
 function candidateArtifactRoots(): string[] {
   const cwd = process.cwd();
   const parent = dirname(cwd);
@@ -379,18 +391,22 @@ async function detectUpdaterArtifacts(
   platform: PublishPlatform,
   buildEnv: BuildEnv,
   updaterDir?: string,
-  extraRoots: string[] = []
+  extraRoots: string[] = [],
+  version?: string
 ): Promise<string[]> {
   const prefix = `${buildEnv}-${PLATFORM_TOKEN[platform]}-`;
   const roots = updaterDir ? [resolve(process.cwd(), updaterDir)] : [...candidateArtifactRoots(), ...extraRoots];
 
-  const byName = new Map<string, { path: string; mtimeMs: number }>();
+  const strictByName = new Map<string, { path: string; mtimeMs: number }>();
+  const fallbackByName = new Map<string, { path: string; mtimeMs: number }>();
 
   for (const root of roots) {
     const files = await collectFilesRecursively(root, 10);
     for (const filePath of files) {
       const name = basename(filePath);
-      if (!looksLikeUpdaterArtifact(name, prefix)) {
+      const isStrict = looksLikeUpdaterArtifact(name, prefix);
+      const isFallback = !isStrict && looksLikeUpdaterArtifactByPlatform(name, platform, version);
+      if (!isStrict && !isFallback) {
         continue;
       }
 
@@ -402,23 +418,34 @@ async function detectUpdaterArtifacts(
         // ignore stat failures
       }
 
-      const existing = byName.get(name);
+      const target = isStrict ? strictByName : fallbackByName;
+      const existing = target.get(name);
       if (!existing || existing.mtimeMs < mtimeMs) {
-        byName.set(name, { path: filePath, mtimeMs });
+        target.set(name, { path: filePath, mtimeMs });
       }
     }
   }
 
-  const artifacts = Array.from(byName.values())
+  const strictArtifacts = Array.from(strictByName.values())
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+    .map((item) => item.path);
+  const fallbackArtifacts = Array.from(fallbackByName.values())
     .sort((a, b) => b.mtimeMs - a.mtimeMs)
     .map((item) => item.path);
 
-  const hasUpdateJson = artifacts.some((filePath) => basename(filePath).toLowerCase().endsWith("-update.json"));
-  if (!hasUpdateJson) {
-    return [];
+  const strictHasUpdateJson = strictArtifacts.some((filePath) => basename(filePath).toLowerCase().endsWith("-update.json"));
+  if (strictHasUpdateJson) {
+    return strictArtifacts;
   }
 
-  return artifacts;
+  const fallbackHasUpdateJson = fallbackArtifacts.some((filePath) =>
+    basename(filePath).toLowerCase().endsWith("-update.json")
+  );
+  if (fallbackHasUpdateJson) {
+    return fallbackArtifacts;
+  }
+
+  return [];
 }
 
 async function detectVersionFromPackageJson(): Promise<string | undefined> {
@@ -807,11 +834,12 @@ async function main(): Promise<void> {
   }
 
   if (!opts.skipUpdater) {
-    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir, opts.artifactRoots);
+    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir, opts.artifactRoots, opts.version);
     if (updaterArtifacts.length === 0) {
       throw new Error(
         `未找到 Electrobun 更新产物（前缀: ${opts.buildEnv}-${PLATFORM_TOKEN[hostPlatform]}-）。` +
           `\n请确认已执行 Electrobun build，并检查 artifacts 目录。` +
+          `\n若构建产物前缀不是当前 --build-env（例如 dev-win-），请改为对应 build-env 或手动指定 --updater-dir。` +
           `\n也可通过 --updater-dir <path> 指定目录，或使用 --skip-updater 跳过。`
       );
     }
