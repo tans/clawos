@@ -103,27 +103,27 @@ function HomePage({
   const alphaVersionText = alphaVersion?.trim() ? alphaVersion.trim() : "dev";
 
   const architecture = [
-    "虾壳主机：交付入口，缩短从采购到见效路径",
-    "ClawOS：统一维护配置、技能安装与任务运营",
-    "OpenClaw：连接外部能力，形成可扩展执行体系",
-    "OEM：从单点交付走向渠道化规模复制",
+    "开箱即用：下载安装后即可开始使用，无需复杂配置",
+    "一站式管理：常用功能集中在一个界面，操作更简单",
+    "可扩展能力：可按需接入更多工具，功能持续扩充",
+    "多场景支持：个人、团队和合作方都能灵活使用",
   ] as const;
 
   const executionGoals = [
-    "客户成功：快速上线并看到经营结果",
-    "交付效率：标准化主机与能力包，降低部署成本",
-    "运营稳定：统一治理，长期可控",
-    "生态增长：行业方案 + OEM 扩张",
+    "上手快：少走弯路，新用户也能快速开始",
+    "省时间：把重复操作交给系统，效率更高",
+    "更稳定：统一管理更新与配置，减少出错",
+    "更省心：需要时可随时联系客服获得帮助",
   ] as const;
 
   const solutionTracks = [
     {
-      title: "视频内容剪辑主机",
-      desc: "面向内容团队，缩短制作周期，稳定交付节奏。",
+      title: "内容创作场景",
+      desc: "适合短视频与图文团队，减少重复流程，让产出更稳定。",
     },
     {
-      title: "客户线索获取主机",
-      desc: "面向增长与销售团队，提升线索采集与跟进效率。",
+      title: "获客与跟进场景",
+      desc: "适合做线索收集和客户跟进，帮助你更快推进业务。",
     },
   ] as const;
 
@@ -132,7 +132,7 @@ function HomePage({
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{`${brandName} | 虾壳主机 + ClawOS + OpenClaw + OEM`}</title>
+        <title>{`${brandName} | 更简单的智能助手平台`}</title>
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
@@ -160,6 +160,9 @@ function HomePage({
               <a class="hero-nav-link" href="#changelog">
                 更新
               </a>
+              <a class="hero-nav-link" href="/contact">
+                联系我们
+              </a>
               <div class="inline-flex items-center rounded-full border border-white/35 bg-black/20 p-1">
                 <a
                   class="inline-flex items-center gap-2 rounded-full bg-warning/25 px-3 py-2 text-xs font-semibold text-white"
@@ -183,30 +186,23 @@ function HomePage({
 
         <main>
           <section class="hero-fullbleed">
-            <img
-              src="/public/clawos.png"
-              alt={`${brandName} 产品展示`}
-              class="hero-image-drift"
-              loading="eager"
-              decoding="async"
-            />
             <div class="hero-gradient" />
             <div class="hero-content-wrap">
               <div class="hero-copy-col page-fade page-fade-delay-1">
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
-                  虾壳主机 / ClawOS / OpenClaw / OEM
+                  简单好用 / 开箱即用 / 持续更新
                 </p>
                 <h1 class="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  让智能体能力
+                  把复杂功能
                   <br />
-                  成为可规模复制的企业产能
+                  变成人人都能用的简单操作
                 </h1>
                 <p class="mt-6 max-w-xl text-base leading-8 text-white/80 sm:text-lg">
-                  我们交付的不只是工具，而是一条可落地、可运营、可扩张的业务执行路径。
+                  不管你是个人用户还是小团队，都可以快速上手，把常见任务更轻松地跑起来。
                 </p>
                 <div class="mt-8 flex flex-wrap gap-3">
                   {hasInstaller ? (
-                    <a class="btn btn-ghost border border-white/40 bg-black/25 text-white" href="/downloads/latest">
+                    <a class="btn btn-ghost border border-white/40 bg-black/25 text-white" href="/downloads">
                       <DownloadIcon />
                       {`下载 ClawOS v${versionText}`}
                     </a>
@@ -221,13 +217,13 @@ function HomePage({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    预约业务咨询
+                    查看使用手册
                   </a>
                 </div>
                 <p class="mt-4 text-xs text-white/65">
-                  {hasBetaInstaller ? `Beta v${betaVersionText} 已开放` : "Beta 通道筹备中"}
+                  {hasBetaInstaller ? `测试版 v${betaVersionText} 已开放` : "测试版通道筹备中"}
                   {" · "}
-                  {hasAlphaInstaller ? `Alpha v${alphaVersionText} 可申请体验` : "Alpha 通道内测中"}
+                  {hasAlphaInstaller ? `内测版 v${alphaVersionText} 可申请体验` : "内测版通道进行中"}
                 </p>
               </div>
             </div>
@@ -235,9 +231,9 @@ function HomePage({
 
           <section id="architecture" class="mx-auto mt-16 w-full max-w-7xl px-5 sm:mt-20 sm:px-8 lg:px-12">
             <SectionTitle
-              eyebrow="Business Architecture"
-              title="三层协同，一个执行目标"
-              desc="围绕客户成功、交付效率、运营稳定、生态增长，构建从单机到规模化的完整路径。"
+              eyebrow="Why Choose Us"
+              title="为什么普通用户也能轻松用"
+              desc="把原本复杂的设置、更新和使用流程做成更直观的体验。"
             />
             <div class="mt-10 grid gap-5 md:grid-cols-2">
               {architecture.map((item) => (
@@ -250,9 +246,9 @@ function HomePage({
 
           <section class="mx-auto mt-16 w-full max-w-7xl px-5 sm:mt-20 sm:px-8 lg:px-12">
             <SectionTitle
-              eyebrow="Execution Goals"
-              title="统一执行目标"
-              desc="每个模块只服务一件事：把复杂能力变成可交付、可复购、可持续运营的结果。"
+              eyebrow="User Benefits"
+              title="你能得到什么"
+              desc="从下载安装到日常使用，重点都是让你更快、更稳、更省心。"
             />
             <div class="mt-10 space-y-3">
               {executionGoals.map((goal) => (
@@ -265,9 +261,9 @@ function HomePage({
 
           <section id="solutions" class="mx-auto mt-16 w-full max-w-7xl px-5 sm:mt-20 sm:px-8 lg:px-12">
             <SectionTitle
-              eyebrow="Industry Hosts"
-              title="行业专用主机"
-              desc="以开箱即用主机承载具体业务场景，让客户直接进入可运营状态。"
+              eyebrow="Use Cases"
+              title="常见使用场景"
+              desc="根据不同工作内容提供合适能力，减少你自己折腾的时间。"
             />
             <div class="mt-10 grid gap-10 lg:grid-cols-2">
               {solutionTracks.map((track) => (
@@ -281,13 +277,13 @@ function HomePage({
 
           <section id="oem" class="mx-auto mt-16 w-full max-w-7xl px-5 sm:mt-20 sm:px-8 lg:px-12">
             <SectionTitle
-              eyebrow="OEM Growth"
-              title="OEM：从产品交付走向生态放大"
-              desc="通过品牌共建与渠道合作，把平台能力复制到更多行业市场。"
+              eyebrow="For Partners"
+              title="也支持合作与定制"
+              desc="如果你有品牌或行业需求，也可以联系我们做联合交付。"
             />
             <div class="mt-10 border-t border-base-content/10 pt-6">
               <p class="max-w-4xl text-sm leading-8 text-base-content/75 sm:text-base">
-                OEM 不是附加功能，而是我们的增长机制。我们帮助合作伙伴在不自建底层体系的前提下，快速获得可销售、可交付、可运营的智能主机产品。
+                对普通用户来说，你可以直接使用现成功能；对合作方来说，我们也提供定制化支持，帮助快速上线。
               </p>
             </div>
           </section>
@@ -318,18 +314,15 @@ function HomePage({
 
           <section class="mx-auto mt-20 w-full max-w-7xl px-5 pb-16 sm:px-8 lg:px-12">
             <div class="border-t border-base-content/15 pt-8">
-              <h2 class="text-2xl font-semibold tracking-tight">让团队从“会用”走向“可持续增长”</h2>
+              <h2 class="text-2xl font-semibold tracking-tight">准备开始体验了吗？</h2>
               <p class="mt-3 max-w-3xl text-sm leading-7 text-base-content/70 sm:text-base">
-                如果你希望把虾壳主机 + ClawOS 用于行业交付或 OEM 合作，我们可以一起定义你的首个可复制场景。
+                可以先下载试用，也可以先看使用手册；如果你有合作或采购需求，欢迎随时联系我们。
               </p>
               <div class="mt-6 flex flex-wrap gap-3">
                 <a
                   class="btn border-0 bg-black text-white hover:bg-black/90"
-                  href="https://gx50d0q123.feishu.cn/wiki/CueLw8F8TiwjEMkGiCFclxtXnnh?from=from_copylink"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  联系商务
+                  href="/contact">
+                  联系我们
                 </a>
                 <a class="btn btn-ghost border border-base-content/20" href="/ceo-letter">
                   阅读 CEO agent&apos;s letter
@@ -345,7 +338,7 @@ function HomePage({
                 <a class="underline decoration-base-content/35 underline-offset-4 hover:decoration-base-content/80" href="/ceo-letter">
                   CEO agent&apos;s letter
                 </a>
-                <p>客服联系: tianshe00</p>
+                <a class="underline decoration-base-content/35 underline-offset-4 hover:decoration-base-content/80" href="/contact">联系我们</a>
               </div>
             </div>
           </footer>
