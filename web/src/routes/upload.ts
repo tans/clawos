@@ -1,5 +1,9 @@
 import { Hono, type Context } from "hono";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { join, resolve } from "node:path";
 import { requireUploadAuth } from "../lib/auth";
+import { getEnv } from "../lib/env";
 import {
   normalizeInstallerPlatform,
   normalizeReleaseChannel,
@@ -27,6 +31,68 @@ function toUint8Array(arrayBuffer: ArrayBuffer): Uint8Array {
 
 function channelSuffix(channel: ReleaseChannel | undefined): string {
   return channel && channel !== "stable" ? `?channel=${channel}` : "";
+}
+
+type ChunkTarget = "installer" | "xiake-config" | "electrobun-artifact";
+
+interface ChunkUploadSession {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  target: ChunkTarget;
+  fileName: string;
+  totalSize: number;
+  totalChunks: number;
+  version?: string;
+  platform?: InstallerPlatform;
+  channel?: ReleaseChannel;
+  received: number[];
+}
+
+function getChunkBaseDir(): string {
+  return resolve(getEnv().storageDir, "chunk-uploads");
+}
+
+function getChunkSessionPath(uploadId: string): string {
+  return resolve(getChunkBaseDir(), `${uploadId}.json`);
+}
+
+function getChunkPartDir(uploadId: string): string {
+  return resolve(getChunkBaseDir(), uploadId);
+}
+
+async function ensureChunkStorage(): Promise<void> {
+  await mkdir(getChunkBaseDir(), { recursive: true });
+}
+
+function normalizeChunkTarget(raw: unknown): ChunkTarget {
+  const value = String(raw || "").trim().toLowerCase();
+  if (value === "installer" || value === "/api/upload/installer") {
+    return "installer";
+  }
+  if (value === "xiake-config" || value === "config" || value === "/api/upload/xiake-config") {
+    return "xiake-config";
+  }
+  if (value === "electrobun-artifact" || value === "updater" || value === "/api/upload/electrobun-artifact") {
+    return "electrobun-artifact";
+  }
+  throw new Error("chunk target 不支持");
+}
+
+async function saveChunkSession(session: ChunkUploadSession): Promise<void> {
+  await ensureChunkStorage();
+  await writeFile(getChunkSessionPath(session.id), `${JSON.stringify(session, null, 2)}\n`, "utf-8");
+}
+
+async function loadChunkSession(uploadId: string): Promise<ChunkUploadSession> {
+  await ensureChunkStorage();
+  const raw = await readFile(getChunkSessionPath(uploadId), "utf-8");
+  return JSON.parse(raw) as ChunkUploadSession;
+}
+
+async function cleanupChunkSession(uploadId: string): Promise<void> {
+  await rm(getChunkSessionPath(uploadId), { force: true }).catch(() => undefined);
+  await rm(getChunkPartDir(uploadId), { recursive: true, force: true }).catch(() => undefined);
 }
 
 async function parseUploadRequest(c: Context, defaultFileName: string): Promise<{
@@ -110,6 +176,176 @@ uploadRoutes.post("/api/upload/installer", async (c) => {
           : upload.platform
             ? `/downloads/latest/${upload.platform}`
             : "/downloads/latest",
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+uploadRoutes.post("/api/upload/chunk/init", async (c) => {
+  try {
+    const body = await c.req.json();
+    const target = normalizeChunkTarget((body as Record<string, unknown>).target);
+    const fileName = String((body as Record<string, unknown>).fileName || "").trim();
+    const totalSize = Number((body as Record<string, unknown>).totalSize || 0);
+    const totalChunks = Number((body as Record<string, unknown>).totalChunks || 0);
+    const versionRaw = (body as Record<string, unknown>).version;
+    const platformRaw = (body as Record<string, unknown>).platform;
+    const channelRaw = (body as Record<string, unknown>).channel;
+
+    if (!fileName) {
+      throw new Error("fileName 不能为空");
+    }
+    if (!Number.isFinite(totalSize) || totalSize <= 0) {
+      throw new Error("totalSize 非法");
+    }
+    if (!Number.isInteger(totalChunks) || totalChunks <= 0) {
+      throw new Error("totalChunks 非法");
+    }
+
+    const uploadId = randomUUID();
+    const now = new Date().toISOString();
+    const session: ChunkUploadSession = {
+      id: uploadId,
+      createdAt: now,
+      updatedAt: now,
+      target,
+      fileName,
+      totalSize,
+      totalChunks,
+      version: typeof versionRaw === "string" && versionRaw.trim() ? versionRaw.trim() : undefined,
+      platform: normalizeInstallerPlatform(platformRaw) || undefined,
+      channel: normalizeReleaseChannel(channelRaw) || undefined,
+      received: [],
+    };
+    await mkdir(getChunkPartDir(uploadId), { recursive: true });
+    await saveChunkSession(session);
+    return c.json({ ok: true, uploadId, chunkSizeMb: Number(process.env.UPLOAD_CHUNK_SIZE_MB || 16) });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+uploadRoutes.post("/api/upload/chunk/:uploadId/part/:index", async (c) => {
+  try {
+    const uploadId = c.req.param("uploadId");
+    const index = Number(c.req.param("index"));
+    if (!Number.isInteger(index) || index < 0) {
+      throw new Error("chunk index 非法");
+    }
+    const session = await loadChunkSession(uploadId);
+    if (index >= session.totalChunks) {
+      throw new Error("chunk index 越界");
+    }
+    const bytes = toUint8Array(await c.req.arrayBuffer());
+    if (bytes.byteLength <= 0) {
+      throw new Error("chunk 不能为空");
+    }
+    const partPath = join(getChunkPartDir(uploadId), `${index}.part`);
+    await writeFile(partPath, bytes);
+    if (!session.received.includes(index)) {
+      session.received.push(index);
+      session.received.sort((a, b) => a - b);
+    }
+    session.updatedAt = new Date().toISOString();
+    await saveChunkSession(session);
+    return c.json({
+      ok: true,
+      uploadId,
+      index,
+      receivedChunks: session.received.length,
+      totalChunks: session.totalChunks,
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+uploadRoutes.post("/api/upload/chunk/:uploadId/complete", async (c) => {
+  try {
+    const uploadId = c.req.param("uploadId");
+    const session = await loadChunkSession(uploadId);
+    if (session.received.length !== session.totalChunks) {
+      throw new Error(`分片未上传完整: ${session.received.length}/${session.totalChunks}`);
+    }
+
+    const chunks: Uint8Array[] = [];
+    let totalSize = 0;
+    for (let index = 0; index < session.totalChunks; index += 1) {
+      const partPath = join(getChunkPartDir(uploadId), `${index}.part`);
+      const partStat = await stat(partPath);
+      if (!partStat.isFile() || partStat.size <= 0) {
+        throw new Error(`分片缺失或无效: ${index}`);
+      }
+      const data = toUint8Array(await readFile(partPath));
+      totalSize += data.byteLength;
+      chunks.push(data);
+    }
+    if (totalSize !== session.totalSize) {
+      throw new Error(`分片大小不匹配: 期望 ${session.totalSize}，实际 ${totalSize}`);
+    }
+
+    const bytes = toUint8Array(Buffer.concat(chunks.map((item) => Buffer.from(item))));
+    if (session.target === "installer") {
+      const result = await storeInstaller({
+        fileName: session.fileName,
+        bytes,
+        version: session.version,
+        platform: session.platform,
+        channel: session.channel,
+      });
+      await cleanupChunkSession(uploadId);
+      return c.json({
+        ok: true,
+        fileName: result.asset.name,
+        size: result.asset.size,
+        sha256: result.asset.sha256,
+        version: result.release.version,
+        platform: session.platform || null,
+        channel: session.channel || "stable",
+        url:
+          session.channel && session.channel !== "stable"
+            ? session.platform
+              ? `/downloads/${session.channel}/${session.platform}`
+              : `/downloads/${session.channel}`
+            : session.platform
+              ? `/downloads/latest/${session.platform}`
+              : "/downloads/latest",
+      });
+    }
+
+    if (session.target === "xiake-config") {
+      const result = await storeXiakeConfig({
+        fileName: session.fileName,
+        bytes,
+        channel: session.channel,
+      });
+      await cleanupChunkSession(uploadId);
+      return c.json({
+        ok: true,
+        fileName: result.asset.name,
+        size: result.asset.size,
+        sha256: result.asset.sha256,
+        version: result.release.version,
+        channel: session.channel || "stable",
+        url: `/downloads/clawos_xiake.json${channelSuffix(session.channel)}`,
+      });
+    }
+
+    const result = await storeUpdaterArtifact({
+      fileName: session.fileName,
+      bytes,
+      channel: session.channel,
+    });
+    await cleanupChunkSession(uploadId);
+    return c.json({
+      ok: true,
+      fileName: result.asset.name,
+      size: result.asset.size,
+      sha256: result.asset.sha256,
+      version: result.release.version || null,
+      channel: session.channel || "stable",
+      url: `/updates/${encodeURIComponent(result.asset.name)}`,
     });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);
