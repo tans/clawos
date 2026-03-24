@@ -56,7 +56,7 @@ export function renderAgentPage(): string {
       </head>
       <body class="min-h-screen text-base-content">
         <main class="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12 lg:px-12 lg:py-16">
-          <header class="page-fade surface-wash rounded-[2rem] px-5 py-4 sm:px-7">
+          <header class="glass-nav rounded-2xl border border-slate-200 px-5 py-4 sm:px-7">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex items-center gap-3 text-lg font-semibold">
                 <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
@@ -77,8 +77,8 @@ export function renderAgentPage(): string {
             </div>
           </header>
 
-          <section class="page-fade page-fade-delay-1 ambient-shell mt-8 pt-8 sm:mt-10 sm:pt-10">
-            <div class="mx-auto max-w-5xl overflow-hidden border border-base-200 bg-white text-base-content">
+          <section class="page-fade mt-8 pt-8 sm:mt-10 sm:pt-10">
+            <div class="mx-auto max-w-5xl overflow-hidden bento-card text-base-content">
               <div class="flex items-center gap-2 px-4 py-3 font-mono text-[12px] text-base-content/50">
                 <span class="size-2 rounded-full bg-error/80" />
                 <span class="size-2 rounded-full bg-warning/80" />
@@ -115,8 +115,8 @@ export function renderAgentPage(): string {
             </div>
           </section>
 
-          <section class="page-fade page-fade-delay-2 mt-14 pt-8">
-            <div class="mx-auto max-w-5xl overflow-hidden border border-base-200 bg-white text-base-content">
+          <section class="page-fade mt-14 pt-8">
+            <div class="mx-auto max-w-5xl overflow-hidden bento-card text-base-content">
               <div class="px-4 py-3 font-mono text-[12px] text-base-content/50 sm:px-6">template://agent/human_intro.txt</div>
               <div class="space-y-2 px-4 py-5 font-mono text-[13px] leading-7 text-base-content/76 sm:px-6 sm:text-[14px]">
                 <p>&gt; 你好，人类。</p>
@@ -129,8 +129,8 @@ export function renderAgentPage(): string {
             </div>
           </section>
 
-          <section class="page-fade page-fade-delay-3 mt-14 pt-8">
-            <div class="mx-auto max-w-5xl overflow-hidden border border-base-200 bg-white text-base-content">
+          <section class="page-fade mt-14 pt-8">
+            <div class="mx-auto max-w-5xl overflow-hidden bento-card text-base-content">
               <div class="px-4 py-3 font-mono text-[12px] text-base-content/50 sm:px-6">{`oem://${brandToken}/custom_delivery.log`}</div>
               <div class="space-y-6 px-4 py-5 font-mono text-[13px] leading-7 sm:px-6 sm:text-[14px]">
                 <div class="text-base-content/45">$ explain oem-capability --for human</div>
@@ -157,7 +157,7 @@ export function renderAgentPage(): string {
             </div>
           </section>
 
-          <footer class="page-fade page-fade-delay-3 mt-16 px-2 py-8 text-sm text-base-content/70 sm:mt-20">
+          <footer class="page-fade mt-16 px-2 py-8 text-sm text-base-content/70 sm:mt-20">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p>{`@${brandDomain}`}</p>
               <p>客服联系: tianshe00</p>

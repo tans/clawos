@@ -5,10 +5,7 @@
 }
 
 @theme {
-  --animate-page-fade: page-fade 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-float-gentle: float-gentle 7s ease-in-out infinite;
-  --animate-drift: drift 18s linear infinite;
-  --animate-soft-pulse: soft-pulse 4.8s ease-in-out infinite;
+  --animate-page-fade: page-fade 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @layer base {
@@ -24,13 +21,21 @@
 
   body {
     background: #fff;
+    color: #111827;
+    font-family:
+      Inter,
+      "Segoe UI",
+      "PingFang SC",
+      "Noto Sans CJK SC",
+      "Microsoft YaHei",
+      sans-serif;
   }
 }
 
 @keyframes page-fade {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(12px);
   }
 
   to {
@@ -39,172 +44,93 @@
   }
 }
 
-@keyframes float-gentle {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
-
-@keyframes drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(10px, -8px, 0);
-  }
-
-  to {
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes soft-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-
-  50% {
-    opacity: 0.9;
-  }
-}
-
 @utility page-fade {
   animation: var(--animate-page-fade);
 }
 
-@utility page-fade-delay-1 {
-  animation-delay: 80ms;
-}
-
-@utility page-fade-delay-2 {
-  animation-delay: 160ms;
-}
-
-@utility page-fade-delay-3 {
-  animation-delay: 240ms;
-}
-
-@utility surface-wash {
-  background: #fff;
-  backdrop-filter: blur(18px);
-}
-
-@utility float-gentle {
-  animation: var(--animate-float-gentle);
-}
-
 @layer utilities {
-  .hero-nav-overlay {
-    position: fixed;
-    inset-inline: 0;
-    top: 0;
-    z-index: 40;
+  .glass-nav {
     backdrop-filter: blur(10px);
-    background: linear-gradient(to bottom, rgb(0 0 0 / 42%), rgb(0 0 0 / 10%), transparent);
+    background: rgb(255 255 255 / 78%);
   }
 
-  .hero-nav-link {
-    border: 1px solid rgb(255 255 255 / 28%);
-    color: rgb(255 255 255 / 92%);
-    padding: 0.45rem 0.8rem;
-    border-radius: 999px;
-    transition: background-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  .bento-card {
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    box-shadow:
+      0 1px 3px rgb(17 24 39 / 0.08),
+      0 1px 2px rgb(17 24 39 / 0.04);
   }
 
-  .hero-nav-link:hover {
-    background: rgb(255 255 255 / 16%);
-  }
-
-  .hero-fullbleed {
-    position: relative;
-    min-height: 100svh;
-    isolation: isolate;
-    overflow: clip;
-    background-image: url("/xiake3.0.jpg");
-    background-size: cover;
-    background-position: center;
-    animation: var(--animate-drift);
-  }
-
-  .hero-gradient {
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at 20% 25%, rgb(0 0 0 / 18%), transparent 52%),
-      linear-gradient(to bottom, rgb(0 0 0 / 22%), rgb(0 0 0 / 62%));
-  }
-
-  .hero-content-wrap {
-    position: relative;
-    z-index: 1;
-    min-height: 100svh;
-    display: flex;
+  .primary-button {
+    display: inline-flex;
     align-items: center;
-    padding-top: 5.5rem;
-    padding-inline: 1.25rem;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: #6366f1;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    transition: transform 120ms ease, background-color 180ms ease;
   }
 
-  .hero-copy-col {
-    max-width: 44rem;
+  .primary-button:hover {
+    background: #5558e8;
   }
 
-  @media (min-width: 640px) {
-    .hero-content-wrap {
-      padding-inline: 2rem;
-    }
+  .primary-button:active {
+    transform: scale(0.98);
   }
 
-  @media (min-width: 1024px) {
-    .hero-content-wrap {
-      padding-inline: 3rem;
-    }
+  .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    background: #fff;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    transition: transform 120ms ease, background-color 180ms ease;
   }
 
-  .ambient-shell {
-    position: relative;
+  .secondary-button:hover {
+    background: #f9fafb;
   }
 
-  .ambient-shell::before {
-    content: none;
+  .secondary-button:active {
+    transform: scale(0.98);
   }
 
-  .ambient-shell::after {
-    content: none;
-  }
-
-  .rise-on-hover {
-    transition:
-      transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
-      background-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .rise-on-hover:hover {
-    transform: translateY(-4px);
+  .channel-badge {
+    border-radius: 999px;
+    border: 1px solid #c7d2fe;
+    background: #eef2ff;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #4f46e5;
+    letter-spacing: 0.03em;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page-fade,
-  .page-fade-delay-1,
-  .page-fade-delay-2,
-  .page-fade-delay-3,
-  .float-gentle,
-  .ambient-shell::before,
-  .ambient-shell::after,
-  .hero-fullbleed {
+  .primary-button,
+  .secondary-button {
     animation: none;
+    transition: none;
   }
 
-  .rise-on-hover,
-  .rise-on-hover:hover {
-    transition: none;
+  .primary-button:active,
+  .secondary-button:active {
     transform: none;
   }
 }
