@@ -46,7 +46,7 @@ jobs:
 
       - name: Download Electrobun assets (Windows only)
         shell: bash
-        run: bun run electrobun:download -- --targets=win-x64
+        run: cd app && bun run electrobun:download -- --targets=win-x64
 
       - name: Build desktop artifact
         env:
