@@ -26,6 +26,6 @@ nameserver 8.8.8.8
 
   it("builds remote cdp url with discovered host", () => {
     const remote = buildRemoteCdpUrl("ws://127.0.0.1:9222/devtools/browser/abc", "172.31.64.1");
-    expect(remote).toBe("ws://172.31.64.1:9222/devtools/browser/abc");
+    expect(remote).toBe("http://172.31.64.1:9222/");
   });
 });

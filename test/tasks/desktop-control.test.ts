@@ -4,14 +4,9 @@ import { resolveDesktopMcpServiceTarget } from "../../app/server/tasks/desktop-c
 
 describe("resolveDesktopMcpServiceTarget", () => {
   it("resolves the local windows-mcp executable from workspace ancestors", () => {
-    const workspaceRoot = path.normalize("C:\\workspace\\clawos");
-    const executablePath = path.join(
-      workspaceRoot,
-      "mcp_server",
-      "windows_mcp",
-      "Scripts",
-      "windows-mcp.exe",
-    );
+    const workspaceRoot = path.resolve("/workspace/clawos");
+    const serviceRoot = path.join(workspaceRoot, "mcp_server", "windows_mcp");
+    const executablePath = path.join(serviceRoot, "Scripts", "windows-mcp.exe");
 
     const target = resolveDesktopMcpServiceTarget({
       anchors: [
@@ -31,7 +26,7 @@ describe("resolveDesktopMcpServiceTarget", () => {
       platform: "win32",
     });
 
-    expect(target.cwd).toBe(path.join(workspaceRoot, "mcp_server", "windows_mcp"));
+    expect(target.cwd).toBe(serviceRoot);
     expect(target.command).toEqual([
       executablePath,
       "--transport",
@@ -44,14 +39,9 @@ describe("resolveDesktopMcpServiceTarget", () => {
   });
 
   it("falls back to python -m windows_mcp when the launcher exe is unavailable", () => {
-    const workspaceRoot = path.normalize("C:\\workspace\\clawos");
-    const pythonPath = path.join(
-      workspaceRoot,
-      "mcp_server",
-      "windows_mcp",
-      "Scripts",
-      "python.exe",
-    );
+    const workspaceRoot = path.resolve("/workspace/clawos");
+    const serviceRoot = path.join(workspaceRoot, "mcp_server", "windows_mcp");
+    const pythonPath = path.join(serviceRoot, "Scripts", "python.exe");
 
     const target = resolveDesktopMcpServiceTarget({
       anchors: [path.join(workspaceRoot, "app", "server", "tasks")],
@@ -59,6 +49,7 @@ describe("resolveDesktopMcpServiceTarget", () => {
       platform: "win32",
     });
 
+    expect(target.cwd).toBe(serviceRoot);
     expect(target.command).toEqual([
       pythonPath,
       "-m",
