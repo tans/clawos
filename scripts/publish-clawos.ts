@@ -514,8 +514,14 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
     if (name.endsWith(".zip") && name.includes(`${buildEnv}-${platformToken}-`)) {
       score += 55;
     }
+    if (name === "launcher.exe") {
+      score += 35;
+      if (normalized.includes("/bin/")) {
+        score += 20;
+      }
+    }
     if (name.endsWith(".exe") && !name.includes("setup")) {
-      score -= 120;
+      score -= 40;
     }
   }
 
@@ -539,11 +545,7 @@ async function detectInstallerPath(
     const files = await collectFilesRecursively(root, 10);
     for (const filePath of files) {
       const name = basename(filePath);
-      const lowerName = name.toLowerCase();
       if (!matchesAllowedExt(name, allowed)) {
-        continue;
-      }
-      if (platform === "windows" && lowerName.endsWith(".exe") && !lowerName.includes("setup")) {
         continue;
       }
       const score = candidateScore(filePath, platform, buildEnv);
