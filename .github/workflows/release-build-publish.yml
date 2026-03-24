@@ -2,26 +2,18 @@ name: Release Build And Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      build_env:
-        description: "Build env used for artifact detection"
-        required: true
-        default: "canary"
-        type: choice
-        options:
-          - stable
-          - canary
-      release_channel:
-        description: "Release channel to publish"
-        required: true
-        default: "beta"
-        type: choice
-        options:
-          - beta
-          - stable
 
 jobs:
   build-and-publish:
+    name: Build & Publish (${{ matrix.release_channel }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release_channel: stable
+            build_env: stable
+          - release_channel: beta
+            build_env: canary
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -53,7 +45,7 @@ jobs:
         working-directory: app
         shell: bash
         env:
-          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
+          BUILD_ENV: ${{ matrix.build_env }}
         run: |
           set -euo pipefail
           bun run webview:build
@@ -62,7 +54,7 @@ jobs:
       - name: Resolve release version
         id: release
         env:
-          RELEASE_CHANNEL: ${{ github.event.inputs.release_channel || 'stable' }}
+          RELEASE_CHANNEL: ${{ matrix.release_channel }}
         shell: bash
         run: |
           set -euo pipefail
@@ -109,8 +101,8 @@ jobs:
           PUBLISH_BASE_URL: ${{ vars.PUBLISH_BASE_URL }}
           UPLOAD_TIMEOUT_MS: "1200000"
           UPLOAD_HEARTBEAT_MS: "15000"
-          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
-          RELEASE_CHANNEL: ${{ github.event.inputs.release_channel || 'stable' }}
+          BUILD_ENV: ${{ matrix.build_env }}
+          RELEASE_CHANNEL: ${{ matrix.release_channel }}
           CLAWOS_VERSION: ${{ steps.release.outputs.version }}
         shell: bash
         run: |
