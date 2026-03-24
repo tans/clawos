@@ -27,6 +27,7 @@ interface Options {
   heartbeatMs: number;
   buildEnv: BuildEnv;
   releaseChannel: ReleaseChannel;
+  artifactRoots: string[];
 }
 
 type InstallerResolution = {
@@ -102,6 +103,8 @@ function printUsage(): void {
   --build-env <env>     构建环境 dev/canary/stable，默认 stable
   --release-channel <channel>  发布通道 stable/beta/alpha，默认 stable
   --updater-dir <path>  Electrobun 更新产物目录（可选，默认自动探测）
+  --artifact-root <path>  额外产物搜索目录，可重复传参
+  --artifact-roots <paths>  额外产物搜索目录，逗号分隔
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
   --config <path>       配置文件路径，默认 ./app/clawos_xiake.json
@@ -128,7 +131,19 @@ function printUsage(): void {
   CLAWOS_BUILD_ENV
   CLAWOS_RELEASE_CHANNEL
   CLAWOS_UPDATER_DIR
+  CLAWOS_ARTIFACT_ROOTS
 `);
+}
+
+function parseArtifactRoots(raw: string | undefined): string[] {
+  if (!raw?.trim()) {
+    return [];
+  }
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => resolve(process.cwd(), item));
 }
 
 function resolvePathFromEnv(raw: string | undefined, fallbackPath: string): string {
@@ -161,6 +176,7 @@ function parseArgs(argv: string[]): Options {
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
     buildEnv: parseBuildEnv(process.env.CLAWOS_BUILD_ENV),
     releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
+    artifactRoots: parseArtifactRoots(process.env.CLAWOS_ARTIFACT_ROOTS),
   };
 
   while (args.length > 0) {
@@ -213,6 +229,14 @@ function parseArgs(argv: string[]): Options {
       opts.updaterDir = resolve(process.cwd(), arg.slice("--updater-dir=".length));
       continue;
     }
+    if (arg.startsWith("--artifact-root=")) {
+      opts.artifactRoots.push(resolve(process.cwd(), arg.slice("--artifact-root=".length)));
+      continue;
+    }
+    if (arg.startsWith("--artifact-roots=")) {
+      opts.artifactRoots.push(...parseArtifactRoots(arg.slice("--artifact-roots=".length)));
+      continue;
+    }
     if (arg.startsWith("--version=")) {
       opts.version = arg.slice("--version=".length).trim();
       continue;
@@ -255,6 +279,12 @@ function parseArgs(argv: string[]): Options {
       case "--updater-dir":
         opts.updaterDir = resolve(process.cwd(), value);
         break;
+      case "--artifact-root":
+        opts.artifactRoots.push(resolve(process.cwd(), value));
+        break;
+      case "--artifact-roots":
+        opts.artifactRoots.push(...parseArtifactRoots(value));
+        break;
       case "--version":
         opts.version = value.trim();
         break;
@@ -287,6 +317,7 @@ function parseArgs(argv: string[]): Options {
   if (!Number.isFinite(opts.heartbeatMs) || opts.heartbeatMs <= 0) {
     throw new Error(`--heartbeat-ms 非法: ${opts.heartbeatMs}`);
   }
+  opts.artifactRoots = Array.from(new Set(opts.artifactRoots.map((item) => resolve(process.cwd(), item))));
 
   return opts;
 }
@@ -347,15 +378,16 @@ function candidateArtifactRoots(): string[] {
 async function detectUpdaterArtifacts(
   platform: PublishPlatform,
   buildEnv: BuildEnv,
-  updaterDir?: string
+  updaterDir?: string,
+  extraRoots: string[] = []
 ): Promise<string[]> {
   const prefix = `${buildEnv}-${PLATFORM_TOKEN[platform]}-`;
-  const roots = updaterDir ? [resolve(process.cwd(), updaterDir)] : candidateArtifactRoots();
+  const roots = updaterDir ? [resolve(process.cwd(), updaterDir)] : [...candidateArtifactRoots(), ...extraRoots];
 
   const byName = new Map<string, { path: string; mtimeMs: number }>();
 
   for (const root of roots) {
-    const files = await collectFilesRecursively(root, 5);
+    const files = await collectFilesRecursively(root, 10);
     for (const filePath of files) {
       const name = basename(filePath);
       if (!looksLikeUpdaterArtifact(name, prefix)) {
@@ -408,6 +440,8 @@ function normalizeSlash(filePath: string): string {
   return filePath.replace(/\\/g, "/").toLowerCase();
 }
 
+const SCAN_SKIP_DIRS = new Set([".git", "node_modules"]);
+
 async function collectFilesRecursively(rootDir: string, maxDepth: number): Promise<string[]> {
   const files: string[] = [];
 
@@ -426,6 +460,9 @@ async function collectFilesRecursively(rootDir: string, maxDepth: number): Promi
     for (const entry of entries) {
       const next = join(current, entry.name);
       if (entry.isDirectory()) {
+        if (SCAN_SKIP_DIRS.has(entry.name.toLowerCase())) {
+          continue;
+        }
         await walk(next, depth + 1);
       } else if (entry.isFile()) {
         files.push(next);
@@ -477,8 +514,14 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
     if (name.endsWith(".zip") && name.includes(`${buildEnv}-${platformToken}-`)) {
       score += 55;
     }
+    if (name === "launcher.exe") {
+      score += 35;
+      if (normalized.includes("/bin/")) {
+        score += 20;
+      }
+    }
     if (name.endsWith(".exe") && !name.includes("setup")) {
-      score -= 120;
+      score -= 40;
     }
   }
 
@@ -489,20 +532,20 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
   return score;
 }
 
-async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv): Promise<InstallerResolution | null> {
+async function detectInstallerPath(
+  platform: PublishPlatform,
+  buildEnv: BuildEnv,
+  extraRoots: string[] = []
+): Promise<InstallerResolution | null> {
   const allowed = allowedInstallerExt(platform);
-  const roots = candidateArtifactRoots();
+  const roots = [...candidateArtifactRoots(), ...extraRoots];
   const candidates: Array<{ path: string; score: number; mtimeMs: number }> = [];
 
   for (const root of roots) {
-    const files = await collectFilesRecursively(root, 5);
+    const files = await collectFilesRecursively(root, 10);
     for (const filePath of files) {
       const name = basename(filePath);
-      const lowerName = name.toLowerCase();
       if (!matchesAllowedExt(name, allowed)) {
-        continue;
-      }
-      if (platform === "windows" && lowerName.endsWith(".exe") && !lowerName.includes("setup")) {
         continue;
       }
       const score = candidateScore(filePath, platform, buildEnv);
@@ -535,13 +578,14 @@ async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv
 async function resolveInstallerPathForPublish(
   platform: PublishPlatform,
   buildEnv: BuildEnv,
-  providedPath: string | undefined
+  providedPath: string | undefined,
+  extraRoots: string[]
 ): Promise<InstallerResolution> {
   if (providedPath?.trim()) {
     return { path: resolve(process.cwd(), providedPath), source: "manual" };
   }
 
-  const auto = await detectInstallerPath(platform, buildEnv);
+  const auto = await detectInstallerPath(platform, buildEnv, extraRoots);
   if (auto) {
     return auto;
   }
@@ -551,9 +595,11 @@ async function resolveInstallerPathForPublish(
     await access(fallback, fsConstants.R_OK);
     return { path: fallback, source: "default-dist" };
   } catch {
+    const searchedRoots = [...candidateArtifactRoots(), ...extraRoots].map((item) => `- ${item}`).join("\n");
     throw new Error(
       `自动探测安装包失败：未在 artifacts/build/dist（含 app 子目录）找到 ${platform} 可发布文件。` +
-        `\n你可以手动指定 --installer <path>。`
+        `\n你可以手动指定 --installer <path>。` +
+        `\n已搜索目录：\n${searchedRoots}`
     );
   }
 }
@@ -746,7 +792,7 @@ async function main(): Promise<void> {
   let updaterArtifacts: string[] = [];
 
   if (!opts.skipInstaller) {
-    const resolved = await resolveInstallerPathForPublish(hostPlatform, opts.buildEnv, opts.installerPath);
+    const resolved = await resolveInstallerPathForPublish(hostPlatform, opts.buildEnv, opts.installerPath, opts.artifactRoots);
     installerPath = resolved.path;
     installerSource = resolved.source;
 
@@ -761,7 +807,7 @@ async function main(): Promise<void> {
   }
 
   if (!opts.skipUpdater) {
-    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir);
+    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir, opts.artifactRoots);
     if (updaterArtifacts.length === 0) {
       throw new Error(
         `未找到 Electrobun 更新产物（前缀: ${opts.buildEnv}-${PLATFORM_TOKEN[hostPlatform]}-）。` +
@@ -783,6 +829,9 @@ async function main(): Promise<void> {
   }
   if (opts.updaterDir) {
     console.log(`[publish] updater dir: ${opts.updaterDir}`);
+  }
+  if (opts.artifactRoots.length > 0) {
+    console.log(`[publish] extra artifact roots: ${opts.artifactRoots.join(", ")}`);
   }
   if (installerPath) {
     console.log(`[publish] installer path: ${installerPath}`);
