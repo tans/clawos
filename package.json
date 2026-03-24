@@ -14,7 +14,7 @@
     "release": "bun run scripts/release-clawos.ts --env=stable",
     "release:stable": "bun run scripts/release-clawos.ts --env=stable",
     "release:beta": "bun run scripts/release-clawos.ts --env=canary -- --release-channel=beta",
-    "release:canary": "bun run scripts/release-clawos.ts --env=canary",
+    "release:canary": "bun run scripts/release-clawos.ts --env=canary -- --release-channel=canary",
     "release:dev": "bun run scripts/release-clawos.ts --env=dev",
     "electrobun:download": "cd app && bun run electrobun:download",
     "test": "bun test test",

@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 type BuildEnv = "dev" | "canary" | "stable";
-type ReleaseChannel = "stable" | "beta" | "alpha";
+type ReleaseChannel = "stable" | "beta" | "canary";
 
 type Options = {
   env: BuildEnv;
@@ -31,7 +31,7 @@ function parseEnv(raw: string | undefined): BuildEnv {
 
 function parseReleaseChannel(raw: string | undefined): ReleaseChannel {
   const value = String(raw || "").trim().toLowerCase();
-  if (value === "alpha" || value === "beta" || value === "stable") {
+  if (value === "canary" || value === "beta" || value === "stable") {
     return value;
   }
   return "stable";
@@ -47,7 +47,7 @@ function printUsage(): void {
   --env <env>        构建环境: dev/canary/stable，默认 stable
   --skip-build       跳过构建，仅执行发布
   --skip-publish     仅构建，不发布
-  --release-channel <channel> 发布通道 stable/beta/alpha，默认 stable
+  --release-channel <channel> 发布通道 stable/beta/canary，默认 stable
   --no-bump-patch    不自动递增版本号
   --version <ver>    指定发布版本 (x.y.z 或 x.y.z.w)
   -h, --help         显示帮助
@@ -172,7 +172,7 @@ function parseVersionParts(version: string): [number, number, number, number] {
 
 function bumpVersion(version: string, channel: ReleaseChannel): string {
   const [major, minor, patch, build] = parseVersionParts(version);
-  if (channel === "alpha") {
+  if (channel === "canary") {
     return `${major}.${minor}.${patch}.${build + 1}`;
   }
   if (channel === "beta") {
