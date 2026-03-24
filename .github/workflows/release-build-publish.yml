@@ -51,7 +51,13 @@ jobs:
 
       - name: Build desktop artifact
         working-directory: app
-        run: bun run desktop:build
+        shell: bash
+        env:
+          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
+        run: |
+          set -euo pipefail
+          bun run webview:build
+          bun run electrobun -- build --env "${BUILD_ENV}"
 
       - name: Resolve release version
         id: release

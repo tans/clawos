@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 
 const releaseWorkflowPath = ".github/workflows/release-build-publish.yml";
-const alphaWorkflowPath = ".github/workflows/alpha-on-merge.yml";
+const canaryWorkflowPath = ".github/workflows/canary-on-merge.yml";
 const packageJsonPath = "package.json";
 
 function readText(filePath: string): string {
@@ -13,8 +13,8 @@ function resolveDispatchVersion(baseVersion: string, releaseChannel: "beta" | "s
   return `${baseVersion}-${releaseChannel}.${runNumber}`;
 }
 
-function resolveAlphaVersion(baseVersion: string, runNumber: number): string {
-  return `${baseVersion}-alpha.${runNumber}`;
+function resolveCanaryVersion(baseVersion: string, runNumber: number): string {
+  return `${baseVersion}-canary.${runNumber}`;
 }
 
 function normalizeWhitespace(value: string): string {
@@ -47,16 +47,16 @@ describe("publish flows (action simulation)", () => {
     expect(resolveDispatchVersion("0.9.44", "stable", 103)).toBe("0.9.44-stable.103");
   });
 
-  it("simulates alpha merge version resolution", () => {
-    const alphaWorkflow = readText(alphaWorkflowPath);
+  it("simulates canary merge version resolution", () => {
+    const canaryWorkflow = readText(canaryWorkflowPath);
 
-    expect(alphaWorkflow).toContain('alpha_version="${base_version}-alpha.${GITHUB_RUN_NUMBER}"');
-    expect(resolveAlphaVersion("0.9.44", 205)).toBe("0.9.44-alpha.205");
+    expect(canaryWorkflow).toContain('canary_version="${base_version}-canary.${GITHUB_RUN_NUMBER}"');
+    expect(resolveCanaryVersion("0.9.44", 205)).toBe("0.9.44-canary.205");
   });
 
   it("ensures all action publish branches pass mandatory publish arguments", () => {
     const releaseWorkflow = normalizeWhitespace(readText(releaseWorkflowPath));
-    const alphaWorkflow = normalizeWhitespace(readText(alphaWorkflowPath));
+    const canaryWorkflow = normalizeWhitespace(readText(canaryWorkflowPath));
 
     const requiredArgs = [
       "--build-env \"${BUILD_ENV}\"",
@@ -68,12 +68,12 @@ describe("publish flows (action simulation)", () => {
 
     for (const arg of requiredArgs) {
       expect(releaseWorkflow).toContain(arg);
-      expect(alphaWorkflow).toContain(arg);
+      expect(canaryWorkflow).toContain(arg);
     }
 
     expect(releaseWorkflow).toContain('if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then bun run publish -- --base-url "${PUBLISH_BASE_URL}"');
-    expect(alphaWorkflow).toContain('if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then bun run publish -- --base-url "${PUBLISH_BASE_URL}"');
+    expect(canaryWorkflow).toContain('if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then bun run publish -- --base-url "${PUBLISH_BASE_URL}"');
     expect(releaseWorkflow).toContain("else bun run publish -- --build-env");
-    expect(alphaWorkflow).toContain("else bun run publish -- --build-env");
+    expect(canaryWorkflow).toContain("else bun run publish -- --build-env");
   });
 });

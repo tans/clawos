@@ -1,4 +1,4 @@
-name: Auto Alpha Release On Merge
+name: Auto Canary Release On Merge
 
 on:
   push:
@@ -10,11 +10,11 @@ on:
       - "scripts/**"
       - "desktop/**"
       - "app/**"
-      - ".github/workflows/alpha-on-merge.yml"
+      - ".github/workflows/canary-on-merge.yml"
       - ".github/workflows/release-build-publish.yml"
 
 jobs:
-  alpha-release:
+  canary-release:
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -45,27 +45,31 @@ jobs:
 
       - name: Build desktop artifact (canary)
         working-directory: app
-        run: bun run desktop:build
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run webview:build
+          bun run electrobun -- build --env=canary
 
-      - name: Resolve alpha version
-        id: alpha
+      - name: Resolve canary version
+        id: canary
         shell: bash
         run: |
           set -euo pipefail
           base_version="$(node -p "require('./package.json').version")"
-          alpha_version="${base_version}-alpha.${GITHUB_RUN_NUMBER}"
+          canary_version="${base_version}-canary.${GITHUB_RUN_NUMBER}"
           echo "base=${base_version}" >> "$GITHUB_OUTPUT"
-          echo "version=${alpha_version}" >> "$GITHUB_OUTPUT"
-          echo "alpha_version=${alpha_version}"
+          echo "version=${canary_version}" >> "$GITHUB_OUTPUT"
+          echo "canary_version=${canary_version}"
 
-      - name: Publish alpha artifacts
+      - name: Publish canary artifacts
         env:
           PUBLISH_BASE_URL: ${{ vars.PUBLISH_BASE_URL }}
           UPLOAD_TIMEOUT_MS: "1200000"
           UPLOAD_HEARTBEAT_MS: "15000"
           BUILD_ENV: "canary"
-          RELEASE_CHANNEL: "alpha"
-          CLAWOS_VERSION: ${{ steps.alpha.outputs.version }}
+          RELEASE_CHANNEL: "canary"
+          CLAWOS_VERSION: ${{ steps.canary.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
