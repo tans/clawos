@@ -49,7 +49,7 @@ export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
       </head>
       <body class="min-h-screen bg-base-100 text-base-content">
         <main class="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12 lg:px-12 lg:py-16">
-          <header class="surface-wash rounded-[2rem] border border-base-200 px-5 py-5 sm:px-7">
+          <header class="glass-nav rounded-2xl border border-slate-200 px-5 py-5 sm:px-7">
             <div class="flex flex-wrap items-center justify-between gap-4">
               <div class="flex items-center gap-3">
                 <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
@@ -59,15 +59,15 @@ export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
                 </div>
               </div>
               <div class="flex flex-wrap gap-2">
-                <a class="btn btn-ghost border border-base-content/20" href="/">返回首页</a>
-                <a class="btn border-0 bg-black text-white hover:bg-black/90" href="/contact">联系我们</a>
+                <a class="secondary-button" href="/">返回首页</a>
+                <a class="primary-button" href="/contact">联系我们</a>
               </div>
             </div>
           </header>
 
           <section class="mt-8 grid gap-5 lg:grid-cols-3">
             {cards.map((card) => (
-              <article class="rounded-2xl border border-base-200 bg-white p-5 shadow-sm">
+              <article class="bento-card p-5">
                 <div class="flex items-center justify-between gap-3">
                   <h2 class="text-lg font-semibold">{card.label}</h2>
                   <span class={`badge ${card.badgeClass}`}>{card.id.toUpperCase()}</span>
@@ -77,12 +77,12 @@ export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
 
                 {card.hasInstaller ? (
                   <div class="mt-5 grid gap-2">
-                    <a class="btn btn-sm border border-base-content/20" href={card.windowsUrl}>下载 Windows</a>
-                    <a class="btn btn-sm border border-base-content/20" href={card.macosUrl}>下载 macOS</a>
-                    <a class="btn btn-sm border border-base-content/20" href={card.linuxUrl}>下载 Linux</a>
+                    <a class="secondary-button w-full" href={card.windowsUrl}>下载 Windows</a>
+                    <a class="secondary-button w-full" href={card.macosUrl}>下载 macOS</a>
+                    <a class="secondary-button w-full" href={card.linuxUrl}>下载 Linux</a>
                   </div>
                 ) : (
-                  <button class="btn btn-sm mt-5" type="button" disabled>
+                  <button class="secondary-button mt-5 w-full" type="button" disabled>
                     暂无可用安装包
                   </button>
                 )}
