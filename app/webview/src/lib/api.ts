@@ -42,6 +42,18 @@ export type QwGatewayStatus = {
   updatedAt?: string | null;
 };
 
+export type WeixinLoginState = {
+  sessionKey: string;
+  loginUrl?: string | null;
+  qrDataUrl?: string | null;
+  phase?: "waiting" | "connected" | "failed" | string;
+  message?: string;
+  accountId?: string | null;
+  restartedGateway?: boolean;
+  startedAt?: string;
+  updatedAt?: string;
+};
+
 export type AppUpdateStatus = {
   supported?: boolean;
   remoteVersion?: string | null;
@@ -202,6 +214,20 @@ export async function saveClawosAutoStart(enabled: boolean): Promise<AutoStartSt
 export async function fetchQwGatewayStatus(): Promise<QwGatewayStatus> {
   const data = await request<{ ok: true; status: QwGatewayStatus }>("/api/qw-gateway/status");
   return data.status || {};
+}
+
+export async function fetchWeixinLoginState(sessionKey?: string): Promise<WeixinLoginState | null> {
+  const query = typeof sessionKey === "string" && sessionKey.trim() ? `?sessionKey=${encodeURIComponent(sessionKey.trim())}` : "";
+  const data = await request<{ ok: true; state: WeixinLoginState | null }>(`/api/channels/weixin/login${query}`);
+  return data.state || null;
+}
+
+export async function startWeixinLogin(force = false): Promise<WeixinLoginState> {
+  const data = await request<{ ok: true; state: WeixinLoginState }>("/api/channels/weixin/login/start", {
+    method: "POST",
+    body: { force },
+  });
+  return data.state;
 }
 
 export async function fetchTask(taskId: string): Promise<TaskRecord> {

@@ -112,7 +112,7 @@ function readPluginPaths(value: unknown): string[] {
   return out;
 }
 
-function ensurePluginEntryEnabled(entries: Record<string, unknown>, key: "wework" | "feishu"): void {
+function ensurePluginEntryEnabled(entries: Record<string, unknown>, key: string): void {
   const existing = asObject(entries[key]) || {};
   entries[key] = {
     ...existing,
@@ -124,7 +124,8 @@ export function ensureChannelPluginsForEnabledChannels(config: Record<string, un
   const channels = asObject(config.channels) || {};
   const needsWeworkPlugin = readChannelEnabled(channels.wework);
   const needsFeishuPlugin = readChannelEnabled(channels.feishu);
-  const needsChannelPlugins = needsWeworkPlugin || needsFeishuPlugin;
+  const needsWeixinPlugin = readChannelEnabled(channels["openclaw-weixin"]);
+  const needsChannelPlugins = needsWeworkPlugin || needsFeishuPlugin || needsWeixinPlugin;
   if (!needsChannelPlugins) {
     return;
   }
@@ -132,23 +133,32 @@ export function ensureChannelPluginsForEnabledChannels(config: Record<string, un
   const existingPlugins = asObject(config.plugins) || {};
   const plugins: Record<string, unknown> = { ...existingPlugins };
 
-  const existingLoad = asObject(existingPlugins.load) || {};
-  const load: Record<string, unknown> = { ...existingLoad };
-  const paths = readPluginPaths(existingLoad.paths);
+  if (needsWeworkPlugin || needsFeishuPlugin) {
+    const existingLoad = asObject(existingPlugins.load) || {};
+    const load: Record<string, unknown> = { ...existingLoad };
+    const paths = readPluginPaths(existingLoad.paths);
 
-  if (!paths.includes(CHANNEL_PLUGIN_PATHS.wework)) {
-    paths.push(CHANNEL_PLUGIN_PATHS.wework);
+    if (needsWeworkPlugin && !paths.includes(CHANNEL_PLUGIN_PATHS.wework)) {
+      paths.push(CHANNEL_PLUGIN_PATHS.wework);
+    }
+    if (needsFeishuPlugin && !paths.includes(CHANNEL_PLUGIN_PATHS.feishu)) {
+      paths.push(CHANNEL_PLUGIN_PATHS.feishu);
+    }
+    load.paths = paths;
+    plugins.load = load;
   }
-  if (!paths.includes(CHANNEL_PLUGIN_PATHS.feishu)) {
-    paths.push(CHANNEL_PLUGIN_PATHS.feishu);
-  }
-  load.paths = paths;
-  plugins.load = load;
 
   const existingEntries = asObject(existingPlugins.entries) || {};
   const entries: Record<string, unknown> = { ...existingEntries };
-  ensurePluginEntryEnabled(entries, "wework");
-  ensurePluginEntryEnabled(entries, "feishu");
+  if (needsWeworkPlugin) {
+    ensurePluginEntryEnabled(entries, "wework");
+  }
+  if (needsFeishuPlugin) {
+    ensurePluginEntryEnabled(entries, "feishu");
+  }
+  if (needsWeixinPlugin) {
+    ensurePluginEntryEnabled(entries, "openclaw-weixin");
+  }
   plugins.entries = entries;
 
   config.plugins = plugins;

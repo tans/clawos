@@ -40,8 +40,9 @@ import { probeMcpTargets, startMcpBuildTask } from "../tasks/mcp";
 import { startWslRepairTask } from "../tasks/system";
 import { getTaskById, listRecentTasks } from "../tasks/store";
 import { normalizeOutput, runWslScript, troubleshootingTips } from "../tasks/shell";
+import { clearWeixinLoginStateIfDisabled, getWeixinLoginState, startWeixinLogin } from "../openclaw/weixin-login";
 
-const CHANNEL_PATCH_KEYS = new Set(["feishu", "wework"]);
+const CHANNEL_PATCH_KEYS = new Set(["feishu", "wework", "openclaw-weixin"]);
 const OPENCLAW_REDACTED = "__OPENCLAW_REDACTED__";
 const IS_MACOS = process.platform === "darwin";
 
@@ -62,6 +63,10 @@ const WEWORK_CHANNEL_DEFAULTS: Record<string, unknown> = {
   allowFrom: ["*"],
   dmPolicy: "open",
   groupPolicy: "open",
+};
+
+const WEIXIN_CHANNEL_DEFAULTS: Record<string, unknown> = {
+  enabled: false,
 };
 
 function readOptionalBoolean(value: unknown): boolean | undefined {
@@ -119,6 +124,20 @@ function buildWeworkChannelData(input: Record<string, unknown>, existing: Record
   const existingEnabled = readOptionalBoolean(existing.enabled) ?? readOptionalBoolean(existing.enable);
   const inputEnabled = readOptionalBoolean(input.enabled) ?? readOptionalBoolean(input.enable);
   next.enabled = inputEnabled ?? existingEnabled ?? WEWORK_CHANNEL_DEFAULTS.enabled;
+
+  delete next.enable;
+  return next;
+}
+
+function buildWeixinChannelData(input: Record<string, unknown>, existing: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {
+    ...WEIXIN_CHANNEL_DEFAULTS,
+    ...existing,
+  };
+
+  const existingEnabled = readOptionalBoolean(existing.enabled) ?? readOptionalBoolean(existing.enable);
+  const inputEnabled = readOptionalBoolean(input.enabled) ?? readOptionalBoolean(input.enable);
+  next.enabled = inputEnabled ?? existingEnabled ?? WEIXIN_CHANNEL_DEFAULTS.enabled;
 
   delete next.enable;
   return next;
@@ -623,7 +642,26 @@ async function handleSingleChannelPatch(req: Request, channelKeyRaw: string): Pr
       data: normalized,
       save: saveResult,
     });
-  } else {
+  }
+
+  if (channelKey === "openclaw-weixin") {
+    const existing = asObject(sectionData["openclaw-weixin"]) || {};
+    const normalized = buildWeixinChannelData(data, existing);
+    nextChannels["openclaw-weixin"] = normalized;
+    const saveResult = await saveConfigSection("channels", nextChannels);
+    if (normalized.enabled !== true) {
+      await clearWeixinLoginStateIfDisabled();
+    }
+    return jsonResponse({
+      ok: true,
+      section: "channels",
+      channel: channelKey,
+      data: normalized,
+      save: saveResult,
+    });
+  }
+
+  {
     const existing = asObject(sectionData.feishu) || {};
     const normalized = buildFeishuChannelData(data, existing);
     nextChannels.feishu = normalized;
@@ -767,6 +805,20 @@ async function handleMcpBuild(req: Request): Promise<Response> {
 async function handleMcpStatus(): Promise<Response> {
   const targets = probeMcpTargets();
   return jsonResponse({ ok: true, targets });
+}
+
+async function handleWeixinLoginStart(req: Request): Promise<Response> {
+  const body = await parseJsonBody(req);
+  const force = body.force === true;
+  const state = await startWeixinLogin(force);
+  return jsonResponse({ ok: true, state });
+}
+
+async function handleWeixinLoginState(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const sessionKey = url.searchParams.get("sessionKey");
+  const state = await getWeixinLoginState(sessionKey);
+  return jsonResponse({ ok: true, state });
 }
 
 
@@ -922,6 +974,14 @@ export async function handleApiRequest(req: Request, path: string): Promise<Resp
 
       const balances = await readWalletBalances(wallet.address);
       return jsonResponse({ ok: true, wallet, balances });
+    }
+
+    if (path === "/api/channels/weixin/login" && req.method === "GET") {
+      return await handleWeixinLoginState(req);
+    }
+
+    if (path === "/api/channels/weixin/login/start" && req.method === "POST") {
+      return await handleWeixinLoginStart(req);
     }
 
     if (path === "/api/config/section" && req.method === "PUT") {
