@@ -44,6 +44,25 @@
   }
 }
 
+@keyframes hero-slogan-rotate {
+  0%,
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  25%,
+  95% {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
 @utility page-fade {
   animation: var(--animate-page-fade);
 }
@@ -176,13 +195,35 @@
     background: linear-gradient(180deg, #fff 0%, #fff9fa 100%);
     box-shadow: 0 10px 30px rgb(233 84 98 / 7%);
   }
+
+  .hero-slogan-rotator {
+    display: inline-block;
+    position: relative;
+    min-width: 6em;
+    height: 1.3em;
+    vertical-align: top;
+  }
+
+  .hero-slogan-item {
+    position: absolute;
+    inset: 0 auto auto 0;
+    opacity: 0;
+    animation: hero-slogan-rotate 12s infinite;
+    animation-delay: calc(var(--slogan-index) * 3s);
+    white-space: nowrap;
+  }
+
+  .hero-slogan-item:first-child {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page-fade,
   .primary-button,
   .secondary-button,
-  .brand-link {
+  .brand-link,
+  .hero-slogan-item {
     animation: none;
     transition: none;
   }
@@ -191,5 +232,13 @@
   .secondary-button:hover,
   .brand-link:hover {
     transform: none;
+  }
+
+  .hero-slogan-item {
+    opacity: 0;
+  }
+
+  .hero-slogan-item:first-child {
+    opacity: 1;
   }
 }
