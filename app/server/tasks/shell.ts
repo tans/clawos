@@ -1,7 +1,8 @@
 import { asObject, readNonEmptyString } from "../lib/value";
 import { readLocalClawosConfig } from "../config/local";
+import { buildKillProcessArgs, buildUnixBashArgs, buildWindowsWslArgs, isWindowsPlatform } from "../system/platform-adapter";
 
-const IS_WINDOWS = process.platform === "win32";
+const IS_WINDOWS = isWindowsPlatform();
 let cachedAutoDetectedWslDistro: string | null | undefined;
 
 function isTruthyEnv(value: string | undefined): boolean {
@@ -137,38 +138,16 @@ export function buildWslProcessArgs(
   const preferStdin = options.preferStdin === true;
 
   if (!options.isWindows) {
-    if (shellMode === "interactive") {
-      return ["bash", "-ic", script];
-    }
-    if (shellMode === "clean") {
-      return ["bash", "--noprofile", "--norc", "-c", script];
-    }
-    return ["bash", "-lc", script];
+    return buildUnixBashArgs(script, shellMode);
   }
 
-  const wslBin = options.wslBin?.trim() || "wsl.exe";
-  const distro = options.distro?.trim();
-  if (preferStdin) {
-    if (shellMode === "interactive") {
-      return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-is"];
-    }
-    if (shellMode === "clean") {
-      return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "--noprofile", "--norc", "-s"];
-    }
-
-    const shellFlag = shellMode === "non-login" ? "-s" : "-lis";
-    return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", shellFlag];
-  }
-
-  if (shellMode === "interactive") {
-    return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "-ic", script];
-  }
-  if (shellMode === "clean") {
-    return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", "--noprofile", "--norc", "-c", script];
-  }
-
-  const shellFlag = shellMode === "non-login" ? "-lc" : "-lic";
-  return [wslBin, ...(distro ? ["-d", distro] : []), "--", "bash", shellFlag, script];
+  return buildWindowsWslArgs({
+    script,
+    shellMode,
+    preferStdin,
+    distro: options.distro,
+    wslBin: options.wslBin,
+  });
 }
 
 export function parseWslDistroList(stdout: string): string[] {
@@ -252,7 +231,7 @@ export async function runProcess(args: string[], options: RunProcessOptions = {}
     try {
       if (IS_WINDOWS && typeof proc.pid === "number" && proc.pid > 0) {
         Bun.spawnSync({
-          cmd: ["cmd.exe", "/d", "/c", `taskkill /PID ${proc.pid} /T /F`],
+          cmd: buildKillProcessArgs(proc.pid),
           stdin: "ignore",
           stdout: "ignore",
           stderr: "ignore",
