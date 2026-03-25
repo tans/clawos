@@ -21,3 +21,6 @@ mission/data/
 *.db
 *.db-shm
 *.db-wal
+
+# deploy logs
+web/logs/
