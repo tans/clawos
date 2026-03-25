@@ -9,6 +9,7 @@ import type {
   HostInsightRow,
   HostRow,
   PendingCommandRow,
+  TokenUsageSampleRow,
 } from "../types";
 
 const HOST_SELECT = `
@@ -110,6 +111,7 @@ export function createPendingCommand(hostId: string, kind: string, payload: Reco
   const normalizedPayload = JSON.stringify(payload);
   const dedupeKey = `${hostId}:${kind}:${normalizedPayload}`;
   const now = nowMs();
+  const dedupeWindowMs = kind === "clawos.gateway.action" && payload.action === "restart" ? 120_000 : 30_000;
   const exists = db
     .query(
       `SELECT id
@@ -121,7 +123,7 @@ export function createPendingCommand(hostId: string, kind: string, payload: Reco
        ORDER BY created_at DESC
        LIMIT 1`
     )
-    .get(hostId, dedupeKey, now - 30_000) as { id: string } | null;
+    .get(hostId, dedupeKey, now - dedupeWindowMs) as { id: string } | null;
   if (exists) {
     return exists.id;
   }
@@ -129,8 +131,8 @@ export function createPendingCommand(hostId: string, kind: string, payload: Reco
   const commandId = newId("cmd");
   const expiresAt = now + 2 * 60 * 1000;
   db.prepare(
-    `INSERT INTO commands (id, device_id, kind, dedupe_key, payload, status, result, expires_at, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, 'pending', NULL, ?, ?, ?)`
+    `INSERT INTO commands (id, device_id, kind, dedupe_key, payload, status, result, started_at, finished_at, expires_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 'pending', NULL, NULL, NULL, ?, ?, ?)`
   ).run(commandId, hostId, kind, dedupeKey, normalizedPayload, expiresAt, now, now);
   return commandId;
 }
@@ -138,7 +140,7 @@ export function createPendingCommand(hostId: string, kind: string, payload: Reco
 export function listHostRecentCommands(hostId: string, limit = 40): HostCommandRow[] {
   return db
     .query(
-      `SELECT id, kind, payload, status, dedupe_key AS dedupeKey, expires_at AS expiresAt, result, created_at AS createdAt, updated_at AS updatedAt
+      `SELECT id, kind, payload, status, dedupe_key AS dedupeKey, started_at AS startedAt, finished_at AS finishedAt, expires_at AS expiresAt, result, created_at AS createdAt, updated_at AS updatedAt
        FROM commands
        WHERE device_id = ?
        ORDER BY created_at DESC
@@ -216,7 +218,7 @@ export function updateHostHeartbeat(args: {
 
 export function listPendingCommands(hostId: string, limit: number): PendingCommandRow[] {
   markTimedOutCommands(hostId);
-  return db
+  const rows = db
     .query(
       `SELECT id, kind, payload, created_at AS createdAt
        FROM commands
@@ -225,44 +227,98 @@ export function listPendingCommands(hostId: string, limit: number): PendingComma
        LIMIT ?`
     )
     .all(hostId, limit) as PendingCommandRow[];
+  if (rows.length) {
+    const markRunning = db.prepare(
+      `UPDATE commands
+       SET status = 'running', started_at = COALESCE(started_at, ?), updated_at = ?
+       WHERE id = ? AND status = 'pending'`
+    );
+    const now = nowMs();
+    const tx = db.transaction((items: PendingCommandRow[]) => {
+      for (const item of items) {
+        markRunning.run(now, now, item.id);
+      }
+    });
+    tx(rows);
+  }
+  return rows;
 }
 
 export function markTimedOutCommands(hostId: string, now = nowMs()): number {
   const updated = db
     .prepare(
       `UPDATE commands
-       SET status = 'timeout', result = '{"error":"command timeout"}', updated_at = ?
+       SET status = 'timeout', result = '{"error":"command timeout"}', finished_at = ?, updated_at = ?
        WHERE device_id = ?
-         AND status = 'pending'
+         AND status IN ('pending', 'running')
          AND expires_at IS NOT NULL
          AND expires_at < ?`
     )
-    .run(now, hostId, now);
+    .run(now, now, hostId, now);
   return updated.changes;
 }
 
 export function markPendingCommandResult(args: {
   commandId: string;
   hostId: string;
-  status: "success" | "failed";
+  status: "succeeded" | "failed";
   result: unknown;
   now: number;
 }): number {
   const updated = db
     .prepare(
       `UPDATE commands
-       SET status = ?, result = ?, updated_at = ?
-       WHERE id = ? AND device_id = ? AND status = 'pending'`
+       SET status = ?, result = ?, finished_at = ?, updated_at = ?
+       WHERE id = ? AND device_id = ? AND status IN ('pending', 'running')`
     )
     .run(
       args.status,
       args.result === null ? null : JSON.stringify(args.result),
+      args.now,
       args.now,
       args.commandId,
       args.hostId
     );
 
   return updated.changes;
+}
+
+export function createTokenUsageSample(hostId: string, tokens: number | null, raw: unknown, now = nowMs()): string {
+  const id = newId("tok");
+  db.prepare(
+    `INSERT INTO token_usage_samples (id, host_id, tokens, raw_json, created_at)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(id, hostId, tokens, raw === undefined ? null : JSON.stringify(raw), now);
+  return id;
+}
+
+export function listTokenUsageSamples(hostId: string, limit = 100): TokenUsageSampleRow[] {
+  return db
+    .query(
+      `SELECT id, host_id AS hostId, tokens, raw_json AS rawJson, created_at AS createdAt
+       FROM token_usage_samples
+       WHERE host_id = ?
+       ORDER BY created_at DESC
+       LIMIT ?`
+    )
+    .all(hostId, limit) as TokenUsageSampleRow[];
+}
+
+export function listCommandStatusSummaryByControllerAddress(walletAddress: string): Record<string, number> {
+  const rows = db
+    .query(
+      `SELECT c.status AS status, COUNT(*) AS count
+       FROM commands c
+       JOIN hosts h ON h.host_id = c.device_id
+       WHERE h.controller_address = ?
+       GROUP BY c.status`
+    )
+    .all(walletAddress) as Array<{ status: string; count: number }>;
+  const summary: Record<string, number> = { pending: 0, running: 0, succeeded: 0, failed: 0, timeout: 0, canceled: 0 };
+  for (const row of rows) {
+    summary[row.status] = row.count;
+  }
+  return summary;
 }
 
 export function listAuditLogs(limit: number): AuditLogRow[] {

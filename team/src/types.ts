@@ -26,6 +26,8 @@ export type HostCommandRow = {
   payload: string;
   status: string;
   dedupeKey: string | null;
+  startedAt: number | null;
+  finishedAt: number | null;
   expiresAt: number | null;
   result: string | null;
   createdAt: number;
@@ -36,6 +38,14 @@ export type PendingCommandRow = {
   id: string;
   kind: string;
   payload: string;
+  createdAt: number;
+};
+
+export type TokenUsageSampleRow = {
+  id: string;
+  hostId: string;
+  tokens: number | null;
+  rawJson: string | null;
   createdAt: number;
 };
 

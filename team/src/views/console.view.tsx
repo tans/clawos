@@ -411,11 +411,36 @@ export function renderHostDetailPage(
                 查询 Gateway 状态
               </button>
             </form>
+            <form class="mt-2" method="post" action={`/console/hosts/${hostIdPath}/tasks/config-get`}>
+              <button class="btn btn-outline w-full" type="submit">
+                读取配置（config.get）
+              </button>
+            </form>
             <form class="mt-2" method="post" action={`/console/hosts/${hostIdPath}/tasks/gateway-restart`}>
               <button class="btn btn-warning w-full" type="submit">
                 重启 Gateway
               </button>
             </form>
+            <form class="mt-2" method="post" action={`/console/hosts/${hostIdPath}/tasks/config-set`}>
+              <label class="form-control w-full">
+                <div class="label">
+                  <span class="label-text">配置路径</span>
+                </div>
+                <input class="input input-bordered w-full" name="path" value="gateway" />
+              </label>
+              <label class="form-control w-full mt-2">
+                <div class="label">
+                  <span class="label-text">配置变更(JSON/Text)</span>
+                </div>
+                <textarea class="textarea textarea-bordered w-full" name="patch" placeholder='{"logLevel":"info"}'></textarea>
+              </label>
+              <button class="btn btn-primary w-full mt-2" type="submit">
+                提交配置变更（config.set）
+              </button>
+            </form>
+            <a class="link link-primary mt-3 inline-block" href={`/console/hosts/${hostIdPath}/token-usage`}>
+              查看 Token 使用量 JSON
+            </a>
           </div>
         </article>
       </div>

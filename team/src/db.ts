@@ -2,11 +2,12 @@ import { Database } from "bun:sqlite";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 
-const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "company.db");
+const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "team.db");
 const LEGACY_DB_PATH = path.join(process.cwd(), "data", "farm.db");
 
 function resolveDbPath(): string {
-  const envPath = process.env.COMPANY_DB_PATH?.trim() || process.env.FARM_DB_PATH?.trim() || "";
+  const envPath =
+    process.env.TEAM_DB_PATH?.trim() || process.env.COMPANY_DB_PATH?.trim() || process.env.FARM_DB_PATH?.trim() || "";
   if (envPath) {
     return envPath;
   }
@@ -114,9 +115,20 @@ CREATE TABLE IF NOT EXISTS commands (
   payload TEXT NOT NULL,
   status TEXT NOT NULL,
   result TEXT,
+  started_at INTEGER,
+  finished_at INTEGER,
   expires_at INTEGER,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS token_usage_samples (
+  id TEXT PRIMARY KEY,
+  host_id TEXT NOT NULL,
+  tokens INTEGER,
+  raw_json TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY(host_id) REFERENCES hosts(host_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -141,6 +153,7 @@ CREATE TABLE IF NOT EXISTS agent_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_commands_device_status ON commands(device_id, status, created_at);
+CREATE INDEX IF NOT EXISTS idx_commands_status_updated ON commands(status, updated_at DESC);
 CREATE INDEX IF NOT EXISTS idx_handshake_expiry ON handshake_challenges(expires_at, used);
 CREATE INDEX IF NOT EXISTS idx_sessions_expiry ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_console_sessions_expiry ON console_sessions(expires_at);
@@ -148,6 +161,7 @@ CREATE INDEX IF NOT EXISTS idx_hosts_controller ON hosts(controller_address, upd
 CREATE INDEX IF NOT EXISTS idx_agent_events_host_created ON agent_events(host_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_events_severity_created ON agent_events(severity, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_companies_owner_updated ON companies(owner_user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_token_usage_host_created ON token_usage_samples(host_id, created_at DESC);
 `);
 
 function hasColumn(table: string, column: string): boolean {
@@ -160,6 +174,12 @@ if (!hasColumn("commands", "dedupe_key")) {
 }
 if (!hasColumn("commands", "expires_at")) {
   db.exec("ALTER TABLE commands ADD COLUMN expires_at INTEGER;");
+}
+if (!hasColumn("commands", "started_at")) {
+  db.exec("ALTER TABLE commands ADD COLUMN started_at INTEGER;");
+}
+if (!hasColumn("commands", "finished_at")) {
+  db.exec("ALTER TABLE commands ADD COLUMN finished_at INTEGER;");
 }
 db.exec("CREATE INDEX IF NOT EXISTS idx_commands_dedupe_key ON commands(dedupe_key, created_at);");
 

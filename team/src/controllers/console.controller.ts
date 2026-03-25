@@ -14,10 +14,12 @@ import {
   getConsoleUserBySessionToken,
   getHostOwnedBy,
   listCompaniesByOwnerUserId,
+  listCommandStatusSummaryByControllerAddress,
   listHostInsightsByControllerAddress,
   listHostRecentCommands,
   listHostRecentEvents,
   listHostsByControllerAddress,
+  listTokenUsageSamples,
 } from "../models/company.model";
 import type { AppEnv, ConsoleUser } from "../types";
 import { readFormText } from "../utils/request";
@@ -82,7 +84,7 @@ export function createConsoleController(): Hono<AppEnv> {
 
   controller.get("/health", (c) => {
     clearExpiredConsoleSessions();
-    return c.json({ ok: true, service: "clawos-company", dbPath: DB_PATH, ts: new Date().toISOString() });
+    return c.json({ ok: true, service: "clawos-team", dbPath: DB_PATH, ts: new Date().toISOString() });
   });
 
   controller.get("/console/login", async (c) => {
@@ -202,6 +204,18 @@ export function createConsoleController(): Hono<AppEnv> {
     return c.html(renderInsightsPage(user, rows, hours));
   });
 
+  controller.get("/console/kpi", (c) => {
+    const user = c.get("consoleUser");
+    const hosts = listHostsByControllerAddress(user.walletAddress);
+    const summary = listCommandStatusSummaryByControllerAddress(user.walletAddress);
+    const online = hosts.filter((h) => h.status === "online").length;
+    return c.json({
+      ok: true,
+      hosts: { total: hosts.length, online, degraded: hosts.filter((h) => h.status === "degraded").length },
+      commands: summary,
+    });
+  });
+
   controller.get("/console/logout", (c) => {
     clearConsoleSession(c);
     return c.redirect("/console/login");
@@ -223,6 +237,19 @@ export function createConsoleController(): Hono<AppEnv> {
     const commands = listHostRecentCommands(hostId, 40);
     const events = listHostRecentEvents(hostId, 20);
     return c.html(renderHostDetailPage(user, host, message, commands, events));
+  });
+
+  controller.get("/console/hosts/:hostId/token-usage", (c) => {
+    const user = c.get("consoleUser");
+    const hostId = normalizeHostId(c.req.param("hostId"));
+    if (!hostId) {
+      return c.json({ ok: false, error: "INVALID_HOST_ID" }, 400);
+    }
+    const host = getHostOwnedBy(hostId, user.walletAddress);
+    if (!host) {
+      return c.json({ ok: false, error: "FORBIDDEN" }, 403);
+    }
+    return c.json({ ok: true, hostId, samples: listTokenUsageSamples(hostId, 200) });
   });
 
   controller.post("/console/hosts/:hostId/tasks/wsl-exec", async (c) => {
@@ -307,6 +334,44 @@ export function createConsoleController(): Hono<AppEnv> {
     });
 
     return c.redirect(`/console/hosts/${encodeURIComponent(hostId)}?msg=已下发任务 ${encodeURIComponent(commandId)}`);
+  });
+
+  controller.post("/console/hosts/:hostId/tasks/config-get", (c) => {
+    const user = c.get("consoleUser");
+    const hostId = normalizeHostId(c.req.param("hostId"));
+    if (!hostId) return c.redirect("/console?msg=主机ID不合法");
+    const host = getHostOwnedBy(hostId, user.walletAddress);
+    if (!host) return c.redirect("/console?msg=你无权操作该主机");
+    const commandId = createPendingCommand(hostId, "clawos.gateway.config.get", {});
+    auditLog({
+      actor: `console:${user.mobile}`,
+      action: "dispatch_gateway_config_get",
+      deviceId: hostId,
+      controllerAddress: user.walletAddress,
+      detail: { commandId },
+    });
+    return c.redirect(`/console/hosts/${encodeURIComponent(hostId)}?msg=已下发配置读取任务 ${encodeURIComponent(commandId)}`);
+  });
+
+  controller.post("/console/hosts/:hostId/tasks/config-set", async (c) => {
+    const user = c.get("consoleUser");
+    const hostId = normalizeHostId(c.req.param("hostId"));
+    if (!hostId) return c.redirect("/console?msg=主机ID不合法");
+    const host = getHostOwnedBy(hostId, user.walletAddress);
+    if (!host) return c.redirect("/console?msg=你无权操作该主机");
+    const body = (await c.req.parseBody()) as Record<string, string | File | (string | File)[]>;
+    const path = readFormText(body, "path") || "gateway";
+    const patch = readFormText(body, "patch");
+    if (!patch) return c.redirect(`/console/hosts/${encodeURIComponent(hostId)}?msg=配置内容不能为空`);
+    const commandId = createPendingCommand(hostId, "clawos.gateway.config.set", { path, patch });
+    auditLog({
+      actor: `console:${user.mobile}`,
+      action: "dispatch_gateway_config_set",
+      deviceId: hostId,
+      controllerAddress: user.walletAddress,
+      detail: { commandId, path, patchLength: patch.length },
+    });
+    return c.redirect(`/console/hosts/${encodeURIComponent(hostId)}?msg=已下发配置变更任务 ${encodeURIComponent(commandId)}`);
   });
 
   return controller;
