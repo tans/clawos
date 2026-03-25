@@ -2,13 +2,15 @@ import { exportQuote } from "./tools/export-quote";
 import { getBomJobResult } from "./tools/get-bom-job-result";
 import { getQuote } from "./tools/get-quote";
 import { submitBom } from "./tools/submit-bom";
+import { applyNlPriceUpdate } from "./tools/apply-nl-price-update";
 
 type ToolName =
   | "submit_bom"
   | "get_bom_job_result"
   | "get_job_status"
   | "get_quote"
-  | "export_quote";
+  | "export_quote"
+  | "apply_nl_price_update";
 
 interface ToolRequest {
   tool: ToolName;
@@ -29,6 +31,8 @@ export async function runTool(request: ToolRequest): Promise<unknown> {
         String(request.args.jobId || ""),
         (request.args.format as Parameters<typeof exportQuote>[1]) || "json",
       );
+    case "apply_nl_price_update":
+      return applyNlPriceUpdate(request.args as Parameters<typeof applyNlPriceUpdate>[0]);
     default:
       throw new Error(`未知 tool: ${request.tool}`);
   }
