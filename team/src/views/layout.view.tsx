@@ -54,7 +54,7 @@ const LayoutRoot: FC<{
                   控制台
                 </a>
                 <a class="btn btn-ghost btn-sm px-2" href="/console/companies">
-                  公司空间
+                  Team 空间
                 </a>
                 <span class="opacity-70">账号：{user.mobile}</span>
               </div>

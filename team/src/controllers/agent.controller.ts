@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { auditLog, nowMs, newId } from "../db";
 import {
+  createTokenUsageSample,
   createAgentEvent,
   createHostFromHello,
   getHostById,
@@ -178,6 +179,12 @@ export function createAgentController(): Hono<AppEnv> {
       });
     }
 
+    const tokenUsageRaw = body.tokenUsage ?? body.tokens ?? null;
+    if (tokenUsageRaw !== null && tokenUsageRaw !== undefined) {
+      const tokensNum = typeof tokenUsageRaw === "number" ? Math.max(0, Math.floor(tokenUsageRaw)) : null;
+      createTokenUsageSample(hostId, tokensNum, tokenUsageRaw, now);
+    }
+
     return c.json({ ok: true, serverTimeMs: now, status, accepted: true });
   };
 
@@ -315,8 +322,8 @@ export function createAgentController(): Hono<AppEnv> {
       return jsonError(c, 401, "AGENT_AUTH_FAILED", "agentToken 校验失败。", undefined);
     }
 
-    const ok = body.ok === true || body.status === "success";
-    const status = ok ? "success" : "failed";
+    const ok = body.ok === true || body.status === "success" || body.status === "succeeded";
+    const status = ok ? "succeeded" : "failed";
     const result = body.result ?? null;
     const now = nowMs();
 
