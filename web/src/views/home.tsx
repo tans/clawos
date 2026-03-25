@@ -48,6 +48,14 @@ function HomePage({
   const architecture = ["开箱即用", "一站式管理", "可扩展能力", "多场景支持"] as const;
   const executionGoals = ["上手快", "省时间", "更稳定", "更省心"] as const;
   const heroSlogans = ["复杂一键搞定", "人人轻松上手", "流程简单高效", "功能触手可用"] as const;
+  const listedMcps = [
+    { name: "CRM MCP", tag: "销售自动化", status: "已上架", desc: "线索录入、客户跟进、任务提醒，全流程可追踪。", path: "mcp/crm-mcp" },
+    { name: "BOM MCP", tag: "制造报价", status: "已上架", desc: "支持 BOM 解析、询价任务编排、报价结果导出。", path: "mcp/bom-mcp" },
+    { name: "Wallet MCP", tag: "资金管理", status: "已上架", desc: "统一资金账户查询与对账能力，便于企业财务协同。", path: "mcp/wallet-mcp" },
+    { name: "Windows MCP", tag: "桌面自动化", status: "已上架", desc: "面向 Windows 终端场景，支持流程自动执行与集成。", path: "mcp/windows-mcp" },
+    { name: "Wechat MCP", tag: "私域运营", status: "已上架", desc: "连接企业私域沟通场景，支持消息链路与运营动作。", path: "mcp/wechat-mcp" },
+    { name: "Yingdao MCP", tag: "业务集成", status: "已上架", desc: "用于对接垂直业务系统，扩展企业内部智能流程。", path: "mcp/yingdao-mcp" },
+  ] as const;
   const solutionTracks = [
     { title: "内容创作场景", desc: "适合短视频与图文团队，减少重复流程，让产出更稳定。" },
     { title: "获客与跟进场景", desc: "适合做线索收集和客户跟进，帮助你更快推进业务。" },
@@ -72,6 +80,7 @@ function HomePage({
             <nav class="hidden items-center gap-2 md:flex" aria-label="页面导航">
               <a class="secondary-button" href="#architecture">架构</a>
               <a class="secondary-button" href="#solutions">场景</a>
+              <a class="secondary-button" href="#marketplace">技能市场</a>
               <a class="secondary-button" href="#changelog">更新</a>
               <a class="secondary-button" href="/contact">联系我们</a>
               <a class="primary-button" href="/to-agent">Agent 视角 →</a>
@@ -91,7 +100,7 @@ function HomePage({
                 ))}
               </span>
             </h1>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">个人或团队都能快速上手，常见任务一键完成。</p>
+            <p class="mt-4 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">企业级技能市场，为企业应用场景而生。统一展示与管理上架 MCP，帮助团队快速完成系统化落地。</p>
             <div class="mt-8 flex flex-wrap gap-3">
               {hasInstaller ? (
                 <a class="primary-button" href="/downloads">
@@ -133,6 +142,23 @@ function HomePage({
                 <article class="aqua-glow bento-card p-5 md:col-span-2">
                   <h3 class="text-xl font-semibold text-[#1a1a1a]">{track.title}</h3>
                   <p class="mt-2 text-sm leading-7 text-[#666]">{track.desc}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section id="marketplace" class="mt-20 page-fade">
+            <SectionTitle eyebrow="Enterprise Skill Hub" title="企业级技能市场" desc="展示已上架 MCP，面向企业核心业务场景快速装配。" />
+            <div class="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {listedMcps.map((item) => (
+                <article class="bento-card p-5">
+                  <div class="flex items-center justify-between gap-3">
+                    <h3 class="text-lg font-semibold text-[#1a1a1a]">{item.name}</h3>
+                    <span class="channel-badge">{item.status}</span>
+                  </div>
+                  <p class="mt-3 text-xs font-medium text-[#d36f8f]">{item.tag}</p>
+                  <p class="mt-2 text-sm leading-7 text-[#666]">{item.desc}</p>
+                  <p class="mt-4 rounded-lg border border-[#f0d3d6] bg-white/70 px-3 py-2 text-xs text-[#666]">{item.path}</p>
                 </article>
               ))}
             </div>
