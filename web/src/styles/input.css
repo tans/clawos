@@ -20,11 +20,12 @@
   }
 
   body {
-    background: #fff;
-    color: #1a1a1a;
+    background: #110f13;
+    color: #efe7df;
     font-family:
-      Inter,
-      "Segoe UI",
+      "Source Han Sans SC",
+      "Noto Serif SC",
+      "PingFang SC",
       "PingFang SC",
       "Noto Sans CJK SC",
       "Microsoft YaHei",
@@ -70,48 +71,52 @@
 @layer utilities {
   .glass-nav {
     backdrop-filter: blur(12px);
-    background: rgb(255 255 255 / 88%);
+    background: rgb(17 15 19 / 78%);
   }
 
   .site-bg {
     background:
-      radial-gradient(circle at 8% -8%, rgb(233 84 98 / 14%), transparent 30%),
-      radial-gradient(circle at 92% 0%, rgb(251 191 36 / 12%), transparent 32%),
-      linear-gradient(180deg, #fff 0%, #fff7f7 38%, #fff 100%);
+      radial-gradient(circle at 6% 2%, rgb(155 84 255 / 22%), transparent 38%),
+      radial-gradient(circle at 90% 6%, rgb(255 138 92 / 17%), transparent 34%),
+      radial-gradient(circle at 50% 108%, rgb(91 186 255 / 16%), transparent 36%),
+      linear-gradient(180deg, #111013 0%, #17141d 45%, #0d0c11 100%);
   }
 
   .hero-glow {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     background:
-      radial-gradient(circle at 15% 20%, rgb(233 84 98 / 18%), transparent 36%),
-      radial-gradient(circle at 90% 10%, rgb(244 114 182 / 16%), transparent 40%),
-      linear-gradient(145deg, #ffffff 0%, #fff6f7 44%, #fff 100%);
+      radial-gradient(circle at 14% 18%, rgb(119 76 248 / 34%), transparent 38%),
+      radial-gradient(circle at 88% 10%, rgb(255 126 92 / 24%), transparent 46%),
+      linear-gradient(145deg, rgb(30 24 39 / 94%) 0%, rgb(22 19 29 / 96%) 100%);
   }
 
   .aqua-glow {
-    background: linear-gradient(120deg, #fff4f4 0%, #f3fbff 100%);
+    background: linear-gradient(120deg, rgb(35 29 43 / 92%) 0%, rgb(26 35 53 / 92%) 100%);
   }
 
   .bento-card {
     border-radius: 14px;
-    border: 1px solid #f1d7da;
-    background: #fff;
+    border: 1px solid rgb(255 255 255 / 10%);
+    background: linear-gradient(170deg, rgb(26 22 32 / 91%) 0%, rgb(20 18 26 / 91%) 100%);
     box-shadow:
-      0 1px 2px rgb(26 26 26 / 0.04),
-      0 10px 24px rgb(233 84 98 / 0.06);
+      0 1px 2px rgb(0 0 0 / 0.4),
+      0 24px 50px rgb(6 5 10 / 0.34);
   }
 
   .section-title {
-    @apply text-2xl font-bold tracking-tight text-[#1a1a1a] sm:text-3xl;
+    @apply text-2xl font-bold tracking-tight text-[#f9f3eb] sm:text-3xl;
   }
 
   .section-marker {
-    color: #e95462;
+    color: #bf9dff;
     font-weight: 700;
     margin-right: 0.5rem;
   }
 
   .subcaps {
-    color: #e95462;
+    color: #f0be8e;
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.22em;
@@ -125,17 +130,16 @@
     gap: 0.5rem;
     border-radius: 10px;
     border: 1px solid transparent;
-    background: #e95462;
+    background: linear-gradient(120deg, #9b62ff 0%, #fe7f5d 100%);
     padding: 0.65rem 1.05rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #fff;
+    color: #fef6f0;
     transition: transform 140ms ease, box-shadow 200ms ease, background-color 200ms ease;
   }
 
   .primary-button:hover {
-    background: #dc4a59;
-    box-shadow: 0 8px 18px rgb(233 84 98 / 24%);
+    box-shadow: 0 10px 28px rgb(130 76 255 / 36%);
     transform: translateY(-1px);
   }
 
@@ -149,18 +153,18 @@
     justify-content: center;
     gap: 0.5rem;
     border-radius: 10px;
-    border: 1px solid #f2c7cc;
-    background: #fff;
+    border: 1px solid rgb(255 255 255 / 24%);
+    background: rgb(255 255 255 / 4%);
     padding: 0.65rem 1.05rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #5f5354;
+    color: #e9dfd6;
     transition: transform 140ms ease, box-shadow 200ms ease, background-color 180ms ease;
   }
 
   .secondary-button:hover {
-    background: #fff7f8;
-    box-shadow: 0 8px 16px rgb(17 24 39 / 0.08);
+    background: rgb(255 255 255 / 10%);
+    box-shadow: 0 8px 16px rgb(5 6 10 / 0.26);
     transform: translateY(-1px);
   }
 
@@ -170,17 +174,17 @@
 
   .channel-badge {
     border-radius: 999px;
-    border: 1px solid #f2b8bf;
-    background: #fff1f3;
+    border: 1px solid rgb(187 143 255 / 40%);
+    background: rgb(160 96 255 / 14%);
     padding: 0.125rem 0.5rem;
     font-size: 0.7rem;
     font-weight: 700;
-    color: #e95462;
+    color: #d0b5ff;
     letter-spacing: 0.03em;
   }
 
   .brand-link {
-    color: #e95462;
+    color: #f0be8e;
     font-weight: 600;
     transition: transform 120ms ease;
   }
@@ -191,9 +195,42 @@
 
   .panel-card {
     border-radius: 14px;
-    border: 1px solid #f0d8db;
-    background: linear-gradient(180deg, #fff 0%, #fff9fa 100%);
-    box-shadow: 0 10px 30px rgb(233 84 98 / 7%);
+    border: 1px solid rgb(255 255 255 / 10%);
+    background: linear-gradient(180deg, rgb(29 25 35 / 90%) 0%, rgb(20 17 25 / 90%) 100%);
+    box-shadow: 0 10px 30px rgb(12 8 17 / 30%);
+  }
+
+  .hero-orbit {
+    position: absolute;
+    inset: auto -9rem -9rem auto;
+    width: 18rem;
+    height: 18rem;
+    border-radius: 999px;
+    border: 1px solid rgb(240 190 142 / 35%);
+    background:
+      radial-gradient(circle at 30% 30%, rgb(255 198 141 / 22%), transparent 48%),
+      radial-gradient(circle at 70% 65%, rgb(132 110 255 / 34%), transparent 46%);
+    filter: blur(0.4px);
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  .hero-metrics {
+    border-top: 1px solid rgb(255 255 255 / 16%);
+    padding-top: 1rem;
+  }
+
+  .hero-metric-label {
+    color: #b6aba2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .hero-metric-value {
+    margin-top: 0.2rem;
+    color: #f9f3eb;
+    font-size: 1.05rem;
+    font-weight: 700;
   }
 
   .hero-slogan-rotator {
