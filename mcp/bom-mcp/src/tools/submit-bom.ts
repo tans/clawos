@@ -4,7 +4,6 @@ import { buildQuoteResult } from "../domain/quote-builder";
 import { enqueue } from "../infra/queue";
 import { createJob, updateJob } from "../infra/store";
 import { logInfo, logWarn } from "../infra/logger";
-import { readFile } from "node:fs/promises";
 import type { JobRecord, SubmitBomInput, SubmitBomOutput } from "../types";
 
 function createJobId(): string {
@@ -23,6 +22,9 @@ async function loadInputContent(input: SubmitBomInput): Promise<string> {
   if (!url) {
     return "";
   }
+  if (url.startsWith("file://") || (!url.startsWith("http://") && !url.startsWith("https://"))) {
+    throw new Error("fileUrl 仅支持 http(s) 地址");
+  }
   if (url.startsWith("http://") || url.startsWith("https://")) {
     const response = await fetch(url);
     if (!response.ok) {
@@ -30,15 +32,16 @@ async function loadInputContent(input: SubmitBomInput): Promise<string> {
     }
     return await response.text();
   }
-  if (url.startsWith("file://")) {
-    return readFile(new URL(url), "utf-8");
-  }
-  return readFile(url, "utf-8");
+  throw new Error("fileUrl 仅支持 http(s) 地址");
 }
 
 export async function submitBom(input: SubmitBomInput): Promise<SubmitBomOutput> {
   if (!input.content && !input.fileUrl) {
     throw new Error("submit_bom 缺少 content/fileUrl");
+  }
+  const taxRate = input.quoteParams?.taxRate;
+  if (taxRate !== undefined && (Number.isNaN(taxRate) || taxRate < 0 || taxRate > 1)) {
+    throw new Error("quoteParams.taxRate 必须在 0 到 1 之间");
   }
 
   const acceptedAt = new Date().toISOString();

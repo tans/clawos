@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { runTool } from "../../../mcp/bom-mcp/src/index";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,40 +43,88 @@ describe("bom-mcp tools", () => {
     expect(exported.downloadUrl).toContain(`${submitResult.jobId}.csv`);
   });
 
-  it("supports csv fileUrl input and reports missing-price lines", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "bom-mcp-"));
-    try {
-      const csvPath = join(dir, "bom.csv");
-      await writeFile(
-        csvPath,
-        "partNumber,quantity,unitPrice,description\nP-001,3,,First\nP-002,1,5.5,Second\n",
-        "utf-8",
-      );
+  it("supports csv content input and reports missing-price lines", async () => {
+    const submitResult = (await runTool({
+      tool: "submit_bom",
+      args: {
+        sourceType: "csv",
+        content: "partNumber,quantity,unitPrice,description\nP-001,3,,First\nP-002,1,5.5,Second\n",
+        quoteParams: { currency: "CNY", taxRate: 0 },
+      },
+    })) as { jobId: string };
+    await sleep(10);
 
-      const submitResult = (await runTool({
+    const jobResult = (await runTool({
+      tool: "get_bom_job_result",
+      args: { jobId: submitResult.jobId },
+    })) as { summary: { failedLines: number } };
+    expect(jobResult.summary.failedLines).toBe(1);
+
+    const quote = (await runTool({
+      tool: "get_quote",
+      args: { jobId: submitResult.jobId },
+    })) as { missingItems: Array<unknown>; warnings: Array<string> };
+    expect(quote.missingItems).toHaveLength(1);
+    expect(quote.warnings[0]).toContain("缺少有效单价");
+  });
+
+  it("parses quoted csv fields with commas correctly", async () => {
+    const submitResult = (await runTool({
+      tool: "submit_bom",
+      args: {
+        sourceType: "csv",
+        content:
+          'partNumber,quantity,unitPrice,description\nP-100,2,1.25,"Resistor, 10K 1%"\nP-200,1,3.5,Capacitor\n',
+      },
+    })) as { jobId: string };
+    await sleep(10);
+
+    const quote = (await runTool({
+      tool: "get_quote",
+      args: { jobId: submitResult.jobId },
+    })) as { items: Array<{ description?: string }> };
+    expect(quote.items[0]?.description).toBe("Resistor, 10K 1%");
+  });
+
+  it("supports get_job_status alias", async () => {
+    const submitResult = (await runTool({
+      tool: "submit_bom",
+      args: {
+        sourceType: "json",
+        content: JSON.stringify([{ partNumber: "ALIAS-001", quantity: 1, unitPrice: 1 }]),
+      },
+    })) as { jobId: string };
+    await sleep(10);
+
+    const statusResult = (await runTool({
+      tool: "get_job_status",
+      args: { jobId: submitResult.jobId },
+    })) as { status: string };
+    expect(statusResult.status).toBe("succeeded");
+  });
+
+  it("rejects unsafe local fileUrl path", async () => {
+    await expect(
+      runTool({
         tool: "submit_bom",
         args: {
           sourceType: "csv",
-          fileUrl: csvPath,
-          quoteParams: { currency: "CNY", taxRate: 0 },
+          fileUrl: "/tmp/bom.csv",
         },
-      })) as { jobId: string };
-      await sleep(10);
+      }),
+    ).rejects.toThrow("fileUrl 仅支持 http(s) 地址");
+  });
 
-      const jobResult = (await runTool({
-        tool: "get_bom_job_result",
-        args: { jobId: submitResult.jobId },
-      })) as { summary: { failedLines: number } };
-      expect(jobResult.summary.failedLines).toBe(1);
-
-      const quote = (await runTool({
-        tool: "get_quote",
-        args: { jobId: submitResult.jobId },
-      })) as { missingItems: Array<unknown>; warnings: Array<string> };
-      expect(quote.missingItems).toHaveLength(1);
-      expect(quote.warnings[0]).toContain("缺少有效单价");
-    } finally {
-      await rm(dir, { recursive: true, force: true });
-    }
+  it("rejects invalid tax rate", async () => {
+    await expect(
+      runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "json",
+          content: JSON.stringify([{ partNumber: "TAX-001", quantity: 1, unitPrice: 1 }]),
+          quoteParams: { taxRate: 1.5 },
+        },
+      }),
+    ).rejects.toThrow("quoteParams.taxRate 必须在 0 到 1 之间");
   });
 });
