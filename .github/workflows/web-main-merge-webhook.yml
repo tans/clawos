@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Trigger web deploy webhook
         env:
-          WEBHOOK_URL: https://hook.minapp.xin/hoos/claw-web-deploy
+          WEBHOOK_URL: https://hook.minapp.xin/hooks/claw-web-deploy
         run: |
           set -euo pipefail
           curl --fail --show-error --silent \
