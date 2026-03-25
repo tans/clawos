@@ -168,6 +168,44 @@ downloadRoutes.get("/downloads/alpha/:platform", async (c) => {
   }
 });
 
+downloadRoutes.get("/downloads/canary", async (c) => {
+  try {
+    const platform = normalizeInstallerPlatform(c.req.query("platform") || undefined) || undefined;
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, "canary");
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-release-channel": "canary",
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
+downloadRoutes.get("/downloads/canary/:platform", async (c) => {
+  try {
+    const platform = normalizeInstallerPlatform(c.req.param("platform"));
+    if (!platform) {
+      return c.json({ ok: false, error: "不支持的平台" }, 400);
+    }
+    const { absolutePath, asset } = await resolveLatestInstaller(platform, "canary");
+    return new Response(Bun.file(absolutePath), {
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-disposition": contentDisposition(asset.name),
+        "x-file-sha256": asset.sha256,
+        "x-installer-platform": platform,
+        "x-release-channel": "canary",
+      },
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 404);
+  }
+});
+
 downloadRoutes.get("/updates/:fileName", async (c) => {
   try {
     const fileName = c.req.param("fileName");

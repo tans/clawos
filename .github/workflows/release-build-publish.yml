@@ -2,26 +2,18 @@ name: Release Build And Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      build_env:
-        description: "Build env used for artifact detection"
-        required: true
-        default: "canary"
-        type: choice
-        options:
-          - stable
-          - canary
-      release_channel:
-        description: "Release channel to publish"
-        required: true
-        default: "beta"
-        type: choice
-        options:
-          - beta
-          - stable
 
 jobs:
   build-and-publish:
+    name: Build & Publish (${{ matrix.release_channel }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release_channel: stable
+            build_env: stable
+          - release_channel: beta
+            build_env: canary
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -51,12 +43,18 @@ jobs:
 
       - name: Build desktop artifact
         working-directory: app
-        run: bun run desktop:build
+        shell: bash
+        env:
+          BUILD_ENV: ${{ matrix.build_env }}
+        run: |
+          set -euo pipefail
+          bun run webview:build
+          bun run electrobun -- build --env "${BUILD_ENV}"
 
       - name: Resolve release version
         id: release
         env:
-          RELEASE_CHANNEL: ${{ github.event.inputs.release_channel || 'stable' }}
+          RELEASE_CHANNEL: ${{ matrix.release_channel }}
         shell: bash
         run: |
           set -euo pipefail
@@ -86,12 +84,10 @@ jobs:
           done
 
       - name: Publish endpoint diagnostics
-        env:
-          PUBLISH_BASE_URL: ${{ vars.PUBLISH_BASE_URL }}
         shell: bash
         run: |
           set -euo pipefail
-          target="${PUBLISH_BASE_URL:-https://clawos.minapp.xin}"
+          target="https://relay.global.minapp.xin"
           echo "[diag] publish target: ${target}"
           echo "[diag] dns lookup:"
           host "$(echo "$target" | sed -E 's#^https?://([^/]+).*#\1#')" || true
@@ -100,17 +96,16 @@ jobs:
 
       - name: Publish installer and config
         env:
-          PUBLISH_BASE_URL: ${{ vars.PUBLISH_BASE_URL }}
-          UPLOAD_TIMEOUT_MS: "1200000"
+          # 跨境链路抖动时，单分片上传可能较慢；提高超时并缩小分片降低失败率
+          # 中转部署可参考 docs/upload-relay-guide.md
+          UPLOAD_TIMEOUT_MS: "2700000"
           UPLOAD_HEARTBEAT_MS: "15000"
-          BUILD_ENV: ${{ github.event.inputs.build_env || 'stable' }}
-          RELEASE_CHANNEL: ${{ github.event.inputs.release_channel || 'stable' }}
+          UPLOAD_CHUNK_SIZE_MB: "4"
+          UPLOAD_CHUNK_THRESHOLD_MB: "8"
+          BUILD_ENV: ${{ matrix.build_env }}
+          RELEASE_CHANNEL: ${{ matrix.release_channel }}
           CLAWOS_VERSION: ${{ steps.release.outputs.version }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -n "${PUBLISH_BASE_URL:-}" ]]; then
-            bun run publish -- --base-url "${PUBLISH_BASE_URL}" --build-env "${BUILD_ENV}" --release-channel "${RELEASE_CHANNEL}" --version "${CLAWOS_VERSION}" --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"
-          else
-            bun run publish -- --build-env "${BUILD_ENV}" --release-channel "${RELEASE_CHANNEL}" --version "${CLAWOS_VERSION}" --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"
-          fi
+          bun run publish -- --base-url "https://relay.global.minapp.xin" --build-env "${BUILD_ENV}" --release-channel "${RELEASE_CHANNEL}" --version "${CLAWOS_VERSION}" --timeout-ms "${UPLOAD_TIMEOUT_MS}" --heartbeat-ms "${UPLOAD_HEARTBEAT_MS}"

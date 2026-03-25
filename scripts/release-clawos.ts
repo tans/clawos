@@ -3,9 +3,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 type BuildEnv = "dev" | "canary" | "stable";
+type ReleaseChannel = "stable" | "beta" | "canary";
 
 type Options = {
   env: BuildEnv;
+  releaseChannel: ReleaseChannel;
   skipBuild: boolean;
   skipPublish: boolean;
   bumpPatch: boolean;
@@ -13,15 +15,27 @@ type Options = {
   publishArgs: string[];
 };
 
-const PACKAGE_JSON_PATH = resolve(process.cwd(), "package.json");
-const APP_CONSTANTS_PATH = resolve(process.cwd(), "app/src/app.constants.ts");
+type StepOptions = {
+  cwd?: string;
+};
+
+const PACKAGE_JSON_PATH = resolve(process.cwd(), "app/package.json");
+const APP_CONSTANTS_PATH = resolve(process.cwd(), "app/shared/constants/app.ts");
 const XIAKE_CONFIG_PATH = resolve(process.cwd(), "app/clawos_xiake.json");
-const SHELL_HTML_PATH = resolve(process.cwd(), "app/src/desktop-ui/shell.html");
-const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
+const SHELL_HTML_PATH = resolve(process.cwd(), "app/webview/shell.html");
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+(?:\.\d+)?$/;
 
 function parseEnv(raw: string | undefined): BuildEnv {
   const value = String(raw || "").trim().toLowerCase();
   if (value === "dev" || value === "canary" || value === "stable") {
+    return value;
+  }
+  return "stable";
+}
+
+function parseReleaseChannel(raw: string | undefined): ReleaseChannel {
+  const value = String(raw || "").trim().toLowerCase();
+  if (value === "canary" || value === "beta" || value === "stable") {
     return value;
   }
   return "stable";
@@ -37,8 +51,9 @@ function printUsage(): void {
   --env <env>        构建环境: dev/canary/stable，默认 stable
   --skip-build       跳过构建，仅执行发布
   --skip-publish     仅构建，不发布
-  --no-bump-patch    不自动递增 patch 版本号
-  --version <ver>    指定发布版本 (x.y.z)
+  --release-channel <channel> 发布通道 stable/beta/canary，默认 stable
+  --no-bump-patch    不自动递增版本号
+  --version <ver>    指定发布版本 (x.y.z 或 x.y.z.w)
   -h, --help         显示帮助
 
 示例:
@@ -53,6 +68,7 @@ function printUsage(): void {
 function parseArgs(argv: string[]): Options {
   const options: Options = {
     env: parseEnv(process.env.CLAWOS_BUILD_ENV),
+    releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
     skipBuild: false,
     skipPublish: false,
     bumpPatch: true,
@@ -92,6 +108,11 @@ function parseArgs(argv: string[]): Options {
       continue;
     }
 
+    if (arg.startsWith("--release-channel=")) {
+      options.releaseChannel = parseReleaseChannel(arg.slice("--release-channel=".length));
+      continue;
+    }
+
     if (arg.startsWith("--version=")) {
       options.fixedVersion = arg.slice("--version=".length).trim();
       continue;
@@ -120,6 +141,15 @@ function parseArgs(argv: string[]): Options {
       continue;
     }
 
+    if (arg === "--release-channel") {
+      const value = args.shift();
+      if (!value) {
+        throw new Error("--release-channel 缺少参数");
+      }
+      options.releaseChannel = parseReleaseChannel(value);
+      continue;
+    }
+
     options.publishArgs.push(arg);
   }
 
@@ -129,18 +159,47 @@ function parseArgs(argv: string[]): Options {
 function normalizeSemver(value: string): string {
   const normalized = value.trim().replace(/^v/i, "");
   if (!SEMVER_PATTERN.test(normalized)) {
-    throw new Error(`版本号格式不合法: ${value}，期望 x.y.z`);
+    throw new Error(`版本号格式不合法: ${value}，期望 x.y.z 或 x.y.z.w`);
   }
   return normalized;
 }
 
-function bumpPatchVersion(version: string): string {
+function parseVersionParts(version: string): [number, number, number, number] {
   const normalized = normalizeSemver(version);
-  const [majorRaw, minorRaw, patchRaw] = normalized.split(".");
+  const [majorRaw, minorRaw, patchRaw, buildRaw] = normalized.split(".");
   const major = Number.parseInt(majorRaw, 10);
   const minor = Number.parseInt(minorRaw, 10);
   const patch = Number.parseInt(patchRaw, 10);
-  return `${major}.${minor}.${patch + 1}`;
+  const build = Number.parseInt(buildRaw || "0", 10);
+  return [major, minor, patch, build];
+}
+
+function bumpVersion(version: string, channel: ReleaseChannel): string {
+  const [major, minor, patch, build] = parseVersionParts(version);
+  if (channel === "canary") {
+    return `${major}.${minor}.${patch}.${build + 1}`;
+  }
+  if (channel === "beta") {
+    return `${major}.${minor}.${patch + 1}.0`;
+  }
+  return `${major}.${minor + 1}.0.0`;
+}
+
+function resolveReleaseChannel(options: Options): ReleaseChannel {
+  let channel = options.releaseChannel;
+  const args = options.publishArgs;
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
+    if (arg.startsWith("--release-channel=")) {
+      channel = parseReleaseChannel(arg.slice("--release-channel=".length));
+      continue;
+    }
+    if (arg === "--release-channel" && args[i + 1]) {
+      channel = parseReleaseChannel(args[i + 1]);
+      i += 1;
+    }
+  }
+  return channel;
 }
 
 async function readCurrentVersion(): Promise<string> {
@@ -245,6 +304,7 @@ async function syncVersionFiles(nextVersion: string): Promise<void> {
 
 async function resolveReleaseVersion(options: Options): Promise<{ version: string; changed: boolean }> {
   const currentVersion = await readCurrentVersion();
+  const channel = resolveReleaseChannel(options);
 
   if (options.skipBuild) {
     if (options.fixedVersion) {
@@ -252,7 +312,7 @@ async function resolveReleaseVersion(options: Options): Promise<{ version: strin
       console.log(`[release] --skip-build 已启用，忽略 --version=${fixed}，使用现有版本 ${currentVersion}`);
     }
     if (options.bumpPatch) {
-      console.log(`[release] --skip-build 已启用，不执行 patch 递增，使用现有版本 ${currentVersion}`);
+      console.log(`[release] --skip-build 已启用，不执行自动版本递增，使用现有版本 ${currentVersion}`);
     }
     return { version: currentVersion, changed: false };
   }
@@ -274,18 +334,21 @@ async function resolveReleaseVersion(options: Options): Promise<{ version: strin
     return { version: currentVersion, changed: false };
   }
 
-  const bumped = bumpPatchVersion(currentVersion);
+  const bumped = bumpVersion(currentVersion, channel);
   await syncVersionFiles(bumped);
   return { version: bumped, changed: true };
 }
 
-async function runStep(name: string, cmd: string[]): Promise<void> {
+async function runStep(name: string, cmd: string[], stepOptions?: StepOptions): Promise<void> {
   console.log(`[release] ${name}`);
   console.log(`[release] cmd: ${cmd.join(" ")}`);
+  if (stepOptions?.cwd) {
+    console.log(`[release] cwd: ${stepOptions.cwd}`);
+  }
 
   await new Promise<void>((resolvePromise, reject) => {
     const child = spawn(cmd[0], cmd.slice(1), {
-      cwd: process.cwd(),
+      cwd: stepOptions?.cwd || process.cwd(),
       env: process.env,
       stdio: "inherit",
     });
@@ -306,12 +369,14 @@ async function runStep(name: string, cmd: string[]): Promise<void> {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  options.releaseChannel = resolveReleaseChannel(options);
   const releaseVersion = await resolveReleaseVersion(options);
 
   console.log(`[release] build env: ${options.env}`);
+  console.log(`[release] release channel: ${options.releaseChannel}`);
   console.log(`[release] release version: ${releaseVersion.version}`);
   if (releaseVersion.changed) {
-    console.log("[release] version files updated: package.json + app/src/app.constants.ts + app/clawos_xiake.json + app/src/desktop-ui/shell.html");
+    console.log("[release] version files updated: app/package.json + app/shared/constants/app.ts + app/clawos_xiake.json + app/webview/shell.html");
   }
   if (options.skipBuild) {
     console.log("[release] 跳过构建 (--skip-build)");
@@ -321,8 +386,11 @@ async function main(): Promise<void> {
   }
 
   if (!options.skipBuild) {
-    await runStep("构建 UI 样式", ["bun", "run", "tailwind:build"]);
-    await runStep("构建 Electrobun", ["bun", "run", "scripts/electrobun.ts", "build", `--env=${options.env}`]);
+    const appDir = resolve(process.cwd(), "app");
+    await runStep("Build Webview", ["bun", "run", "webview:build"], { cwd: appDir });
+    await runStep("Build Electrobun", ["bun", "run", "scripts/electrobun.ts", "build", `--env=${options.env}`], {
+      cwd: appDir,
+    });
   }
 
   if (!options.skipPublish) {

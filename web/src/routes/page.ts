@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
+import { renderCeoLetterPage } from "../views/ceo-letter";
+import { renderContactPage } from "../views/contact";
+import { buildDownloadCards, renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 
 export const pageRoutes = new Hono();
@@ -22,15 +25,25 @@ pageRoutes.get("/", async (c) => {
 });
 
 pageRoutes.get("/downloads", async (c) => {
-  const channelQuery = c.req.query("channel");
-  const channel = channelQuery === "alpha" ? "alpha" : channelQuery === "beta" ? "beta" : "stable";
-  const latest = await readLatestRelease(channel);
-  if (!latest?.installer) {
-    return c.redirect("/", 302);
-  }
+  const [stableLatest, betaLatest, alphaLatest] = await Promise.all([
+    readLatestRelease("stable"),
+    readLatestRelease("beta"),
+    readLatestRelease("alpha"),
+  ]);
 
-  const target = channel === "beta" ? "/downloads/beta" : channel === "alpha" ? "/downloads/alpha" : "/downloads/latest";
-  return c.redirect(target, 302);
+  const cards = buildDownloadCards({
+    stableVersion: stableLatest?.version ?? null,
+    stablePublishedAt: stableLatest?.publishedAt ?? null,
+    hasStableInstaller: Boolean(stableLatest?.installer),
+    betaVersion: betaLatest?.version ?? null,
+    betaPublishedAt: betaLatest?.publishedAt ?? null,
+    hasBetaInstaller: Boolean(betaLatest?.installer),
+    alphaVersion: alphaLatest?.version ?? null,
+    alphaPublishedAt: alphaLatest?.publishedAt ?? null,
+    hasAlphaInstaller: Boolean(alphaLatest?.installer),
+  });
+
+  return c.html(renderDownloadsPage(cards));
 });
 
 pageRoutes.get("/install-guide", (c) => {
@@ -39,4 +52,12 @@ pageRoutes.get("/install-guide", (c) => {
 
 pageRoutes.get("/to-agent", (c) => {
   return c.html(renderAgentPage());
+});
+
+pageRoutes.get("/ceo-letter", (c) => {
+  return c.html(renderCeoLetterPage());
+});
+
+pageRoutes.get("/contact", (c) => {
+  return c.html(renderContactPage());
 });

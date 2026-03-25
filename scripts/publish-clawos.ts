@@ -4,7 +4,7 @@ import { basename, dirname, join, resolve } from "node:path";
 
 type PublishPlatform = "windows" | "macos" | "linux";
 type BuildEnv = "dev" | "canary" | "stable";
-type ReleaseChannel = "stable" | "beta" | "alpha";
+type ReleaseChannel = "stable" | "beta" | "canary";
 
 const VERSION_PATTERN = /(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)/;
 const PLATFORM_TOKEN: Record<PublishPlatform, string> = {
@@ -27,6 +27,7 @@ interface Options {
   heartbeatMs: number;
   buildEnv: BuildEnv;
   releaseChannel: ReleaseChannel;
+  artifactRoots: string[];
 }
 
 type InstallerResolution = {
@@ -81,8 +82,8 @@ function parseReleaseChannel(raw: string | undefined): ReleaseChannel {
   if (value === "beta") {
     return "beta";
   }
-  if (value === "alpha") {
-    return "alpha";
+  if (value === "canary") {
+    return "canary";
   }
   return "stable";
 }
@@ -100,8 +101,10 @@ function printUsage(): void {
 选项:
   --installer <path>    安装包路径（可选，未传则自动探测）
   --build-env <env>     构建环境 dev/canary/stable，默认 stable
-  --release-channel <channel>  发布通道 stable/beta/alpha，默认 stable
+  --release-channel <channel>  发布通道 stable/beta/canary，默认 stable
   --updater-dir <path>  Electrobun 更新产物目录（可选，默认自动探测）
+  --artifact-root <path>  额外产物搜索目录，可重复传参
+  --artifact-roots <paths>  额外产物搜索目录，逗号分隔
   --base-url <url>      发布站点，默认 https://clawos.minapp.xin
   --token <token>       上传 Token，默认读取 UPLOAD_TOKEN，未设置则使用 clawos
   --config <path>       配置文件路径，默认 ./app/clawos_xiake.json
@@ -128,7 +131,21 @@ function printUsage(): void {
   CLAWOS_BUILD_ENV
   CLAWOS_RELEASE_CHANNEL
   CLAWOS_UPDATER_DIR
+  CLAWOS_ARTIFACT_ROOTS
+  UPLOAD_CHUNK_SIZE_MB（分片上传每片大小，默认 16）
+  UPLOAD_CHUNK_THRESHOLD_MB（超过该大小启用分片上传，默认 20）
 `);
+}
+
+function parseArtifactRoots(raw: string | undefined): string[] {
+  if (!raw?.trim()) {
+    return [];
+  }
+  return raw
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => resolve(process.cwd(), item));
 }
 
 function resolvePathFromEnv(raw: string | undefined, fallbackPath: string): string {
@@ -161,6 +178,7 @@ function parseArgs(argv: string[]): Options {
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
     buildEnv: parseBuildEnv(process.env.CLAWOS_BUILD_ENV),
     releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
+    artifactRoots: parseArtifactRoots(process.env.CLAWOS_ARTIFACT_ROOTS),
   };
 
   while (args.length > 0) {
@@ -213,6 +231,14 @@ function parseArgs(argv: string[]): Options {
       opts.updaterDir = resolve(process.cwd(), arg.slice("--updater-dir=".length));
       continue;
     }
+    if (arg.startsWith("--artifact-root=")) {
+      opts.artifactRoots.push(resolve(process.cwd(), arg.slice("--artifact-root=".length)));
+      continue;
+    }
+    if (arg.startsWith("--artifact-roots=")) {
+      opts.artifactRoots.push(...parseArtifactRoots(arg.slice("--artifact-roots=".length)));
+      continue;
+    }
     if (arg.startsWith("--version=")) {
       opts.version = arg.slice("--version=".length).trim();
       continue;
@@ -255,6 +281,12 @@ function parseArgs(argv: string[]): Options {
       case "--updater-dir":
         opts.updaterDir = resolve(process.cwd(), value);
         break;
+      case "--artifact-root":
+        opts.artifactRoots.push(resolve(process.cwd(), value));
+        break;
+      case "--artifact-roots":
+        opts.artifactRoots.push(...parseArtifactRoots(value));
+        break;
       case "--version":
         opts.version = value.trim();
         break;
@@ -287,6 +319,7 @@ function parseArgs(argv: string[]): Options {
   if (!Number.isFinite(opts.heartbeatMs) || opts.heartbeatMs <= 0) {
     throw new Error(`--heartbeat-ms 非法: ${opts.heartbeatMs}`);
   }
+  opts.artifactRoots = Array.from(new Set(opts.artifactRoots.map((item) => resolve(process.cwd(), item))));
 
   return opts;
 }
@@ -324,6 +357,18 @@ function looksLikeUpdaterArtifact(fileName: string, prefix: string): boolean {
   return UPDATER_ALLOWED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
 }
 
+function looksLikeUpdaterArtifactByPlatform(fileName: string, platform: PublishPlatform, version?: string): boolean {
+  const lower = fileName.toLowerCase();
+  const platformToken = `-${PLATFORM_TOKEN[platform]}-`;
+  if (!lower.includes(platformToken)) {
+    return false;
+  }
+  if (version?.trim() && !lower.includes(version.trim().toLowerCase())) {
+    return false;
+  }
+  return UPDATER_ALLOWED_SUFFIXES.some((suffix) => lower.endsWith(suffix));
+}
+
 function candidateArtifactRoots(): string[] {
   const cwd = process.cwd();
   const parent = dirname(cwd);
@@ -347,18 +392,23 @@ function candidateArtifactRoots(): string[] {
 async function detectUpdaterArtifacts(
   platform: PublishPlatform,
   buildEnv: BuildEnv,
-  updaterDir?: string
+  updaterDir?: string,
+  extraRoots: string[] = [],
+  version?: string
 ): Promise<string[]> {
   const prefix = `${buildEnv}-${PLATFORM_TOKEN[platform]}-`;
-  const roots = updaterDir ? [resolve(process.cwd(), updaterDir)] : candidateArtifactRoots();
+  const roots = updaterDir ? [resolve(process.cwd(), updaterDir)] : [...candidateArtifactRoots(), ...extraRoots];
 
-  const byName = new Map<string, { path: string; mtimeMs: number }>();
+  const strictByName = new Map<string, { path: string; mtimeMs: number }>();
+  const fallbackByName = new Map<string, { path: string; mtimeMs: number }>();
 
   for (const root of roots) {
-    const files = await collectFilesRecursively(root, 5);
+    const files = await collectFilesRecursively(root, 10);
     for (const filePath of files) {
       const name = basename(filePath);
-      if (!looksLikeUpdaterArtifact(name, prefix)) {
+      const isStrict = looksLikeUpdaterArtifact(name, prefix);
+      const isFallback = !isStrict && looksLikeUpdaterArtifactByPlatform(name, platform, version);
+      if (!isStrict && !isFallback) {
         continue;
       }
 
@@ -370,23 +420,34 @@ async function detectUpdaterArtifacts(
         // ignore stat failures
       }
 
-      const existing = byName.get(name);
+      const target = isStrict ? strictByName : fallbackByName;
+      const existing = target.get(name);
       if (!existing || existing.mtimeMs < mtimeMs) {
-        byName.set(name, { path: filePath, mtimeMs });
+        target.set(name, { path: filePath, mtimeMs });
       }
     }
   }
 
-  const artifacts = Array.from(byName.values())
+  const strictArtifacts = Array.from(strictByName.values())
+    .sort((a, b) => b.mtimeMs - a.mtimeMs)
+    .map((item) => item.path);
+  const fallbackArtifacts = Array.from(fallbackByName.values())
     .sort((a, b) => b.mtimeMs - a.mtimeMs)
     .map((item) => item.path);
 
-  const hasUpdateJson = artifacts.some((filePath) => basename(filePath).toLowerCase().endsWith("-update.json"));
-  if (!hasUpdateJson) {
-    return [];
+  const strictHasUpdateJson = strictArtifacts.some((filePath) => basename(filePath).toLowerCase().endsWith("-update.json"));
+  if (strictHasUpdateJson) {
+    return strictArtifacts;
   }
 
-  return artifacts;
+  const fallbackHasUpdateJson = fallbackArtifacts.some((filePath) =>
+    basename(filePath).toLowerCase().endsWith("-update.json")
+  );
+  if (fallbackHasUpdateJson) {
+    return fallbackArtifacts;
+  }
+
+  return [];
 }
 
 async function detectVersionFromPackageJson(): Promise<string | undefined> {
@@ -408,6 +469,8 @@ function normalizeSlash(filePath: string): string {
   return filePath.replace(/\\/g, "/").toLowerCase();
 }
 
+const SCAN_SKIP_DIRS = new Set([".git", "node_modules"]);
+
 async function collectFilesRecursively(rootDir: string, maxDepth: number): Promise<string[]> {
   const files: string[] = [];
 
@@ -426,6 +489,9 @@ async function collectFilesRecursively(rootDir: string, maxDepth: number): Promi
     for (const entry of entries) {
       const next = join(current, entry.name);
       if (entry.isDirectory()) {
+        if (SCAN_SKIP_DIRS.has(entry.name.toLowerCase())) {
+          continue;
+        }
         await walk(next, depth + 1);
       } else if (entry.isFile()) {
         files.push(next);
@@ -477,8 +543,14 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
     if (name.endsWith(".zip") && name.includes(`${buildEnv}-${platformToken}-`)) {
       score += 55;
     }
+    if (name === "launcher.exe") {
+      score += 35;
+      if (normalized.includes("/bin/")) {
+        score += 20;
+      }
+    }
     if (name.endsWith(".exe") && !name.includes("setup")) {
-      score -= 120;
+      score -= 40;
     }
   }
 
@@ -489,20 +561,20 @@ function candidateScore(filePath: string, platform: PublishPlatform, buildEnv: B
   return score;
 }
 
-async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv): Promise<InstallerResolution | null> {
+async function detectInstallerPath(
+  platform: PublishPlatform,
+  buildEnv: BuildEnv,
+  extraRoots: string[] = []
+): Promise<InstallerResolution | null> {
   const allowed = allowedInstallerExt(platform);
-  const roots = candidateArtifactRoots();
+  const roots = [...candidateArtifactRoots(), ...extraRoots];
   const candidates: Array<{ path: string; score: number; mtimeMs: number }> = [];
 
   for (const root of roots) {
-    const files = await collectFilesRecursively(root, 5);
+    const files = await collectFilesRecursively(root, 10);
     for (const filePath of files) {
       const name = basename(filePath);
-      const lowerName = name.toLowerCase();
       if (!matchesAllowedExt(name, allowed)) {
-        continue;
-      }
-      if (platform === "windows" && lowerName.endsWith(".exe") && !lowerName.includes("setup")) {
         continue;
       }
       const score = candidateScore(filePath, platform, buildEnv);
@@ -535,13 +607,14 @@ async function detectInstallerPath(platform: PublishPlatform, buildEnv: BuildEnv
 async function resolveInstallerPathForPublish(
   platform: PublishPlatform,
   buildEnv: BuildEnv,
-  providedPath: string | undefined
+  providedPath: string | undefined,
+  extraRoots: string[]
 ): Promise<InstallerResolution> {
   if (providedPath?.trim()) {
     return { path: resolve(process.cwd(), providedPath), source: "manual" };
   }
 
-  const auto = await detectInstallerPath(platform, buildEnv);
+  const auto = await detectInstallerPath(platform, buildEnv, extraRoots);
   if (auto) {
     return auto;
   }
@@ -551,9 +624,11 @@ async function resolveInstallerPathForPublish(
     await access(fallback, fsConstants.R_OK);
     return { path: fallback, source: "default-dist" };
   } catch {
+    const searchedRoots = [...candidateArtifactRoots(), ...extraRoots].map((item) => `- ${item}`).join("\n");
     throw new Error(
       `自动探测安装包失败：未在 artifacts/build/dist（含 app 子目录）找到 ${platform} 可发布文件。` +
-        `\n你可以手动指定 --installer <path>。`
+        `\n你可以手动指定 --installer <path>。` +
+        `\n已搜索目录：\n${searchedRoots}`
     );
   }
 }
@@ -639,6 +714,23 @@ async function uploadFile(params: {
 }): Promise<Record<string, unknown>> {
   const file = Bun.file(params.filePath);
   const fileSize = file.size;
+  const fileName = basename(params.filePath);
+  const chunkSizeMb = Number.parseInt(process.env.UPLOAD_CHUNK_SIZE_MB || "", 10) || 16;
+  const chunkThresholdMb = Number.parseInt(process.env.UPLOAD_CHUNK_THRESHOLD_MB || "", 10) || 20;
+  const chunkSizeBytes = Math.max(1, chunkSizeMb) * 1024 * 1024;
+  const chunkThresholdBytes = Math.max(1, chunkThresholdMb) * 1024 * 1024;
+  console.log(
+    `[publish] 上传策略: file=${fileName}, size=${formatBytes(fileSize)}, threshold=${formatBytes(chunkThresholdBytes)}, chunkSize=${formatBytes(chunkSizeBytes)}`
+  );
+
+  if (fileSize >= chunkThresholdBytes) {
+    return await uploadFileByChunks({
+      ...params,
+      fileSize,
+      chunkSizeBytes,
+    });
+  }
+
   const form = new FormData();
   form.append("file", file, basename(params.filePath));
   if (params.version) {
@@ -655,7 +747,7 @@ async function uploadFile(params: {
   }
   endpointUrl.searchParams.set("channel", params.channel);
   const url = endpointUrl.toString();
-  console.log(`[publish] 开始上传: ${basename(params.filePath)} (${formatBytes(fileSize)}) -> ${url}`);
+  console.log(`[publish] 开始上传(单请求): ${fileName} (${formatBytes(fileSize)}) -> ${url}`);
 
   const startedAt = Date.now();
   const controller = new AbortController();
@@ -664,7 +756,7 @@ async function uploadFile(params: {
   }, params.timeoutMs);
   const heartbeatHandle = setInterval(() => {
     const elapsed = Date.now() - startedAt;
-    console.log(`[publish] 上传中: ${basename(params.filePath)}，已耗时 ${formatDuration(elapsed)}...`);
+    console.log(`[publish] 上传中(单请求): ${fileName}，已耗时 ${formatDuration(elapsed)}（等待服务器返回中）...`);
   }, params.heartbeatMs);
 
   let res: Response;
@@ -707,11 +799,170 @@ async function uploadFile(params: {
   }
 
   const elapsed = Date.now() - startedAt;
+  const speed = elapsed > 0 ? `${formatBytes((fileSize / elapsed) * 1000)}/s` : "n/a";
   console.log(
-    `[publish] 上传完成: ${basename(params.filePath)} (${formatBytes(fileSize)}), HTTP ${res.status}, 耗时 ${formatDuration(elapsed)}`
+    `[publish] 上传完成(单请求): ${fileName} (${formatBytes(fileSize)}), HTTP ${res.status}, 耗时 ${formatDuration(elapsed)}, 平均速率 ${speed}`
   );
 
   return data;
+}
+
+async function uploadFileByChunks(params: {
+  endpoint: string;
+  filePath: string;
+  token: string;
+  baseUrl: string;
+  version?: string;
+  platform?: PublishPlatform;
+  channel: ReleaseChannel;
+  timeoutMs: number;
+  heartbeatMs: number;
+  fileSize: number;
+  chunkSizeBytes: number;
+}): Promise<Record<string, unknown>> {
+  const fileName = basename(params.filePath);
+  const totalChunks = Math.ceil(params.fileSize / params.chunkSizeBytes);
+  const startedAt = Date.now();
+  const baseHeaders = {
+    Authorization: `Bearer ${params.token}`,
+    ...(params.platform ? { "x-platform": params.platform } : {}),
+    "x-channel": params.channel,
+  };
+
+  const initRes = await fetch(`${params.baseUrl}/api/upload/chunk/init`, {
+    method: "POST",
+    headers: {
+      ...baseHeaders,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      target: params.endpoint,
+      fileName,
+      totalSize: params.fileSize,
+      totalChunks,
+      version: params.version,
+      platform: params.platform,
+      channel: params.channel,
+    }),
+  });
+  const initData = (await initRes.json()) as Record<string, unknown>;
+  if (!initRes.ok || initData.ok !== true || typeof initData.uploadId !== "string") {
+    const err = typeof initData.error === "string" ? initData.error : `HTTP ${initRes.status}`;
+    throw new Error(`初始化分片上传失败: ${err}`);
+  }
+  const uploadId = initData.uploadId;
+  console.log(
+    `[publish] 分片上传启用: ${fileName} (${formatBytes(params.fileSize)}), uploadId=${uploadId}, chunks=${totalChunks}, chunk=${formatBytes(params.chunkSizeBytes)}`
+  );
+
+  let uploadedBytes = 0;
+  let completedChunks = 0;
+  const heartbeatHandle = setInterval(() => {
+    const elapsed = Date.now() - startedAt;
+    const progress = ((uploadedBytes / params.fileSize) * 100).toFixed(1);
+    const speed = elapsed > 0 ? `${formatBytes((uploadedBytes / elapsed) * 1000)}/s` : "n/a";
+    console.log(
+      `[publish] 分片上传中: ${fileName}，chunk=${completedChunks}/${totalChunks}, uploaded=${formatBytes(uploadedBytes)}/${formatBytes(params.fileSize)} (${progress}%), avg=${speed}, elapsed=${formatDuration(elapsed)}`
+    );
+  }, params.heartbeatMs);
+
+  try {
+    for (let index = 0; index < totalChunks; index += 1) {
+      const start = index * params.chunkSizeBytes;
+      const end = Math.min(start + params.chunkSizeBytes, params.fileSize);
+      const chunkBytes = end - start;
+      console.log(
+        `[publish] 分片开始: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, bytes=${formatBytes(chunkBytes)}, range=[${start}, ${end})`
+      );
+      const chunkBlob = Bun.file(params.filePath).slice(start, end);
+      const chunkData = await chunkBlob.arrayBuffer();
+
+      let uploaded = false;
+      let attempt = 0;
+      let lastErr = "";
+      while (!uploaded && attempt < 3) {
+        attempt += 1;
+        const controller = new AbortController();
+        const timeoutHandle = setTimeout(() => controller.abort(), params.timeoutMs);
+        const chunkStartedAt = Date.now();
+        try {
+          const chunkRes = await fetch(
+            `${params.baseUrl}/api/upload/chunk/${encodeURIComponent(uploadId)}/part/${index}`,
+            {
+              method: "POST",
+              headers: {
+                ...baseHeaders,
+                "content-type": "application/octet-stream",
+              },
+              body: chunkData,
+              signal: controller.signal,
+            }
+          );
+          const chunkJson = (await chunkRes.json()) as Record<string, unknown>;
+          if (!chunkRes.ok || chunkJson.ok !== true) {
+            lastErr = typeof chunkJson.error === "string" ? chunkJson.error : `HTTP ${chunkRes.status}`;
+            console.warn(
+              `[publish] 分片失败待重试: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, attempt=${attempt}/3, status=${chunkRes.status}, error=${lastErr}`
+            );
+            continue;
+          }
+          uploaded = true;
+          const chunkElapsed = Date.now() - chunkStartedAt;
+          const speed = chunkElapsed > 0 ? `${formatBytes((chunkBytes / chunkElapsed) * 1000)}/s` : "n/a";
+          console.log(
+            `[publish] 分片成功: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, attempt=${attempt}/3, status=${chunkRes.status}, chunkElapsed=${formatDuration(chunkElapsed)}, speed=${speed}`
+          );
+        } catch (error) {
+          lastErr = error instanceof Error ? error.message : String(error);
+          console.warn(
+            `[publish] 分片请求异常: ${fileName} uploadId=${uploadId} chunk=${index + 1}/${totalChunks}, attempt=${attempt}/3, error=${lastErr}`
+          );
+        } finally {
+          clearTimeout(timeoutHandle);
+        }
+      }
+      if (!uploaded) {
+        throw new Error(`分片上传失败: uploadId=${uploadId}, chunk=${index + 1}/${totalChunks}, error=${lastErr}`);
+      }
+
+      uploadedBytes += chunkBytes;
+      completedChunks += 1;
+      const progress = ((uploadedBytes / params.fileSize) * 100).toFixed(1);
+      const elapsed = Date.now() - startedAt;
+      const speed = elapsed > 0 ? `${formatBytes((uploadedBytes / elapsed) * 1000)}/s` : "n/a";
+      console.log(
+        `[publish] 分片上传进度: ${fileName} uploadId=${uploadId} chunk=${completedChunks}/${totalChunks}, uploaded=${formatBytes(uploadedBytes)}/${formatBytes(params.fileSize)} (${progress}%), avg=${speed}`
+      );
+    }
+
+    console.log(`[publish] 分片合并开始: ${fileName} uploadId=${uploadId}`);
+    const completeRes = await fetch(`${params.baseUrl}/api/upload/chunk/${encodeURIComponent(uploadId)}/complete`, {
+      method: "POST",
+      headers: {
+        ...baseHeaders,
+      },
+    });
+    const completeText = await completeRes.text();
+    let completeData: Record<string, unknown> = {};
+    try {
+      completeData = completeText ? (JSON.parse(completeText) as Record<string, unknown>) : {};
+    } catch {
+      throw new Error(`完成分片上传返回非 JSON: ${completeText}`);
+    }
+    if (!completeRes.ok || completeData.ok !== true) {
+      const err = typeof completeData.error === "string" ? completeData.error : `HTTP ${completeRes.status}`;
+      throw new Error(`完成分片上传失败: ${err}`);
+    }
+
+    const elapsed = Date.now() - startedAt;
+    const speed = elapsed > 0 ? `${formatBytes((params.fileSize / elapsed) * 1000)}/s` : "n/a";
+    console.log(
+      `[publish] 分片上传完成: ${fileName}, uploadId=${uploadId}, total=${formatBytes(params.fileSize)}, 耗时 ${formatDuration(elapsed)}, 平均速率 ${speed}`
+    );
+    return completeData;
+  } finally {
+    clearInterval(heartbeatHandle);
+  }
 }
 
 function formatBytes(size: number): string {
@@ -746,7 +997,7 @@ async function main(): Promise<void> {
   let updaterArtifacts: string[] = [];
 
   if (!opts.skipInstaller) {
-    const resolved = await resolveInstallerPathForPublish(hostPlatform, opts.buildEnv, opts.installerPath);
+    const resolved = await resolveInstallerPathForPublish(hostPlatform, opts.buildEnv, opts.installerPath, opts.artifactRoots);
     installerPath = resolved.path;
     installerSource = resolved.source;
 
@@ -761,11 +1012,12 @@ async function main(): Promise<void> {
   }
 
   if (!opts.skipUpdater) {
-    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir);
+    updaterArtifacts = await detectUpdaterArtifacts(hostPlatform, opts.buildEnv, opts.updaterDir, opts.artifactRoots, opts.version);
     if (updaterArtifacts.length === 0) {
       throw new Error(
         `未找到 Electrobun 更新产物（前缀: ${opts.buildEnv}-${PLATFORM_TOKEN[hostPlatform]}-）。` +
           `\n请确认已执行 Electrobun build，并检查 artifacts 目录。` +
+          `\n若构建产物前缀不是当前 --build-env（例如 dev-win-），请改为对应 build-env 或手动指定 --updater-dir。` +
           `\n也可通过 --updater-dir <path> 指定目录，或使用 --skip-updater 跳过。`
       );
     }
@@ -783,6 +1035,9 @@ async function main(): Promise<void> {
   }
   if (opts.updaterDir) {
     console.log(`[publish] updater dir: ${opts.updaterDir}`);
+  }
+  if (opts.artifactRoots.length > 0) {
+    console.log(`[publish] extra artifact roots: ${opts.artifactRoots.join(", ")}`);
   }
   if (installerPath) {
     console.log(`[publish] installer path: ${installerPath}`);

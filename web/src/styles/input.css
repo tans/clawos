@@ -5,10 +5,7 @@
 }
 
 @theme {
-  --animate-page-fade: page-fade 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-float-gentle: float-gentle 7s ease-in-out infinite;
-  --animate-drift: drift 18s linear infinite;
-  --animate-soft-pulse: soft-pulse 4.8s ease-in-out infinite;
+  --animate-page-fade: page-fade 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @layer base {
@@ -24,13 +21,21 @@
 
   body {
     background: #fff;
+    color: #1a1a1a;
+    font-family:
+      Inter,
+      "Segoe UI",
+      "PingFang SC",
+      "Noto Sans CJK SC",
+      "Microsoft YaHei",
+      sans-serif;
   }
 }
 
 @keyframes page-fade {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(12px);
   }
 
   to {
@@ -39,39 +44,22 @@
   }
 }
 
-@keyframes float-gentle {
+@keyframes hero-slogan-rotate {
   0%,
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  25%,
+  95% {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+
   100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(0, -10px, 0);
-  }
-}
-
-@keyframes drift {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(10px, -8px, 0);
-  }
-
-  to {
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-@keyframes soft-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-
-  50% {
-    opacity: 0.9;
+    opacity: 0;
+    transform: translateY(0);
   }
 }
 
@@ -79,65 +67,178 @@
   animation: var(--animate-page-fade);
 }
 
-@utility page-fade-delay-1 {
-  animation-delay: 80ms;
-}
-
-@utility page-fade-delay-2 {
-  animation-delay: 160ms;
-}
-
-@utility page-fade-delay-3 {
-  animation-delay: 240ms;
-}
-
-@utility surface-wash {
-  background: #fff;
-  backdrop-filter: blur(18px);
-}
-
-@utility float-gentle {
-  animation: var(--animate-float-gentle);
-}
-
 @layer utilities {
-  .ambient-shell {
+  .glass-nav {
+    backdrop-filter: blur(12px);
+    background: rgb(255 255 255 / 88%);
+  }
+
+  .site-bg {
+    background:
+      radial-gradient(circle at 8% -8%, rgb(233 84 98 / 14%), transparent 30%),
+      radial-gradient(circle at 92% 0%, rgb(251 191 36 / 12%), transparent 32%),
+      linear-gradient(180deg, #fff 0%, #fff7f7 38%, #fff 100%);
+  }
+
+  .hero-glow {
+    background:
+      radial-gradient(circle at 15% 20%, rgb(233 84 98 / 18%), transparent 36%),
+      radial-gradient(circle at 90% 10%, rgb(244 114 182 / 16%), transparent 40%),
+      linear-gradient(145deg, #ffffff 0%, #fff6f7 44%, #fff 100%);
+  }
+
+  .aqua-glow {
+    background: linear-gradient(120deg, #fff4f4 0%, #f3fbff 100%);
+  }
+
+  .bento-card {
+    border-radius: 14px;
+    border: 1px solid #f1d7da;
+    background: #fff;
+    box-shadow:
+      0 1px 2px rgb(26 26 26 / 0.04),
+      0 10px 24px rgb(233 84 98 / 0.06);
+  }
+
+  .section-title {
+    @apply text-2xl font-bold tracking-tight text-[#1a1a1a] sm:text-3xl;
+  }
+
+  .section-marker {
+    color: #e95462;
+    font-weight: 700;
+    margin-right: 0.5rem;
+  }
+
+  .subcaps {
+    color: #e95462;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: #e95462;
+    padding: 0.65rem 1.05rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    transition: transform 140ms ease, box-shadow 200ms ease, background-color 200ms ease;
+  }
+
+  .primary-button:hover {
+    background: #dc4a59;
+    box-shadow: 0 8px 18px rgb(233 84 98 / 24%);
+    transform: translateY(-1px);
+  }
+
+  .primary-button:active {
+    transform: translateY(0);
+  }
+
+  .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 10px;
+    border: 1px solid #f2c7cc;
+    background: #fff;
+    padding: 0.65rem 1.05rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #5f5354;
+    transition: transform 140ms ease, box-shadow 200ms ease, background-color 180ms ease;
+  }
+
+  .secondary-button:hover {
+    background: #fff7f8;
+    box-shadow: 0 8px 16px rgb(17 24 39 / 0.08);
+    transform: translateY(-1px);
+  }
+
+  .secondary-button:active {
+    transform: translateY(0);
+  }
+
+  .channel-badge {
+    border-radius: 999px;
+    border: 1px solid #f2b8bf;
+    background: #fff1f3;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #e95462;
+    letter-spacing: 0.03em;
+  }
+
+  .brand-link {
+    color: #e95462;
+    font-weight: 600;
+    transition: transform 120ms ease;
+  }
+
+  .brand-link:hover {
+    transform: translateX(2px);
+  }
+
+  .panel-card {
+    border-radius: 14px;
+    border: 1px solid #f0d8db;
+    background: linear-gradient(180deg, #fff 0%, #fff9fa 100%);
+    box-shadow: 0 10px 30px rgb(233 84 98 / 7%);
+  }
+
+  .hero-slogan-rotator {
+    display: inline-block;
     position: relative;
+    min-width: 6em;
+    height: 1.3em;
+    vertical-align: top;
   }
 
-  .ambient-shell::before {
-    content: none;
+  .hero-slogan-item {
+    position: absolute;
+    inset: 0 auto auto 0;
+    opacity: 0;
+    animation: hero-slogan-rotate 12s infinite;
+    animation-delay: calc(var(--slogan-index) * 3s);
+    white-space: nowrap;
   }
 
-  .ambient-shell::after {
-    content: none;
-  }
-
-  .rise-on-hover {
-    transition:
-      transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
-      background-color 240ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .rise-on-hover:hover {
-    transform: translateY(-4px);
+  .hero-slogan-item:first-child {
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page-fade,
-  .page-fade-delay-1,
-  .page-fade-delay-2,
-  .page-fade-delay-3,
-  .float-gentle,
-  .ambient-shell::before,
-  .ambient-shell::after {
+  .primary-button,
+  .secondary-button,
+  .brand-link,
+  .hero-slogan-item {
     animation: none;
+    transition: none;
   }
 
-  .rise-on-hover,
-  .rise-on-hover:hover {
-    transition: none;
+  .primary-button:hover,
+  .secondary-button:hover,
+  .brand-link:hover {
     transform: none;
+  }
+
+  .hero-slogan-item {
+    opacity: 0;
+  }
+
+  .hero-slogan-item:first-child {
+    opacity: 1;
   }
 }

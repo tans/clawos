@@ -1,0 +1,29 @@
+客户消息（基于 `mcp/bom-mcp/cases/multibom/92712 PG - BOM(1).xlsx` 的真实片段整理）：
+请将下列三个项目分开报价，按 BOM 分别返回结果。
+
+BOM-1 (PGE22001.052.000-02)
+```csv
+partNumber,quantity,unitPrice,description
+CC0402KRX7R7BB224,4,,220n 16V X7R
+CC0402KRX5R7BB105,2,,1u 16V X5R
+CL05B104KO5NFNC,10,,100n 16V X7R
+CC0402JRNPO9BN560,2,,56p 50V NP0
+```
+
+BOM-2 (PGE22001.051.000-01)
+```csv
+partNumber,quantity,unitPrice,description
+HYG-8503A-5027,1,,HYG-8503A-5027
+CR2032 MFR SM,1,,CR2032 MFR SM
+VKMD1001J680MV,2,,68u
+CS3225X5R476K160NRL,1,,47u
+```
+
+BOM-3 (PGE22001.050.000)
+```csv
+partNumber,quantity,unitPrice,description
+CL10A106KP8NNNC,7,,100n
+TCC0603X7R103K251CT,2,,10n
+GRT155R61C105KE01D,2,,1u
+CL10A475KP8NNWC,2,,4.7u
+```
