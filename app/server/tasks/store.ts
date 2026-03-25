@@ -21,6 +21,7 @@ export type Task = {
 };
 
 const MAX_TASKS = 30;
+const MAX_LOGS_PER_TASK = 1000;
 const tasks = new Map<string, Task>();
 
 export function createTask(type: string, title: string, totalSteps: number): Task {
@@ -55,6 +56,22 @@ export function appendTaskLog(task: Task, message: string, level: LogLevel = "in
     level,
     message,
   });
+
+  if (task.logs.length > MAX_LOGS_PER_TASK) {
+    const overflowCount = task.logs.length - MAX_LOGS_PER_TASK;
+    task.logs.splice(0, overflowCount);
+    const marker = {
+      timestamp: new Date().toISOString(),
+      level: "info" as const,
+      message: `日志已截断：仅保留最近 ${MAX_LOGS_PER_TASK} 条记录。`,
+    };
+    if (!task.logs[0]?.message.includes("日志已截断")) {
+      task.logs.unshift(marker);
+      if (task.logs.length > MAX_LOGS_PER_TASK) {
+        task.logs.splice(1, task.logs.length - MAX_LOGS_PER_TASK);
+      }
+    }
+  }
 }
 
 export function findRunningTask(type: string): Task | null {

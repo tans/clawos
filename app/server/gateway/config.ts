@@ -12,6 +12,8 @@ import {
 export const ALLOWED_CONFIG_SECTIONS = new Set(["channels", "agents", "skills", "tools", "browser", "gateway", "models"]);
 const FILE_BACKED_CONFIG_SECTIONS = new Set(["channels", "agents", "models"]);
 const REDACTED_SENTINEL = "__OPENCLAW_REDACTED__";
+const OPENCLAW_CONFIG_CACHE_TTL_MS = 1_500;
+let cachedOpenclawConfig: { value: Record<string, unknown>; expiresAt: number } | null = null;
 const CHANNEL_PLUGIN_PATHS: Record<"wework" | "feishu", string> = {
   wework: "/data/openclaw/extensions/wework",
   feishu: "/data/openclaw/extensions/feishu",
@@ -182,12 +184,24 @@ export async function readGatewayConfigSnapshot(): Promise<GatewayConfigSnapshot
 }
 
 export async function readOpenclawConfig(): Promise<Record<string, unknown>> {
+  const now = Date.now();
+  if (cachedOpenclawConfig && cachedOpenclawConfig.expiresAt > now) {
+    return structuredClone(cachedOpenclawConfig.value);
+  }
+
+  let value: Record<string, unknown>;
   try {
     const snapshot = await readGatewayConfigSnapshot();
-    return normalizeConfigSnapshot(snapshot);
+    value = normalizeConfigSnapshot(snapshot);
   } catch {
-    return await readOpenclawConfigFromWsl();
+    value = await readOpenclawConfigFromWsl();
   }
+
+  cachedOpenclawConfig = {
+    value: structuredClone(value),
+    expiresAt: now + OPENCLAW_CONFIG_CACHE_TTL_MS,
+  };
+  return value;
 }
 
 export async function applyOpenclawConfig(config: Record<string, unknown>, note: string): Promise<void> {
@@ -206,6 +220,7 @@ export async function applyOpenclawConfig(config: Record<string, unknown>, note:
         note,
         restartDelayMs: 0,
       });
+      cachedOpenclawConfig = null;
       return;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -224,6 +239,7 @@ export async function applyOpenclawConfig(config: Record<string, unknown>, note:
 
   try {
     await writeOpenclawConfigToWsl(config);
+    cachedOpenclawConfig = null;
   } catch (error) {
     const fileError = error instanceof Error ? error.message : String(error);
     if (lastGatewayError) {
@@ -255,6 +271,7 @@ export async function saveOpenclawConfigSection(
       ensureChannelPluginsForEnabledChannels(config);
     }
     const fileWrite = await writeOpenclawConfigToWsl(config);
+    cachedOpenclawConfig = null;
     return {
       mode: "file-overwrite",
       fileWrite,
@@ -273,6 +290,7 @@ export async function saveOpenclawConfigSection(
     const currentSection = asObject(config[section]) || {};
     config[section] = (restoreRedactedValues(currentSection, data) as Record<string, unknown>) || {};
     const fileWrite = await writeOpenclawConfigToWsl(config);
+    cachedOpenclawConfig = null;
     return {
       mode: "file-overwrite",
       fileWrite,
