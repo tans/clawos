@@ -57,6 +57,18 @@ bun mcp/bom-mcp/src/index.ts export_quote '{"jobId":"<jobId>","format":"json"}'
 5. 入队异步任务，切换到 `running`。
 6. `buildQuoteResult` 计算报价并落回内存，状态 `succeeded`；异常则 `failed`。
 
+## 3.1 cases1（客户意图拆解）测试支持
+
+为支持“一个客户消息包含多个 BOM 表”的场景，新增了 `intent-analyzer`：
+
+- 输入：客户自然语言 + BOM 表格文本（可含 3 个及以上 BOM 段）
+- 输出：`tasks[]`，每个任务对应一份可提交的 BOM 内容
+- 支持两种路径：
+  - 启发式拆解（默认）：从 markdown fenced block 中提取 BOM 表
+  - 大模型拆解（可选）：通过 `llmExtractBomBlocks` 注入 LLM 提取结果
+
+`cases1` 测试中会把 3 个 BOM 拆成 3 个独立 `submit_bom` 任务并验证全部完成。
+
 ## 4. 已识别问题（按影响优先级）
 
 ### P0/P1：稳定性与可用性
