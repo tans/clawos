@@ -1,14 +1,40 @@
 import type { BomLine, BomSourceType } from "../types";
 
+function parseCsvLine(line: string): string[] {
+  const cols: string[] = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === "," && !inQuotes) {
+      cols.push(current.trim());
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  cols.push(current.trim());
+  return cols;
+}
+
 function parseCsv(content: string): BomLine[] {
   const rows = content
     .split(/\r?\n/)
-    .map((line) => line.trim())
     .filter(Boolean);
   if (rows.length === 0) {
     return [];
   }
-  const header = rows[0].split(",").map((item) => item.trim().toLowerCase());
+  const header = parseCsvLine(rows[0]).map((item) => item.trim().toLowerCase());
   const partIndex = header.indexOf("partnumber");
   const qtyIndex = header.indexOf("quantity");
   const priceIndex = header.indexOf("unitprice");
@@ -18,7 +44,7 @@ function parseCsv(content: string): BomLine[] {
   }
 
   return rows.slice(1).map((line) => {
-    const cols = line.split(",").map((item) => item.trim());
+    const cols = parseCsvLine(line);
     return {
       partNumber: cols[partIndex] || "",
       quantity: Number(cols[qtyIndex] || 0),
