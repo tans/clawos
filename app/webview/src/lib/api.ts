@@ -1,6 +1,10 @@
+import type { TaskRecord } from "../../../shared/types/api";
+
 type ApiOptions = {
   method?: string;
   body?: unknown;
+  timeoutMs?: number;
+  signal?: AbortSignal;
 };
 
 type ApiError = Error & { isApiError?: boolean };
@@ -17,21 +21,6 @@ export type LocalSettings = {
 export type AutoStartState = {
   supported?: boolean;
   enabled?: boolean;
-};
-
-export type TaskLogEntry = {
-  timestamp: string;
-  level: string;
-  message: string;
-};
-
-export type TaskRecord = {
-  id: string;
-  title: string;
-  status: "pending" | "running" | "success" | "failed" | string;
-  step: number;
-  totalSteps: number;
-  logs: TaskLogEntry[];
 };
 
 export type QwGatewayStatus = {
@@ -153,15 +142,38 @@ export type WalletBalances = {
 };
 
 async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
+  const controller = new AbortController();
+  const timeoutMs = Number.isFinite(options.timeoutMs) && (options.timeoutMs as number) > 0 ? Math.floor(options.timeoutMs as number) : 15_000;
+  const timeoutId = setTimeout(() => controller.abort(new Error(`请求超时（${timeoutMs}ms）`)), timeoutMs);
+  if (options.signal) {
+    options.signal.addEventListener("abort", () => controller.abort(options.signal?.reason), { once: true });
+  }
+
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
 
-  const response = await fetch(path, {
-    method: options.method || "GET",
-    headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: options.method || "GET",
+      headers,
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.name === "AbortError"
+        ? `请求超时或已取消（${timeoutMs}ms）`
+        : error instanceof Error
+          ? error.message
+          : "网络请求失败";
+    const wrapped = new Error(message) as ApiError;
+    wrapped.isApiError = true;
+    throw wrapped;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.ok) {
