@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import { access } from "node:fs/promises";
+import { resolve } from "node:path";
 import { runTool } from "../../../mcp/bom-mcp/src/index";
 
 function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
 }
 
 describe("bom-mcp tools", () => {
@@ -41,6 +43,10 @@ describe("bom-mcp tools", () => {
       args: { jobId: submitResult.jobId, format: "csv" },
     })) as { downloadUrl: string };
     expect(exported.downloadUrl).toContain(`${submitResult.jobId}.csv`);
+
+    const filePath = resolve(process.cwd(), decodeURIComponent(exported.downloadUrl).replace(/^\//, ""));
+    await access(filePath);
+    expect(true).toBeTrue();
   });
 
   it("supports csv content input and reports missing-price lines", async () => {
@@ -66,6 +72,36 @@ describe("bom-mcp tools", () => {
     })) as { missingItems: Array<unknown>; warnings: Array<string> };
     expect(quote.missingItems).toHaveLength(1);
     expect(quote.warnings[0]).toContain("缺少有效单价");
+  });
+
+  it("applies natural-language price update before quoting", async () => {
+    await runTool({
+      tool: "apply_nl_price_update",
+      args: {
+        partNumber: "STM32F103C8T6",
+        unitPrice: 11.8,
+        supplier: "LCSC",
+        reason: "客户口头确认价格",
+      },
+    });
+
+    const submitResult = (await runTool({
+      tool: "submit_bom",
+      args: {
+        sourceType: "csv",
+        content: "partNumber,quantity,unitPrice,description\nSTM32F103C8T6,2,,MCU\n",
+        quoteParams: { currency: "CNY", taxRate: 0 },
+      },
+    })) as { jobId: string };
+    await sleep(10);
+
+    const quote = (await runTool({
+      tool: "get_quote",
+      args: { jobId: submitResult.jobId },
+    })) as { items: Array<{ unitPrice: number }>; missingItems: Array<unknown> };
+
+    expect(quote.items[0]?.unitPrice).toBe(11.8);
+    expect(quote.missingItems).toHaveLength(0);
   });
 
   it("parses quoted csv fields with commas correctly", async () => {
