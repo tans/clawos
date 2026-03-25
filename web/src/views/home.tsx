@@ -22,7 +22,7 @@ function SectionTitle({ eyebrow, title, desc }: { eyebrow: string; title: string
         <span class="section-marker">&gt;</span>
         {title}
       </h2>
-      <p class="text-sm leading-7 text-[#c2b7ae] sm:text-base">{desc}</p>
+      <p class="text-sm leading-7 text-[#7b6d6f] sm:text-base">{desc}</p>
     </div>
   );
 }
@@ -70,11 +70,11 @@ function HomePage({
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body class="site-bg text-[#f9f3eb]">
-        <header class="glass-nav sticky top-0 z-40 border-b border-white/15">
+      <body class="site-bg text-[#564648]">
+        <header class="glass-nav sticky top-0 z-40 border-b border-[#efd8dc]">
           <div class="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-8">
             <a class="flex items-center gap-3" href="/">
-              <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-xl border border-white/20 bg-white/5 p-1" />
+              <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-xl border border-[#efd8dc] bg-white p-1" />
               <span class="text-lg font-semibold">{brandName}</span>
             </a>
             <nav class="hidden items-center gap-2 md:flex" aria-label="页面导航">
@@ -92,7 +92,7 @@ function HomePage({
           <section class="hero-glow page-fade bento-card p-6 sm:p-10">
             <div class="hero-orbit" aria-hidden="true"></div>
             <p class="subcaps">THE AI THAT ACTUALLY DOES THINGS.</p>
-            <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-[#f9f3eb] sm:text-5xl">
+            <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-[#2b2022] sm:text-5xl">
               <span class="hero-slogan-rotator" aria-label="复杂一键搞定，人人轻松上手，流程简单高效，功能触手可用">
                 {heroSlogans.map((slogan, index) => (
                   <span class="hero-slogan-item" style={{ "--slogan-index": `${index}` }}>
@@ -101,7 +101,7 @@ function HomePage({
                 ))}
               </span>
             </h1>
-            <p class="mt-4 max-w-3xl text-sm leading-7 text-[#c2b7ae] sm:text-base">企业级技能市场，为企业应用场景而生。统一展示与管理上架 MCP，帮助团队快速完成系统化落地。</p>
+            <p class="mt-4 max-w-3xl text-sm leading-7 text-[#7b6d6f] sm:text-base">企业级技能市场，为企业应用场景而生。统一展示与管理上架 MCP，帮助团队快速完成系统化落地。</p>
             <div class="mt-8 flex flex-wrap gap-3">
               {hasInstaller ? (
                 <a class="primary-button" href="/downloads">
@@ -115,7 +115,7 @@ function HomePage({
                 查看使用手册
               </a>
             </div>
-            <p class="mt-4 text-xs text-[#c2b7ae]">首页下载默认指向稳定版；测试版与内测版请在下载中心查看。</p>
+            <p class="mt-4 text-xs text-[#7b6d6f]">首页下载默认指向稳定版；测试版与内测版请在下载中心查看。</p>
             <div class="hero-metrics mt-8 grid gap-3 text-xs sm:grid-cols-3">
               <div>
                 <p class="hero-metric-label">MCP 上架能力</p>
@@ -138,7 +138,7 @@ function HomePage({
               {architecture.map((item) => (
                 <article class="bento-card p-5">
                   <h3 class="text-lg font-semibold">{item}</h3>
-                  <p class="mt-2 text-sm text-[#c2b7ae]">流程统一，反馈清晰，减少重复劳动。</p>
+                  <p class="mt-2 text-sm text-[#7b6d6f]">流程统一，反馈清晰，减少重复劳动。</p>
                 </article>
               ))}
             </div>
@@ -149,14 +149,14 @@ function HomePage({
             <div class="mt-8 grid gap-4 md:grid-cols-2">
               {executionGoals.map((goal) => (
                 <article class="bento-card p-5">
-                  <p class="text-lg font-semibold text-[#f9f3eb]">{goal}</p>
-                  <p class="mt-2 text-sm text-[#c2b7ae]">统一界面，减少学习成本。</p>
+                  <p class="text-lg font-semibold text-[#2b2022]">{goal}</p>
+                  <p class="mt-2 text-sm text-[#7b6d6f]">统一界面，减少学习成本。</p>
                 </article>
               ))}
               {solutionTracks.map((track) => (
                 <article class="aqua-glow bento-card p-5 md:col-span-2">
-                  <h3 class="text-xl font-semibold text-[#f9f3eb]">{track.title}</h3>
-                  <p class="mt-2 text-sm leading-7 text-[#c2b7ae]">{track.desc}</p>
+                  <h3 class="text-xl font-semibold text-[#2b2022]">{track.title}</h3>
+                  <p class="mt-2 text-sm leading-7 text-[#7b6d6f]">{track.desc}</p>
                 </article>
               ))}
             </div>
@@ -168,12 +168,12 @@ function HomePage({
               {listedMcps.map((item) => (
                 <article class="bento-card p-5">
                   <div class="flex items-center justify-between gap-3">
-                    <h3 class="text-lg font-semibold text-[#f9f3eb]">{item.name}</h3>
+                    <h3 class="text-lg font-semibold text-[#2b2022]">{item.name}</h3>
                     <span class="channel-badge">{item.status}</span>
                   </div>
-                  <p class="mt-3 text-xs font-medium text-[#f0be8e]">{item.tag}</p>
-                  <p class="mt-2 text-sm leading-7 text-[#c2b7ae]">{item.desc}</p>
-                  <p class="mt-4 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs text-[#c2b7ae]">{item.path}</p>
+                  <p class="mt-3 text-xs font-medium text-[#cc3f4d]">{item.tag}</p>
+                  <p class="mt-2 text-sm leading-7 text-[#7b6d6f]">{item.desc}</p>
+                  <p class="mt-4 rounded-lg border border-[#efd8dc] bg-white px-3 py-2 text-xs text-[#7b6d6f]">{item.path}</p>
                 </article>
               ))}
             </div>
@@ -185,11 +185,11 @@ function HomePage({
               {changelogItems.map((item) => (
                 <article class="bento-card p-5">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-base font-semibold text-[#f9f3eb]">{item.version}</span>
-                    <span class="text-xs text-[#c2b7ae]">{item.date}</span>
+                    <span class="text-base font-semibold text-[#2b2022]">{item.version}</span>
+                    <span class="text-xs text-[#7b6d6f]">{item.date}</span>
                     <span class="channel-badge">{item.channel.toUpperCase()}</span>
                   </div>
-                  <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-[#c2b7ae]">
+                  <ul class="mt-3 list-disc space-y-1 pl-5 text-sm text-[#7b6d6f]">
                     {item.highlights.map((highlight) => (
                       <li>{highlight}</li>
                     ))}
@@ -204,14 +204,14 @@ function HomePage({
               <span class="section-marker">&gt;</span>
               准备开始体验了吗？
             </h2>
-            <p class="mt-3 max-w-3xl text-sm leading-7 text-[#c2b7ae] sm:text-base">先下载试用，或先查看手册；合作需求可直接联系我们。</p>
+            <p class="mt-3 max-w-3xl text-sm leading-7 text-[#7b6d6f] sm:text-base">先下载试用，或先查看手册；合作需求可直接联系我们。</p>
             <div class="mt-6 flex flex-wrap gap-3">
               <a class="primary-button" href="/contact">联系我们 →</a>
               <a class="secondary-button" href="/ceo-letter">阅读 CEO agent&apos;s letter</a>
             </div>
           </section>
 
-          <footer class="mt-16 border-t border-white/15 pt-6 text-sm text-[#c2b7ae]">
+          <footer class="mt-16 border-t border-[#efd8dc] pt-6 text-sm text-[#7b6d6f]">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <p>{`@${brandDomain}`}</p>
               <div class="flex items-center gap-4">
