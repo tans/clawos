@@ -1,0 +1,26 @@
+name: Web Deploy Webhook On Main Merge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web/**"
+      - ".github/workflows/web-main-merge-webhook.yml"
+
+jobs:
+  trigger-webhook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Trigger web deploy webhook
+        env:
+          WEBHOOK_URL: https://hook.minapp.xin/hoos/claw-web-deploy
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent \
+            --request POST \
+            --header "Content-Type: application/json" \
+            --data '{"repository":"${{ github.repository }}","ref":"${{ github.ref }}","sha":"${{ github.sha }}","event":"push"}' \
+            "$WEBHOOK_URL"
