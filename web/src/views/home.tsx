@@ -47,6 +47,7 @@ function HomePage({
 
   const architecture = ["开箱即用", "一站式管理", "可扩展能力", "多场景支持"] as const;
   const executionGoals = ["上手快", "省时间", "更稳定", "更省心"] as const;
+  const heroSlogans = ["复杂一键搞定", "人人轻松上手", "流程简单高效", "功能触手可用"] as const;
   const solutionTracks = [
     { title: "内容创作场景", desc: "适合短视频与图文团队，减少重复流程，让产出更稳定。" },
     { title: "获客与跟进场景", desc: "适合做线索收集和客户跟进，帮助你更快推进业务。" },
@@ -81,7 +82,15 @@ function HomePage({
         <main class="mx-auto w-full max-w-7xl px-4 pb-20 pt-10 sm:px-8 sm:pt-14">
           <section class="hero-glow page-fade bento-card p-6 sm:p-10">
             <p class="subcaps">THE AI THAT ACTUALLY DOES THINGS.</p>
-            <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-[#1a1a1a] sm:text-5xl">把复杂功能变成人人都能用的简单操作</h1>
+            <h1 class="mt-4 text-3xl font-extrabold tracking-tight text-[#1a1a1a] sm:text-5xl">
+              <span class="hero-slogan-rotator" aria-label="复杂一键搞定，人人轻松上手，流程简单高效，功能触手可用">
+                {heroSlogans.map((slogan, index) => (
+                  <span class="hero-slogan-item" style={{ "--slogan-index": `${index}` }}>
+                    {slogan}
+                  </span>
+                ))}
+              </span>
+            </h1>
             <p class="mt-4 max-w-3xl text-sm leading-7 text-[#666] sm:text-base">个人或团队都能快速上手，常见任务一键完成。</p>
             <div class="mt-8 flex flex-wrap gap-3">
               {hasInstaller ? (
