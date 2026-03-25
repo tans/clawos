@@ -1,4 +1,4 @@
-import { computeLinePrice } from "./pricing";
+import { resolveLinePrice } from "./pricing";
 import type { BomLine, QuoteResult } from "../types";
 
 export function buildQuoteResult(params: {
@@ -10,19 +10,19 @@ export function buildQuoteResult(params: {
   const taxRate = params.taxRate ?? 0;
   const missingItems: Array<{ partNumber: string; reason: string }> = [];
   const items = params.lines.map((line) => {
-    if (line.unitPrice === undefined || line.unitPrice <= 0) {
+    const price = resolveLinePrice(line);
+    if (price.source === "default") {
       missingItems.push({
         partNumber: line.partNumber,
         reason: "缺少有效单价，使用默认兜底单价",
       });
     }
-    const unitPrice = computeLinePrice(line);
-    const subtotal = Number((line.quantity * unitPrice).toFixed(4));
+    const subtotal = Number((line.quantity * price.unitPrice).toFixed(4));
     return {
       partNumber: line.partNumber,
       description: line.description,
       quantity: line.quantity,
-      unitPrice,
+      unitPrice: price.unitPrice,
       subtotal,
     };
   });
