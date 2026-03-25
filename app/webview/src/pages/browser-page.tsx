@@ -22,16 +22,10 @@ const actionMap = [
 ] as const;
 
 type BrowserSection = Record<string, unknown> & {
-  cdpPort?: number | string;
   cdpUrl?: string;
 };
 
 function normalizeBrowserPort(config: BrowserSection): number {
-  const rawPort = Number(config.cdpPort);
-  if (Number.isInteger(rawPort) && rawPort >= 1 && rawPort <= 65535) {
-    return rawPort;
-  }
-
   const rawUrl = typeof config.cdpUrl === "string" ? config.cdpUrl.trim() : "";
   if (rawUrl) {
     try {
@@ -46,6 +40,25 @@ function normalizeBrowserPort(config: BrowserSection): number {
   }
 
   return DEFAULT_BROWSER_CDP_PORT;
+}
+
+function buildBrowserCdpUrl(config: BrowserSection, cdpPort: number): string {
+  const rawUrl = typeof config.cdpUrl === "string" ? config.cdpUrl.trim() : "";
+  if (rawUrl) {
+    try {
+      const parsed = new URL(rawUrl);
+      parsed.protocol = parsed.protocol === "https:" || parsed.protocol === "wss:" ? "https:" : "http:";
+      parsed.port = String(cdpPort);
+      parsed.pathname = "/";
+      parsed.search = "";
+      parsed.hash = "";
+      return parsed.toString();
+    } catch {
+      // Fall through to the default local endpoint when the saved URL is malformed.
+    }
+  }
+
+  return `http://127.0.0.1:${cdpPort}/`;
 }
 
 function formatTaskStatus(task: TaskRecord): string {
@@ -146,12 +159,13 @@ export function BrowserPage() {
     try {
       const nextConfig: BrowserSection = {
         ...browserConfig,
-        cdpPort: parsedPort,
+        cdpUrl: buildBrowserCdpUrl(browserConfig, parsedPort),
       };
+      delete nextConfig.cdpPort;
       await saveConfigSection("browser", nextConfig);
       setBrowserConfig(nextConfig);
       setCdpPortInput(String(parsedPort));
-      setTaskMeta("浏览器 CDP 端口已保存");
+      setTaskMeta("浏览器 cdpUrl 端口已保存");
     } catch (error) {
       setTaskMeta(readUserErrorMessage(error, "保存浏览器端口失败"));
     } finally {
@@ -194,7 +208,7 @@ export function BrowserPage() {
           <section className="field-card field-card-vertical">
             <div className="field-copy">
               <h3>CDP 端口</h3>
-              <p>默认端口是 9222。打开 CDP 时如果端口被占用，会自动尝试后续空闲端口并回写到这里。</p>
+              <p>默认端口是 9222。这里只会更新 browser.cdpUrl 的端口位；打开 CDP 时如果端口被占用，会自动尝试后续空闲端口并回写 cdpUrl。</p>
             </div>
 
             <div className="stack-compact">

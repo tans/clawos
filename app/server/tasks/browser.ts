@@ -73,17 +73,31 @@ export function resolveBrowserCdpPort(config: Record<string, unknown> | null, fa
     return fallback;
   }
 
-  const explicit = normalizeBrowserCdpPort(config.cdpPort, NaN);
-  if (Number.isFinite(explicit) && isValidPortNumber(explicit)) {
-    return explicit;
-  }
-
   const inferred = inferBrowserCdpPortFromUrl(config.cdpUrl);
   if (inferred !== undefined && isValidPortNumber(inferred)) {
     return inferred;
   }
 
   return fallback;
+}
+
+export function buildConfiguredBrowserCdpUrl(currentCdpUrl: unknown, cdpPort = BROWSER_CDP_PORT): string {
+  const rawUrl = readNonEmptyString(currentCdpUrl);
+  if (rawUrl) {
+    try {
+      const parsed = new URL(rawUrl);
+      parsed.protocol = parsed.protocol === "https:" || parsed.protocol === "wss:" ? "https:" : "http:";
+      parsed.port = String(cdpPort);
+      parsed.pathname = "/";
+      parsed.search = "";
+      parsed.hash = "";
+      return parsed.toString();
+    } catch {
+      // Fall through to the default local endpoint when the saved URL is malformed.
+    }
+  }
+
+  return `http://127.0.0.1:${cdpPort}/`;
 }
 
 function buildCdpVersionUrl(cdpPort: number): string {
@@ -98,22 +112,26 @@ async function readBrowserTaskConfig(): Promise<BrowserTaskConfig> {
   };
 }
 
-async function saveBrowserCdpPort(task: Task, cdpPort: number): Promise<void> {
+async function saveBrowserCdpUrlPort(task: Task, cdpPort: number): Promise<void> {
   const config = await readOpenclawConfig();
   const currentBrowser = asObject(config.browser) || {};
   const previousPort = resolveBrowserCdpPort(currentBrowser);
-  const hasExplicitPort = isValidPortNumber(normalizeBrowserCdpPort(currentBrowser.cdpPort, NaN));
+  const nextCdpUrl = buildConfiguredBrowserCdpUrl(currentBrowser.cdpUrl, cdpPort);
+  const previousCdpUrl = readNonEmptyString(currentBrowser.cdpUrl) ?? "";
+  const hasLegacyCdpPort = Object.prototype.hasOwnProperty.call(currentBrowser, "cdpPort");
 
-  if (hasExplicitPort && previousPort === cdpPort) {
+  if (previousPort === cdpPort && previousCdpUrl === nextCdpUrl && !hasLegacyCdpPort) {
     return;
   }
 
-  config.browser = {
+  const nextBrowser = {
     ...currentBrowser,
-    cdpPort,
+    cdpUrl: nextCdpUrl,
   };
+  delete nextBrowser.cdpPort;
+  config.browser = nextBrowser;
   await applyOpenclawConfig(config, "ClawOS browser port update");
-  appendTaskLog(task, `browser.cdpPort => ${cdpPort}`);
+  appendTaskLog(task, `browser.cdpUrl => ${nextCdpUrl}`);
 }
 
 async function canBindLoopbackPort(cdpPort: number): Promise<boolean> {
@@ -749,14 +767,13 @@ async function ensureWslReachablePortProxy(
   throw new Error(`WSL could not reach Windows CDP on port ${cdpPort}: ${lastError}`);
 }
 
-async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string, cdpPort: number): Promise<void> {
+async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string): Promise<void> {
   const config = await readOpenclawConfig();
   const currentBrowser = asObject(config.browser);
   const nextBrowser: Record<string, unknown> = {
     enabled: typeof currentBrowser?.enabled === "boolean" ? currentBrowser.enabled : true,
     evaluateEnabled: typeof currentBrowser?.evaluateEnabled === "boolean" ? currentBrowser.evaluateEnabled : true,
     attachOnly: true,
-    cdpPort,
     cdpUrl: remoteCdpUrl,
   };
 
@@ -772,7 +789,6 @@ async function resetOpenclawBrowserConfig(task: Task, remoteCdpUrl: string, cdpP
 
   config.browser = nextBrowser;
   await applyOpenclawConfig(config, "ClawOS browser repair");
-  appendTaskLog(task, `browser.cdpPort => ${cdpPort}`);
   appendTaskLog(task, `browser.cdpUrl => ${remoteCdpUrl}`);
   appendTaskLog(task, "browser.attachOnly => true");
 }
@@ -878,7 +894,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
 
       appendTaskLog(task, `Run: GET ${buildCdpVersionUrl(cdpPort)}`);
       const version = await waitForCdpVersion(task, cdpPort);
-      await saveBrowserCdpPort(task, cdpPort);
+      await saveBrowserCdpUrlPort(task, cdpPort);
 
       task.step = 2;
       appendTaskLog(task, `Step 2/${totalSteps}: ensure Windows firewall rule`);
@@ -888,7 +904,7 @@ export function startBrowserRestartTask(): { task: Task; reused: boolean } {
       appendTaskLog(task, `Step 3/${totalSteps}: ensure WSL portproxy access`);
       const windowsHost = await ensureWslReachablePortProxy(task, cdpPort, hostHints);
       const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, windowsHost, cdpPort);
-      await resetOpenclawBrowserConfig(task, remoteCdpUrl, cdpPort);
+      await resetOpenclawBrowserConfig(task, remoteCdpUrl);
 
       task.step = 4;
       appendTaskLog(task, `Step 4/${totalSteps}: record local CDP endpoint`);
@@ -948,7 +964,7 @@ export function startBrowserRepairTask(): { task: Task; reused: boolean } {
       task.step = 4;
       appendTaskLog(task, `Step 4/${totalSteps}: update openclaw browser config`);
       const remoteCdpUrl = buildRemoteCdpUrl(version.webSocketDebuggerUrl, windowsHost, cdpPort);
-      await resetOpenclawBrowserConfig(task, remoteCdpUrl, cdpPort);
+      await resetOpenclawBrowserConfig(task, remoteCdpUrl);
 
       task.status = "success";
       task.endedAt = new Date().toISOString();

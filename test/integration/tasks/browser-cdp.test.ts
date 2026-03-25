@@ -9,6 +9,7 @@ import {
   buildElevatedProcessCommand,
   buildChromeStartArgs,
   buildChromeStartCommand,
+  buildConfiguredBrowserCdpUrl,
   buildRemoteCdpUrl,
   buildWindowsElevationCheckArgs,
   normalizeBrowserCdpPort,
@@ -122,14 +123,20 @@ nameserver 8.8.8.8
     expect(remote).toBe("http://172.31.64.1:9333/");
   });
 
+  it("updates configured cdp url without using browser.cdpPort", () => {
+    expect(buildConfiguredBrowserCdpUrl("http://172.31.64.1:9222/", 9224)).toBe("http://172.31.64.1:9224/");
+    expect(buildConfiguredBrowserCdpUrl("ws://127.0.0.1:9222/devtools/browser/abc", 9224)).toBe("http://127.0.0.1:9224/");
+    expect(buildConfiguredBrowserCdpUrl(undefined, 9224)).toBe("http://127.0.0.1:9224/");
+  });
+
   it("normalizes configured browser cdp ports safely", () => {
     expect(normalizeBrowserCdpPort("9333")).toBe(9333);
     expect(normalizeBrowserCdpPort(0)).toBe(BROWSER_CDP_PORT);
     expect(normalizeBrowserCdpPort("abc")).toBe(BROWSER_CDP_PORT);
   });
 
-  it("resolves browser cdp port from config or cdpUrl", () => {
-    expect(resolveBrowserCdpPort({ cdpPort: 9333 })).toBe(9333);
+  it("resolves browser cdp port from cdpUrl", () => {
+    expect(resolveBrowserCdpPort({ cdpPort: 9333 })).toBe(BROWSER_CDP_PORT);
     expect(resolveBrowserCdpPort({ cdpUrl: "http://172.31.64.1:18801/" })).toBe(18801);
     expect(resolveBrowserCdpPort({})).toBe(BROWSER_CDP_PORT);
   });
