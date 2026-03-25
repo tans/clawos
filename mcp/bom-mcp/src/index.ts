@@ -3,7 +3,12 @@ import { getBomJobResult } from "./tools/get-bom-job-result";
 import { getQuote } from "./tools/get-quote";
 import { submitBom } from "./tools/submit-bom";
 
-type ToolName = "submit_bom" | "get_bom_job_result" | "get_quote" | "export_quote";
+type ToolName =
+  | "submit_bom"
+  | "get_bom_job_result"
+  | "get_job_status"
+  | "get_quote"
+  | "export_quote";
 
 interface ToolRequest {
   tool: ToolName;
@@ -15,6 +20,7 @@ export async function runTool(request: ToolRequest): Promise<unknown> {
     case "submit_bom":
       return submitBom(request.args as Parameters<typeof submitBom>[0]);
     case "get_bom_job_result":
+    case "get_job_status":
       return getBomJobResult(String(request.args.jobId || ""));
     case "get_quote":
       return getQuote(String(request.args.jobId || ""));
