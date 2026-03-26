@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const appDir = path.dirname(fileURLToPath(import.meta.url));
+const isBuildWatch = process.argv.includes("build") && process.argv.includes("--watch");
 
 export default defineConfig({
   root: path.resolve(appDir, "webview"),
@@ -29,6 +30,8 @@ export default defineConfig({
       },
     },
     outDir: path.resolve(appDir, "webview-dist"),
-    emptyOutDir: true,
+    // Keep the last successful outputs during `vite build --watch` so the desktop
+    // wrapper never sees a transiently empty `webview-dist` between rebuilds.
+    emptyOutDir: !isBuildWatch,
   },
 });

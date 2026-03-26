@@ -37,6 +37,15 @@ const loginStates = new Map<string, WeixinLoginState>();
 const loginProcesses = new Map<string, LoginProcessRecord>();
 let latestSessionKey = "";
 
+function logWeixinLogin(message: string, details?: Record<string, unknown>): void {
+  const timestamp = new Date().toISOString();
+  if (details && Object.keys(details).length > 0) {
+    console.log(`[weixin-login][${timestamp}] ${message}`, details);
+    return;
+  }
+  console.log(`[weixin-login][${timestamp}] ${message}`);
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -257,6 +266,7 @@ async function ensureWeixinChannelEnabled(): Promise<void> {
 
   if (before !== after) {
     await writeOpenclawConfigToWsl(config);
+    logWeixinLogin("Enabled openclaw-weixin channel in openclaw config");
   }
 }
 
@@ -294,6 +304,14 @@ function updateLoginUrlIfPresent(record: LoginProcessRecord): void {
   if (!loginUrl) {
     return;
   }
+  const current = loginStates.get(record.sessionKey);
+  if (current?.loginUrl === loginUrl || current?.qrDataUrl === loginUrl) {
+    return;
+  }
+  logWeixinLogin("Captured Weixin login URL", {
+    sessionKey: record.sessionKey,
+    loginUrl,
+  });
   updateLoginState(record.sessionKey, {
     loginUrl,
     qrDataUrl: loginUrl,
@@ -335,6 +353,9 @@ function finalizeLoginProcess(record: LoginProcessRecord, exitCode: number): voi
   }
 
   if (record.cancelRequested) {
+    logWeixinLogin("Cancelled Weixin login process", {
+      sessionKey: record.sessionKey,
+    });
     updateLoginState(record.sessionKey, {
       phase: "failed",
       message: "微信登录流程已取消。",
@@ -344,6 +365,9 @@ function finalizeLoginProcess(record: LoginProcessRecord, exitCode: number): voi
 
   const loginUrl = extractLoginUrl(record.output) || current.loginUrl || current.qrDataUrl || null;
   if (exitCode === 0) {
+    logWeixinLogin("Weixin login process exited successfully", {
+      sessionKey: record.sessionKey,
+    });
     updateLoginState(record.sessionKey, {
       loginUrl,
       qrDataUrl: loginUrl,
@@ -354,6 +378,11 @@ function finalizeLoginProcess(record: LoginProcessRecord, exitCode: number): voi
   }
 
   const lastLine = readLastMeaningfulLine(record.output);
+  logWeixinLogin("Weixin login process exited with failure", {
+    sessionKey: record.sessionKey,
+    exitCode,
+    lastLine: lastLine || null,
+  });
   updateLoginState(record.sessionKey, {
     loginUrl,
     qrDataUrl: loginUrl,
@@ -363,11 +392,18 @@ function finalizeLoginProcess(record: LoginProcessRecord, exitCode: number): voi
 }
 
 function spawnWeixinLoginProcess(sessionKey: string): void {
+  const cmd = buildWeixinLoginSpawnArgs();
   const proc = Bun.spawn({
-    cmd: buildWeixinLoginSpawnArgs(),
+    cmd,
     stdin: "ignore",
     stdout: "pipe",
     stderr: "pipe",
+  });
+
+  logWeixinLogin("Spawned Weixin login process", {
+    sessionKey,
+    pid: proc.pid,
+    command: cmd.join(" "),
   });
 
   const record: LoginProcessRecord = {
@@ -403,7 +439,22 @@ async function waitForLoginUrl(sessionKey: string, timeoutMs = WEIXIN_START_TIME
     await Bun.sleep(200);
   }
 
-  return cloneLoginState(loginStates.get(sessionKey) || null) || {
+  const current = cloneLoginState(loginStates.get(sessionKey) || null);
+  if (current) {
+    if (!current.loginUrl && !current.qrDataUrl && current.phase === "waiting") {
+      logWeixinLogin("Timed out waiting for initial Weixin login URL, keeping process alive", {
+        sessionKey,
+        timeoutMs,
+      });
+      updateLoginState(sessionKey, {
+        message: "登录流程已启动，正在等待微信链接输出...",
+      });
+      return cloneLoginState(loginStates.get(sessionKey) || current)!;
+    }
+    return current;
+  }
+
+  return {
     sessionKey,
     loginUrl: null,
     qrDataUrl: null,
@@ -446,6 +497,7 @@ export async function cancelWeixinLogin(sessionKey?: string | null): Promise<voi
 export async function startWeixinLogin(force = false): Promise<WeixinLoginState> {
   await purgeExpiredLoginStates();
   await ensureWeixinChannelEnabled();
+  logWeixinLogin("Starting Weixin login flow", { force });
 
   if (!force) {
     const existing = findReusableWaitingState();
@@ -473,9 +525,6 @@ export async function startWeixinLogin(force = false): Promise<WeixinLoginState>
   spawnWeixinLoginProcess(sessionKey);
 
   const state = await waitForLoginUrl(sessionKey);
-  if (!state.loginUrl && !state.qrDataUrl && state.phase === "waiting") {
-    throw new Error(state.message || "获取微信登录链接失败");
-  }
   if (state.phase === "failed") {
     throw new Error(state.message || "获取微信登录链接失败");
   }

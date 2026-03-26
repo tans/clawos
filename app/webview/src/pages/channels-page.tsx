@@ -63,7 +63,7 @@ function gatewayStatusText(status: QwGatewayStatus | null): string {
 
 function weixinStatusText(state: WeixinLoginState | null): string {
   if (!state) {
-    return "开启微信模块后会自动获取扫码登录链接并打开浏览器。";
+    return "默认关闭。开启微信模块后会自动获取扫码登录链接并尝试打开系统浏览器。";
   }
   if (state.phase === "connected") {
     return state.accountId ? `微信已连接，账号：${state.accountId}` : "微信已连接。";
@@ -71,7 +71,7 @@ function weixinStatusText(state: WeixinLoginState | null): string {
   if (state.phase === "failed") {
     return state.message?.trim() || "微信登录失败，请重新获取登录链接。";
   }
-  return state.message?.trim() || "登录链接已获取，等待微信扫码确认。";
+  return state.message?.trim() || "登录流程已启动，正在等待微信链接输出。";
 }
 
 export function ChannelsPage() {
@@ -86,6 +86,7 @@ export function ChannelsPage() {
   const [busyKey, setBusyKey] = useState("");
   const gatewayTimerRef = useRef<number | null>(null);
   const weixinTimerRef = useRef<number | null>(null);
+  const lastAutoOpenedWeixinUrlRef = useRef("");
 
   const weixinLoginUrl = readWeixinLoginUrl(weixinLoginState);
   const canOpenWeixinInBrowser = /^https?:\/\//i.test(weixinLoginUrl);
@@ -124,6 +125,28 @@ export function ChannelsPage() {
     }
   }
 
+  async function maybeAutoOpenWeixinLoginUrl(state: WeixinLoginState | null, source: string): Promise<boolean> {
+    const loginUrl = readWeixinLoginUrl(state);
+    if (!/^https?:\/\//i.test(loginUrl)) {
+      return false;
+    }
+    if (lastAutoOpenedWeixinUrlRef.current === loginUrl) {
+      return false;
+    }
+
+    lastAutoOpenedWeixinUrlRef.current = loginUrl;
+    console.info("[weixin-login] auto open browser", { source, loginUrl });
+    try {
+      await openExternalUrl(loginUrl);
+      setMeta("已在系统浏览器打开微信扫码页面，请继续完成登录。");
+      return true;
+    } catch (error) {
+      console.error("[weixin-login] open browser failed", { source, loginUrl, error });
+      setMeta(readUserErrorMessage(error, "已获取微信登录链接，请点击“打开浏览器扫码”继续。"));
+      return false;
+    }
+  }
+
   async function pollGatewayStatus() {
     stopGatewayPolling();
     const tick = async () => {
@@ -141,6 +164,7 @@ export function ChannelsPage() {
     stopWeixinPolling();
     const tick = async () => {
       const state = await refreshWeixinState(sessionKey);
+      await maybeAutoOpenWeixinLoginUrl(state, "poll");
       if (state?.phase === "waiting") {
         weixinTimerRef.current = window.setTimeout(() => {
           void tick();
@@ -158,20 +182,22 @@ export function ChannelsPage() {
         refreshGatewayStatus(),
         refreshWeixinState(),
       ]);
+      const isWeixinEnabled = normalizeEnabled(channels["openclaw-weixin"]);
       setFeishuEnabled(normalizeEnabled(channels.feishu));
       setWeworkEnabled(normalizeEnabled(channels.wework));
-      setWeixinEnabled(normalizeEnabled(channels["openclaw-weixin"]));
+      setWeixinEnabled(isWeixinEnabled);
       setFeishuAppId(channels.feishu?.appId?.trim() || "");
       setFeishuSecret((channels.feishu?.secret || channels.feishu?.appSecret || "").trim());
       setGatewayStatus(status);
       setWeixinLoginState(weixinState);
-      setMeta("渠道配置已加载");
+      setMeta(isWeixinEnabled ? "微信模块当前处于开启状态，如需重新扫码请点击“重新获取登录链接”。" : "渠道配置已加载");
 
       if (status?.state === "running") {
         void pollGatewayStatus();
       }
       if (weixinState?.phase === "waiting" && typeof weixinState.sessionKey === "string" && weixinState.sessionKey.trim()) {
         void pollWeixinState(weixinState.sessionKey);
+        void maybeAutoOpenWeixinLoginUrl(weixinState, "load");
       }
     } catch (error) {
       setMeta(readUserErrorMessage(error, "读取渠道配置失败"));
@@ -244,18 +270,11 @@ export function ChannelsPage() {
         void pollWeixinState(state.sessionKey);
       }
 
-      const loginUrl = readWeixinLoginUrl(state);
-      if (!/^https?:\/\//i.test(loginUrl)) {
-        setMeta("微信登录流程已启动，但暂未获取到登录链接。");
+      if (await maybeAutoOpenWeixinLoginUrl(state, force ? "refresh" : "toggle")) {
         return;
       }
 
-      try {
-        await openExternalUrl(loginUrl);
-        setMeta("已在系统浏览器打开微信扫码页面，请继续完成登录。");
-      } catch (error) {
-        setMeta(readUserErrorMessage(error, "已获取微信登录链接，请点击“打开浏览器扫码”继续。"));
-      }
+      setMeta(state.message?.trim() || "微信登录流程已启动，正在等待登录链接输出...");
     } finally {
       setBusyKey("");
     }
@@ -274,6 +293,7 @@ export function ChannelsPage() {
     }
 
     stopWeixinPolling();
+    lastAutoOpenedWeixinUrlRef.current = "";
     setBusyKey("weixin-toggle");
     try {
       await saveChannelConfig("openclaw-weixin", { enable: false });
@@ -308,6 +328,7 @@ export function ChannelsPage() {
     setBusyKey("weixin-open");
     try {
       await openExternalUrl(weixinLoginUrl);
+      lastAutoOpenedWeixinUrlRef.current = weixinLoginUrl;
       setMeta("已在系统浏览器打开微信登录页面");
     } catch (error) {
       setMeta(readUserErrorMessage(error, "打开微信登录页面失败"));
@@ -396,7 +417,7 @@ export function ChannelsPage() {
               </div>
               <div className="field-copy">
                 <h3>微信</h3>
-                <p>开启后自动调用 `openclaw-weixin` 登录流程，截取扫码链接并直接打开系统浏览器。</p>
+                <p>默认关闭。开启后自动调用 `openclaw-weixin` 登录流程，截取扫码链接并尝试直接打开系统浏览器。</p>
               </div>
               <Switch checked={weixinEnabled} onCheckedChange={saveWeixinToggle} disabled={busyKey === "weixin-toggle"} />
             </div>
@@ -428,10 +449,10 @@ export function ChannelsPage() {
                   {weixinLoginUrl ? (
                     <div className="meta-banner weixin-login-link">{weixinLoginUrl}</div>
                   ) : weixinLoginState?.phase === "waiting" ? (
-                    <div className="meta-banner">暂未获取到登录链接，可以点击“重新获取登录链接”重试。</div>
+                    <div className="meta-banner">暂未获取到登录链接，后台会继续等待输出，也可以点击“重新获取登录链接”。</div>
                   ) : null}
 
-                  <p className="weixin-login-caption">系统会尝试自动打开默认浏览器。如果没有弹出，可以点击“打开浏览器扫码”继续。</p>
+                  <p className="weixin-login-caption">如果 20 到 30 秒内还没有自动弹出浏览器，请查看日志并手动点击“打开浏览器扫码”。</p>
                 </div>
               ) : null}
             </div>
