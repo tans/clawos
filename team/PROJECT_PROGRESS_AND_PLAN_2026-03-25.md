@@ -35,7 +35,7 @@
 ## 2.2 租户语义（最终）
 - 租户实体统一为：**team**。
 - 注册流程统一为：**注册成功即自动创建一个 team 并进入 team 控制台**。
-- 移除 company/group/project 在产品层的并行表述，仅保留数据迁移语义说明。
+- 项目尚未正式发布，直接在 Team 内完成统一建模，不做历史兼容迁移层。
 
 ## 2.3 Web 呈现方式（最终）
 - **不建设独立官网**。
@@ -158,3 +158,92 @@
 - **M1（2026-04-05）**：P0 三闭环（token/config/restart）
 - **M2（2026-04-19）**：稳定性与 KPI 版本
 - **M3（2026-05-03）**：web 内 Team 页面与首页 section 上线
+
+---
+
+## 7. Mission × Team 功能集成计划（非迁移）
+
+> 结论前提：Mission 与 Team 均处于内部研发期，尚未正式对外发布；因此采用“**直接集成**”策略，而非“兼容 + 迁移”策略。
+
+### 7.1 当前能力理解（集成输入）
+
+1. **Mission 已有能力（任务编排内核）**
+   - 结构化 Mission：`intent / budget / constraints`。
+   - Proposal 与 Execution 分离：支持选案后自动创建执行。
+   - 工作流状态：`task -> plan -> execution -> result -> closed`。
+   - 事件流：轮询 + SSE。
+   - Agent 任务消费接口：`/api/agent/tasks`。
+
+2. **Team 已有能力（控制面内核）**
+   - Console 账号、主机、公司（后续收敛为 team）与权限会话。
+   - Agent 在线协议：`hello / heartbeat / commands / result / events / insights`。
+   - 控制动作分发：`wsl.exec`、gateway status/restart。
+   - 审计、KPI、token usage 等可观测基础。
+
+3. **集成目标（产品层）**
+   - Team 成为唯一入口；
+   - Mission 成为 Team 内“任务编排子系统”，不再独立成产品线；
+   - 主机控制任务与 Mission 执行任务使用同一任务视图与审计视图。
+
+### 7.2 具体工作列表（按 5 条工作流执行）
+
+#### 工作流 A：领域模型统一（Owner：后端）
+1. 把 Mission 的 `thread/proposal/execution` 领域对象正式映射到 Team 任务域：
+   - `mission_thread`（任务单）
+   - `mission_proposal`（方案）
+   - `mission_execution`（执行实例）
+2. 在 Team 中新增 `task_type` 维度：`control_task | mission_task`。
+3. 统一状态机，形成 Team 任务状态枚举（含 mission 生命周期）。
+4. 审计事件统一：任务创建、方案选择、执行开始、执行完成、人工终止。
+
+#### 工作流 B：接口与服务内聚（Owner：后端）
+1. 把 Mission API 并入 Team 应用进程（同一服务、同一认证体系）。
+2. 保留一套最终接口命名，不新增“兼容前缀”。
+3. 统一认证与鉴权：复用 Team console session + agent token。
+4. 统一事件通道：Mission 事件进入 Team 的事件流与审计流。
+
+#### 工作流 C：Agent 执行链路打通（Owner：Agent + 后端）
+1. 在 Team 命令队列中新增 `mission.execute` 命令类型。
+2. Agent 拉取任务时可同时收到 `control_task` 与 `mission_task`。
+3. Agent 结果回传统一走 Team result 通道，并带上 Mission 执行上下文。
+4. 在失败回传中新增标准错误分类（参数、依赖、超时、执行失败）。
+
+#### 工作流 D：控制台体验集成（Owner：前端）
+1. Team 控制台新增 “Missions” 一级菜单（或 Tasks 内子标签）。
+2. 主机详情页支持查看该主机关联的 Mission 执行记录。
+3. 新增 Mission 详情页：展示 intent、约束、proposal 对比、execution 日志。
+4. 新增操作闭环：创建 Mission → 选 Proposal → 下发执行 → 查看结果与审计。
+
+#### 工作流 E：发布与验收（Owner：产品 + QA + 运营）
+1. 定义 UAT 场景（至少 8 条）：创建、选案、执行、失败重试、审计追踪等。
+2. 日志与指标验收：任务成功率、平均执行时长、失败分布、人工介入率。
+3. 内部试运行 1 周，完成问题清单与优先级收敛。
+4. 输出对外版本说明：Team 新增 Mission 编排能力。
+
+---
+
+## 8. Mission × Team 集成检查清单（Checklist）
+
+### 8.1 设计冻结（D-7）
+- [ ] Mission 领域模型与 Team 任务模型映射图已评审通过。
+- [ ] 最终状态机与错误码集合已冻结。
+- [ ] Console 交互原型已确认（Missions 列表/详情/执行日志）。
+- [ ] 数据表变更与索引方案已通过评审。
+
+### 8.2 开发完成（D-3）
+- [ ] Team 服务内可创建 Mission、选择 Proposal、创建 Execution。
+- [ ] Agent 可以消费 `mission.execute` 并正确回传结果。
+- [ ] Mission 事件可进入 Team 审计与事件查询页面。
+- [ ] 所有关键 API 都通过契约测试（创建、选案、执行、查询）。
+
+### 8.3 联调与验收（D-1）
+- [ ] 端到端链路跑通：Console 创建任务到 Agent 执行完成。
+- [ ] SSE / Polling 两种事件消费都能看到 Mission 执行状态变化。
+- [ ] 失败场景可见且可追踪（含错误码与日志上下文）。
+- [ ] KPI 看板可区分 `control_task` 与 `mission_task`。
+
+### 8.4 上线就绪（D-Day）
+- [ ] UAT 用例通过率 100%（或明确豁免项）。
+- [ ] 发布说明、回退说明、值班人员表已确认。
+- [ ] 关键告警已配置（任务失败率、队列积压、Agent 离线）。
+- [ ] 产品文案统一为 Team，不再出现 Mission 独立产品入口。
