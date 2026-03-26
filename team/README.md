@@ -1,6 +1,8 @@
 # clawos-company
 
-`clawos` 云端控制面工程，技术栈：`bun + hono + sqlite`。
+`clawos` Team 云端控制面工程，已调整为**前后端分离**架构：
+- 后端：`bun + hono + sqlite`（`team/src`）
+- 前端：`React + Vite + shadcn 风格组件`（`team/frontend`）
 
 ## 文档
 - 配置与启动文档：[/Users/ke/code/clawos/company/CONFIG_AND_START.md](/Users/ke/code/clawos/company/CONFIG_AND_START.md)
@@ -26,20 +28,30 @@
   - 控制台聚合页：`GET /console/insights`
   - 单机详情页展示最近监听事件（心跳状态变化 + 主动上报事件）
 
-## 本地运行
+## 本地运行（前后端分离）
 
 ```bash
-cd company
+cd team
+bun install
+# 终端1：启动后端 API
+bun run dev:backend
+
+# 终端2：启动前端
+cd frontend
 bun install
 bun run dev
 ```
 
-默认端口：`8787`
+默认端口：
+- 后端 API：`8787`
+- 前端开发服务：`5178`
 
 访问：
-- 登录页: [http://127.0.0.1:8787/console/login](http://127.0.0.1:8787/console/login)
-- 注册页: [http://127.0.0.1:8787/console/register](http://127.0.0.1:8787/console/register)
+- 前端应用: [http://127.0.0.1:5178](http://127.0.0.1:5178)
+- Team 模块 API: [http://127.0.0.1:8787/api/team/modules](http://127.0.0.1:8787/api/team/modules)
 - 健康检查: [http://127.0.0.1:8787/health](http://127.0.0.1:8787/health)
+
+生产部署时，后端会优先从 `team/frontend/dist` 提供 `/app` 页面静态资源。
 
 ## 数据库
 - 默认路径：`company/data/company.db`
