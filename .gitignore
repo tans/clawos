@@ -24,3 +24,5 @@ mission/data/
 
 # deploy logs
 web/logs/
+.codex-tmp-build
+
