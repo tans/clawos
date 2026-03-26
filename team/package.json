@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
+    "dev:backend": "bun --watch src/index.ts",
+    "dev:frontend": "cd frontend && bun run dev",
+    "build:frontend": "cd frontend && bun run build",
     "start": "bun run src/index.ts"
   },
   "dependencies": {
