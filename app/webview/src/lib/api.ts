@@ -141,6 +141,40 @@ export type WalletBalances = {
   >;
 };
 
+export type RemoteCatalogItem = {
+  actionIntent: string;
+  title: string;
+  payloadSchema?: Record<string, unknown>;
+};
+
+export type RemoteCatalog = {
+  executors: Array<"shell" | "powershell" | "wsl">;
+  actions: RemoteCatalogItem[];
+};
+
+export type RemoteDispatchResponse = {
+  mode: "dry-run" | "execute";
+  plan: {
+    version: string;
+    intent: string;
+    constraints?: {
+      allowedExecutors?: string[];
+    };
+    steps: Array<{
+      id: string;
+      title: string;
+      executor: "shell" | "powershell" | "wsl";
+      action: string;
+      args: Record<string, unknown>;
+    }>;
+  };
+  execution: {
+    taskIds: string[];
+    reused?: boolean;
+    uiCommands?: string[];
+  };
+};
+
 async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const controller = new AbortController();
   const timeoutMs = Number.isFinite(options.timeoutMs) && (options.timeoutMs as number) > 0 ? Math.floor(options.timeoutMs as number) : 15_000;
@@ -331,6 +365,32 @@ export async function startEnvironmentInstall(target: "windows" | "wsl", tool: "
 export async function fetchMcpStatus(): Promise<McpTargetStatus[]> {
   const data = await request<{ ok: true; targets: McpTargetStatus[] }>("/api/mcp/status");
   return Array.isArray(data.targets) ? data.targets : [];
+}
+
+export async function fetchRemoteCatalog(): Promise<RemoteCatalog> {
+  const data = await request<{ ok: true; executors: Array<"shell" | "powershell" | "wsl">; actions: RemoteCatalogItem[] }>(
+    "/api/remote/catalog"
+  );
+  return {
+    executors: Array.isArray(data.executors) ? data.executors : [],
+    actions: Array.isArray(data.actions) ? data.actions : [],
+  };
+}
+
+export async function dispatchRemoteAction(input: {
+  actionIntent: string;
+  payload?: Record<string, unknown>;
+  dryRun?: boolean;
+}): Promise<RemoteDispatchResponse> {
+  const data = await request<{ ok: true } & RemoteDispatchResponse>("/api/remote/dispatch", {
+    method: "POST",
+    body: {
+      actionIntent: input.actionIntent,
+      payload: input.payload || {},
+      dryRun: input.dryRun === true,
+    },
+  });
+  return data;
 }
 
 export async function startMcpBuild(name: string) {
