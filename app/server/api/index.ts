@@ -231,18 +231,36 @@ function parseRemoteIntent(value: unknown): RemoteIntent {
 
 function buildRemoteActions(intent: RemoteIntent, payload: Record<string, unknown>): string[] {
   if (intent === "gateway.restart") {
-    return ['POST /api/gateway/action {"action":"restart"}'];
+    return ["openclaw gateway restart"];
   }
   if (intent === "gateway.update") {
     return buildOpenclawSourceUpdateSteps().map((step) => step.command);
   }
   if (intent === "gateway.restart_qw") {
-    return ['POST /api/gateway/action {"action":"restart-qw-gateway"}'];
+    return [
+      `powershell -NoProfile -Command "$target='<normalized_managed_cli_exe_path>'; $procs=@(Get-CimInstance Win32_Process -Filter \\"Name='cli.exe'\\" -ErrorAction SilentlyContinue | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.Replace('/', '\\\\').Trim().ToLowerInvariant() -eq $target }); foreach($p in $procs){ taskkill /F /T /PID $p.ProcessId | Out-Null }"`,
+      `powershell -NoProfile -Command "Start-Process -FilePath '<qwcli_exe_path>' -WorkingDirectory '<qwcli_working_dir>' -WindowStyle Hidden"`,
+      `powershell -NoProfile -Command "$target='<normalized_managed_cli_exe_path>'; $p=@(Get-CimInstance Win32_Process -Filter \\"Name='cli.exe'\\" -ErrorAction SilentlyContinue | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.Replace('/', '\\\\').Trim().ToLowerInvariant() -eq $target }); if ($p.Count -gt 0) { exit 0 } else { exit 1 }"`,
+    ];
   }
-  if (intent === "browser.detect" || intent === "browser.repair" || intent === "browser.open_cdp") {
-    const action = intent === "browser.open_cdp" ? "open-cdp" : intent === "browser.repair" ? "repair" : "detect";
-    const args = action === "detect" ? { action } : { action, confirmed: true };
-    return [`POST /api/browser/action ${JSON.stringify(args)}`];
+  if (intent === "browser.detect") {
+    return [`powershell -NoProfile -Command "curl.exe -sS http://127.0.0.1:<cdp_port>/json/version"`];
+  }
+  if (intent === "browser.repair") {
+    return [
+      `powershell -NoProfile -Command "netsh advfirewall firewall add rule name=\\"openclaw-cdp-<cdp_port>\\" dir=in action=allow protocol=TCP localport=<cdp_port>"`,
+      `powershell -NoProfile -Command "netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=<cdp_port> connectaddress=127.0.0.1 connectport=<cdp_port>"`,
+      `powershell -NoProfile -Command "curl.exe -sS http://127.0.0.1:<cdp_port>/json/version"`,
+      `openclaw config set browser.cdpUrl=http://<wsl_host_or_windows_ip>:<cdp_port>`,
+    ];
+  }
+  if (intent === "browser.open_cdp") {
+    return [
+      `powershell -NoProfile -Command "taskkill /F /IM chrome.exe; Start-Process -FilePath '<chrome_exe_path>' -ArgumentList '--remote-debugging-port=<cdp_port> --user-data-dir=<chrome_profile_dir>'"`,
+      `powershell -NoProfile -Command "netsh advfirewall firewall add rule name=\\"openclaw-cdp-<cdp_port>\\" dir=in action=allow protocol=TCP localport=<cdp_port>"`,
+      `powershell -NoProfile -Command "netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=<cdp_port> connectaddress=127.0.0.1 connectport=<cdp_port>"`,
+      `openclaw config set browser.cdpUrl=http://<wsl_host_or_windows_ip>:<cdp_port>`,
+    ];
   }
   if (intent === "environment.install") {
     const target = sanitizeIdentifier(payload.target, "target");
@@ -253,23 +271,31 @@ function buildRemoteActions(intent: RemoteIntent, payload: Record<string, unknow
     if (!["python", "uv", "bun"].includes(tool)) {
       throw new HttpError(400, `unsupported tool: ${tool}`);
     }
-    return [`POST /api/environment/install ${JSON.stringify({ target, tool })}`];
+    const installCommand =
+      target === "windows"
+        ? `powershell -NoProfile -Command "<install-${tool}-for-windows>"`
+        : `wsl -d <distro> bash -lc "<install-${tool}-for-wsl>"`;
+    const verifyCommand = target === "windows" ? `${tool} --version` : `wsl -d <distro> bash -lc "${tool} --version"`;
+    return [installCommand, verifyCommand];
   }
   if (intent === "mcp.build") {
     const name = sanitizeIdentifier(payload.name, "name");
     if (!["windows-mcp", "yingdao-mcp", "wechat-mcp", "crm-mcp"].includes(name)) {
       throw new HttpError(400, `unsupported mcp name: ${name}`);
     }
-    return [`POST /api/mcp/build ${JSON.stringify({ name })}`];
+    if (name === "windows-mcp") {
+      return ["echo windows-mcp uses local service mode (skip build.ps1)"];
+    }
+    return [`powershell -NoProfile -ExecutionPolicy Bypass -File mcp/${name}/build.ps1`];
   }
   if (intent === "app.upgrade") {
     const autoRestart = payload.autoRestart !== false;
-    return [`POST /api/app/update/run ${JSON.stringify({ trigger: "manual", autoRestart })}`];
+    return [`openclaw app update --trigger manual --auto-restart=${autoRestart ? "true" : "false"}`];
   }
   if (intent === "app.restart") {
-    return ['POST /api/gateway/action {"action":"restart"}'];
+    return ["openclaw gateway restart"];
   }
-  return ["UI open-log-center"];
+  return ["openclaw app log-center open"];
 }
 
 async function handleRemoteDispatch(req: Request): Promise<Response> {
