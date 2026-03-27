@@ -17,31 +17,8 @@ type RemoteIntent =
   | "app.restart"
   | "app.log_center.open";
 
-type AppInstruction = {
-  id: string;
-  title: string;
-  executor: RemoteExecutor;
-  runOn: "app";
-  type: "api-call" | "ui-command";
-  request?: {
-    method: "GET" | "POST" | "PUT" | "PATCH";
-    path: string;
-    body?: Record<string, unknown>;
-  };
-  command?: "open-log-center";
-};
-
-type RemotePlan = {
-  version: "1.0";
-  actionIntent: RemoteIntent;
-  purpose: "return-instructions-for-app";
-  constraints: {
-    allowedExecutors: RemoteExecutor[];
-  };
-  instructions: AppInstruction[];
-};
-
 const ALLOWED_EXECUTORS: RemoteExecutor[] = ["shell", "powershell", "wsl"];
+const OPENCLAW_SOURCE_DIR = "/data/openclaw";
 
 function parseIntent(value: unknown): RemoteIntent {
   const text = typeof value === "string" ? value.trim() : "";
@@ -78,223 +55,66 @@ function readText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
-function buildPlan(actionIntent: RemoteIntent, payload: Record<string, unknown>, envSnapshot: Record<string, unknown>): RemotePlan {
-  const constraints = { allowedExecutors: ALLOWED_EXECUTORS };
+function buildGatewayUpdateActions(): string[] {
+  return [
+    `cd ${OPENCLAW_SOURCE_DIR}`,
+    `cd ${OPENCLAW_SOURCE_DIR} && git fetch origin main --prune && git reset --hard origin/main && git clean -fd`,
+    `cd ${OPENCLAW_SOURCE_DIR} && npm i -g nrm`,
+    `cd ${OPENCLAW_SOURCE_DIR} && nrm use tencent`,
+    `cd ${OPENCLAW_SOURCE_DIR} && pnpm install`,
+    `cd ${OPENCLAW_SOURCE_DIR} && pnpm run build`,
+    `cd ${OPENCLAW_SOURCE_DIR} && pnpm run ui:build`,
+    `cd ${OPENCLAW_SOURCE_DIR} && pnpm link --global`,
+    `cd ${OPENCLAW_SOURCE_DIR} && openclaw gateway restart`,
+  ];
+}
 
-  if (actionIntent === "gateway.restart") {
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "gateway-restart",
-          title: "重启 openclaw",
-          executor: "powershell",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/gateway/action",
-            body: { action: "restart" },
-          },
-        },
-      ],
-    };
-  }
-
-  if (actionIntent === "gateway.restart_qw") {
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "gateway-restart-qw",
-          title: "重启企微网关",
-          executor: "powershell",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/gateway/action",
-            body: { action: "restart-qw-gateway" },
-          },
-        },
-      ],
-    };
-  }
-
+function buildActions(
+  actionIntent: RemoteIntent,
+  payload: Record<string, unknown>,
+  envSnapshot: Record<string, unknown>
+): string[] {
   if (actionIntent === "gateway.update") {
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "gateway-update",
-          title: "升级 openclaw",
-          executor: "wsl",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/gateway/update",
-            body: {},
-          },
-        },
-      ],
-    };
+    return buildGatewayUpdateActions();
   }
-
-  if (actionIntent === "browser.detect" || actionIntent === "browser.repair" || actionIntent === "browser.open_cdp") {
-    const action =
-      actionIntent === "browser.open_cdp" ? "open-cdp" : actionIntent === "browser.repair" ? "repair" : "detect";
-
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "browser-action",
-          title: `浏览器动作: ${action}`,
-          executor: "powershell",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/browser/action",
-            body: action === "detect" ? { action } : { action, confirmed: true },
-          },
-        },
-      ],
-    };
+  if (actionIntent === "gateway.restart") {
+    return ['POST /api/gateway/action {"action":"restart"}'];
   }
-
+  if (actionIntent === "gateway.restart_qw") {
+    return ['POST /api/gateway/action {"action":"restart-qw-gateway"}'];
+  }
+  if (actionIntent === "browser.detect") {
+    return ['POST /api/browser/action {"action":"detect"}'];
+  }
+  if (actionIntent === "browser.repair") {
+    return ['POST /api/browser/action {"action":"repair","confirmed":true}'];
+  }
+  if (actionIntent === "browser.open_cdp") {
+    return ['POST /api/browser/action {"action":"open-cdp","confirmed":true}'];
+  }
   if (actionIntent === "environment.install") {
     const target = readText(payload.target, "wsl");
     const tool = readText(payload.tool, "python");
-
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "environment-install",
-          title: `环境安装 ${target}/${tool}`,
-          executor: target === "windows" ? "powershell" : "wsl",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/environment/install",
-            body: { target, tool },
-          },
-        },
-      ],
-    };
+    return [`POST /api/environment/install ${JSON.stringify({ target, tool })}`];
   }
-
   if (actionIntent === "mcp.build") {
     const name = readText(payload.name, "windows-mcp");
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "mcp-build",
-          title: `构建 MCP ${name}`,
-          executor: "wsl",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/mcp/build",
-            body: { name },
-          },
-        },
-      ],
-    };
+    return [`POST /api/mcp/build ${JSON.stringify({ name })}`];
   }
-
   if (actionIntent === "app.upgrade") {
     const autoRestart = envSnapshot.autoRestart !== false;
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "app-upgrade",
-          title: "升级桌面客户端",
-          executor: "shell",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/app/update/run",
-            body: { trigger: "manual", autoRestart },
-          },
-        },
-      ],
-    };
+    return [`POST /api/app/update/run ${JSON.stringify({ trigger: "manual", autoRestart })}`];
   }
-
   if (actionIntent === "app.restart") {
-    return {
-      version: "1.0",
-      actionIntent,
-      purpose: "return-instructions-for-app",
-      constraints,
-      instructions: [
-        {
-          id: "app-restart",
-          title: "重启 openclaw",
-          executor: "shell",
-          runOn: "app",
-          type: "api-call",
-          request: {
-            method: "POST",
-            path: "/api/gateway/action",
-            body: { action: "restart" },
-          },
-        },
-      ],
-    };
+    return ['POST /api/gateway/action {"action":"restart"}'];
   }
-
-  return {
-    version: "1.0",
-    actionIntent,
-    purpose: "return-instructions-for-app",
-    constraints,
-    instructions: [
-      {
-        id: "open-log-center",
-        title: "打开日志中心",
-        executor: "shell",
-        runOn: "app",
-        type: "ui-command",
-        command: "open-log-center",
-      },
-    ],
-  };
+  return ["UI open-log-center"];
 }
 
 function buildCatalog() {
   return {
     executors: ALLOWED_EXECUTORS,
-    purpose: "return-instructions-for-app",
+    purpose: "return-actions-for-app",
     actions: [
       { actionIntent: "gateway.restart", title: "重启 openclaw", payloadSchema: {} },
       { actionIntent: "gateway.restart_qw", title: "重启企微网关", payloadSchema: {} },
@@ -321,13 +141,15 @@ remoteRoutes.post("/api/remote/dispatch", async (c) => {
     const actionIntent = parseIntent(body?.actionIntent);
     const payload = parsePayload(body?.payload);
     const envSnapshot = readEnvSnapshot(body?.envSnapshot);
-    const plan = buildPlan(actionIntent, payload, envSnapshot);
+    const actions = buildActions(actionIntent, payload, envSnapshot);
 
     return c.json({
       ok: true,
-      mode: "plan-only",
       executeOn: "app",
-      plan,
+      purpose: "return-actions-for-app",
+      actionIntent,
+      allowedExecutors: ALLOWED_EXECUTORS,
+      ACTIONS: actions,
     });
   } catch (error) {
     return c.json({ ok: false, error: error instanceof Error ? error.message : "dispatch failed" }, 400);
