@@ -123,6 +123,34 @@ describe("api routes", () => {
     expect(payload.error).toBe("任务不存在。");
   });
 
+  it("returns remote catalog with fixed executors", async () => {
+    const req = new Request("http://clawos.desktop/api/remote/catalog", { method: "GET" });
+    const response = await handleApiRequest(req, "/api/remote/catalog");
+    expect(response).not.toBeNull();
+    expect(response?.status).toBe(200);
+
+    const payload = await parseJson(response as Response);
+    expect(payload.ok).toBe(true);
+    expect(payload.executors).toEqual(["shell", "powershell", "wsl"]);
+    expect(Array.isArray(payload.actions)).toBe(true);
+  });
+
+  it("supports remote dispatch dry-run", async () => {
+    const req = new Request("http://clawos.desktop/api/remote/dispatch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ actionIntent: "gateway.restart", dryRun: true }),
+    });
+    const response = await handleApiRequest(req, "/api/remote/dispatch");
+    expect(response).not.toBeNull();
+    expect(response?.status).toBe(200);
+
+    const payload = await parseJson(response as Response);
+    expect(payload.ok).toBe(true);
+    expect(payload.mode).toBe("dry-run");
+    expect((payload.plan as Record<string, unknown>).intent).toBe("gateway.restart");
+  });
+
   it("returns null for unknown path", async () => {
     const req = new Request("http://clawos.desktop/api/unknown", { method: "GET" });
     const response = await handleApiRequest(req, "/api/unknown");

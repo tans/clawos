@@ -31,6 +31,8 @@ const PAGES = new Set([
   "/config/desktop-control/",
   "/config/wallet",
   "/config/wallet/",
+  "/config/remote",
+  "/config/remote/",
   "/config/settings",
   "/config/settings/",
   "/config/backups",

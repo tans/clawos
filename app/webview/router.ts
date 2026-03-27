@@ -8,6 +8,7 @@ export const ALLOWED_PAGE_PATHS = new Set([
   "/config/browser",
   "/config/desktop-control",
   "/config/wallet",
+  "/config/remote",
   "/config/settings",
   "/config/backups",
   "/react",

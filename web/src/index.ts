@@ -8,6 +8,7 @@ import { releaseRoutes } from "./routes/release";
 import { downloadRoutes } from "./routes/download";
 import { uploadRoutes } from "./routes/upload";
 import { adminRoutes } from "./routes/admin";
+import { remoteRoutes } from "./routes/remote";
 
 export const app = new Hono();
 const runtimeRoot = resolve(process.env.CLAWOS_WEB_ROOT ?? process.cwd());
@@ -74,6 +75,7 @@ app.route("/", releaseRoutes);
 app.route("/", downloadRoutes);
 app.route("/", uploadRoutes);
 app.route("/", adminRoutes);
+app.route("/", remoteRoutes);
 
 app.notFound((c) => c.json({ ok: false, error: "Not Found" }, 404));
 
