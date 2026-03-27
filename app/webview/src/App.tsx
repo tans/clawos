@@ -11,6 +11,7 @@ import { TaskLogCenterDock, TaskLogCenterProvider } from "./components/task-log-
 import { SettingsPage } from "./pages/settings-page";
 import { SkillsPage } from "./pages/skills-page";
 import { WalletPage } from "./pages/wallet-page";
+import { RemotePage } from "./pages/remote-page";
 
 const PAGE_CONFIG = {
   dashboard: { title: "控制台", description: "" },
@@ -47,7 +48,9 @@ function readPageFromLocation(): PageKey {
     pathname === "/config/desktop-control" ||
     pathname === "/config/desktop-control/" ||
     pathname === "/config/wallet" ||
-    pathname === "/config/wallet/"
+    pathname === "/config/wallet/" ||
+    pathname === "/config/remote" ||
+    pathname === "/config/remote/"
   ) {
     return "skills";
   }
@@ -57,7 +60,7 @@ function readPageFromLocation(): PageKey {
     if (hashValue === "settings" || hashValue === "environment" || hashValue === "backups") return "settings";
     if (hashValue === "channels") return "channels";
     if (hashValue === "agents") return "agents";
-    if (hashValue === "skills" || hashValue === "browser" || hashValue === "desktop-control" || hashValue === "wallet") {
+    if (hashValue === "skills" || hashValue === "browser" || hashValue === "desktop-control" || hashValue === "wallet" || hashValue === "remote") {
       return "skills";
     }
     return "dashboard";
@@ -96,6 +99,7 @@ function SkillsConfigPage() {
     <>
       <BrowserPage />
       <SkillsPage />
+      <RemotePage />
       <DesktopControlPage />
       <WalletPage />
     </>
