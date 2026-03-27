@@ -36,29 +36,32 @@ describe("remote routes", () => {
     const response = await app.request("http://localhost/api/remote/dispatch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ actionIntent: "mcp.list", payload: { channel: "stable" }, dryRun: true }),
+      body: JSON.stringify({ actionIntent: "browser.detect", payload: {}, envSnapshot: { autoRestart: true } }),
     });
     const payload = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.mode).toBe("dry-run");
-    expect((payload.plan as Record<string, unknown>).actionIntent).toBe("mcp.list");
+    expect(payload.mode).toBe("plan-only");
+    expect(payload.executeOn).toBe("app");
+    expect((payload.plan as Record<string, unknown>).actionIntent).toBe("browser.detect");
   });
 
-  it("executes products.list plan", async () => {
+  it("returns app-side instructions instead of cloud execution", async () => {
     const response = await app.request("http://localhost/api/remote/dispatch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ actionIntent: "products.list", payload: {}, dryRun: false }),
+      body: JSON.stringify({ actionIntent: "app.log_center.open", payload: {} }),
     });
     const payload = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.mode).toBe("execute");
-    const results = payload.results as Array<Record<string, unknown>>;
-    expect(Array.isArray(results)).toBe(true);
-    expect(results[0]?.ok).toBe(true);
+    expect(payload.mode).toBe("plan-only");
+    const plan = payload.plan as Record<string, unknown>;
+    const instructions = (plan.instructions ?? []) as Array<Record<string, unknown>>;
+    expect(Array.isArray(instructions)).toBe(true);
+    expect(instructions[0]?.runOn).toBe("app");
+    expect(instructions[0]?.type).toBe("ui-command");
   });
 });

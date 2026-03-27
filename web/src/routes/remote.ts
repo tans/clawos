@@ -1,41 +1,44 @@
 import { Hono } from "hono";
-import {
-  listMcpReleaseVersions,
-  listMcpReleases,
-  listPublishedMcpShelf,
-  listPublishedProducts,
-  normalizeReleaseChannel,
-  readLatestRelease,
-} from "../lib/storage";
-import { executeMcpPanelAction } from "../lib/mcp-panel";
 
 export const remoteRoutes = new Hono();
 
 type RemoteExecutor = "shell" | "powershell" | "wsl";
 
 type RemoteIntent =
-  | "release.latest"
-  | "mcp.list"
-  | "mcp.versions"
-  | "mcp.shelf"
-  | "products.list"
-  | "mcp.panel.action";
+  | "gateway.restart"
+  | "gateway.restart_qw"
+  | "gateway.update"
+  | "browser.detect"
+  | "browser.repair"
+  | "browser.open_cdp"
+  | "environment.install"
+  | "mcp.build"
+  | "app.upgrade"
+  | "app.restart"
+  | "app.log_center.open";
 
-type RemotePlanStep = {
+type AppInstruction = {
   id: string;
   title: string;
   executor: RemoteExecutor;
-  op: "release.latest" | "mcp.list" | "mcp.versions" | "mcp.shelf" | "products.list" | "mcp.panel.action";
-  args: Record<string, unknown>;
+  runOn: "app";
+  type: "api-call" | "ui-command";
+  request?: {
+    method: "GET" | "POST" | "PUT" | "PATCH";
+    path: string;
+    body?: Record<string, unknown>;
+  };
+  command?: "open-log-center";
 };
 
 type RemotePlan = {
   version: "1.0";
   actionIntent: RemoteIntent;
+  purpose: "return-instructions-for-app";
   constraints: {
     allowedExecutors: RemoteExecutor[];
   };
-  steps: RemotePlanStep[];
+  instructions: AppInstruction[];
 };
 
 const ALLOWED_EXECUTORS: RemoteExecutor[] = ["shell", "powershell", "wsl"];
@@ -43,12 +46,17 @@ const ALLOWED_EXECUTORS: RemoteExecutor[] = ["shell", "powershell", "wsl"];
 function parseIntent(value: unknown): RemoteIntent {
   const text = typeof value === "string" ? value.trim() : "";
   const allowed: RemoteIntent[] = [
-    "release.latest",
-    "mcp.list",
-    "mcp.versions",
-    "mcp.shelf",
-    "products.list",
-    "mcp.panel.action",
+    "gateway.restart",
+    "gateway.restart_qw",
+    "gateway.update",
+    "browser.detect",
+    "browser.repair",
+    "browser.open_cdp",
+    "environment.install",
+    "mcp.build",
+    "app.upgrade",
+    "app.restart",
+    "app.log_center.open",
   ];
   if (!allowed.includes(text as RemoteIntent)) {
     throw new Error(`unsupported actionIntent: ${text || "<empty>"}`);
@@ -61,160 +69,244 @@ function parsePayload(input: unknown): Record<string, unknown> {
   return input as Record<string, unknown>;
 }
 
-function buildPlan(actionIntent: RemoteIntent, payload: Record<string, unknown>): RemotePlan {
+function readEnvSnapshot(input: unknown): Record<string, unknown> {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return {};
+  return input as Record<string, unknown>;
+}
+
+function readText(value: unknown, fallback = ""): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function buildPlan(actionIntent: RemoteIntent, payload: Record<string, unknown>, envSnapshot: Record<string, unknown>): RemotePlan {
   const constraints = { allowedExecutors: ALLOWED_EXECUTORS };
 
-  if (actionIntent === "release.latest") {
+  if (actionIntent === "gateway.restart") {
     return {
       version: "1.0",
       actionIntent,
+      purpose: "return-instructions-for-app",
       constraints,
-      steps: [{ id: "release-latest", title: "读取最新发布", executor: "wsl", op: "release.latest", args: { channel: payload.channel } }],
-    };
-  }
-
-  if (actionIntent === "mcp.list") {
-    return {
-      version: "1.0",
-      actionIntent,
-      constraints,
-      steps: [{ id: "mcp-list", title: "读取 MCP 列表", executor: "wsl", op: "mcp.list", args: { channel: payload.channel } }],
-    };
-  }
-
-  if (actionIntent === "mcp.versions") {
-    return {
-      version: "1.0",
-      actionIntent,
-      constraints,
-      steps: [
+      instructions: [
         {
-          id: "mcp-versions",
-          title: "读取 MCP 版本历史",
-          executor: "wsl",
-          op: "mcp.versions",
-          args: { mcpId: payload.mcpId, channel: payload.channel },
+          id: "gateway-restart",
+          title: "重启 openclaw",
+          executor: "powershell",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/gateway/action",
+            body: { action: "restart" },
+          },
         },
       ],
     };
   }
 
-  if (actionIntent === "mcp.shelf") {
+  if (actionIntent === "gateway.restart_qw") {
     return {
       version: "1.0",
       actionIntent,
+      purpose: "return-instructions-for-app",
       constraints,
-      steps: [{ id: "mcp-shelf", title: "读取 MCP 上架列表", executor: "wsl", op: "mcp.shelf", args: { channel: payload.channel } }],
+      instructions: [
+        {
+          id: "gateway-restart-qw",
+          title: "重启企微网关",
+          executor: "powershell",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/gateway/action",
+            body: { action: "restart-qw-gateway" },
+          },
+        },
+      ],
     };
   }
 
-  if (actionIntent === "products.list") {
+  if (actionIntent === "gateway.update") {
     return {
       version: "1.0",
       actionIntent,
+      purpose: "return-instructions-for-app",
       constraints,
-      steps: [{ id: "products-list", title: "读取商品列表", executor: "wsl", op: "products.list", args: {} }],
+      instructions: [
+        {
+          id: "gateway-update",
+          title: "升级 openclaw",
+          executor: "wsl",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/gateway/update",
+            body: {},
+          },
+        },
+      ],
+    };
+  }
+
+  if (actionIntent === "browser.detect" || actionIntent === "browser.repair" || actionIntent === "browser.open_cdp") {
+    const action =
+      actionIntent === "browser.open_cdp" ? "open-cdp" : actionIntent === "browser.repair" ? "repair" : "detect";
+
+    return {
+      version: "1.0",
+      actionIntent,
+      purpose: "return-instructions-for-app",
+      constraints,
+      instructions: [
+        {
+          id: "browser-action",
+          title: `浏览器动作: ${action}`,
+          executor: "powershell",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/browser/action",
+            body: action === "detect" ? { action } : { action, confirmed: true },
+          },
+        },
+      ],
+    };
+  }
+
+  if (actionIntent === "environment.install") {
+    const target = readText(payload.target, "wsl");
+    const tool = readText(payload.tool, "python");
+
+    return {
+      version: "1.0",
+      actionIntent,
+      purpose: "return-instructions-for-app",
+      constraints,
+      instructions: [
+        {
+          id: "environment-install",
+          title: `环境安装 ${target}/${tool}`,
+          executor: target === "windows" ? "powershell" : "wsl",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/environment/install",
+            body: { target, tool },
+          },
+        },
+      ],
+    };
+  }
+
+  if (actionIntent === "mcp.build") {
+    const name = readText(payload.name, "windows-mcp");
+    return {
+      version: "1.0",
+      actionIntent,
+      purpose: "return-instructions-for-app",
+      constraints,
+      instructions: [
+        {
+          id: "mcp-build",
+          title: `构建 MCP ${name}`,
+          executor: "wsl",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/mcp/build",
+            body: { name },
+          },
+        },
+      ],
+    };
+  }
+
+  if (actionIntent === "app.upgrade") {
+    const autoRestart = envSnapshot.autoRestart !== false;
+    return {
+      version: "1.0",
+      actionIntent,
+      purpose: "return-instructions-for-app",
+      constraints,
+      instructions: [
+        {
+          id: "app-upgrade",
+          title: "升级桌面客户端",
+          executor: "shell",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/app/update/run",
+            body: { trigger: "manual", autoRestart },
+          },
+        },
+      ],
+    };
+  }
+
+  if (actionIntent === "app.restart") {
+    return {
+      version: "1.0",
+      actionIntent,
+      purpose: "return-instructions-for-app",
+      constraints,
+      instructions: [
+        {
+          id: "app-restart",
+          title: "重启 openclaw",
+          executor: "shell",
+          runOn: "app",
+          type: "api-call",
+          request: {
+            method: "POST",
+            path: "/api/gateway/action",
+            body: { action: "restart" },
+          },
+        },
+      ],
     };
   }
 
   return {
     version: "1.0",
     actionIntent,
+    purpose: "return-instructions-for-app",
     constraints,
-    steps: [
+    instructions: [
       {
-        id: "mcp-panel-action",
-        title: "执行 MCP Panel 动作",
-        executor: "powershell",
-        op: "mcp.panel.action",
-        args: {
-          mcpId: payload.mcpId,
-          actionId: payload.actionId,
-          payload: payload.payload,
-        },
+        id: "open-log-center",
+        title: "打开日志中心",
+        executor: "shell",
+        runOn: "app",
+        type: "ui-command",
+        command: "open-log-center",
       },
     ],
   };
 }
 
-function readChannel(raw: unknown): "stable" | "beta" | "alpha" {
-  return normalizeReleaseChannel(typeof raw === "string" ? raw : undefined) || "stable";
-}
-
-function readNonEmpty(raw: unknown, field: string): string {
-  const text = typeof raw === "string" ? raw.trim() : "";
-  if (!text) {
-    throw new Error(`${field} is required`);
-  }
-  return text;
-}
-
-async function executePlan(plan: RemotePlan): Promise<Array<{ stepId: string; ok: boolean; data?: unknown; error?: string }>> {
-  const results: Array<{ stepId: string; ok: boolean; data?: unknown; error?: string }> = [];
-
-  for (const step of plan.steps) {
-    try {
-      if (step.op === "release.latest") {
-        const latest = await readLatestRelease(readChannel(step.args.channel));
-        results.push({ stepId: step.id, ok: true, data: latest || null });
-        continue;
-      }
-
-      if (step.op === "mcp.list") {
-        const items = await listMcpReleases(readChannel(step.args.channel));
-        results.push({ stepId: step.id, ok: true, data: items });
-        continue;
-      }
-
-      if (step.op === "mcp.versions") {
-        const mcpId = readNonEmpty(step.args.mcpId, "mcpId");
-        const versions = await listMcpReleaseVersions(mcpId, readChannel(step.args.channel));
-        results.push({ stepId: step.id, ok: true, data: versions });
-        continue;
-      }
-
-      if (step.op === "mcp.shelf") {
-        const items = await listPublishedMcpShelf(readChannel(step.args.channel));
-        results.push({ stepId: step.id, ok: true, data: items });
-        continue;
-      }
-
-      if (step.op === "products.list") {
-        const items = await listPublishedProducts();
-        results.push({ stepId: step.id, ok: true, data: items });
-        continue;
-      }
-
-      const mcpId = readNonEmpty(step.args.mcpId, "mcpId");
-      const actionId = readNonEmpty(step.args.actionId, "actionId");
-      const ret = await executeMcpPanelAction({
-        mcpId,
-        actionId,
-        payload: step.args.payload,
-      });
-      results.push({ stepId: step.id, ok: ret.ok, data: ret.ok ? ret : undefined, error: ret.ok ? undefined : ret.error });
-    } catch (error) {
-      results.push({
-        stepId: step.id,
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }
-
-  return results;
-}
-
 function buildCatalog() {
   return {
     executors: ALLOWED_EXECUTORS,
+    purpose: "return-instructions-for-app",
     actions: [
-      { actionIntent: "release.latest", title: "查询最新发布", payloadSchema: { channel: "stable|beta|alpha" } },
-      { actionIntent: "mcp.list", title: "查询 MCP 列表", payloadSchema: { channel: "stable|beta|alpha" } },
-      { actionIntent: "mcp.versions", title: "查询 MCP 版本", payloadSchema: { mcpId: "string", channel: "stable|beta|alpha" } },
-      { actionIntent: "mcp.shelf", title: "查询 MCP 上架列表", payloadSchema: { channel: "stable|beta|alpha" } },
-      { actionIntent: "products.list", title: "查询商品列表", payloadSchema: {} },
-      { actionIntent: "mcp.panel.action", title: "执行 MCP Panel 动作", payloadSchema: { mcpId: "string", actionId: "string", payload: "object" } },
+      { actionIntent: "gateway.restart", title: "重启 openclaw", payloadSchema: {} },
+      { actionIntent: "gateway.restart_qw", title: "重启企微网关", payloadSchema: {} },
+      { actionIntent: "gateway.update", title: "升级 openclaw", payloadSchema: {} },
+      { actionIntent: "browser.detect", title: "浏览器检测", payloadSchema: {} },
+      { actionIntent: "browser.repair", title: "浏览器修复", payloadSchema: {} },
+      { actionIntent: "browser.open_cdp", title: "打开浏览器 CDP", payloadSchema: {} },
+      { actionIntent: "environment.install", title: "环境安装", payloadSchema: { target: "windows|wsl", tool: "python|uv|bun" } },
+      { actionIntent: "mcp.build", title: "构建 MCP", payloadSchema: { name: "windows-mcp|yingdao-mcp|wechat-mcp|crm-mcp" } },
+      { actionIntent: "app.upgrade", title: "桌面升级", payloadSchema: { autoRestart: "boolean" } },
+      { actionIntent: "app.restart", title: "桌面重启", payloadSchema: {} },
+      { actionIntent: "app.log_center.open", title: "打开日志中心", payloadSchema: {} },
     ],
   };
 }
@@ -228,16 +320,15 @@ remoteRoutes.post("/api/remote/dispatch", async (c) => {
     const body = await c.req.json().catch(() => ({}));
     const actionIntent = parseIntent(body?.actionIntent);
     const payload = parsePayload(body?.payload);
-    const dryRun = body?.dryRun === true;
-    const plan = buildPlan(actionIntent, payload);
+    const envSnapshot = readEnvSnapshot(body?.envSnapshot);
+    const plan = buildPlan(actionIntent, payload, envSnapshot);
 
-    if (dryRun) {
-      return c.json({ ok: true, mode: "dry-run", plan, results: [] });
-    }
-
-    const results = await executePlan(plan);
-    const success = results.every((item) => item.ok);
-    return c.json({ ok: success, mode: "execute", plan, results }, success ? 200 : 400);
+    return c.json({
+      ok: true,
+      mode: "plan-only",
+      executeOn: "app",
+      plan,
+    });
   } catch (error) {
     return c.json({ ok: false, error: error instanceof Error ? error.message : "dispatch failed" }, 400);
   }
