@@ -135,11 +135,11 @@ describe("api routes", () => {
     expect(Array.isArray(payload.actions)).toBe(true);
   });
 
-  it("supports remote dispatch dry-run", async () => {
+  it("returns remote dispatch instructions for app execution", async () => {
     const req = new Request("http://clawos.desktop/api/remote/dispatch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ actionIntent: "gateway.restart", dryRun: true }),
+      body: JSON.stringify({ actionIntent: "gateway.restart" }),
     });
     const response = await handleApiRequest(req, "/api/remote/dispatch");
     expect(response).not.toBeNull();
@@ -147,8 +147,34 @@ describe("api routes", () => {
 
     const payload = await parseJson(response as Response);
     expect(payload.ok).toBe(true);
-    expect(payload.mode).toBe("dry-run");
-    expect((payload.plan as Record<string, unknown>).intent).toBe("gateway.restart");
+    expect(payload.executeOn).toBe("app");
+    expect(payload.actionIntent).toBe("gateway.restart");
+    expect(payload.purpose).toBe("return-actions-for-app");
+    expect(Array.isArray(payload.ACTIONS)).toBe(true);
+    expect(payload.ACTIONS).toEqual(['POST /api/gateway/action {"action":"restart"}']);
+  });
+
+  it("returns full gateway.update action flow", async () => {
+    const req = new Request("http://clawos.desktop/api/remote/dispatch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ actionIntent: "gateway.update" }),
+    });
+    const response = await handleApiRequest(req, "/api/remote/dispatch");
+    expect(response).not.toBeNull();
+    const payload = await parseJson(response as Response);
+    expect(payload.ok).toBe(true);
+    expect(payload.ACTIONS).toEqual([
+      "cd /data/openclaw",
+      "cd /data/openclaw && git fetch origin main --prune && git reset --hard origin/main && git clean -fd",
+      "cd /data/openclaw && npm i -g nrm",
+      "cd /data/openclaw && nrm use tencent",
+      "cd /data/openclaw && pnpm install",
+      "cd /data/openclaw && pnpm run build",
+      "cd /data/openclaw && pnpm run ui:build",
+      "cd /data/openclaw && pnpm link --global",
+      "cd /data/openclaw && openclaw gateway restart",
+    ]);
   });
 
   it("returns null for unknown path", async () => {

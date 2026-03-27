@@ -32,7 +32,7 @@ describe("remote routes", () => {
     expect(Array.isArray(payload.actions)).toBe(true);
   });
 
-  it("supports dry-run plan generation", async () => {
+  it("returns orchestrated action array", async () => {
     const response = await app.request("http://localhost/api/remote/dispatch", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -42,9 +42,12 @@ describe("remote routes", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.mode).toBe("plan-only");
     expect(payload.executeOn).toBe("app");
-    expect((payload.plan as Record<string, unknown>).actionIntent).toBe("browser.detect");
+    expect(payload.actionIntent).toBe("browser.detect");
+    expect(payload.purpose).toBe("return-actions-for-app");
+    const actions = (payload.ACTIONS ?? []) as string[];
+    expect(Array.isArray(actions)).toBe(true);
+    expect(actions[0]).toBe('POST /api/browser/action {"action":"detect"}');
   });
 
   it("returns app-side instructions instead of cloud execution", async () => {
@@ -57,11 +60,29 @@ describe("remote routes", () => {
 
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
-    expect(payload.mode).toBe("plan-only");
-    const plan = payload.plan as Record<string, unknown>;
-    const instructions = (plan.instructions ?? []) as Array<Record<string, unknown>>;
-    expect(Array.isArray(instructions)).toBe(true);
-    expect(instructions[0]?.runOn).toBe("app");
-    expect(instructions[0]?.type).toBe("ui-command");
+    const actions = (payload.ACTIONS ?? []) as string[];
+    expect(Array.isArray(actions)).toBe(true);
+    expect(actions[0]).toBe("UI open-log-center");
+  });
+
+  it("returns full gateway update command flow", async () => {
+    const response = await app.request("http://localhost/api/remote/dispatch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ actionIntent: "gateway.update", payload: {} }),
+    });
+    const payload = (await response.json()) as Record<string, unknown>;
+    const actions = (payload.ACTIONS ?? []) as string[];
+    expect(actions).toEqual([
+      "cd /data/openclaw",
+      "cd /data/openclaw && git fetch origin main --prune && git reset --hard origin/main && git clean -fd",
+      "cd /data/openclaw && npm i -g nrm",
+      "cd /data/openclaw && nrm use tencent",
+      "cd /data/openclaw && pnpm install",
+      "cd /data/openclaw && pnpm run build",
+      "cd /data/openclaw && pnpm run ui:build",
+      "cd /data/openclaw && pnpm link --global",
+      "cd /data/openclaw && openclaw gateway restart",
+    ]);
   });
 });

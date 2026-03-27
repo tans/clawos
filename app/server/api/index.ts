@@ -25,6 +25,7 @@ import { getSelfUpdateStatus } from "../system/self-update";
 import { readWalletBalances } from "../system/wallet-balance";
 import { startBrowserConfigResetTask, startBrowserDetectTask, startBrowserRepairTask, startBrowserRestartTask } from "../tasks/browser";
 import {
+  buildOpenclawSourceUpdateSteps,
   getQwGatewayStartupStatus,
   listOpenclawConfigBackups,
   startOpenclawConfigRollbackTask,
@@ -207,30 +208,6 @@ type RemoteIntent =
   | "app.restart"
   | "app.log_center.open";
 
-type RemotePlanStep = {
-  id: string;
-  title: string;
-  executor: RemoteExecutor;
-  action:
-    | "gateway.action"
-    | "gateway.update"
-    | "browser.action"
-    | "environment.install"
-    | "mcp.build"
-    | "app.update"
-    | "ui.command";
-  args: Record<string, unknown>;
-};
-
-type RemotePlan = {
-  version: "1.0";
-  intent: RemoteIntent;
-  constraints: {
-    allowedExecutors: RemoteExecutor[];
-  };
-  steps: RemotePlanStep[];
-};
-
 function parseRemoteIntent(value: unknown): RemoteIntent {
   const intent = sanitizeIdentifier(value, "actionIntent") as RemoteIntent;
   const supported: RemoteIntent[] = [
@@ -252,80 +229,21 @@ function parseRemoteIntent(value: unknown): RemoteIntent {
   return intent;
 }
 
-function buildRemoteCommandPlan(intent: RemoteIntent, payload: Record<string, unknown>): RemotePlan {
-  const constraints = {
-    allowedExecutors: ["shell", "powershell", "wsl"] as RemoteExecutor[],
-  };
-
+function buildRemoteActions(intent: RemoteIntent, payload: Record<string, unknown>): string[] {
   if (intent === "gateway.restart") {
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "gateway-restart",
-          title: "重启 openclaw 网关",
-          executor: "powershell",
-          action: "gateway.action",
-          args: { action: "restart" },
-        },
-      ],
-    };
+    return ['POST /api/gateway/action {"action":"restart"}'];
   }
-
-  if (intent === "gateway.restart_qw") {
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "gateway-restart-qw",
-          title: "重启企微网关",
-          executor: "powershell",
-          action: "gateway.action",
-          args: { action: "restart-qw-gateway" },
-        },
-      ],
-    };
-  }
-
   if (intent === "gateway.update") {
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "gateway-update",
-          title: "升级 openclaw",
-          executor: "wsl",
-          action: "gateway.update",
-          args: {},
-        },
-      ],
-    };
+    return buildOpenclawSourceUpdateSteps().map((step) => step.command);
   }
-
+  if (intent === "gateway.restart_qw") {
+    return ['POST /api/gateway/action {"action":"restart-qw-gateway"}'];
+  }
   if (intent === "browser.detect" || intent === "browser.repair" || intent === "browser.open_cdp") {
     const action = intent === "browser.open_cdp" ? "open-cdp" : intent === "browser.repair" ? "repair" : "detect";
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "browser-action",
-          title: "浏览器动作",
-          executor: "powershell",
-          action: "browser.action",
-          args: { action, confirmed: action === "detect" ? true : true },
-        },
-      ],
-    };
+    const args = action === "detect" ? { action } : { action, confirmed: true };
+    return [`POST /api/browser/action ${JSON.stringify(args)}`];
   }
-
   if (intent === "environment.install") {
     const target = sanitizeIdentifier(payload.target, "target");
     const tool = sanitizeIdentifier(payload.tool, "tool");
@@ -335,206 +253,38 @@ function buildRemoteCommandPlan(intent: RemoteIntent, payload: Record<string, un
     if (!["python", "uv", "bun"].includes(tool)) {
       throw new HttpError(400, `unsupported tool: ${tool}`);
     }
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "environment-install",
-          title: "环境安装",
-          executor: target === "windows" ? "powershell" : "wsl",
-          action: "environment.install",
-          args: { target, tool },
-        },
-      ],
-    };
+    return [`POST /api/environment/install ${JSON.stringify({ target, tool })}`];
   }
-
   if (intent === "mcp.build") {
     const name = sanitizeIdentifier(payload.name, "name");
     if (!["windows-mcp", "yingdao-mcp", "wechat-mcp", "crm-mcp"].includes(name)) {
       throw new HttpError(400, `unsupported mcp name: ${name}`);
     }
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "mcp-build",
-          title: "MCP 构建",
-          executor: "wsl",
-          action: "mcp.build",
-          args: { name },
-        },
-      ],
-    };
+    return [`POST /api/mcp/build ${JSON.stringify({ name })}`];
   }
-
   if (intent === "app.upgrade") {
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "app-upgrade",
-          title: "执行桌面升级",
-          executor: "shell",
-          action: "app.update",
-          args: { trigger: "manual", autoRestart: true },
-        },
-      ],
-    };
+    const autoRestart = payload.autoRestart !== false;
+    return [`POST /api/app/update/run ${JSON.stringify({ trigger: "manual", autoRestart })}`];
   }
-
   if (intent === "app.restart") {
-    return {
-      version: "1.0",
-      intent,
-      constraints,
-      steps: [
-        {
-          id: "app-restart",
-          title: "重启 openclaw",
-          executor: "shell",
-          action: "gateway.action",
-          args: { action: "restart" },
-        },
-      ],
-    };
+    return ['POST /api/gateway/action {"action":"restart"}'];
   }
-
-  return {
-    version: "1.0",
-    intent,
-    constraints,
-    steps: [
-      {
-        id: "log-center-open",
-        title: "打开日志中心",
-        executor: "shell",
-        action: "ui.command",
-        args: { command: "open-log-center" },
-      },
-    ],
-  };
-}
-
-async function executeRemotePlan(plan: RemotePlan): Promise<{
-  taskIds: string[];
-  reused: boolean;
-  uiCommands: string[];
-}> {
-  const taskIds: string[] = [];
-  const uiCommands: string[] = [];
-  let reused = false;
-
-  for (const step of plan.steps) {
-    if (step.action === "gateway.action") {
-      const action = sanitizeIdentifier(step.args.action, "action") as
-        | "restart"
-        | "restart-qw-gateway"
-        | "status"
-        | "install"
-        | "uninstall"
-        | "start"
-        | "stop";
-      if (action === "restart-qw-gateway") {
-        const result = startQwGatewayRestartTask();
-        taskIds.push(result.task.id);
-        reused = reused || result.reused === true;
-      } else if (action === "status") {
-        const task = startGatewayStatusTask();
-        taskIds.push(task.id);
-      } else {
-        const task = startGatewayControlTask(action);
-        taskIds.push(task.id);
-      }
-      continue;
-    }
-
-    if (step.action === "gateway.update") {
-      const result = startGatewayUpdateTask();
-      taskIds.push(result.task.id);
-      reused = reused || result.reused === true;
-      continue;
-    }
-
-    if (step.action === "browser.action") {
-      const action = sanitizeIdentifier(step.args.action, "action");
-      if (action === "detect") {
-        const result = startBrowserDetectTask();
-        taskIds.push(result.task.id);
-        reused = reused || result.reused === true;
-      } else if (action === "repair") {
-        const result = startBrowserRepairTask();
-        taskIds.push(result.task.id);
-        reused = reused || result.reused === true;
-      } else if (action === "open-cdp" || action === "restart-cdp" || action === "restart-browser" || action === "restart") {
-        const result = startBrowserRestartTask();
-        taskIds.push(result.task.id);
-        reused = reused || result.reused === true;
-      } else if (action === "reset" || action === "reset-config") {
-        const result = startBrowserConfigResetTask();
-        taskIds.push(result.task.id);
-        reused = reused || result.reused === true;
-      } else {
-        throw new HttpError(400, `不支持的浏览器 action：${action}`);
-      }
-      continue;
-    }
-
-    if (step.action === "environment.install") {
-      const target = sanitizeIdentifier(step.args.target, "target") as "windows" | "wsl";
-      const tool = sanitizeIdentifier(step.args.tool, "tool") as "python" | "uv" | "bun";
-      const result = startEnvironmentInstallTask(target, tool);
-      taskIds.push(result.task.id);
-      reused = reused || result.reused === true;
-      continue;
-    }
-
-    if (step.action === "mcp.build") {
-      const name = sanitizeIdentifier(step.args.name, "name") as "windows-mcp" | "yingdao-mcp" | "wechat-mcp" | "crm-mcp";
-      const result = startMcpBuildTask(name);
-      taskIds.push(result.task.id);
-      reused = reused || result.reused === true;
-      continue;
-    }
-
-    if (step.action === "app.update") {
-      const trigger = step.args.trigger === "force" ? "force" : "manual";
-      const autoRestart = step.args.autoRestart !== false;
-      const result = startSelfUpdateTask(trigger, { autoRestart });
-      taskIds.push(result.task.id);
-      reused = reused || result.reused === true;
-      continue;
-    }
-
-    if (step.action === "ui.command") {
-      const command = sanitizeIdentifier(step.args.command, "command");
-      uiCommands.push(command);
-      continue;
-    }
-  }
-
-  return { taskIds, reused, uiCommands };
+  return ["UI open-log-center"];
 }
 
 async function handleRemoteDispatch(req: Request): Promise<Response> {
   const body = await parseJsonBody(req);
   const actionIntent = parseRemoteIntent(body.actionIntent);
   const payload = asObject(body.payload) || {};
-  const dryRun = body.dryRun === true;
-  const plan = buildRemoteCommandPlan(actionIntent, payload);
-
-  if (dryRun) {
-    return jsonResponse({ ok: true, mode: "dry-run", plan, execution: { taskIds: [], reused: false, uiCommands: [] } });
-  }
-
-  const execution = await executeRemotePlan(plan);
-  return jsonResponse({ ok: true, mode: "execute", plan, execution });
+  const actions = buildRemoteActions(actionIntent, payload);
+  return jsonResponse({
+    ok: true,
+    executeOn: "app",
+    purpose: "return-actions-for-app",
+    actionIntent,
+    allowedExecutors: ["shell", "powershell", "wsl"] as RemoteExecutor[],
+    ACTIONS: actions,
+  });
 }
 
 function buildRemoteCatalog() {
