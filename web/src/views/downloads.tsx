@@ -1,7 +1,6 @@
 /** @jsxImportSource hono/jsx */
 
-import { renderToString } from "hono/jsx/dom/server";
-import { getBrandConfig } from "../lib/branding";
+import { renderMarketingShell } from "./marketing-shell";
 
 interface DownloadChannelCard {
   id: "stable" | "beta" | "alpha";
@@ -23,64 +22,64 @@ function formatPublishedAt(value: string | null): string {
 }
 
 export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
-  const { brandName, brandLogoUrl } = getBrandConfig();
+  return renderMarketingShell({
+    title: "下载试用",
+    description: "ClawOS 下载试用入口与企业部署咨询。",
+    currentPath: "/downloads",
+    children: <DownloadsPage cards={cards} />,
+  });
+}
 
-  return `<!doctype html>${renderToString(
-    <html lang="zh-CN" data-theme="silk">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{`${brandName} | 下载中心`}</title>
-        <link rel="icon" type="image/png" href={brandLogoUrl} />
-        <link rel="stylesheet" href="/styles.css" />
-      </head>
-      <body class="site-bg min-h-screen text-[#1a1a1a]">
-        <main class="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 sm:py-12 lg:px-12 lg:py-16">
-          <header class="hero-glow bento-card px-5 py-5 sm:px-7">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <div class="flex items-center gap-3">
-                <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
-                <div>
-                  <p class="subcaps">Downloads</p>
-                  <h1 class="mt-1 text-xl font-bold tracking-tight">下载中心</h1>
-                  <p class="text-sm text-[#666]">按版本通道与系统平台选择安装包。</p>
-                </div>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <a class="secondary-button" href="/">返回首页</a>
-                <a class="primary-button" href="/contact">联系我们 →</a>
-              </div>
+function DownloadsPage({ cards }: { cards: DownloadChannelCard[] }) {
+  const stable = cards.find((card) => card.id === "stable");
+  const secondary = cards.filter((card) => card.id !== "stable");
+
+  return (
+    <>
+      <section class="marketing-section py-10 sm:py-14">
+        <div class="marketing-section-inner">
+          <div class="marketing-card marketing-page-hero p-6 sm:p-8">
+            <p class="marketing-kicker">Trial Entry</p>
+            <h1 class="marketing-h2 mt-2 text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">下载 ClawOS，开始你的企业 AI 试点</h1>
+            <p class="marketing-lead mt-4 max-w-3xl text-base leading-8 text-[color:var(--ink-soft)]">先从桌面试用开始；如果需要本地优先部署或虾壳主机交付，可直接咨询企业部署方案。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="marketing-section py-6 sm:py-8">
+        <div class="marketing-section-inner lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)] lg:gap-6">
+          <article class="marketing-card marketing-download-primary p-6 sm:p-8">
+            <p class="marketing-kicker">Stable</p>
+            <h2 class="mt-2 text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">下载稳定版</h2>
+            <p class="mt-3 text-sm text-[color:var(--ink-soft)]">{`当前版本：${stable?.version ?? "dev"}`}</p>
+            <div class="marketing-platform-list mt-5 grid gap-3 sm:flex sm:flex-wrap">
+              <a class="marketing-primary-button" href={stable?.windowsUrl ?? "/downloads/latest/windows"}>下载 Windows</a>
+              <a class="marketing-secondary-button" href={stable?.macosUrl ?? "/downloads/latest/macos"}>下载 macOS</a>
+              <a class="marketing-secondary-button" href={stable?.linuxUrl ?? "/downloads/latest/linux"}>下载 Linux</a>
             </div>
-          </header>
+          </article>
 
-          <section class="mt-10 page-fade grid gap-5 lg:grid-cols-3">
-            {cards.map((card) => (
-              <article class="bento-card p-5">
-                <div class="flex items-center justify-between gap-3">
-                  <h2 class="text-lg font-semibold">{card.label}</h2>
-                  <span class="channel-badge">{card.id.toUpperCase()}</span>
-                </div>
-                <p class="mt-2 text-sm text-[#666]">{`版本：${card.version}`}</p>
-                <p class="mt-1 text-xs text-[#666]">{`发布时间：${card.publishedAt}`}</p>
+          <aside class="marketing-card marketing-download-consult mt-6 p-6 sm:p-8 lg:mt-0">
+            <h2 class="text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">需要企业部署？</h2>
+            <p class="mt-3 text-sm leading-7 text-[color:var(--ink-soft)]">如果你需要本地优先部署、虾壳主机交付或 PoC 支持，可直接联系方案专家。</p>
+            <a class="marketing-primary-button mt-5" href="/contact">联系方案专家</a>
+          </aside>
+        </div>
+      </section>
 
-                {card.hasInstaller ? (
-                  <div class="mt-5 grid gap-2">
-                    <a class="secondary-button w-full" href={card.windowsUrl}>下载 Windows</a>
-                    <a class="secondary-button w-full" href={card.macosUrl}>下载 macOS</a>
-                    <a class="secondary-button w-full" href={card.linuxUrl}>下载 Linux</a>
-                  </div>
-                ) : (
-                  <button class="secondary-button mt-5 w-full" type="button" disabled>
-                    暂无可用安装包
-                  </button>
-                )}
-              </article>
-            ))}
-          </section>
-        </main>
-      </body>
-    </html>,
-  )}`;
+      <section class="marketing-section py-6 sm:py-10">
+        <div class="marketing-section-inner marketing-grid-2 grid gap-5 lg:grid-cols-2">
+          {secondary.map((card) => (
+            <article key={card.id} class="marketing-card p-5 sm:p-6">
+              <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">{card.label}</h3>
+              <p class="mt-3 text-sm text-[color:var(--ink-soft)]">{`版本：${card.version}`}</p>
+              <p class="mt-1 text-sm text-[color:var(--ink-soft)]">{`发布时间：${card.publishedAt}`}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+    </>
+  );
 }
 
 export function buildDownloadCards(input: {
