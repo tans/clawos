@@ -27,6 +27,7 @@
 
   html {
     font-size: 15px;
+    scroll-padding-top: 5.75rem;
   }
 
   @media (max-width: 640px) {
@@ -152,6 +153,43 @@
     backdrop-filter: blur(18px);
   }
 
+  .marketing-nav-inner {
+    display: flex;
+    min-height: 4.75rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.9rem;
+  }
+
+  .marketing-nav-links {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+  }
+
+  .marketing-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--ink-strong);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .marketing-brand-mark {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+    border-radius: 0.8rem;
+    border: 1px solid var(--line-soft);
+    background: #fff;
+    object-fit: cover;
+    box-shadow: var(--shadow-soft);
+  }
+
   .marketing-nav-link {
     display: inline-flex;
     align-items: center;
@@ -193,6 +231,18 @@
     box-shadow: var(--shadow-soft);
   }
 
+  .marketing-section {
+    position: relative;
+  }
+
+  .marketing-page-hero {
+    display: grid;
+    gap: 0.9rem;
+    background:
+      radial-gradient(circle at top right, rgb(37 99 235 / 0.1), transparent 42%),
+      linear-gradient(180deg, #fff 0%, var(--surface-muted) 100%);
+  }
+
   .marketing-proof-panel {
     background:
       radial-gradient(circle at top right, rgb(37 99 235 / 0.14), transparent 54%),
@@ -229,6 +279,22 @@
     color: var(--ink-strong);
   }
 
+  .marketing-h2 {
+    font-size: clamp(2rem, 4vw, 3.25rem);
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    color: var(--ink-strong);
+  }
+
+  .marketing-lead {
+    max-width: 48rem;
+    color: var(--ink-soft);
+  }
+
+  .marketing-cta-row {
+    align-items: center;
+  }
+
   .marketing-primary-button {
     display: inline-flex;
     align-items: center;
@@ -238,6 +304,18 @@
     color: #fff;
     padding: 0.875rem 1.35rem;
     font-weight: 700;
+    transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
+  .marketing-primary-button:hover {
+    background: var(--brand-accent-strong);
+    box-shadow: 0 12px 24px rgb(37 99 235 / 0.22);
+    transform: translateY(-1px);
+  }
+
+  .marketing-primary-button:focus-visible {
+    outline: 2px solid var(--brand-accent);
+    outline-offset: 2px;
   }
 
   .marketing-secondary-button {
@@ -250,6 +328,18 @@
     color: var(--ink-strong);
     padding: 0.875rem 1.35rem;
     font-weight: 700;
+    transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+
+  .marketing-secondary-button:hover {
+    background: var(--surface-muted);
+    box-shadow: 0 10px 20px rgb(17 24 39 / 0.08);
+    transform: translateY(-1px);
+  }
+
+  .marketing-secondary-button:focus-visible {
+    outline: 2px solid var(--brand-accent);
+    outline-offset: 2px;
   }
 
   .section-title {
@@ -400,6 +490,54 @@
   .hero-slogan-item:first-child {
     opacity: 1;
   }
+
+  .marketing-grid-2,
+  .marketing-grid-3,
+  .marketing-grid-4 {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .marketing-download-primary {
+    background:
+      radial-gradient(circle at top right, rgb(37 99 235 / 0.08), transparent 44%),
+      linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+  }
+
+  .marketing-download-consult {
+    background:
+      linear-gradient(180deg, #fff 0%, var(--surface-panel) 100%);
+  }
+
+  .marketing-platform-list {
+    align-items: stretch;
+  }
+
+  .marketing-footer {
+    margin-top: 2rem;
+    border-top: 1px solid var(--line-soft);
+    background: rgb(255 255 255 / 0.88);
+  }
+
+  .marketing-footer-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding-block: 1.25rem 2rem;
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+
+  .marketing-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .marketing-footer-links a {
+    color: var(--ink-normal);
+    font-weight: 600;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -407,14 +545,19 @@
   .primary-button,
   .secondary-button,
   .brand-link,
-  .hero-slogan-item {
+  .hero-slogan-item,
+  .marketing-primary-button,
+  .marketing-secondary-button,
+  .marketing-skip-link {
     animation: none;
     transition: none;
   }
 
   .primary-button:hover,
   .secondary-button:hover,
-  .brand-link:hover {
+  .brand-link:hover,
+  .marketing-primary-button:hover,
+  .marketing-secondary-button:hover {
     transform: none;
   }
 
@@ -424,5 +567,19 @@
 
   .hero-slogan-item:first-child {
     opacity: 1;
+  }
+}
+
+@media (min-width: 768px) {
+  .marketing-footer-inner {
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: row;
+  }
+}
+
+@media (min-width: 1024px) {
+  .marketing-nav-links {
+    display: flex;
   }
 }
