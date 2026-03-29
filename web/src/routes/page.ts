@@ -8,20 +8,8 @@ import { renderHomePage } from "../views/home";
 
 export const pageRoutes = new Hono();
 
-pageRoutes.get("/", async (c) => {
-  const [stableLatest, betaLatest, alphaLatest] = await Promise.all([
-    readLatestRelease("stable"),
-    readLatestRelease("beta"),
-    readLatestRelease("alpha"),
-  ]);
-  const hasInstaller = Boolean(stableLatest?.installer);
-  const latestVersion = stableLatest?.version ?? null;
-  const hasBetaInstaller = Boolean(betaLatest?.installer);
-  const betaVersion = betaLatest?.version ?? null;
-  const hasAlphaInstaller = Boolean(alphaLatest?.installer);
-  const alphaVersion = alphaLatest?.version ?? null;
-
-  return c.html(renderHomePage(hasInstaller, latestVersion, hasBetaInstaller, betaVersion, hasAlphaInstaller, alphaVersion));
+pageRoutes.get("/", (c) => {
+  return c.html(renderHomePage());
 });
 
 pageRoutes.get("/downloads", async (c) => {

@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
-@plugin "daisyui" {
-  themes: silk --default;
-}
+@plugin "daisyui";
 
 @theme {
   --animate-page-fade: page-fade 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -10,14 +8,21 @@
 
 @layer base {
   :root {
-    --brand-red: #e95462;
-    --brand-red-deep: #cc3f4d;
-    --ink-strong: #2b2022;
-    --ink-normal: #564648;
-    --ink-soft: #7b6d6f;
-    --line-soft: #f1d9dc;
-    --surface-base: #fffdfc;
+    --brand-accent: #2563eb;
+    --brand-accent-strong: #1d4ed8;
+    --ink-strong: #111827;
+    --ink-normal: #1f2937;
+    --ink-soft: #6b7280;
+    --surface-base: #ffffff;
+    --surface-muted: #f8fafc;
+    --surface-panel: #f9fafb;
+    --line-soft: #e5e7eb;
+    --line-strong: #d1d5db;
+    --shadow-soft: 0 10px 30px rgb(17 24 39 / 0.06);
+    --shadow-hero: 0 24px 60px rgb(17 24 39 / 0.08);
     --surface-card: #ffffff;
+    --brand-red: var(--brand-accent);
+    --brand-red-deep: var(--brand-accent-strong);
   }
 
   html {
@@ -35,8 +40,6 @@
     color: var(--ink-normal);
     font-family:
       "Source Han Sans SC",
-      "Noto Serif SC",
-      "PingFang SC",
       "PingFang SC",
       "Noto Sans CJK SC",
       "Microsoft YaHei",
@@ -87,10 +90,9 @@
 
   .site-bg {
     background:
-      radial-gradient(circle at 0% 0%, rgb(233 84 98 / 12%), transparent 36%),
-      radial-gradient(circle at 100% 0%, rgb(255 224 227 / 72%), transparent 44%),
-      radial-gradient(circle at 50% 100%, rgb(255 242 244 / 90%), transparent 42%),
-      linear-gradient(180deg, #fffefe 0%, #fff8f9 52%, #fff2f4 100%);
+      radial-gradient(circle at 0% 0%, rgb(37 99 235 / 7%), transparent 36%),
+      radial-gradient(circle at 100% 0%, rgb(37 99 235 / 4%), transparent 44%),
+      linear-gradient(180deg, #fff 0%, #fff 58%, var(--surface-muted) 100%);
   }
 
   .hero-glow {
@@ -98,22 +100,156 @@
     isolation: isolate;
     overflow: hidden;
     background:
-      radial-gradient(circle at 16% 18%, rgb(233 84 98 / 10%), transparent 36%),
-      radial-gradient(circle at 88% 12%, rgb(255 193 199 / 44%), transparent 48%),
-      linear-gradient(145deg, #fffdfd 0%, #fff5f6 100%);
+      radial-gradient(circle at 16% 18%, rgb(37 99 235 / 8%), transparent 36%),
+      radial-gradient(circle at 88% 12%, rgb(37 99 235 / 10%), transparent 48%),
+      linear-gradient(145deg, #fff 0%, var(--surface-muted) 100%);
   }
 
   .aqua-glow {
-    background: linear-gradient(120deg, #ffffff 0%, #fff3f5 100%);
+    background: linear-gradient(120deg, #fff 0%, var(--surface-muted) 100%);
   }
 
   .bento-card {
     border-radius: 14px;
     border: 1px solid var(--line-soft);
-    background: linear-gradient(170deg, var(--surface-card) 0%, #fff8f9 100%);
-    box-shadow:
-      0 1px 2px rgb(233 84 98 / 0.06),
-      0 16px 40px rgb(233 84 98 / 0.1);
+    background: linear-gradient(170deg, var(--surface-card) 0%, var(--surface-panel) 100%);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .marketing-body {
+    background:
+      radial-gradient(circle at top right, rgb(37 99 235 / 0.06), transparent 28%),
+      linear-gradient(180deg, #fff 0%, #fff 65%, #f8fafc 100%);
+  }
+
+  .marketing-skip-link {
+    position: absolute;
+    top: -3rem;
+    left: 1rem;
+    z-index: 60;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: var(--ink-strong);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: top 160ms ease;
+  }
+
+  .marketing-skip-link:focus-visible {
+    top: 0.75rem;
+    outline: 2px solid var(--brand-accent);
+    outline-offset: 2px;
+  }
+
+  .marketing-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    border-bottom: 1px solid var(--line-soft);
+    background: rgb(255 255 255 / 0.92);
+    backdrop-filter: blur(18px);
+  }
+
+  .marketing-nav-link {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    color: var(--ink-normal);
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    transition: background-color 160ms ease, color 160ms ease;
+  }
+
+  .marketing-nav-link:hover {
+    background: var(--surface-muted);
+    color: var(--ink-strong);
+  }
+
+  .marketing-nav-link.is-active {
+    background: rgb(37 99 235 / 0.12);
+    color: var(--brand-accent-strong);
+  }
+
+  .marketing-section[id] {
+    scroll-margin-top: 5.75rem;
+  }
+
+  .marketing-nav-inner,
+  .marketing-footer-inner,
+  .marketing-section-inner {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 80rem;
+    padding-inline: 1.25rem;
+  }
+
+  .marketing-card {
+    border-radius: 1.25rem;
+    border: 1px solid var(--line-soft);
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .marketing-proof-panel {
+    background:
+      radial-gradient(circle at top right, rgb(37 99 235 / 0.14), transparent 54%),
+      linear-gradient(180deg, #fff 0%, var(--surface-muted) 100%);
+  }
+
+  .marketing-final-cta {
+    border-color: rgb(37 99 235 / 0.2);
+    background:
+      radial-gradient(circle at 0% 10%, rgb(37 99 235 / 0.1), transparent 38%),
+      linear-gradient(155deg, #fff 0%, #f3f7ff 100%);
+  }
+
+  .marketing-hero {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+    padding-block: 4rem 3rem;
+  }
+
+  .marketing-kicker {
+    color: var(--brand-accent-strong);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .marketing-h1 {
+    max-width: 12ch;
+    font-size: clamp(2.5rem, 6vw, 4.75rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    color: var(--ink-strong);
+  }
+
+  .marketing-primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--brand-accent);
+    color: #fff;
+    padding: 0.875rem 1.35rem;
+    font-weight: 700;
+  }
+
+  .marketing-secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: var(--ink-strong);
+    padding: 0.875rem 1.35rem;
+    font-weight: 700;
   }
 
   .section-title {
@@ -141,7 +277,7 @@
     gap: 0.5rem;
     border-radius: 10px;
     border: 1px solid transparent;
-    background: linear-gradient(120deg, var(--brand-red) 0%, #f07f8a 100%);
+    background: linear-gradient(120deg, var(--brand-accent) 0%, var(--brand-accent-strong) 100%);
     padding: 0.65rem 1.05rem;
     font-size: 0.875rem;
     font-weight: 600;
@@ -150,7 +286,7 @@
   }
 
   .primary-button:hover {
-    box-shadow: 0 10px 22px rgb(233 84 98 / 30%);
+    box-shadow: 0 10px 22px rgb(37 99 235 / 24%);
     transform: translateY(-1px);
   }
 
@@ -164,7 +300,7 @@
     justify-content: center;
     gap: 0.5rem;
     border-radius: 10px;
-    border: 1px solid #ebd3d6;
+    border: 1px solid var(--line-strong);
     background: #fff;
     padding: 0.65rem 1.05rem;
     font-size: 0.875rem;
@@ -174,8 +310,8 @@
   }
 
   .secondary-button:hover {
-    background: #fff6f7;
-    box-shadow: 0 8px 16px rgb(233 84 98 / 0.14);
+    background: var(--surface-muted);
+    box-shadow: 0 8px 16px rgb(17 24 39 / 0.1);
     transform: translateY(-1px);
   }
 
@@ -185,12 +321,12 @@
 
   .channel-badge {
     border-radius: 999px;
-    border: 1px solid #efbcc1;
-    background: #fff3f5;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-muted);
     padding: 0.125rem 0.5rem;
     font-size: 0.7rem;
     font-weight: 700;
-    color: var(--brand-red-deep);
+    color: var(--brand-accent-strong);
     letter-spacing: 0.03em;
   }
 
@@ -207,8 +343,8 @@
   .panel-card {
     border-radius: 14px;
     border: 1px solid var(--line-soft);
-    background: linear-gradient(180deg, #ffffff 0%, #fff7f8 100%);
-    box-shadow: 0 10px 30px rgb(233 84 98 / 0.14);
+    background: linear-gradient(180deg, #fff 0%, var(--surface-panel) 100%);
+    box-shadow: var(--shadow-soft);
   }
 
   .hero-orbit {
@@ -217,10 +353,10 @@
     width: 18rem;
     height: 18rem;
     border-radius: 999px;
-    border: 1px solid rgb(233 84 98 / 26%);
+    border: 1px solid rgb(37 99 235 / 20%);
     background:
-      radial-gradient(circle at 30% 30%, rgb(255 206 211 / 50%), transparent 48%),
-      radial-gradient(circle at 70% 65%, rgb(233 84 98 / 20%), transparent 46%);
+      radial-gradient(circle at 30% 30%, rgb(37 99 235 / 20%), transparent 48%),
+      radial-gradient(circle at 70% 65%, rgb(37 99 235 / 16%), transparent 46%);
     filter: blur(0.4px);
     opacity: 0.8;
     pointer-events: none;
