@@ -1,0 +1,101 @@
+/** @jsxImportSource hono/jsx */
+
+import { renderMarketingShell } from "./marketing-shell";
+
+export function renderAgentMarketPage(): string {
+  return renderMarketingShell({
+    title: "Agent 协作",
+    description: "面向企业的 Agent 协作市场介绍与合作沟通入口。",
+    currentPath: "/agent-market",
+    children: (
+      <div class="marketing-hero">
+        <section class="marketing-section marketing-section-hero">
+          <div class="marketing-section-inner">
+            <p class="marketing-kicker">Agent 协作市场</p>
+            <h1 class="marketing-h1">让企业任务更适合由 Agent 协作完成</h1>
+            <p class="marketing-lead">
+              我们正在建立一个更清晰的协作方式，让企业需求在可控范围内被拆解、评估与交付，
+              重点面向可标准化的任务，让交付路径更可追踪、结果更可复用。
+            </p>
+            <div class="marketing-hero-actions">
+              <a class="marketing-primary-button" href="/contact">预约合作沟通</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">不是增加一个工具，而是建立更清晰的交付方式</h2>
+            <p>
+              Agent 协作市场不是一个简单的功能入口，而是围绕需求拆解、能力匹配与交付保障形成的
+              业务机制，帮助企业把任务交付从个人经验转为可复制流程。
+            </p>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">优先面向这些可被标准化的任务</h2>
+            <p>
+              适合被规范、可持续复用的任务会被优先纳入协作范围，例如固定模板的内容生产、系统化
+              的运营支持、可复用的业务分析与自动化执行等。
+            </p>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">让企业需求与交付能力更高效地匹配</h2>
+            <p>
+              在协作机制下，任务需求会提前被结构化表达，交付能力也有明确标注与验证，从而减少
+              信息误差与沟通成本。
+            </p>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">从需求到交付，尽量减少不必要的试错</h2>
+            <p>
+              我们关注的是可预测的交付流程，避免在正式合作中反复试错，用更明确的范围与反馈机制
+              保障交付质量。
+            </p>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">适合三类参与方提前进入</h2>
+            <p>
+              企业需求方可以提前进入建立交付预期，具备交付能力的服务方可以展示成熟方案，
+              以及像虾壳主机这样的协作伙伴可以提供落地支持。
+            </p>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">为什么现在开始建立这类协作关系</h2>
+            <p>
+              企业对 Agent 的需求正在加速，提前建立协作机制，可以让交付关系更稳定，
+              也有助于形成可持续的能力网络。
+            </p>
+          </div>
+        </section>
+
+        <section class="marketing-section">
+          <div class="marketing-section-inner">
+            <h2 class="marketing-h2">如果你希望参与这类任务协作，可以先和我们沟通</h2>
+            <p>
+              我们会基于任务类型与交付能力进行评估，确定是否适合进入协作体系，
+              并提供清晰的合作路径与后续安排。
+            </p>
+            <div class="marketing-hero-actions">
+              <a class="marketing-secondary-button" href="/contact">预约合作沟通</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    ),
+  });
+}

@@ -1,7 +1,24 @@
-import { describe, expect, it } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { app } from "../src/index";
 
 describe("marketing pages", () => {
+  let marketplaceEnabledSnapshot: string | undefined;
+
+  beforeEach(async () => {
+    marketplaceEnabledSnapshot = process.env.MARKETPLACE_ENABLED;
+  });
+
+  afterEach(async () => {
+    if (typeof marketplaceEnabledSnapshot === "undefined") {
+      delete process.env.MARKETPLACE_ENABLED;
+    } else {
+      process.env.MARKETPLACE_ENABLED = marketplaceEnabledSnapshot;
+    }
+
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+  });
+
   it("renders the homepage as an enterprise conversion page", async () => {
     const response = await app.request("http://localhost/");
     const html = await response.text();
@@ -121,5 +138,37 @@ describe("marketing pages", () => {
     expect(response.status).toBe(200);
     expect(html).not.toContain(">Agent 协作<");
     expect(html).not.toContain("href=\"/agent-market\"");
+  });
+
+  it("serves the agent market page", async () => {
+    const response = await app.request("http://localhost/agent-market");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("让企业任务更适合由 Agent 协作完成");
+    expect(html).toContain("不是增加一个工具，而是建立更清晰的交付方式");
+    expect(html).toContain("优先面向这些可被标准化的任务");
+    expect(html).toContain("让企业需求与交付能力更高效地匹配");
+    expect(html).toContain("从需求到交付，尽量减少不必要的试错");
+    expect(html).toContain("适合三类参与方提前进入");
+    expect(html).toContain("为什么现在开始建立这类协作关系");
+    expect(html).toContain("如果你希望参与这类任务协作，可以先和我们沟通");
+    expect(html).toContain("预约合作沟通");
+    expect(html).not.toContain("PoC");
+    expect(html).not.toContain("抢单");
+  });
+
+  it("serves the agent market page even when marketplace is disabled", async () => {
+    delete process.env.MARKETPLACE_ENABLED;
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+
+    const response = await app.request("http://localhost/agent-market");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("让企业任务更适合由 Agent 协作完成");
+    expect(html).not.toContain("PoC");
+    expect(html).not.toContain("抢单");
   });
 });

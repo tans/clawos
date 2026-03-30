@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
+import { renderAgentMarketPage } from "../views/agent-market";
 import { renderCeoLetterPage } from "../views/ceo-letter";
 import { renderContactPage } from "../views/contact";
 import { buildDownloadCards, renderDownloadsPage } from "../views/downloads";
@@ -40,6 +41,10 @@ pageRoutes.get("/install-guide", (c) => {
 
 pageRoutes.get("/to-agent", (c) => {
   return c.html(renderAgentPage());
+});
+
+pageRoutes.get("/agent-market", (c) => {
+  return c.html(renderAgentMarketPage());
 });
 
 pageRoutes.get("/ceo-letter", (c) => {
