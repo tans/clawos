@@ -53,6 +53,10 @@
     {
       "name": "quote_customer_message",
       "description": "从客户消息中识别多个 BOM 并聚合报价结果。"
+    },
+    {
+      "name": "doctor",
+      "description": "检查 bom-mcp 运行时依赖并报告健康状态。"
     }
   ]
 }

@@ -1,10 +1,3 @@
-import { exportQuote } from "./tools/export-quote";
-import { getBomJobResult } from "./tools/get-bom-job-result";
-import { getQuote } from "./tools/get-quote";
-import { submitBom } from "./tools/submit-bom";
-import { applyNlPriceUpdate } from "./tools/apply-nl-price-update";
-import { quoteCustomerMessageTool } from "./tools/quote-customer-message";
-import { exportCustomerQuoteTool } from "./tools/export-customer-quote";
 import { serveStdio } from "./stdio-server";
 import { type ToolName, isToolName } from "./tool-spec";
 
@@ -15,24 +8,42 @@ interface ToolRequest {
 
 export async function runTool(request: ToolRequest): Promise<unknown> {
   switch (request.tool) {
-    case "submit_bom":
+    case "submit_bom": {
+      const { submitBom } = await import("./tools/submit-bom");
       return submitBom(request.args as Parameters<typeof submitBom>[0]);
+    }
     case "get_bom_job_result":
-    case "get_job_status":
+    case "get_job_status": {
+      const { getBomJobResult } = await import("./tools/get-bom-job-result");
       return getBomJobResult(String(request.args.jobId || ""));
-    case "get_quote":
+    }
+    case "get_quote": {
+      const { getQuote } = await import("./tools/get-quote");
       return getQuote(String(request.args.jobId || ""));
-    case "export_quote":
+    }
+    case "export_quote": {
+      const { exportQuote } = await import("./tools/export-quote");
       return exportQuote(
         String(request.args.jobId || ""),
         (request.args.format as Parameters<typeof exportQuote>[1]) || "json",
       );
-    case "export_customer_quote":
+    }
+    case "export_customer_quote": {
+      const { exportCustomerQuoteTool } = await import("./tools/export-customer-quote");
       return exportCustomerQuoteTool(request.args as Parameters<typeof exportCustomerQuoteTool>[0]);
-    case "apply_nl_price_update":
+    }
+    case "apply_nl_price_update": {
+      const { applyNlPriceUpdate } = await import("./tools/apply-nl-price-update");
       return applyNlPriceUpdate(request.args as Parameters<typeof applyNlPriceUpdate>[0]);
-    case "quote_customer_message":
+    }
+    case "quote_customer_message": {
+      const { quoteCustomerMessageTool } = await import("./tools/quote-customer-message");
       return quoteCustomerMessageTool(request.args as Parameters<typeof quoteCustomerMessageTool>[0]);
+    }
+    case "doctor": {
+      const { doctorTool } = await import("./tools/doctor");
+      return doctorTool();
+    }
     default:
       throw new Error(`未知 tool: ${request.tool}`);
   }

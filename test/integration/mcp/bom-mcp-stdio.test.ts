@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it } from "bun:test";
+import { Database } from "bun:sqlite";
 import { once } from "node:events";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 
 interface JsonRpcResponse {
   id?: string | number | null;
@@ -55,6 +59,7 @@ function createStdioClient(proc: ChildProcessWithoutNullStreams) {
 }
 
 const children = new Set<ChildProcessWithoutNullStreams>();
+let stdioStateDir: string | undefined;
 
 afterEach(async () => {
   for (const child of children) {
@@ -64,55 +69,101 @@ afterEach(async () => {
     }
   }
   children.clear();
+  if (stdioStateDir) {
+    await rm(stdioStateDir, { recursive: true, force: true });
+    stdioStateDir = undefined;
+  }
 });
 
 describe("bom-mcp stdio server", () => {
   it("supports initialize, tools/list, and tools/call over stdio", async () => {
-    const proc = spawn("bun", ["mcp/bom-mcp/src/index.ts", "serve", "--transport", "stdio"], {
-      cwd: process.cwd(),
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    children.add(proc);
+    const rootDir = await mkdtemp(join(tmpdir(), "bom-mcp-stdio-"));
+    const stateDir = resolve(rootDir, "state");
+    const exportDir = resolve(rootDir, "exports");
+    const cacheDir = resolve(rootDir, "cache");
+    const dbPath = resolve(stateDir, "bom-mcp.sqlite");
+    stdioStateDir = rootDir;
+    await mkdir(stateDir, { recursive: true });
+    await mkdir(exportDir, { recursive: true });
+    await mkdir(cacheDir, { recursive: true });
+    const db = new Database(dbPath, { create: true });
+    db.exec("CREATE TABLE IF NOT EXISTS doctor_probe (id INTEGER PRIMARY KEY);");
+    db.close();
 
-    const client = createStdioClient(proc);
-    const stderrChunks: string[] = [];
-    proc.stderr.setEncoding("utf8");
-    proc.stderr.on("data", (chunk: string) => {
-      stderrChunks.push(chunk);
-    });
+    const previousPublicBaseUrl = process.env.BOM_MCP_PUBLIC_BASE_URL;
+    delete process.env.BOM_MCP_PUBLIC_BASE_URL;
+    try {
+      const proc = spawn("bun", ["mcp/bom-mcp/src/index.ts", "serve", "--transport", "stdio"], {
+        cwd: process.cwd(),
+        stdio: ["pipe", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          BOM_MCP_STATE_DIR: stateDir,
+          BOM_MCP_EXPORT_DIR: exportDir,
+          BOM_MCP_CACHE_DIR: cacheDir,
+          BOM_MCP_DB_PATH: dbPath,
+        },
+      });
+      children.add(proc);
 
-    const initialize = await client.request("initialize", {
-      protocolVersion: "2024-11-05",
-      capabilities: {},
-      clientInfo: {
-        name: "bom-mcp-stdio-test",
-        version: "0.0.0",
-      },
-    });
+      const client = createStdioClient(proc);
+      const stderrChunks: string[] = [];
+      proc.stderr.setEncoding("utf8");
+      proc.stderr.on("data", (chunk: string) => {
+        stderrChunks.push(chunk);
+      });
 
-    expect(initialize.error).toBeUndefined();
-    expect((initialize.result as { serverInfo?: { name?: string } } | undefined)?.serverInfo?.name).toBe("bom-mcp");
+      const initialize = await client.request("initialize", {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: {
+          name: "bom-mcp-stdio-test",
+          version: "0.0.0",
+        },
+      });
 
-    client.notify("notifications/initialized");
+      expect(initialize.error).toBeUndefined();
+      expect((initialize.result as { serverInfo?: { name?: string } } | undefined)?.serverInfo?.name).toBe("bom-mcp");
 
-    const toolsList = await client.request("tools/list");
-    expect(toolsList.error).toBeUndefined();
-    const tools = ((toolsList.result as { tools?: Array<{ name?: string }> } | undefined)?.tools ?? []).map((tool) => tool.name);
-    expect(tools).toContain("quote_customer_message");
+      client.notify("notifications/initialized");
 
-    const toolCall = await client.request("tools/call", {
-      name: "apply_nl_price_update",
-      arguments: {
-        partNumber: "stm32f103c8t6",
-        unitPrice: 11.8,
-        supplier: "LCSC",
-      },
-    });
+      const toolsList = await client.request("tools/list");
+      expect(toolsList.error).toBeUndefined();
+      const tools = ((toolsList.result as { tools?: Array<{ name?: string }> } | undefined)?.tools ?? []).map((tool) => tool.name);
+      expect(tools).toContain("quote_customer_message");
+      expect(tools).toContain("doctor");
 
-    expect(toolCall.error).toBeUndefined();
-    const content = (toolCall.result as { content?: Array<{ text?: string }> } | undefined)?.content ?? [];
-    expect(content[0]?.text).toContain("STM32F103C8T6");
-    expect(content[0]?.text).toContain("11.8");
-    expect(stderrChunks.join("").trim()).toBe("");
+      const doctorCall = await client.request("tools/call", {
+        name: "doctor",
+        arguments: {},
+      });
+      expect(doctorCall.error).toBeUndefined();
+      const doctorContent = (doctorCall.result as { content?: Array<{ text?: string }> } | undefined)?.content ?? [];
+      const doctorText = doctorContent[0]?.text ?? "{}";
+      const doctorResult = JSON.parse(doctorText) as { ok?: boolean; warnings?: string[] };
+      expect(doctorResult.ok).toBe(true);
+      expect(doctorResult.warnings?.some((item) => item.includes("publicBaseUrl"))).toBe(true);
+
+      const toolCall = await client.request("tools/call", {
+        name: "apply_nl_price_update",
+        arguments: {
+          partNumber: "stm32f103c8t6",
+          unitPrice: 11.8,
+          supplier: "LCSC",
+        },
+      });
+
+      expect(toolCall.error).toBeUndefined();
+      const content = (toolCall.result as { content?: Array<{ text?: string }> } | undefined)?.content ?? [];
+      expect(content[0]?.text).toContain("STM32F103C8T6");
+      expect(content[0]?.text).toContain("11.8");
+      expect(stderrChunks.join("").trim()).toBe("");
+    } finally {
+      if (previousPublicBaseUrl === undefined) {
+        delete process.env.BOM_MCP_PUBLIC_BASE_URL;
+      } else {
+        process.env.BOM_MCP_PUBLIC_BASE_URL = previousPublicBaseUrl;
+      }
+    }
   }, 15_000);
 });

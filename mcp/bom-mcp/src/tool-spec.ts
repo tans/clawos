@@ -6,7 +6,8 @@ export type ToolName =
   | "export_quote"
   | "export_customer_quote"
   | "apply_nl_price_update"
-  | "quote_customer_message";
+  | "quote_customer_message"
+  | "doctor";
 
 export interface ToolDefinition {
   name: ToolName;
@@ -133,6 +134,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       },
       required: ["message"],
       additionalProperties: true,
+    },
+  },
+  {
+    name: "doctor",
+    description: "检查 bom-mcp 运行时依赖并报告健康状态。",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
     },
   },
 ];
