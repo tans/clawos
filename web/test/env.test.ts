@@ -54,15 +54,35 @@ describe("getEnv marketplace flag", () => {
     }
   });
 
-  it("parses true values", () => {
-    process.env.MARKETPLACE_ENABLED = "1";
+  const truthyValues = ["1", "true", "yes", "on"];
+  for (const value of truthyValues) {
+    it(`parses ${value} as true`, () => {
+      process.env.MARKETPLACE_ENABLED = value;
+      resetEnvCacheForTests();
+      const env = getEnv();
+      expect(env.marketplaceEnabled).toBeTrue();
+    });
+  }
+
+  const falsyValues = ["0", "false", "no", "off"];
+  for (const value of falsyValues) {
+    it(`parses ${value} as false`, () => {
+      process.env.MARKETPLACE_ENABLED = value;
+      resetEnvCacheForTests();
+      const env = getEnv();
+      expect(env.marketplaceEnabled).toBeFalse();
+    });
+  }
+
+  it("defaults to false when unset", () => {
+    delete process.env.MARKETPLACE_ENABLED;
     resetEnvCacheForTests();
     const env = getEnv();
-    expect(env.marketplaceEnabled).toBeTrue();
+    expect(env.marketplaceEnabled).toBeFalse();
   });
 
-  it("parses false values", () => {
-    process.env.MARKETPLACE_ENABLED = "false";
+  it("falls back to false for invalid values", () => {
+    process.env.MARKETPLACE_ENABLED = "maybe";
     resetEnvCacheForTests();
     const env = getEnv();
     expect(env.marketplaceEnabled).toBeFalse();
