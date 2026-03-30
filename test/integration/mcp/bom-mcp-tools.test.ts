@@ -3,8 +3,38 @@ import { Database } from "bun:sqlite";
 import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as XLSX from "xlsx";
-import { runTool } from "../../../mcp/bom-mcp/src/index";
-import { getJob } from "../../../mcp/bom-mcp/src/infra/store";
+
+const BOM_MCP_TEST_STATE_DIR = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp");
+const BOM_MCP_TEST_DB_PATH = resolve(BOM_MCP_TEST_STATE_DIR, "bom-mcp.sqlite");
+
+let bomMcpToolsPromise:
+  | Promise<{
+      runTool: typeof import("../../../mcp/bom-mcp/src/index").runTool;
+      getJob: typeof import("../../../mcp/bom-mcp/src/infra/store").getJob;
+    }>
+  | undefined;
+
+async function loadBomMcpTools() {
+  process.env.BOM_MCP_STATE_DIR ??= BOM_MCP_TEST_STATE_DIR;
+  bomMcpToolsPromise ??= Promise.all([
+    import("../../../mcp/bom-mcp/src/index"),
+    import("../../../mcp/bom-mcp/src/infra/store"),
+  ]).then(([indexModule, storeModule]) => ({
+    runTool: indexModule.runTool,
+    getJob: storeModule.getJob,
+  }));
+  return bomMcpToolsPromise;
+}
+
+async function runTool(request: Parameters<typeof import("../../../mcp/bom-mcp/src/index").runTool>[0]) {
+  const tools = await loadBomMcpTools();
+  return tools.runTool(request);
+}
+
+async function getJob(jobId: string) {
+  const tools = await loadBomMcpTools();
+  return tools.getJob(jobId);
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
@@ -175,7 +205,7 @@ describe("bom-mcp tools", () => {
       },
     });
 
-    const db = new Database(resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "bom-mcp.sqlite"));
+    const db = new Database(BOM_MCP_TEST_DB_PATH);
     db.prepare("UPDATE part_prices SET effective_at = ? WHERE part_number_norm = ?").run(
       new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
       "STALE-MANUAL-001",
@@ -204,7 +234,7 @@ describe("bom-mcp tools", () => {
   });
 
   it("returns catalog metadata with parseable priceUpdatedAt", async () => {
-    const db = new Database(resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "bom-mcp.sqlite"));
+    const db = new Database(BOM_MCP_TEST_DB_PATH);
     db.prepare(
       `INSERT INTO part_prices (
         part_number_norm, supplier, currency, unit_price, source_type, source_ref, effective_at
@@ -568,7 +598,7 @@ describe("bom-mcp tools", () => {
       })) as { jobId: string };
       await waitForSucceededJob(firstSubmit.jobId);
 
-      const db = new Database(resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "bom-mcp.sqlite"));
+      const db = new Database(BOM_MCP_TEST_DB_PATH);
       db.prepare("UPDATE part_prices SET effective_at = ?, expires_at = ? WHERE part_number_norm = ?").run(
         new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
         new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
@@ -645,7 +675,7 @@ describe("bom-mcp tools", () => {
       })) as { jobId: string };
       await waitForSucceededJob(firstSubmit.jobId);
 
-      const db = new Database(resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "bom-mcp.sqlite"));
+      const db = new Database(BOM_MCP_TEST_DB_PATH);
       db.prepare("UPDATE part_prices SET effective_at = ?, expires_at = ? WHERE part_number_norm = ?").run(
         new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
         new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
@@ -859,7 +889,7 @@ describe("bom-mcp tools", () => {
     })) as { jobId: string };
     await sleep(10);
 
-    const job = getJob(submitResult.jobId);
+    const job = await getJob(submitResult.jobId);
     expect(Array.isArray(job?.input.content)).toBeTrue();
     expect((job?.input.content as number[] | undefined)?.[0]).toBe(inputBytes[0]);
   });
@@ -875,7 +905,7 @@ describe("bom-mcp tools", () => {
     })) as { jobId: string };
     await sleep(10);
 
-    const job = getJob(submitResult.jobId);
+    const job = await getJob(submitResult.jobId);
     expect(job?.lines[0]?.rawText).toContain("CC0402KRX7R7BB224");
     expect(job?.lines[0]?.rawText).toContain("220n 16V X7R");
   });
