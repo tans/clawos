@@ -1,7 +1,8 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import type { BomLine, JobRecord, QuoteResult, SubmitBomInput } from "../types";
+import { resolveRuntimeEnv } from "../runtime-env";
 
 export interface JobData {
   job: JobRecord;
@@ -20,7 +21,8 @@ export interface StoredPartPrice {
   expiresAt?: string;
 }
 
-const DB_PATH = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "bom-mcp.sqlite");
+const runtimeEnv = resolveRuntimeEnv();
+const DB_PATH = runtimeEnv.dbPath;
 mkdirSync(dirname(DB_PATH), { recursive: true });
 
 const db = new Database(DB_PATH);
