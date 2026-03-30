@@ -12,6 +12,8 @@
   - 多 BOM 消息聚合报价示例
 - `bom-mcp.export_customer_quote.json`
   - 直接导出业务文件的示例
+- `bom-mcp.lowcode.yaml`
+  - ClawOS / MCPPanel 的低代码装配样例，包含运行时动作、配置字段和示例入口
 
 仓库内可直接这样调用：
 

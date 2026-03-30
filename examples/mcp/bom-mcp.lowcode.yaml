@@ -1,0 +1,150 @@
+apiVersion: clawos/v1
+kind: MCPPanel
+metadata:
+  name: bom-mcp
+  title: BOM Quote
+  icon: package
+  category: business
+  order: 30
+  tags:
+    - bom
+    - quoting
+    - electronics
+
+spec:
+  visibility:
+    enabled: true
+    environments:
+      - dev
+      - staging
+      - prod
+
+  status:
+    source: health_endpoint
+    endpoint: /internal/mcp/bom/health
+    fields:
+      - key: state
+        label: 运行状态
+        type: badge
+      - key: version
+        label: 版本
+        type: text
+      - key: lastCheckedAt
+        label: 最近检查
+        type: datetime
+
+  views:
+    - id: overview
+      title: 概览
+      blocks:
+        - type: key_value
+          source: status
+        - type: markdown
+          source: static
+          content: |
+            bom-mcp 提供电子 BOM 的多 BOM 识别、报价、导出和运行时自检能力。
+
+            推荐主路径：
+            - 业务报价：`quote_customer_message`
+            - 文件导出：`export_customer_quote`
+            - 环境排障：`doctor`
+
+    - id: config
+      title: 配置
+      blocks:
+        - type: form
+          submitAction: update_config
+          fields:
+            - name: stateDir
+              label: BOM_MCP_STATE_DIR
+              component: input
+              required: true
+            - name: dbPath
+              label: BOM_MCP_DB_PATH
+              component: input
+              required: true
+            - name: exportDir
+              label: BOM_MCP_EXPORT_DIR
+              component: input
+              required: true
+            - name: cacheDir
+              label: BOM_MCP_CACHE_DIR
+              component: input
+              required: true
+            - name: publicBaseUrl
+              label: BOM_MCP_PUBLIC_BASE_URL
+              component: input
+              rules:
+                - type: url
+
+    - id: examples
+      title: 示例
+      blocks:
+        - type: markdown
+          source: static
+          content: |
+            样例文件位于：
+
+            - `examples/mcp/bom-mcp.env.example`
+            - `examples/mcp/bom-mcp.doctor.json`
+            - `examples/mcp/bom-mcp.quote_customer_message.json`
+            - `examples/mcp/bom-mcp.export_customer_quote.json`
+
+            常用命令：
+
+            ```bash
+            bash scripts/run-bom-mcp.sh doctor examples/mcp/bom-mcp.env.example
+            bash scripts/run-bom-mcp.sh serve examples/mcp/bom-mcp.env.example
+            bash scripts/call-bom-mcp.sh quote_customer_message examples/mcp/bom-mcp.quote_customer_message.json examples/mcp/bom-mcp.env.example
+            ```
+
+  actions:
+    - id: start
+      label: 启动
+      type: lifecycle
+      executor: mcp_runtime.start
+      confirm: true
+
+    - id: stop
+      label: 停止
+      type: lifecycle
+      executor: mcp_runtime.stop
+      confirm: true
+
+    - id: reload
+      label: 重载配置
+      type: lifecycle
+      executor: mcp_runtime.reload
+
+    - id: update_config
+      label: 保存配置
+      type: config
+      executor: mcp_config.update
+      payloadSchemaRef: '#/components/schemas/ConfigUpdate'
+
+    - id: healthcheck
+      label: 健康检查
+      type: observe
+      executor: mcp_observe.healthcheck
+
+  components:
+    schemas:
+      ConfigUpdate:
+        type: object
+        properties:
+          stateDir:
+            type: string
+          dbPath:
+            type: string
+          exportDir:
+            type: string
+          cacheDir:
+            type: string
+          publicBaseUrl:
+            type: string
+            format: uri
+        required:
+          - stateDir
+          - dbPath
+          - exportDir
+          - cacheDir
