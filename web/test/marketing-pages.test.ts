@@ -78,4 +78,48 @@ describe("marketing pages", () => {
     expect(html).toContain(">部署评估<");
     expect(html).not.toContain(">技能市场<");
   });
+
+  it("shows the agent market entry surfaces when marketplace is enabled", async () => {
+    process.env.MARKETPLACE_ENABLED = "1";
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+
+    const response = await app.request("http://localhost/");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(">Agent 协作<");
+    expect(html).toContain("href=\"/agent-market\"");
+
+    const navOrderAnchor = ">治理能力<";
+    const navOrderAnchorIndex = html.indexOf(navOrderAnchor);
+    const navMarketIndex = html.indexOf(">Agent 协作<", navOrderAnchorIndex);
+    const navDownloadsIndex = html.indexOf(">下载试用<", navOrderAnchorIndex);
+    const navAssessmentIndex = html.indexOf(">部署评估<", navOrderAnchorIndex);
+    expect(navOrderAnchorIndex).toBeGreaterThan(-1);
+    expect(navMarketIndex).toBeGreaterThan(-1);
+    expect(navDownloadsIndex).toBeGreaterThan(-1);
+    expect(navAssessmentIndex).toBeGreaterThan(-1);
+    expect(navMarketIndex).toBeLessThan(navDownloadsIndex);
+    expect(navDownloadsIndex).toBeLessThan(navAssessmentIndex);
+
+    const footerMarketIndex = html.lastIndexOf(">Agent 协作<");
+    const footerDownloadsIndex = html.lastIndexOf(">下载试用<");
+    expect(footerMarketIndex).toBeGreaterThan(-1);
+    expect(footerDownloadsIndex).toBeGreaterThan(-1);
+    expect(footerMarketIndex).toBeLessThan(footerDownloadsIndex);
+  });
+
+  it("hides the agent market entry surfaces when marketplace is disabled", async () => {
+    delete process.env.MARKETPLACE_ENABLED;
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+
+    const response = await app.request("http://localhost/");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).not.toContain(">Agent 协作<");
+    expect(html).not.toContain("href=\"/agent-market\"");
+  });
 });

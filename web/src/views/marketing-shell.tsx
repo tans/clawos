@@ -3,25 +3,33 @@
 import { PropsWithChildren } from "hono/jsx";
 import { renderToString } from "hono/jsx/dom/server";
 import { getBrandConfig } from "../lib/branding";
+import { getEnv } from "../lib/env";
 
 type MarketingShellProps = PropsWithChildren<{
   title: string;
   description: string;
-  currentPath: "/" | "/downloads" | "/contact";
+  currentPath: "/" | "/downloads" | "/contact" | "/agent-market";
 }>;
 
-const navItems = [
+const baseNavItems = [
   { href: "/", label: "解决方案" },
   { href: "/#architecture", label: "部署方式" },
   { href: "/#capabilities", label: "核心能力" },
   { href: "/#solutions", label: "适用场景" },
   { href: "/#governance", label: "治理能力" },
-  { href: "/downloads", label: "下载试用" },
-  { href: "/contact", label: "部署评估" },
 ] as const;
 
 export function renderMarketingShell({ title, description, currentPath, children }: MarketingShellProps): string {
   const { brandName, brandLogoUrl, brandDomain } = getBrandConfig();
+  const { marketplaceEnabled } = getEnv();
+  const navItems = marketplaceEnabled
+    ? [...baseNavItems, { href: "/agent-market", label: "Agent 协作" as const }]
+    : baseNavItems;
+  const finalNavItems = [
+    ...navItems,
+    { href: "/downloads", label: "下载试用" as const },
+    { href: "/contact", label: "部署评估" as const },
+  ];
 
   return `<!doctype html>${renderToString(
     <html lang="zh-CN">
@@ -42,7 +50,7 @@ export function renderMarketingShell({ title, description, currentPath, children
               <span>{brandName}</span>
             </a>
             <nav class="marketing-nav-links" aria-label="主导航">
-              {navItems.map((item) => (
+              {finalNavItems.map((item) => (
                 <a
                   href={item.href}
                   class={item.href === currentPath ? "marketing-nav-link is-active" : "marketing-nav-link"}
@@ -60,6 +68,7 @@ export function renderMarketingShell({ title, description, currentPath, children
           <div class="marketing-footer-inner">
             <p>{`${brandName} · ${brandDomain}`}</p>
             <div class="marketing-footer-links">
+              {marketplaceEnabled ? <a href="/agent-market">Agent 协作</a> : null}
               <a href="/downloads">下载试用</a>
               <a href="/contact">部署评估</a>
             </div>
