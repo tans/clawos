@@ -247,6 +247,13 @@ export BOM_MCP_PUBLIC_BASE_URL="https://files.example.com/bom-mcp"
 - `examples/mcp/bom-mcp.quote_customer_message.json`
 - `examples/mcp/bom-mcp.export_customer_quote.json`
 
+如果只是想先在仓库里本地跑通，可以直接使用脚本：
+
+```bash
+bash scripts/run-bom-mcp.sh doctor examples/mcp/bom-mcp.env.example
+bash scripts/run-bom-mcp.sh serve examples/mcp/bom-mcp.env.example
+```
+
 如果只是在本机或内网里先跑通，也可以先不设置 `BOM_MCP_PUBLIC_BASE_URL`。
 这时导出结果仍然可用，只是只返回 `filePath` / `fileName` / `mimeType` 等本地文件元数据，不返回 `downloadUrl`。
 
