@@ -162,6 +162,10 @@ export interface GetBomJobResultOutput {
 }
 
 export interface ExportQuoteOutput {
-  downloadUrl: string;
+  filePath: string;
+  fileName: string;
+  format: ExportFormat;
+  mimeType: string;
   expiresAt: string;
+  downloadUrl?: string;
 }

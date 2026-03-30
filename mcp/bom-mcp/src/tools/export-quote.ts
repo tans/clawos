@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { getQuote } from "./get-quote";
 import { singleBomToCsv, singleBomToXlsx } from "./export-shared";
 import { recordExport } from "../infra/store";
+import { resolveRuntimeEnv } from "../runtime-env";
 import type { ExportFormat, ExportQuoteOutput } from "../types";
 
 function assertFormat(format: ExportFormat): void {
@@ -12,16 +13,22 @@ function assertFormat(format: ExportFormat): void {
   }
 }
 
+const MIME_TYPES: Record<ExportFormat, string> = {
+  json: "application/json",
+  csv: "text/csv; charset=utf-8",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
+
 export async function exportQuote(jobId: string, format: ExportFormat): Promise<ExportQuoteOutput> {
   assertFormat(format);
   const quote = await getQuote(jobId);
 
-  const outputDir = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "exports");
-  await mkdir(outputDir, { recursive: true });
+  const { exportDir, publicBaseUrl } = resolveRuntimeEnv();
+  await mkdir(exportDir, { recursive: true });
 
   const extension = format;
   const fileName = `${jobId}.${extension}`;
-  const absolutePath = resolve(outputDir, fileName);
+  const absolutePath = resolve(exportDir, fileName);
 
   const body =
     format === "json" ? JSON.stringify(quote, null, 2) : format === "csv" ? singleBomToCsv(quote) : singleBomToXlsx(quote);
@@ -36,8 +43,17 @@ export async function exportQuote(jobId: string, format: ExportFormat): Promise<
   recordExport({ exportId, jobId, format: extension, filePath: absolutePath, checksum });
 
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  return {
-    downloadUrl: `/artifacts/mcp/bom-mcp/exports/${encodeURIComponent(fileName)}`,
+  const result: ExportQuoteOutput = {
+    filePath: absolutePath,
+    fileName,
+    format,
+    mimeType: MIME_TYPES[format],
     expiresAt,
   };
+
+  if (publicBaseUrl) {
+    result.downloadUrl = `${publicBaseUrl}/${encodeURIComponent(fileName)}`;
+  }
+
+  return result;
 }

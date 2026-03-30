@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { quoteCustomerMessage } from "../domain/quote-customer-message";
 import { multiBomToCsv, multiBomToXlsx } from "./export-shared";
 import { validateTaxRate } from "./quote-params";
+import { resolveRuntimeEnv } from "../runtime-env";
 import type { ExportFormat, ExportQuoteOutput } from "../types";
 
 interface ExportCustomerQuoteInput {
@@ -20,6 +21,12 @@ function assertFormat(format: ExportFormat): void {
     throw new Error(`不支持的导出格式: ${format}`);
   }
 }
+
+const MIME_TYPES: Record<ExportFormat, string> = {
+  json: "application/json",
+  csv: "text/csv; charset=utf-8",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+};
 
 export async function exportCustomerQuoteTool(input: ExportCustomerQuoteInput): Promise<ExportQuoteOutput> {
   if (!input.message?.trim()) {
@@ -39,11 +46,11 @@ export async function exportCustomerQuoteTool(input: ExportCustomerQuoteInput): 
     webSuppliers: input.webSuppliers,
   });
 
-  const outputDir = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "exports");
-  await mkdir(outputDir, { recursive: true });
+  const { exportDir, publicBaseUrl } = resolveRuntimeEnv();
+  await mkdir(exportDir, { recursive: true });
 
   const fileName = `${result.requestId}.${format}`;
-  const absolutePath = resolve(outputDir, fileName);
+  const absolutePath = resolve(exportDir, fileName);
   const body =
     format === "json"
       ? JSON.stringify(result, null, 2)
@@ -58,8 +65,17 @@ export async function exportCustomerQuoteTool(input: ExportCustomerQuoteInput): 
   }
 
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  return {
-    downloadUrl: `/artifacts/mcp/bom-mcp/exports/${encodeURIComponent(fileName)}`,
+  const output: ExportQuoteOutput = {
+    filePath: absolutePath,
+    fileName,
+    format,
+    mimeType: MIME_TYPES[format],
     expiresAt,
   };
+
+  if (publicBaseUrl) {
+    output.downloadUrl = `${publicBaseUrl}/${encodeURIComponent(fileName)}`;
+  }
+
+  return output;
 }
