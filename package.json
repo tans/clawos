@@ -16,6 +16,8 @@
     "release:beta": "bun run scripts/release-clawos.ts --env=canary -- --release-channel=beta",
     "release:canary": "bun run scripts/release-clawos.ts --env=canary -- --release-channel=canary",
     "release:dev": "bun run scripts/release-clawos.ts --env=dev",
+    "bom-mcp:serve": "bash scripts/run-bom-mcp.sh serve",
+    "bom-mcp:doctor": "bash scripts/run-bom-mcp.sh doctor",
     "electrobun:download": "cd app && bun run electrobun:download",
     "test": "bun test test",
     "prepare": "bash scripts/setup-git-hooks.sh"
