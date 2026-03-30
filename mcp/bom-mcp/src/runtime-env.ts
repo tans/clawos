@@ -19,53 +19,39 @@ function normalizeOptionalUrl(value: string | undefined): string | undefined {
 }
 
 export function resolveRuntimeEnv(): BomRuntimeEnv {
+  const cwd = process.cwd();
   const envStateDir = process.env.BOM_MCP_STATE_DIR?.trim();
-  const devStateDir = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp");
-  if (envStateDir) {
-    const cwd = process.cwd();
-    const stateDir = isAbsolute(envStateDir) ? envStateDir : resolve(cwd, envStateDir);
-
-    const sanitizePath = (value: string | undefined, fallback: string): string => {
-      const trimmed = value?.trim();
-      if (!trimmed) {
-        return fallback;
-      }
-      return isAbsolute(trimmed) ? trimmed : resolve(cwd, trimmed);
-    };
-
-    return {
-      stateDir,
-      dbPath: sanitizePath(process.env.BOM_MCP_DB_PATH, join(stateDir, "bom-mcp.sqlite")),
-      exportDir: sanitizePath(process.env.BOM_MCP_EXPORT_DIR, join(stateDir, "exports")),
-      cacheDir: sanitizePath(process.env.BOM_MCP_CACHE_DIR, join(stateDir, "cache")),
-      publicBaseUrl: normalizeOptionalUrl(process.env.BOM_MCP_PUBLIC_BASE_URL),
-      source: "env",
-    };
-  }
-
+  const devStateDir = resolve(cwd, "artifacts", "mcp", "bom-mcp");
   const homeDir = homedir().trim();
-  if (homeDir) {
-    const stateDir = join(homeDir, ".openclaw", "state", "bom-mcp");
-    return {
-      stateDir,
-      dbPath: join(stateDir, "bom-mcp.sqlite"),
-      exportDir: join(stateDir, "exports"),
-      cacheDir: join(stateDir, "cache"),
-      publicBaseUrl: normalizeOptionalUrl(process.env.BOM_MCP_PUBLIC_BASE_URL),
-      source: "user_home",
-    };
+
+  let stateDir: string;
+  let source: BomRuntimeEnv["source"];
+
+  if (envStateDir) {
+    stateDir = isAbsolute(envStateDir) ? envStateDir : resolve(cwd, envStateDir);
+    source = "env";
+  } else if (homeDir) {
+    stateDir = join(homeDir, ".openclaw", "state", "bom-mcp");
+    source = "user_home";
+  } else {
+    stateDir = devStateDir;
+    source = "dev_fallback";
   }
 
-  return buildDevFallback(devStateDir);
-}
+  const resolveEnvPath = (value: string | undefined, fallback: string): string => {
+    const trimmed = value?.trim();
+    if (!trimmed) {
+      return fallback;
+    }
+    return isAbsolute(trimmed) ? trimmed : resolve(cwd, trimmed);
+  };
 
-function buildDevFallback(stateDir: string): BomRuntimeEnv {
   return {
     stateDir,
-    dbPath: join(stateDir, "bom-mcp.sqlite"),
-    exportDir: join(stateDir, "exports"),
-    cacheDir: join(stateDir, "cache"),
+    dbPath: resolveEnvPath(process.env.BOM_MCP_DB_PATH, join(stateDir, "bom-mcp.sqlite")),
+    exportDir: resolveEnvPath(process.env.BOM_MCP_EXPORT_DIR, join(stateDir, "exports")),
+    cacheDir: resolveEnvPath(process.env.BOM_MCP_CACHE_DIR, join(stateDir, "cache")),
     publicBaseUrl: normalizeOptionalUrl(process.env.BOM_MCP_PUBLIC_BASE_URL),
-    source: "dev_fallback",
+    source,
   };
 }

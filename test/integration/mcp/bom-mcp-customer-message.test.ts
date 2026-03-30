@@ -2,7 +2,20 @@ import { describe, expect, it } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as XLSX from "xlsx";
-import { runTool } from "../../../mcp/bom-mcp/src/index";
+
+const BOM_MCP_TEST_STATE_DIR = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp");
+
+let bomMcpCustomerToolsPromise:
+  | Promise<{ runTool: typeof import("../../../mcp/bom-mcp/src/index").runTool }>
+  | undefined;
+
+async function loadBomMcpCustomerTools() {
+  process.env.BOM_MCP_STATE_DIR ??= BOM_MCP_TEST_STATE_DIR;
+  bomMcpCustomerToolsPromise ??= import("../../../mcp/bom-mcp/src/index").then((module) => ({
+    runTool: module.runTool,
+  }));
+  return bomMcpCustomerToolsPromise;
+}
 
 type FileFirstExportResult = {
   filePath: string;
@@ -12,6 +25,11 @@ type FileFirstExportResult = {
   expiresAt: string;
   downloadUrl?: string;
 };
+
+async function runTool(request: Parameters<typeof import("../../../mcp/bom-mcp/src/index").runTool>[0]) {
+  const tools = await loadBomMcpCustomerTools();
+  return tools.runTool(request);
+}
 
 describe("bom-mcp quote_customer_message", () => {
   it("returns one aggregated result containing three BOM summaries", async () => {
@@ -44,17 +62,19 @@ describe("bom-mcp quote_customer_message", () => {
   });
 
   it("rejects invalid top-level taxRate", async () => {
+    const invalidMessage = [
+      "请报价",
+      "```csv",
+      "partNumber,quantity",
+      "STM32F103C8T6,2",
+      "```",
+    ].join("\n");
+
     await expect(
       runTool({
         tool: "quote_customer_message" as never,
         args: {
-          message: `
-请报价
-\`\`\`csv
-partNumber,quantity
-STM32F103C8T6,2
-\`\`\`
-`,
+          message: invalidMessage,
           taxRate: -0.5,
         },
       }),
@@ -124,8 +144,12 @@ STM32F103C8T6,2
     expect(workbook.SheetNames).toContain("BOMs");
     expect(workbook.SheetNames).toContain("Lines");
 
-    const bomRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets.BOMs, { defval: "" });
-    const lineRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets.Lines, { defval: "" });
+    const bomRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets.BOMs, {
+      defval: "",
+    });
+    const lineRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets.Lines, {
+      defval: "",
+    });
 
     expect(bomRows[0]?.bomName).toBe("BOM-1 (PGE22001.052.000-02)");
     expect(Object.keys(lineRows[0] || {})).toContain("sourceRecordedAt");
