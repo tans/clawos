@@ -58,4 +58,16 @@ describe("bom-mcp runtime env", () => {
     expect(env.source).toBe("dev_fallback");
     expect(env.stateDir).toBe(join(process.cwd(), "artifacts", "mcp", "bom-mcp"));
   });
+
+  it("honors export dir overrides without a state override", async () => {
+    const customExportDir = await mkdtemp(join(tmpdir(), "bom-mcp-export-"));
+    process.env.BOM_MCP_EXPORT_DIR = customExportDir;
+    mock.module("node:os", () => ({ homedir: () => "" }));
+
+    const resolveRuntimeEnv = await loadResolveRuntimeEnv();
+    const env = resolveRuntimeEnv();
+
+    expect(env.exportDir).toBe(customExportDir);
+    await rm(customExportDir, { recursive: true, force: true });
+  });
 });

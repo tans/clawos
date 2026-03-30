@@ -1,10 +1,8 @@
-import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { quoteCustomerMessage } from "../domain/quote-customer-message";
 import { multiBomToCsv, multiBomToXlsx } from "./export-shared";
 import { validateTaxRate } from "./quote-params";
-import { recordExport } from "../infra/store";
 import { resolveRuntimeEnv } from "../runtime-env";
 import type { ExportFormat, ExportQuoteOutput } from "../types";
 
@@ -74,16 +72,6 @@ export async function exportCustomerQuoteTool(input: ExportCustomerQuoteInput): 
     mimeType: MIME_TYPES[format],
     expiresAt,
   };
-
-  const checksum = createHash("sha256").update(body).digest("hex");
-  const exportId = `exp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  recordExport({
-    exportId,
-    jobId: result.requestId,
-    format,
-    filePath: absolutePath,
-    checksum,
-  });
 
   if (publicBaseUrl) {
     output.downloadUrl = `${publicBaseUrl}/${encodeURIComponent(fileName)}`;
