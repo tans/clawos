@@ -1,8 +1,20 @@
-import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { app } from "../src/index";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+import { resolve } from "node:path";
+
+let app: typeof import("../src/index").app;
+const webRoot = resolve(import.meta.dir, "..");
+const builtCssPath = resolve(webRoot, "dist", "output.css");
 
 describe("marketing pages", () => {
   let marketplaceEnabledSnapshot: string | undefined;
+
+  beforeAll(async () => {
+    if (!process.env.CLAWOS_WEB_ROOT) {
+      process.env.CLAWOS_WEB_ROOT = webRoot;
+    }
+
+    ({ app } = await import("../src/index"));
+  });
 
   beforeEach(async () => {
     marketplaceEnabledSnapshot = process.env.MARKETPLACE_ENABLED;
@@ -145,6 +157,13 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
+    expect(html).toContain("market-page");
+    expect(html).toContain("market-hero-grid");
+    expect(html).toContain("market-hero-panel");
+    expect(html).toContain("market-task-grid");
+    expect(html).toContain("market-flow-panel");
+    expect(html).toContain("market-participant-grid");
+    expect(html).toContain("market-final-cta-inner");
     expect(html).toContain("让企业任务更适合由 Agent 协作完成");
     expect(html).toContain("不是增加一个工具，而是建立更清晰的交付方式");
     expect(html).toContain("优先面向这些可被标准化的任务");
@@ -170,5 +189,18 @@ describe("marketing pages", () => {
     expect(html).toContain("让企业任务更适合由 Agent 协作完成");
     expect(html).not.toContain("PoC");
     expect(html).not.toContain("抢单");
+  });
+
+  it("exposes agent market layout hooks in the stylesheet", async () => {
+    const css = await Bun.file(builtCssPath).text();
+
+    expect(css).toContain(".market-page");
+    expect(css).toContain(".market-hero-grid");
+    expect(css).toContain(".market-hero-panel");
+    expect(css).toContain(".market-section");
+    expect(css).toContain(".market-task-grid");
+    expect(css).toContain(".market-flow-panel");
+    expect(css).toContain(".market-participant-grid");
+    expect(css).toContain(".market-final-cta");
   });
 });

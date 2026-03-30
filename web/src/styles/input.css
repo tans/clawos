@@ -254,6 +254,103 @@
     padding-block: 5rem 4rem;
   }
 
+  .market-page {
+    display: grid;
+    gap: 3rem;
+    padding-block: 5.5rem 5rem;
+  }
+
+  .market-page .market-section {
+    padding-block: 3.75rem;
+  }
+
+  .market-hero-grid {
+    display: grid;
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .market-hero-copy {
+    max-width: 46rem;
+  }
+
+  .market-hero-panel {
+    border-radius: 1.25rem;
+    border: 1px solid rgb(229 231 235 / 0.6);
+    background: var(--surface-muted);
+    padding: 1.75rem;
+  }
+
+  .market-hero-panel-title {
+    color: var(--ink-soft);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .market-hero-signal-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  .market-hero-signal {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .market-hero-signal-label {
+    color: var(--ink-strong);
+    font-weight: 600;
+  }
+
+  .market-hero-signal-text {
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+
+  .market-task-grid,
+  .market-participant-grid {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+    padding-left: 1.25rem;
+    list-style: disc;
+    color: var(--ink-soft);
+  }
+
+  .market-flow-panel {
+    margin-top: 1.75rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgb(229 231 235 / 0.55);
+    background: var(--surface-panel);
+    padding: 1.5rem 1.75rem;
+  }
+
+  .market-flow-steps {
+    display: grid;
+    gap: 0.6rem;
+    padding-left: 1.25rem;
+    list-style: decimal;
+    color: var(--ink-soft);
+  }
+
+  .market-section-narrow {
+    max-width: 56rem;
+  }
+
+  .market-final-cta {
+    padding-bottom: 6rem;
+  }
+
+  .market-final-cta-inner {
+    border-radius: 1.5rem;
+    border: 1px solid rgb(229 231 235 / 0.55);
+    background: var(--surface-muted);
+    padding: 2.5rem;
+  }
+
   .marketing-kicker {
     color: var(--brand-accent-strong);
     font-size: 0.78rem;
@@ -564,10 +661,32 @@
     justify-content: space-between;
     flex-direction: row;
   }
+
+  .market-page .market-section {
+    padding-block: 4.25rem;
+  }
+
+  .market-task-grid,
+  .market-participant-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 1024px) {
   .marketing-nav-links {
     display: flex;
+  }
+
+  .market-hero-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    gap: 3.5rem;
+  }
+
+  .market-page .market-section {
+    padding-block: 4.75rem;
+  }
+
+  .market-final-cta-inner {
+    padding: 3.5rem;
   }
 }
