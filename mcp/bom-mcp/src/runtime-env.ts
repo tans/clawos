@@ -1,5 +1,4 @@
 import { homedir } from "node:os";
-import { existsSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
 export interface BomRuntimeEnv {
@@ -22,8 +21,6 @@ function normalizeOptionalUrl(value: string | undefined): string | undefined {
 export function resolveRuntimeEnv(): BomRuntimeEnv {
   const envStateDir = process.env.BOM_MCP_STATE_DIR?.trim();
   const devStateDir = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp");
-  const devStateDbPath = join(devStateDir, "bom-mcp.sqlite");
-  const hasSeededDevState = existsSync(devStateDbPath);
   if (envStateDir) {
     const cwd = process.cwd();
     const stateDir = isAbsolute(envStateDir) ? envStateDir : resolve(cwd, envStateDir);
@@ -44,10 +41,6 @@ export function resolveRuntimeEnv(): BomRuntimeEnv {
       publicBaseUrl: normalizeOptionalUrl(process.env.BOM_MCP_PUBLIC_BASE_URL),
       source: "env",
     };
-  }
-
-  if (hasSeededDevState) {
-    return buildDevFallback(devStateDir);
   }
 
   const homeDir = homedir().trim();
