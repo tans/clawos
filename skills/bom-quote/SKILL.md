@@ -22,6 +22,8 @@ Use `bom-mcp` to turn electronic BOM input into a business-usable quote summary.
    - `ambiguous_candidates`: ask the customer to choose among materially different candidate parts.
    - `missing_reliable_price`: tell the customer the exact part was identified but no reliable current price was confirmed.
 6. If the user needs a file, use `export_quote` for a single BOM job, or `export_customer_quote` for a multi-BOM customer message.
+7. Treat export results as file-first: consume `filePath`, `fileName`, `format`, `mimeType`, and `expiresAt` as the primary contract. Use `downloadUrl` only when the host explicitly provides it.
+8. If the tool reports runtime/setup issues, run `doctor` first and use its path/check output to diagnose missing DB, export dir, cache dir, or `publicBaseUrl` configuration.
 
 ## Output Guidance
 - Lead with BOM count, resolved/pending/failed lines, subtotal, tax, and grand total.
@@ -29,3 +31,4 @@ Use `bom-mcp` to turn electronic BOM input into a business-usable quote summary.
 - Show both `priceUpdatedAt` and `sourceRecordedAt` so business users can distinguish quote-time processing from the source's last confirmed price time.
 - Use `pricingState` to distinguish fresh fetches, cached values, and stale-cache fallback.
 - Do not invent substitute parts for exact-MPN missing-price cases.
+- When returning an export result to the host, prefer reporting the local file metadata directly. Do not assume a `downloadUrl` exists.
