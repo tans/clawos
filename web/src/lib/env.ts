@@ -9,6 +9,7 @@ export interface AppEnv {
   maxConfigSizeBytes: number;
   maxMcpPackageSizeBytes: number;
   storageDir: string;
+  marketplaceEnabled: boolean;
 }
 
 export interface StartupEnvCheck {
@@ -35,6 +36,27 @@ function mbToBytes(sizeMb: number): number {
   return sizeMb * 1024 * 1024;
 }
 
+function readBooleanFlag(value: string | undefined, fallback: boolean): boolean {
+  if (!value) {
+    return fallback;
+  }
+
+  switch (value.trim().toLowerCase()) {
+    case "1":
+    case "true":
+    case "yes":
+    case "on":
+      return true;
+    case "0":
+    case "false":
+    case "no":
+    case "off":
+      return false;
+    default:
+      return fallback;
+  }
+}
+
 export function getEnv(): AppEnv {
   if (cachedEnv) {
     return cachedEnv;
@@ -44,6 +66,7 @@ export function getEnv(): AppEnv {
   const maxInstallerSizeMb = readInt(process.env.MAX_INSTALLER_SIZE_MB, 300);
   const maxConfigSizeMb = readInt(process.env.MAX_CONFIG_SIZE_MB, 2);
   const maxMcpPackageSizeMb = readInt(process.env.MAX_MCP_PACKAGE_SIZE_MB, maxInstallerSizeMb);
+  const marketplaceEnabled = readBooleanFlag(process.env.MARKETPLACE_ENABLED, false);
 
   cachedEnv = {
     port,
@@ -54,6 +77,7 @@ export function getEnv(): AppEnv {
     maxConfigSizeBytes: mbToBytes(maxConfigSizeMb),
     maxMcpPackageSizeBytes: mbToBytes(maxMcpPackageSizeMb),
     storageDir: resolve(process.env.STORAGE_DIR || resolve(process.cwd(), "storage")),
+    marketplaceEnabled,
   };
 
   return cachedEnv;
