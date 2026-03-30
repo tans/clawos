@@ -223,6 +223,42 @@ ClawOS 里当前做的事情主要是：
 
 这说明 ClawOS 现在更像是 OpenClaw 的管理前端，而不是 skill 必需的运行层。
 
+### 4.4 一个可直接落地的最小接入示例
+
+如果当前目标是“先稳定接入并能跑起来”，宿主侧至少要同时准备两部分：
+
+1. 把 `skills/bom-quote/SKILL.md` 放到 OpenClaw 可发现的 skill 目录
+2. 让 host 能按 `bom-mcp/manifest.json` 的 `runtime.command` 拉起 stdio server
+
+推荐把 runtime 环境变量固定下来，例如：
+
+```bash
+export BOM_MCP_STATE_DIR="$HOME/.openclaw/state/bom-mcp"
+export BOM_MCP_DB_PATH="$BOM_MCP_STATE_DIR/bom-mcp.sqlite"
+export BOM_MCP_EXPORT_DIR="$BOM_MCP_STATE_DIR/exports"
+export BOM_MCP_CACHE_DIR="$BOM_MCP_STATE_DIR/cache"
+export BOM_MCP_PUBLIC_BASE_URL="https://files.example.com/bom-mcp"
+```
+
+如果只是在本机或内网里先跑通，也可以先不设置 `BOM_MCP_PUBLIC_BASE_URL`。
+这时导出结果仍然可用，只是只返回 `filePath` / `fileName` / `mimeType` 等本地文件元数据，不返回 `downloadUrl`。
+
+业务侧推荐默认按下面的调用偏好使用：
+
+- 多 BOM 消息：`quote_customer_message`
+- 需要文件：`export_customer_quote`
+- 缺本地价时：
+  - `webPricing = true`
+  - `webSuppliers = ["digikey_cn", "ic_net"]`
+- 部署排障：先跑 `doctor`
+
+如果技术接入者需要一个最小心智模型，可以直接按下面理解：
+
+- skill 决定“什么时候调用 BOM 工具”
+- `quote_customer_message` / `export_customer_quote` 决定“日常业务主路径”
+- `doctor` 决定“环境有没有装对”
+- `filePath` 决定“导出文件最终落在哪”
+
 ## 5. 当前不依赖 ClawOS 能走到哪一步
 
 ### 5.1 可以做到的
