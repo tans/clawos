@@ -14,6 +14,7 @@ interface McpManifest {
   publisher?: unknown;
   platforms?: unknown;
   version?: unknown;
+  runtime?: unknown;
 }
 
 async function listMcpDirs(): Promise<string[]> {
@@ -45,6 +46,14 @@ describe("mcp manifests", () => {
       expect((manifest.platforms as unknown[]).length).toBeGreaterThan(0);
       expect(typeof manifest.version).toBe("string");
       expect(SEMVER_PATTERN.test(String(manifest.version))).toBeTrue();
+
+      if (dirName === "bom-mcp") {
+        const runtime = manifest.runtime as { command?: unknown; cwd?: unknown } | undefined;
+        expect(runtime).toBeTruthy();
+        expect(Array.isArray(runtime?.command)).toBeTrue();
+        expect((runtime?.command as unknown[] | undefined)?.length).toBeGreaterThan(0);
+        expect(typeof runtime?.cwd).toBe("string");
+      }
     }
   });
 });

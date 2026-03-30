@@ -1,5 +1,13 @@
 # bom-mcp 用法与问题分析
 
+> 注意：本 README 主要保留历史开发说明，部分内容已经过时。
+>
+> 当前面向技术接入者的最新说明请优先参考：
+> `docs/bom-quote-openclaw-integration.md`
+>
+> 当前 `bom-mcp` 已支持最小 stdio MCP server 启动方式：
+> `bun mcp/bom-mcp/src/index.ts serve --transport stdio`
+
 本文基于 `mcp/bom-mcp/src` 当前实现，给出可直接运行的用法说明，并分析现阶段主要问题。
 
 ## 1. 当前能力边界

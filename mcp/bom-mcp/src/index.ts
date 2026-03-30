@@ -5,16 +5,8 @@ import { submitBom } from "./tools/submit-bom";
 import { applyNlPriceUpdate } from "./tools/apply-nl-price-update";
 import { quoteCustomerMessageTool } from "./tools/quote-customer-message";
 import { exportCustomerQuoteTool } from "./tools/export-customer-quote";
-
-type ToolName =
-  | "submit_bom"
-  | "get_bom_job_result"
-  | "get_job_status"
-  | "get_quote"
-  | "export_quote"
-  | "export_customer_quote"
-  | "apply_nl_price_update"
-  | "quote_customer_message";
+import { serveStdio } from "./stdio-server";
+import { type ToolName, isToolName } from "./tool-spec";
 
 interface ToolRequest {
   tool: ToolName;
@@ -47,18 +39,37 @@ export async function runTool(request: ToolRequest): Promise<unknown> {
 }
 
 if (import.meta.main) {
-  const [tool, argsRaw] = process.argv.slice(2);
-  if (!tool) {
+  const [command, ...rest] = process.argv.slice(2);
+  if (!command) {
     console.error("Usage: bun mcp/bom-mcp/src/index.ts <tool> '<json-args>'");
+    console.error("   or: bun mcp/bom-mcp/src/index.ts serve --transport stdio");
     process.exit(1);
   }
-  const args = argsRaw ? (JSON.parse(argsRaw) as Record<string, unknown>) : {};
-  runTool({ tool: tool as ToolName, args })
-    .then((result) => {
-      console.log(JSON.stringify({ ok: true, result }, null, 2));
-    })
-    .catch((error) => {
+
+  if (command === "serve") {
+    const [transportFlag, transportValue] = rest;
+    if (transportFlag !== "--transport" || transportValue !== "stdio") {
+      console.error("Usage: bun mcp/bom-mcp/src/index.ts serve --transport stdio");
+      process.exit(1);
+    }
+    serveStdio(runTool).catch((error) => {
       console.error(JSON.stringify({ ok: false, error: (error as Error).message }, null, 2));
       process.exit(1);
     });
+  } else {
+    if (!isToolName(command)) {
+      console.error(JSON.stringify({ ok: false, error: `未知 tool: ${command}` }, null, 2));
+      process.exit(1);
+    }
+    const [argsRaw] = rest;
+    const args = argsRaw ? (JSON.parse(argsRaw) as Record<string, unknown>) : {};
+    runTool({ tool: command, args })
+      .then((result) => {
+        console.log(JSON.stringify({ ok: true, result }, null, 2));
+      })
+      .catch((error) => {
+        console.error(JSON.stringify({ ok: false, error: (error as Error).message }, null, 2));
+        process.exit(1);
+      });
+  }
 }

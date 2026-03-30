@@ -10,6 +10,16 @@
     "macos",
     "linux"
   ],
+  "runtime": {
+    "command": [
+      "bun",
+      "src/index.ts",
+      "serve",
+      "--transport",
+      "stdio"
+    ],
+    "cwd": "."
+  },
   "version": "0.1.3",
   "tools": [
     {
