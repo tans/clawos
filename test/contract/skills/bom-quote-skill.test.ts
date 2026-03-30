@@ -11,5 +11,6 @@ describe("bom-quote skill contract", () => {
     expect(skill).toContain("bom-mcp");
     expect(skill).toContain("quote_customer_message");
     expect(skill).toContain("export_quote");
+    expect(skill).toContain("export_customer_quote");
   });
 });

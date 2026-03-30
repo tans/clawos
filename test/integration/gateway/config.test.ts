@@ -28,7 +28,7 @@ describe("ensureChannelPluginsForEnabledChannels", () => {
     });
   });
 
-  it("preserves existing plugin fields and appends the full required plugin set", () => {
+  it("preserves existing plugin fields and appends only enabled channel plugins", () => {
     const config: Record<string, unknown> = {
       channels: {
         wework: { enabled: true },
@@ -49,12 +49,11 @@ describe("ensureChannelPluginsForEnabledChannels", () => {
 
     expect(config.plugins).toEqual({
       load: {
-        paths: ["/custom/path", "/data/openclaw/extensions/wework", "/data/openclaw/extensions/feishu"],
+        paths: ["/custom/path", "/data/openclaw/extensions/wework"],
       },
       allow: ["existing"],
       entries: {
         wework: { enabled: true, token: "abc" },
-        feishu: { enabled: true },
       },
     });
   });

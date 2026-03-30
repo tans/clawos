@@ -4,6 +4,7 @@ import { getQuote } from "./tools/get-quote";
 import { submitBom } from "./tools/submit-bom";
 import { applyNlPriceUpdate } from "./tools/apply-nl-price-update";
 import { quoteCustomerMessageTool } from "./tools/quote-customer-message";
+import { exportCustomerQuoteTool } from "./tools/export-customer-quote";
 
 type ToolName =
   | "submit_bom"
@@ -11,6 +12,7 @@ type ToolName =
   | "get_job_status"
   | "get_quote"
   | "export_quote"
+  | "export_customer_quote"
   | "apply_nl_price_update"
   | "quote_customer_message";
 
@@ -33,6 +35,8 @@ export async function runTool(request: ToolRequest): Promise<unknown> {
         String(request.args.jobId || ""),
         (request.args.format as Parameters<typeof exportQuote>[1]) || "json",
       );
+    case "export_customer_quote":
+      return exportCustomerQuoteTool(request.args as Parameters<typeof exportCustomerQuoteTool>[0]);
     case "apply_nl_price_update":
       return applyNlPriceUpdate(request.args as Parameters<typeof applyNlPriceUpdate>[0]);
     case "quote_customer_message":

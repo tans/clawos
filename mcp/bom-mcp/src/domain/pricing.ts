@@ -1,4 +1,4 @@
-import type { BomLine, QuotePriceSource } from "../types";
+import type { BomLine, QuotePriceSource, QuotePricingState } from "../types";
 import { getLatestPartPrice, type StoredPartPrice, upsertWebPartPrice } from "../infra/store";
 import { looksLikeSpecificPartNumber } from "./component-classifier";
 import { lookupWebPriceDetailed, type WebLookupAttempt, type WebSupplier } from "./web-pricing";
@@ -8,6 +8,7 @@ export interface LinePriceResolution {
   source: QuotePriceSource;
   updatedAt?: string;
   sourceRecordedAt?: string;
+  pricingState?: QuotePricingState;
   supplier?: string;
   sourceUrl?: string;
   warnings?: string[];
@@ -55,6 +56,7 @@ function buildStoredPriceResolution(price: StoredPartPrice, warnings: string[] =
     source: mapStoredPriceSource(price),
     updatedAt: new Date().toISOString(),
     sourceRecordedAt: price.effectiveAt,
+    pricingState: warnings.length > 0 ? "stale_fallback" : "cached",
     supplier: price.supplier,
     sourceUrl: price.sourceRef,
     warnings,
@@ -70,7 +72,12 @@ export async function resolveLinePrice(
 ): Promise<LinePriceResolution> {
   const directPrice = line.unitPrice !== undefined && line.unitPrice > 0 ? line.unitPrice : null;
   if (directPrice !== null) {
-    return { unitPrice: Number(directPrice.toFixed(4)), source: "input", updatedAt: new Date().toISOString() };
+    return {
+      unitPrice: Number(directPrice.toFixed(4)),
+      source: "input",
+      updatedAt: new Date().toISOString(),
+      pricingState: "input",
+    };
   }
 
   const storedPrice = getLatestPartPrice(line.partNumber);
@@ -100,6 +107,7 @@ export async function resolveLinePrice(
         source: webLookup.offer.supplier,
         updatedAt,
         sourceRecordedAt: updatedAt,
+        pricingState: "live_fetch",
         supplier: webLookup.offer.supplier,
         sourceUrl: webLookup.offer.url,
       };
@@ -127,6 +135,7 @@ export async function resolveLinePrice(
         source: webLookup.offer.supplier,
         updatedAt,
         sourceRecordedAt: updatedAt,
+        pricingState: "live_fetch",
         supplier: webLookup.offer.supplier,
         sourceUrl: webLookup.offer.url,
       };

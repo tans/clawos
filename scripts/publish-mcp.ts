@@ -28,6 +28,7 @@ interface Options {
   releaseChannel: ReleaseChannel;
   version?: string;
   writeManifest: boolean;
+  dryRun: boolean;
   timeoutMs: number;
   heartbeatMs: number;
 }
@@ -49,6 +50,7 @@ Options:
   --base-url <url>            Publish site, default https://clawos.minapp.xin
   --token <token>             Upload token, default from CLAWOS_UPLOAD_TOKEN/UPLOAD_TOKEN
   --no-write-manifest         Do not write bumped version back to mcp/<id>/manifest.json
+  --dry-run                   Build package and validate manifest without uploading
   --timeout-ms <ms>           Upload timeout, default 600000
   --heartbeat-ms <ms>         Upload heartbeat log interval, default 15000
   -h, --help                  Show help
@@ -69,6 +71,7 @@ function parseArgs(argv: string[]): Options {
     releaseChannel: parseReleaseChannel(process.env.CLAWOS_RELEASE_CHANNEL),
     version: process.env.CLAWOS_VERSION?.trim() || undefined,
     writeManifest: true,
+    dryRun: false,
     timeoutMs: Number.parseInt(process.env.UPLOAD_TIMEOUT_MS || "", 10) || 10 * 60 * 1000,
     heartbeatMs: Number.parseInt(process.env.UPLOAD_HEARTBEAT_MS || "", 10) || 15 * 1000,
   };
@@ -118,6 +121,10 @@ function parseArgs(argv: string[]): Options {
     }
     if (arg === "--no-write-manifest") {
       opts.writeManifest = false;
+      continue;
+    }
+    if (arg === "--dry-run") {
+      opts.dryRun = true;
       continue;
     }
 
@@ -437,6 +444,12 @@ async function main(): Promise<void> {
 
     const zipPath = await createTgzPackage(mcpId, version);
     await assertReadable(zipPath, "MCP package");
+
+    if (opts.dryRun) {
+      console.log(`[publish:mcp] dry run complete ${mcpId}@${version}`);
+      console.log(`[publish:mcp] package: ${zipPath}`);
+      continue;
+    }
 
     const result = await uploadMcpPackage({
       filePath: zipPath,

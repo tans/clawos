@@ -17,14 +17,15 @@ Use `bom-mcp` to turn electronic BOM input into a business-usable quote summary.
 1. If the user message contains one or more BOM blocks, call `quote_customer_message`.
 2. Set `currency` to `CNY` unless the user asks otherwise.
 3. Enable `webPricing` when local price is missing. Prefer `webSuppliers: ["digikey_cn", "ic_net"]`.
-4. Present totals, resolved lines, pending decision lines, failures, and the latest `priceUpdatedAt` values as reference for sales.
+4. Present totals, resolved lines, pending decision lines, failures, plus `priceUpdatedAt`, `sourceRecordedAt`, and `pricingState` as freshness reference for sales.
 5. If the result includes pending decisions:
    - `ambiguous_candidates`: ask the customer to choose among materially different candidate parts.
    - `missing_reliable_price`: tell the customer the exact part was identified but no reliable current price was confirmed.
-6. If the user needs a file, use `export_quote` on the generated job result or summarize the multi-BOM result directly.
+6. If the user needs a file, use `export_quote` for a single BOM job, or `export_customer_quote` for a multi-BOM customer message.
 
 ## Output Guidance
 - Lead with BOM count, resolved/pending/failed lines, subtotal, tax, and grand total.
 - Include supplier/source wording from `priceSource` rather than inventing confidence language.
-- Show `priceUpdatedAt` so business users know when the system last confirmed the price.
+- Show both `priceUpdatedAt` and `sourceRecordedAt` so business users can distinguish quote-time processing from the source's last confirmed price time.
+- Use `pricingState` to distinguish fresh fetches, cached values, and stale-cache fallback.
 - Do not invent substitute parts for exact-MPN missing-price cases.

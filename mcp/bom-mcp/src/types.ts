@@ -45,6 +45,7 @@ export type QuoteCompletionStatus = "completed" | "completed_with_decisions" | "
 export type QuoteLineDecisionType = "resolved" | "ambiguous_candidates" | "missing_reliable_price" | "unresolved";
 export type QuotePriceSource = "input" | "catalog" | "digikey_cn" | "ic_net" | "manual" | "missing";
 export type QuotePriceConfidence = "high" | "medium" | "low";
+export type QuotePricingState = "input" | "live_fetch" | "cached" | "stale_fallback";
 
 export interface QuoteLine {
   lineNo: number;
@@ -59,7 +60,9 @@ export interface QuoteLine {
   needsCustomerDecision: boolean;
   priceSource?: QuotePriceSource;
   priceUpdatedAt?: string;
+  sourceRecordedAt?: string;
   priceConfidence?: QuotePriceConfidence;
+  pricingState?: QuotePricingState;
   supplier?: string;
   sourceUrl?: string;
   reason: string;

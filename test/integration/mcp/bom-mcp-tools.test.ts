@@ -76,7 +76,10 @@ describe("bom-mcp tools", () => {
     const csv = await readFile(filePath, "utf-8");
     expect(csv).toContain("priceSource");
     expect(csv).toContain("priceUpdatedAt");
+    expect(csv).toContain("sourceRecordedAt");
     expect(csv).toContain("priceConfidence");
+    expect(csv).toContain("pricingState");
+    expect(csv).toContain("sourceUrl");
   });
 
   it("returns pending decisions instead of using a default fallback price", async () => {
@@ -676,12 +679,21 @@ describe("bom-mcp tools", () => {
         tool: "get_quote",
         args: { jobId: secondSubmit.jobId },
       })) as {
-        lines: Array<{ unitPrice?: number; priceSource?: string; priceConfidence?: string; reason?: string }>;
+        lines: Array<{
+          unitPrice?: number;
+          priceSource?: string;
+          priceConfidence?: string;
+          pricingState?: string;
+          sourceRecordedAt?: string;
+          reason?: string;
+        }>;
       };
 
       expect(secondQuote.lines[0]?.unitPrice).toBe(8.88);
       expect(secondQuote.lines[0]?.priceSource).toBe("digikey_cn");
       expect(secondQuote.lines[0]?.priceConfidence).toBe("low");
+      expect(secondQuote.lines[0]?.pricingState).toBe("stale_fallback");
+      expect(Number.isNaN(Date.parse(secondQuote.lines[0]?.sourceRecordedAt ?? ""))).toBeFalse();
       expect(secondQuote.lines[0]?.reason).toContain("缓存已过期，沿用上次确认价格");
       expect(secondQuote.lines[0]?.reason).toContain("digikey_cn 返回防护页");
     } finally {
@@ -734,6 +746,9 @@ describe("bom-mcp tools", () => {
       expect(csv).toContain("leadTime");
       expect(csv).toContain("note");
       expect(csv).toContain("priceSource");
+      expect(csv).toContain("sourceRecordedAt");
+      expect(csv).toContain("pricingState");
+      expect(csv).toContain("sourceUrl");
       expect(csv).toContain("请选择明确型号后重新报价");
       expect(csv).toContain("VKMD1001J680MV");
       expect(csv).toContain("68u");
@@ -770,6 +785,9 @@ describe("bom-mcp tools", () => {
     expect(Object.keys(lineRows[0] || {})).toContain("selectedManufacturer");
     expect(Object.keys(lineRows[0] || {})).toContain("leadTime");
     expect(Object.keys(lineRows[0] || {})).toContain("note");
+    expect(Object.keys(lineRows[0] || {})).toContain("sourceRecordedAt");
+    expect(Object.keys(lineRows[0] || {})).toContain("pricingState");
+    expect(Object.keys(lineRows[0] || {})).toContain("sourceUrl");
     expect(lineRows[0]?.priceSource).toBe("input");
     expect(String(lineRows[0]?.priceUpdatedAt || "")).not.toBe("");
   });
