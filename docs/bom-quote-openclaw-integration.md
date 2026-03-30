@@ -243,6 +243,9 @@ export BOM_MCP_PUBLIC_BASE_URL="https://files.example.com/bom-mcp"
 仓库里也提供了可直接拷贝的样例文件：
 
 - `examples/mcp/bom-mcp.env.example`
+- `examples/mcp/bom-mcp.doctor.json`
+- `examples/mcp/bom-mcp.quote_customer_message.json`
+- `examples/mcp/bom-mcp.export_customer_quote.json`
 
 如果只是在本机或内网里先跑通，也可以先不设置 `BOM_MCP_PUBLIC_BASE_URL`。
 这时导出结果仍然可用，只是只返回 `filePath` / `fileName` / `mimeType` 等本地文件元数据，不返回 `downloadUrl`。
