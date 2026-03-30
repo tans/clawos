@@ -3,12 +3,42 @@
   "id": "bom-mcp",
   "name": "bom-mcp",
   "displayName": "BOM MCP",
-  "description": "BOM 报价与任务编排 MCP 占位包。",
+  "description": "电子 BOM 报价 MCP，支持多 BOM 解析、价格来源标注、候选料提示与业务导出。",
   "publisher": "clawos",
   "platforms": [
     "windows",
     "macos",
     "linux"
   ],
-  "version": "0.1.1"
+  "version": "0.1.2",
+  "tools": [
+    {
+      "name": "submit_bom",
+      "description": "提交单个 BOM 进行异步解析与报价。"
+    },
+    {
+      "name": "get_bom_job_result",
+      "description": "查询 BOM 报价任务状态与汇总结果。"
+    },
+    {
+      "name": "get_job_status",
+      "description": "get_bom_job_result 的兼容别名。"
+    },
+    {
+      "name": "get_quote",
+      "description": "获取单个 BOM 的详细报价行、待确认项与失败信息。"
+    },
+    {
+      "name": "export_quote",
+      "description": "导出业务可读的报价结果，支持 JSON、CSV 和 XLSX。"
+    },
+    {
+      "name": "apply_nl_price_update",
+      "description": "从自然语言消息中提取并更新已知价格。"
+    },
+    {
+      "name": "quote_customer_message",
+      "description": "从客户消息中识别多个 BOM 并聚合报价结果。"
+    }
+  ]
 }

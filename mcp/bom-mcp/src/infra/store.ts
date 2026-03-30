@@ -10,10 +10,45 @@ export interface JobData {
   quote?: QuoteResult;
 }
 
+export interface StoredPartPrice {
+  unitPrice: number;
+  supplier?: string;
+  currency: string;
+  sourceType: "manual" | "nl" | "manual_quote_sheet" | "catalog" | "digikey_cn" | "ic_net";
+  sourceRef?: string;
+  effectiveAt: string;
+  expiresAt?: string;
+}
+
 const DB_PATH = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp", "bom-mcp.sqlite");
 mkdirSync(dirname(DB_PATH), { recursive: true });
 
 const db = new Database(DB_PATH);
+
+function serializeSubmitBomInput(input: SubmitBomInput): SubmitBomInput {
+  if (input.content instanceof Uint8Array) {
+    return { ...input, content: Array.from(input.content) };
+  }
+  if (input.content instanceof ArrayBuffer) {
+    return { ...input, content: Array.from(new Uint8Array(input.content)) };
+  }
+  return input;
+}
+
+function deserializeSubmitBomInput(input: SubmitBomInput): SubmitBomInput {
+  return input;
+}
+
+function ensureBomLinesColumn(columnName: string, definition: string): void {
+  try {
+    db.exec(`ALTER TABLE bom_lines ADD COLUMN ${definition};`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+    if (!message.includes(`duplicate column name: ${columnName.toLowerCase()}`)) {
+      throw error;
+    }
+  }
+}
 
 db.exec(`
 PRAGMA journal_mode = WAL;
@@ -39,6 +74,9 @@ CREATE TABLE IF NOT EXISTS bom_lines (
   quantity REAL NOT NULL,
   unit_price REAL,
   description TEXT,
+  designator TEXT,
+  manufacturer TEXT,
+  raw_text TEXT,
   FOREIGN KEY(task_id) REFERENCES quote_tasks(id)
 );
 
@@ -91,6 +129,10 @@ CREATE TABLE IF NOT EXISTS task_events (
 );
 `);
 
+ensureBomLinesColumn("designator", "designator TEXT");
+ensureBomLinesColumn("manufacturer", "manufacturer TEXT");
+ensureBomLinesColumn("raw_text", "raw_text TEXT");
+
 function insertTask(data: JobData): void {
   const insertTaskStmt = db.prepare(`
     INSERT INTO quote_tasks (
@@ -99,8 +141,10 @@ function insertTask(data: JobData): void {
   `);
 
   const insertLineStmt = db.prepare(`
-    INSERT INTO bom_lines (task_id, line_no, part_number, quantity, unit_price, description)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO bom_lines (
+      task_id, line_no, part_number, quantity, unit_price, description, designator, manufacturer, raw_text
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const run = db.transaction(() => {
@@ -113,18 +157,21 @@ function insertTask(data: JobData): void {
       data.job.inputMeta.sourceType,
       data.job.inputMeta.customer ?? null,
       data.job.inputMeta.lineCount,
-      JSON.stringify(data.input),
+      JSON.stringify(serializeSubmitBomInput(data.input)),
       data.job.error ?? null,
     );
 
     data.lines.forEach((line, idx) => {
       insertLineStmt.run(
         data.job.jobId,
-        idx + 1,
+        line.lineNo ?? idx + 1,
         line.partNumber,
         line.quantity,
         line.unitPrice ?? null,
         line.description ?? null,
+        line.designator ?? null,
+        line.manufacturer ?? null,
+        line.rawText ?? null,
       );
     });
 
@@ -164,14 +211,19 @@ function mapJobData(jobId: string): JobData | null {
 
   const lineRows = db
     .prepare(
-      `SELECT part_number, quantity, unit_price, description
+      `SELECT line_no, part_number, quantity, unit_price, description, designator, manufacturer
+             , raw_text
        FROM bom_lines WHERE task_id = ? ORDER BY line_no ASC`,
     )
     .all(jobId) as Array<{
+      line_no: number;
       part_number: string;
       quantity: number;
       unit_price: number | null;
       description: string | null;
+      designator: string | null;
+      manufacturer: string | null;
+      raw_text: string | null;
     }>;
 
   const quoteRow = db.prepare(`SELECT quote_json FROM quote_results WHERE task_id = ?`).get(jobId) as
@@ -192,12 +244,16 @@ function mapJobData(jobId: string): JobData | null {
       },
       error: taskRow.error ?? undefined,
     },
-    input: JSON.parse(taskRow.input_json) as SubmitBomInput,
+    input: deserializeSubmitBomInput(JSON.parse(taskRow.input_json) as SubmitBomInput),
     lines: lineRows.map((row) => ({
+      lineNo: row.line_no,
       partNumber: row.part_number,
       quantity: row.quantity,
       unitPrice: row.unit_price ?? undefined,
       description: row.description ?? undefined,
+      designator: row.designator ?? undefined,
+      manufacturer: row.manufacturer ?? undefined,
+      rawText: row.raw_text ?? undefined,
     })),
     quote: quoteRow ? (JSON.parse(quoteRow.quote_json) as QuoteResult) : undefined,
   };
@@ -224,7 +280,7 @@ function persistJobData(data: JobData): void {
       data.job.inputMeta.sourceType,
       data.job.inputMeta.customer ?? null,
       data.job.inputMeta.lineCount,
-      JSON.stringify(data.input),
+      JSON.stringify(serializeSubmitBomInput(data.input)),
       data.job.error ?? null,
       data.job.jobId,
     );
@@ -339,15 +395,91 @@ export function upsertManualPartPrice(params: {
   run();
 }
 
+export function upsertWebPartPrice(params: {
+  partNumber: string;
+  unitPrice: number;
+  supplier: "digikey_cn" | "ic_net";
+  currency?: string;
+  sourceRef?: string;
+}): void {
+  const now = new Date().toISOString();
+  const ttlDays = params.supplier === "digikey_cn" ? 7 : 3;
+  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString();
+  const normalizedPart = params.partNumber.trim().toUpperCase();
 
-export function getLatestPartPrice(partNumber: string): number | null {
-  const normalizedPart = partNumber.trim().toUpperCase();
-  const row = db
+  const latest = db
     .prepare(
       `SELECT unit_price FROM part_prices WHERE part_number_norm = ? ORDER BY effective_at DESC, id DESC LIMIT 1`,
     )
     .get(normalizedPart) as { unit_price: number } | undefined;
-  return row ? row.unit_price : null;
+
+  const run = db.transaction(() => {
+    db.prepare(
+      `INSERT INTO part_prices (
+        part_number_norm, supplier, currency, unit_price, source_type, source_ref, effective_at, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      normalizedPart,
+      params.supplier,
+      params.currency ?? "CNY",
+      params.unitPrice,
+      params.supplier,
+      params.sourceRef ?? null,
+      now,
+      expiresAt,
+    );
+
+    db.prepare(
+      `INSERT INTO price_adjustments (
+        part_number_norm, old_price, new_price, reason, operator_type, operator_id, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      normalizedPart,
+      latest?.unit_price ?? null,
+      params.unitPrice,
+      `web price cache refresh (${params.supplier})`,
+      "agent",
+      null,
+      now,
+    );
+  });
+
+  run();
+}
+
+
+export function getLatestPartPrice(partNumber: string): StoredPartPrice | null {
+  const normalizedPart = partNumber.trim().toUpperCase();
+  const row = db
+    .prepare(
+      `SELECT unit_price, supplier, currency, source_type, source_ref, effective_at, expires_at
+       FROM part_prices WHERE part_number_norm = ? ORDER BY effective_at DESC, id DESC LIMIT 1`,
+    )
+    .get(normalizedPart) as
+    | {
+        unit_price: number;
+        supplier: string | null;
+        currency: string;
+        source_type: StoredPartPrice["sourceType"];
+        source_ref: string | null;
+        effective_at: string;
+        expires_at: string | null;
+      }
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    unitPrice: row.unit_price,
+    supplier: row.supplier ?? undefined,
+    currency: row.currency,
+    sourceType: row.source_type,
+    sourceRef: row.source_ref ?? undefined,
+    effectiveAt: row.effective_at,
+    expiresAt: row.expires_at ?? undefined,
+  };
 }
 
 function insertTaskEvent(taskId: string, eventType: string, payload: Record<string, unknown>): void {

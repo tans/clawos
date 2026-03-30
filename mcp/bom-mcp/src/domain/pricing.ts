@@ -1,27 +1,152 @@
-import type { BomLine } from "../types";
-import { getLatestPartPrice } from "../infra/store";
-
-const DEFAULT_PRICE = 1;
+import type { BomLine, QuotePriceSource } from "../types";
+import { getLatestPartPrice, type StoredPartPrice, upsertWebPartPrice } from "../infra/store";
+import { looksLikeSpecificPartNumber } from "./component-classifier";
+import { lookupWebPriceDetailed, type WebLookupAttempt, type WebSupplier } from "./web-pricing";
 
 export interface LinePriceResolution {
-  unitPrice: number;
-  source: "input" | "catalog" | "default";
+  unitPrice?: number;
+  source: QuotePriceSource;
+  updatedAt?: string;
+  sourceRecordedAt?: string;
+  supplier?: string;
+  sourceUrl?: string;
+  warnings?: string[];
 }
 
-export function resolveLinePrice(line: BomLine): LinePriceResolution {
+function summarizeLookupWarnings(attempts: WebLookupAttempt[]): string[] {
+  const supplierMessages = new Map<string, string>();
+
+  for (const attempt of attempts) {
+    if (supplierMessages.has(attempt.supplier)) {
+      continue;
+    }
+    if (attempt.status === "blocked") {
+      supplierMessages.set(attempt.supplier, `${attempt.supplier} 返回防护页，当前无法直接抓取`);
+    } else if (attempt.status === "http_error") {
+      supplierMessages.set(attempt.supplier, `${attempt.supplier} 当前请求失败`);
+    } else if (attempt.status === "error") {
+      supplierMessages.set(attempt.supplier, `${attempt.supplier} 当前访问异常`);
+    }
+  }
+
+  return [...supplierMessages.values()];
+}
+
+function isExpiredStoredPrice(price: StoredPartPrice | null): boolean {
+  if (!price?.expiresAt) {
+    return false;
+  }
+  const expiresAt = Date.parse(price.expiresAt);
+  if (Number.isNaN(expiresAt)) {
+    return false;
+  }
+  return expiresAt <= Date.now();
+}
+
+function mapStoredPriceSource(price: StoredPartPrice): Exclude<QuotePriceSource, "input" | "missing"> {
+  return price.sourceType === "catalog" || price.sourceType === "digikey_cn" || price.sourceType === "ic_net"
+    ? price.sourceType
+    : "manual";
+}
+
+function buildStoredPriceResolution(price: StoredPartPrice, warnings: string[] = []): LinePriceResolution {
+  return {
+    unitPrice: Number(price.unitPrice.toFixed(4)),
+    source: mapStoredPriceSource(price),
+    updatedAt: new Date().toISOString(),
+    sourceRecordedAt: price.effectiveAt,
+    supplier: price.supplier,
+    sourceUrl: price.sourceRef,
+    warnings,
+  };
+}
+
+export async function resolveLinePrice(
+  line: BomLine,
+  options: {
+    webPricing?: boolean;
+    webSuppliers?: WebSupplier[];
+  } = {},
+): Promise<LinePriceResolution> {
   const directPrice = line.unitPrice !== undefined && line.unitPrice > 0 ? line.unitPrice : null;
   if (directPrice !== null) {
-    return { unitPrice: Number(directPrice.toFixed(4)), source: "input" };
+    return { unitPrice: Number(directPrice.toFixed(4)), source: "input", updatedAt: new Date().toISOString() };
   }
 
-  const catalogPrice = getLatestPartPrice(line.partNumber);
-  if (catalogPrice !== null && catalogPrice > 0) {
-    return { unitPrice: Number(catalogPrice.toFixed(4)), source: "catalog" };
+  const storedPrice = getLatestPartPrice(line.partNumber);
+  if (storedPrice && storedPrice.unitPrice > 0) {
+    const canRefreshExpiredWebPrice =
+      options.webPricing &&
+      looksLikeSpecificPartNumber(line.partNumber) &&
+      (storedPrice.sourceType === "digikey_cn" || storedPrice.sourceType === "ic_net") &&
+      isExpiredStoredPrice(storedPrice);
+
+    if (!canRefreshExpiredWebPrice) {
+      return buildStoredPriceResolution(storedPrice);
+    }
+
+    const webLookup = await lookupWebPriceDetailed(line.partNumber, options.webSuppliers);
+    if (webLookup.offer) {
+      const updatedAt = new Date().toISOString();
+      upsertWebPartPrice({
+        partNumber: line.partNumber,
+        unitPrice: webLookup.offer.unitPrice,
+        supplier: webLookup.offer.supplier,
+        currency: webLookup.offer.currency,
+        sourceRef: webLookup.offer.url,
+      });
+      return {
+        unitPrice: webLookup.offer.unitPrice,
+        source: webLookup.offer.supplier,
+        updatedAt,
+        sourceRecordedAt: updatedAt,
+        supplier: webLookup.offer.supplier,
+        sourceUrl: webLookup.offer.url,
+      };
+    }
+
+    return buildStoredPriceResolution(storedPrice, [
+      `${storedPrice.sourceType} 缓存已过期，沿用上次确认价格（${storedPrice.effectiveAt}）`,
+      ...summarizeLookupWarnings(webLookup.attempts),
+    ]);
   }
 
-  return { unitPrice: Number(DEFAULT_PRICE.toFixed(4)), source: "default" };
+  if (options.webPricing && looksLikeSpecificPartNumber(line.partNumber)) {
+    const webLookup = await lookupWebPriceDetailed(line.partNumber, options.webSuppliers);
+    if (webLookup.offer) {
+      const updatedAt = new Date().toISOString();
+      upsertWebPartPrice({
+        partNumber: line.partNumber,
+        unitPrice: webLookup.offer.unitPrice,
+        supplier: webLookup.offer.supplier,
+        currency: webLookup.offer.currency,
+        sourceRef: webLookup.offer.url,
+      });
+      return {
+        unitPrice: webLookup.offer.unitPrice,
+        source: webLookup.offer.supplier,
+        updatedAt,
+        sourceRecordedAt: updatedAt,
+        supplier: webLookup.offer.supplier,
+        sourceUrl: webLookup.offer.url,
+      };
+    }
+
+    return {
+      source: "missing",
+      warnings: summarizeLookupWarnings(webLookup.attempts),
+    };
+  }
+
+  return { source: "missing" };
 }
 
-export function computeLinePrice(line: BomLine): number {
-  return resolveLinePrice(line).unitPrice;
+export async function computeLinePrice(
+  line: BomLine,
+  options: {
+    webPricing?: boolean;
+    webSuppliers?: WebSupplier[];
+  } = {},
+): Promise<number> {
+  return (await resolveLinePrice(line, options)).unitPrice ?? 0;
 }

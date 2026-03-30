@@ -9,21 +9,38 @@ export interface IntentAnalysisResult {
 }
 
 export interface IntentAnalyzerOptions {
-  llmExtractBomBlocks?: (message: string) => Promise<string[]>;
+  llmExtractBomBlocks?: (message: string) => Promise<Array<string | IntentTask>>;
 }
 
-function extractBomBlocksByHeuristic(message: string): string[] {
-  const blocks: string[] = [];
+function findBomTaskTitle(message: string, blockStart: number): string | undefined {
+  const prefix = message.slice(0, blockStart);
+  const lines = prefix.split(/\r?\n/);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index]?.trim();
+    if (!line) {
+      continue;
+    }
+    return /bom/i.test(line) ? line : undefined;
+  }
+  return undefined;
+}
+
+function extractBomTasksByHeuristic(message: string): IntentTask[] {
+  const tasks: IntentTask[] = [];
   const fencedPattern = /```(?:csv|table|bom)?\s*\n([\s\S]*?)```/gi;
   let matched: RegExpExecArray | null = fencedPattern.exec(message);
   while (matched) {
+    const title = findBomTaskTitle(message, matched.index ?? 0);
     const block = (matched[1] || "").trim();
     if (block && /partnumber/i.test(block) && /quantity/i.test(block)) {
-      blocks.push(block);
+      tasks.push({
+        taskName: title || `bom_task_${tasks.length + 1}`,
+        bomContent: block,
+      });
     }
     matched = fencedPattern.exec(message);
   }
-  return blocks;
+  return tasks;
 }
 
 function buildIntentSummary(message: string, taskCount: number): string {
@@ -50,11 +67,20 @@ export async function analyzeCustomerIntent(
   options: IntentAnalyzerOptions = {},
 ): Promise<IntentAnalysisResult> {
   const fromLlm = options.llmExtractBomBlocks ? await options.llmExtractBomBlocks(message) : [];
-  const blocks = fromLlm.length > 0 ? fromLlm : extractBomBlocksByHeuristic(message);
-  const tasks = blocks.map((bomContent, idx) => ({
-    taskName: `bom_task_${idx + 1}`,
-    bomContent: bomContent.trim(),
-  }));
+  const tasks =
+    fromLlm.length > 0
+      ? fromLlm.map((entry, idx) =>
+          typeof entry === "string"
+            ? {
+                taskName: `bom_task_${idx + 1}`,
+                bomContent: entry.trim(),
+              }
+            : {
+                taskName: entry.taskName?.trim() || `bom_task_${idx + 1}`,
+                bomContent: entry.bomContent.trim(),
+              },
+        )
+      : extractBomTasksByHeuristic(message);
 
   return {
     intentSummary: buildIntentSummary(message, tasks.length),

@@ -3,6 +3,7 @@ import { getBomJobResult } from "./tools/get-bom-job-result";
 import { getQuote } from "./tools/get-quote";
 import { submitBom } from "./tools/submit-bom";
 import { applyNlPriceUpdate } from "./tools/apply-nl-price-update";
+import { quoteCustomerMessageTool } from "./tools/quote-customer-message";
 
 type ToolName =
   | "submit_bom"
@@ -10,7 +11,8 @@ type ToolName =
   | "get_job_status"
   | "get_quote"
   | "export_quote"
-  | "apply_nl_price_update";
+  | "apply_nl_price_update"
+  | "quote_customer_message";
 
 interface ToolRequest {
   tool: ToolName;
@@ -33,6 +35,8 @@ export async function runTool(request: ToolRequest): Promise<unknown> {
       );
     case "apply_nl_price_update":
       return applyNlPriceUpdate(request.args as Parameters<typeof applyNlPriceUpdate>[0]);
+    case "quote_customer_message":
+      return quoteCustomerMessageTool(request.args as Parameters<typeof quoteCustomerMessageTool>[0]);
     default:
       throw new Error(`未知 tool: ${request.tool}`);
   }

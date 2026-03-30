@@ -23,7 +23,8 @@
   "dependencies": {
     "@openai/codex": "^0.115.0",
     "json5": "^2.2.3",
-    "viem": "^2.46.3"
+    "viem": "^2.46.3",
+    "xlsx": "0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",

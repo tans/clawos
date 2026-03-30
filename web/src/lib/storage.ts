@@ -41,6 +41,10 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function compareVersionDesc(left: string, right: string): number {
+  return right.localeCompare(left, undefined, { numeric: true, sensitivity: "base" });
+}
+
 function ensureSafeFileName(fileName: string): string {
   const name = basename(fileName).trim();
   if (!name) {
@@ -937,7 +941,13 @@ export async function listMcpReleaseVersions(
 ): Promise<McpRelease[]> {
   const registry = await readMcpRegistry(channel);
   const normalizedId = assertMcpId(mcpId);
-  return [...(registry[normalizedId]?.versions || [])].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return [...(registry[normalizedId]?.versions || [])].sort((a, b) => {
+    const publishedAtOrder = b.publishedAt.localeCompare(a.publishedAt);
+    if (publishedAtOrder !== 0) {
+      return publishedAtOrder;
+    }
+    return compareVersionDesc(a.version, b.version);
+  });
 }
 
 export async function readMcpReleaseByVersion(
