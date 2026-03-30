@@ -6,8 +6,8 @@ const MANUAL_URL = "https://gx50d0q123.feishu.cn/wiki/CueLw8F8TiwjEMkGiCFclxtXnn
 
 export function renderContactPage(): string {
   return renderMarketingShell({
-    title: "联系方案专家",
-    description: "预约 PoC、咨询虾壳主机与企业部署方案。",
+    title: "部署评估",
+    description: "围绕业务切入点、部署方式、系统接入与上线边界发起部署评估。",
     currentPath: "/contact",
     children: <ContactPage />,
   });
@@ -16,42 +16,48 @@ export function renderContactPage(): string {
 function ContactPage() {
   return (
     <>
-      <section class="marketing-section py-10 sm:py-14">
+      <section class="marketing-section py-24 sm:py-32">
         <div class="marketing-section-inner">
-          <div class="marketing-card marketing-page-hero p-6 sm:p-8">
-            <p class="marketing-kicker">Consultation</p>
-            <h1 class="marketing-h2">联系方案专家</h1>
-            <p class="marketing-lead">
-              无论你要做 PoC、采购虾壳主机，还是评估本地部署方案，都可以从这里开始。
+          <div class="max-w-4xl space-y-6">
+            <p class="marketing-kicker">Deployment Assessment</p>
+            <h1 class="marketing-h2">申请部署评估</h1>
+            <p class="marketing-lead text-base leading-8">
+              适合准备部署企业 AI 系统的团队。我们将围绕业务切入点、部署方式、系统接入与上线边界进行沟通。
             </p>
           </div>
         </div>
       </section>
 
-      <section class="marketing-section py-6 sm:py-10">
-        <div class="marketing-section-inner marketing-grid-3">
-          <article class="marketing-card p-5 sm:p-6">
-            <h2>预约 PoC</h2>
-            <p>适合先跑一个业务场景，验证 ClawOS 是否能进入真实流程。</p>
-            <ul>
+      <section class="marketing-section py-12 sm:py-16">
+        <div class="marketing-section-inner grid gap-10 md:grid-cols-3">
+          <article class="border-t border-[color:var(--line-soft)] pt-6">
+            <h2 class="text-xl font-semibold text-[color:var(--ink-strong)]">部署评估</h2>
+            <p class="mt-3 text-sm leading-8 text-[color:var(--ink-soft)]">
+              确认适合从哪个业务场景开始，以及部署边界和实施条件。
+            </p>
+            <ul class="mt-4 space-y-2 text-sm leading-7 text-[color:var(--ink-soft)]">
               <li>客服微信：tianshe00</li>
-              <li>沟通主题：PoC 场景与试点目标</li>
+              <li>沟通重点：业务切入点、部署方式、系统边界</li>
             </ul>
           </article>
 
-          <article class="marketing-card p-5 sm:p-6">
-            <h2>商务采购</h2>
-            <p>适合咨询虾壳主机、企业交付方式、本地部署与混合部署方案。</p>
-            <ul>
+          <article class="border-t border-[color:var(--line-soft)] pt-6">
+            <h2 class="text-xl font-semibold text-[color:var(--ink-strong)]">交付与采购</h2>
+            <p class="mt-3 text-sm leading-8 text-[color:var(--ink-soft)]">
+              咨询虾壳主机、交付方式、本地优先部署与采购安排。
+            </p>
+            <ul class="mt-4 space-y-2 text-sm leading-7 text-[color:var(--ink-soft)]">
               <li>采购咨询：虾壳主机</li>
               <li>部署咨询：本地优先 / 混合部署</li>
             </ul>
           </article>
 
-          <article class="marketing-card p-5 sm:p-6">
-            <h2>使用资料</h2>
-            <p>在进入商务沟通前，也可以先查看基础使用资料。</p>
-            <a class="marketing-secondary-button" href={MANUAL_URL} target="_blank" rel="noreferrer">
+          <article class="border-t border-[color:var(--line-soft)] pt-6">
+            <h2 class="text-xl font-semibold text-[color:var(--ink-strong)]">基础资料</h2>
+            <p class="mt-3 text-sm leading-8 text-[color:var(--ink-soft)]">
+              先查看使用手册与基础信息，再决定是否进入方案沟通。
+            </p>
+            <a class="marketing-secondary-button mt-5" href={MANUAL_URL} target="_blank" rel="noreferrer">
               打开飞书使用手册
             </a>
           </article>

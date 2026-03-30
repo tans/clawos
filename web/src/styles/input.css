@@ -148,8 +148,8 @@
     position: sticky;
     top: 0;
     z-index: 40;
-    border-bottom: 1px solid var(--line-soft);
-    background: rgb(255 255 255 / 0.92);
+    border-bottom: 1px solid rgb(229 231 235 / 0.72);
+    background: rgb(255 255 255 / 0.96);
     backdrop-filter: blur(18px);
   }
 
@@ -165,7 +165,7 @@
   .marketing-nav-links {
     display: none;
     align-items: center;
-    gap: 0.35rem;
+    gap: 1.5rem;
     flex-wrap: wrap;
   }
 
@@ -193,22 +193,19 @@
   .marketing-nav-link {
     display: inline-flex;
     align-items: center;
-    border-radius: 999px;
     color: var(--ink-normal);
     font-size: 0.875rem;
-    font-weight: 600;
-    padding: 0.45rem 0.85rem;
-    transition: background-color 160ms ease, color 160ms ease;
+    font-weight: 500;
+    padding: 0.25rem 0;
+    transition: color 160ms ease;
   }
 
   .marketing-nav-link:hover {
-    background: var(--surface-muted);
     color: var(--ink-strong);
   }
 
   .marketing-nav-link.is-active {
-    background: rgb(37 99 235 / 0.12);
-    color: var(--brand-accent-strong);
+    color: var(--ink-strong);
   }
 
   .marketing-section[id] {
@@ -225,10 +222,10 @@
   }
 
   .marketing-card {
-    border-radius: 1.25rem;
-    border: 1px solid var(--line-soft);
+    border-radius: 1rem;
+    border: 1px solid rgb(229 231 235 / 0.7);
     background: #fff;
-    box-shadow: var(--shadow-soft);
+    box-shadow: none;
   }
 
   .marketing-section {
@@ -238,29 +235,23 @@
   .marketing-page-hero {
     display: grid;
     gap: 0.9rem;
-    background:
-      radial-gradient(circle at top right, rgb(37 99 235 / 0.1), transparent 42%),
-      linear-gradient(180deg, #fff 0%, var(--surface-muted) 100%);
+    background: transparent;
   }
 
   .marketing-proof-panel {
-    background:
-      radial-gradient(circle at top right, rgb(37 99 235 / 0.14), transparent 54%),
-      linear-gradient(180deg, #fff 0%, var(--surface-muted) 100%);
+    background: transparent;
   }
 
   .marketing-final-cta {
-    border-color: rgb(37 99 235 / 0.2);
-    background:
-      radial-gradient(circle at 0% 10%, rgb(37 99 235 / 0.1), transparent 38%),
-      linear-gradient(155deg, #fff 0%, #f3f7ff 100%);
+    border-color: rgb(229 231 235 / 0.9);
+    background: transparent;
   }
 
   .marketing-hero {
     display: grid;
-    gap: 1.5rem;
+    gap: 2rem;
     align-items: start;
-    padding-block: 4rem 3rem;
+    padding-block: 5rem 4rem;
   }
 
   .marketing-kicker {
@@ -272,9 +263,9 @@
   }
 
   .marketing-h1 {
-    max-width: 12ch;
-    font-size: clamp(2.5rem, 6vw, 4.75rem);
-    line-height: 1.02;
+    max-width: 13ch;
+    font-size: clamp(2.8rem, 6vw, 5.4rem);
+    line-height: 1.04;
     letter-spacing: -0.04em;
     color: var(--ink-strong);
   }
@@ -299,11 +290,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 999px;
+    border-radius: 0.8rem;
     background: var(--brand-accent);
     color: #fff;
-    padding: 0.875rem 1.35rem;
-    font-weight: 700;
+    padding: 0.9rem 1.35rem;
+    font-weight: 600;
     transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
   }
 
@@ -322,12 +313,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 999px;
+    border-radius: 0.8rem;
     border: 1px solid var(--line-strong);
     background: #fff;
     color: var(--ink-strong);
-    padding: 0.875rem 1.35rem;
-    font-weight: 700;
+    padding: 0.9rem 1.35rem;
+    font-weight: 600;
     transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
   }
 
@@ -499,14 +490,11 @@
   }
 
   .marketing-download-primary {
-    background:
-      radial-gradient(circle at top right, rgb(37 99 235 / 0.08), transparent 44%),
-      linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+    background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
   }
 
   .marketing-download-consult {
-    background:
-      linear-gradient(180deg, #fff 0%, var(--surface-panel) 100%);
+    background: linear-gradient(180deg, #fff 0%, var(--surface-panel) 100%);
   }
 
   .marketing-platform-list {

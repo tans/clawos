@@ -11,12 +11,13 @@ type MarketingShellProps = PropsWithChildren<{
 }>;
 
 const navItems = [
-  { href: "/", label: "产品能力" },
-  { href: "/#architecture", label: "产品架构" },
-  { href: "/#solutions", label: "应用场景" },
+  { href: "/", label: "解决方案" },
+  { href: "/#architecture", label: "部署方式" },
   { href: "/#capabilities", label: "核心能力" },
+  { href: "/#solutions", label: "适用场景" },
+  { href: "/#governance", label: "治理能力" },
   { href: "/downloads", label: "下载试用" },
-  { href: "/contact", label: "联系方案专家" },
+  { href: "/contact", label: "部署评估" },
 ] as const;
 
 export function renderMarketingShell({ title, description, currentPath, children }: MarketingShellProps): string {
@@ -60,7 +61,7 @@ export function renderMarketingShell({ title, description, currentPath, children
             <p>{`${brandName} · ${brandDomain}`}</p>
             <div class="marketing-footer-links">
               <a href="/downloads">下载试用</a>
-              <a href="/contact">联系方案专家</a>
+              <a href="/contact">部署评估</a>
             </div>
           </div>
         </footer>

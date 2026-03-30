@@ -24,7 +24,7 @@ function formatPublishedAt(value: string | null): string {
 export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
   return renderMarketingShell({
     title: "下载试用",
-    description: "ClawOS 下载试用入口与企业部署咨询。",
+    description: "ClawOS 下载试用入口与企业部署评估入口。",
     currentPath: "/downloads",
     children: <DownloadsPage cards={cards} />,
   });
@@ -61,8 +61,8 @@ function DownloadsPage({ cards }: { cards: DownloadChannelCard[] }) {
 
           <aside class="marketing-card marketing-download-consult mt-6 p-6 sm:p-8 lg:mt-0">
             <h2 class="text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">需要企业部署？</h2>
-            <p class="mt-3 text-sm leading-7 text-[color:var(--ink-soft)]">如果你需要本地优先部署、虾壳主机交付或 PoC 支持，可直接联系方案专家。</p>
-            <a class="marketing-primary-button mt-5" href="/contact">联系方案专家</a>
+            <p class="mt-3 text-sm leading-7 text-[color:var(--ink-soft)]">如果你需要本地优先部署、虾壳主机交付或上线前评估，可直接发起部署评估。</p>
+            <a class="marketing-primary-button mt-5" href="/contact">申请部署评估</a>
           </aside>
         </div>
       </section>
