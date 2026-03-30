@@ -252,6 +252,8 @@ export BOM_MCP_PUBLIC_BASE_URL="https://files.example.com/bom-mcp"
 ```bash
 bash scripts/run-bom-mcp.sh doctor examples/mcp/bom-mcp.env.example
 bash scripts/run-bom-mcp.sh serve examples/mcp/bom-mcp.env.example
+bash scripts/call-bom-mcp.sh doctor examples/mcp/bom-mcp.doctor.json examples/mcp/bom-mcp.env.example
+bash scripts/call-bom-mcp.sh quote_customer_message examples/mcp/bom-mcp.quote_customer_message.json examples/mcp/bom-mcp.env.example
 bun run bom-mcp:doctor
 bun run bom-mcp:serve
 ```
