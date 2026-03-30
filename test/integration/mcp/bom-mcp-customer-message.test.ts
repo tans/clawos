@@ -4,6 +4,15 @@ import { resolve } from "node:path";
 import * as XLSX from "xlsx";
 import { runTool } from "../../../mcp/bom-mcp/src/index";
 
+type FileFirstExportResult = {
+  filePath: string;
+  fileName: string;
+  format: "json" | "csv" | "xlsx";
+  mimeType: string;
+  expiresAt: string;
+  downloadUrl?: string;
+};
+
 describe("bom-mcp quote_customer_message", () => {
   it("returns one aggregated result containing three BOM summaries", async () => {
     const message = await readFile("mcp/bom-mcp/cases/multibom/case1.md", "utf-8");
@@ -58,15 +67,40 @@ STM32F103C8T6,2
     const exported = (await runTool({
       tool: "export_customer_quote" as never,
       args: { message, currency: "CNY", taxRate: 0.13, format: "csv" },
-    })) as { downloadUrl: string };
+    })) as FileFirstExportResult;
 
-    const filePath = resolve(process.cwd(), decodeURIComponent(exported.downloadUrl).replace(/^\//, ""));
-    const csv = await readFile(filePath, "utf-8");
+    expect(exported.fileName).toMatch(/\.csv$/);
+    expect(exported.format).toBe("csv");
+    expect(exported.mimeType).toBe("text/csv; charset=utf-8");
+    expect(exported.downloadUrl).toBeUndefined();
+
+    const csv = await readFile(exported.filePath, "utf-8");
 
     expect(csv).toContain("bomName");
     expect(csv).toContain("PGE22001.052.000-02");
     expect(csv).toContain("sourceRecordedAt");
     expect(csv).toContain("pricingState");
+  });
+
+  it("includes downloadUrl when customer exports run with publicBaseUrl", async () => {
+    const prev = process.env.BOM_MCP_PUBLIC_BASE_URL;
+    process.env.BOM_MCP_PUBLIC_BASE_URL = "https://public.example/customer";
+    try {
+      const message = await readFile("mcp/bom-mcp/cases/multibom/case1.md", "utf-8");
+      const exported = (await runTool({
+        tool: "export_customer_quote" as never,
+        args: { message, currency: "CNY", taxRate: 0.13, format: "csv" },
+      })) as FileFirstExportResult;
+      expect(exported.downloadUrl).toBe(
+        `https://public.example/customer/${encodeURIComponent(exported.fileName)}`,
+      );
+    } finally {
+      if (prev === undefined) {
+        delete process.env.BOM_MCP_PUBLIC_BASE_URL;
+      } else {
+        process.env.BOM_MCP_PUBLIC_BASE_URL = prev;
+      }
+    }
   });
 
   it("exports aggregated multi-bom xlsx with BOM and line sheets", async () => {
@@ -75,10 +109,16 @@ STM32F103C8T6,2
     const exported = (await runTool({
       tool: "export_customer_quote" as never,
       args: { message, currency: "CNY", taxRate: 0.13, format: "xlsx" },
-    })) as { downloadUrl: string };
+    })) as FileFirstExportResult;
 
-    const filePath = resolve(process.cwd(), decodeURIComponent(exported.downloadUrl).replace(/^\//, ""));
-    const workbook = XLSX.read(await readFile(filePath), { type: "buffer" });
+    expect(exported.fileName).toMatch(/\.xlsx$/);
+    expect(exported.format).toBe("xlsx");
+    expect(exported.mimeType).toBe(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(exported.downloadUrl).toBeUndefined();
+
+    const workbook = XLSX.read(await readFile(exported.filePath), { type: "buffer" });
 
     expect(workbook.SheetNames).toContain("Summary");
     expect(workbook.SheetNames).toContain("BOMs");

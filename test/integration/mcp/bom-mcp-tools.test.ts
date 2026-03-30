@@ -4,6 +4,15 @@ import { access, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import * as XLSX from "xlsx";
 
+type FileFirstExportResult = {
+  filePath: string;
+  fileName: string;
+  format: "json" | "csv" | "xlsx";
+  mimeType: string;
+  expiresAt: string;
+  downloadUrl?: string;
+};
+
 const BOM_MCP_TEST_STATE_DIR = resolve(process.cwd(), "artifacts", "mcp", "bom-mcp");
 const BOM_MCP_TEST_DB_PATH = resolve(BOM_MCP_TEST_STATE_DIR, "bom-mcp.sqlite");
 
@@ -96,10 +105,14 @@ describe("bom-mcp tools", () => {
     const exported = (await runTool({
       tool: "export_quote",
       args: { jobId: submitResult.jobId, format: "csv" },
-    })) as { downloadUrl: string };
-    expect(exported.downloadUrl).toContain(`${submitResult.jobId}.csv`);
+    })) as FileFirstExportResult;
+    expect(exported.fileName).toBe(`${submitResult.jobId}.csv`);
+    expect(exported.format).toBe("csv");
+    expect(exported.mimeType).toBe("text/csv; charset=utf-8");
+    expect(exported.downloadUrl).toBeUndefined();
+    expect(Number.isNaN(Date.parse(exported.expiresAt))).toBeFalse();
 
-    const filePath = resolve(process.cwd(), decodeURIComponent(exported.downloadUrl).replace(/^\//, ""));
+    const filePath = exported.filePath;
     await access(filePath);
     expect(true).toBeTrue();
 
@@ -110,6 +123,36 @@ describe("bom-mcp tools", () => {
     expect(csv).toContain("priceConfidence");
     expect(csv).toContain("pricingState");
     expect(csv).toContain("sourceUrl");
+  });
+
+  it("includes downloadUrl when publicBaseUrl is configured", async () => {
+    const prev = process.env.BOM_MCP_PUBLIC_BASE_URL;
+    process.env.BOM_MCP_PUBLIC_BASE_URL = "https://exports.example.com/bom";
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "json",
+          content: JSON.stringify([{ partNumber: "DL-001", quantity: 1, unitPrice: 1 }]),
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const exported = (await runTool({
+        tool: "export_quote",
+        args: { jobId: submitResult.jobId, format: "csv" },
+      })) as FileFirstExportResult;
+
+      expect(exported.downloadUrl).toBe(
+        `https://exports.example.com/bom/${encodeURIComponent(exported.fileName)}`,
+      );
+    } finally {
+      if (prev === undefined) {
+        delete process.env.BOM_MCP_PUBLIC_BASE_URL;
+      } else {
+        process.env.BOM_MCP_PUBLIC_BASE_URL = prev;
+      }
+    }
   });
 
   it("returns pending decisions instead of using a default fallback price", async () => {
@@ -763,10 +806,13 @@ describe("bom-mcp tools", () => {
       const exported = (await runTool({
         tool: "export_quote",
         args: { jobId: submitResult.jobId, format: "csv" },
-      })) as { downloadUrl: string };
+      })) as FileFirstExportResult;
 
-      const filePath = resolve(process.cwd(), decodeURIComponent(exported.downloadUrl).replace(/^\//, ""));
-      const csv = await readFile(filePath, "utf-8");
+      expect(exported.format).toBe("csv");
+      expect(exported.mimeType).toBe("text/csv; charset=utf-8");
+      expect(exported.downloadUrl).toBeUndefined();
+
+      const csv = await readFile(exported.filePath, "utf-8");
 
       expect(csv).toContain("recommendedAction");
       expect(csv).toContain("candidateOptions");
@@ -801,12 +847,17 @@ describe("bom-mcp tools", () => {
     const exported = (await runTool({
       tool: "export_quote",
       args: { jobId: submitResult.jobId, format: "xlsx" },
-    })) as { downloadUrl: string };
+    })) as FileFirstExportResult;
 
-    expect(exported.downloadUrl).toContain(`${submitResult.jobId}.xlsx`);
+    expect(exported.fileName).toBe(`${submitResult.jobId}.xlsx`);
+    expect(exported.format).toBe("xlsx");
+    expect(exported.mimeType).toBe(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    expect(exported.downloadUrl).toBeUndefined();
+    expect(Number.isNaN(Date.parse(exported.expiresAt))).toBeFalse();
 
-    const filePath = resolve(process.cwd(), decodeURIComponent(exported.downloadUrl).replace(/^\//, ""));
-    const workbook = XLSX.read(await readFile(filePath), { type: "buffer" });
+    const workbook = XLSX.read(await readFile(exported.filePath), { type: "buffer" });
     expect(workbook.SheetNames).toContain("Summary");
     expect(workbook.SheetNames).toContain("Lines");
 

@@ -267,6 +267,7 @@ Update export tests to assert:
 - file exists at returned `filePath`
 - `downloadUrl` is omitted by default
 - `downloadUrl` appears when `publicBaseUrl` is set
+- Add focused uploads in `bom-mcp-tools` and `bom-mcp-customer-message` tests that set `BOM_MCP_PUBLIC_BASE_URL` just for the export call and assert the computed `downloadUrl` matches `publicBaseUrl`/`encodeURIComponent(fileName)`.
 
 ### Doctor tests
 
