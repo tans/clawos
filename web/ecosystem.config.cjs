@@ -11,6 +11,7 @@ module.exports = {
         NODE_ENV: "production",
         PORT: "26222",
         UPLOAD_TOKEN: "clawos",
+        MARKETPLACE_ENABLED: "1",
       },
     },
   ],

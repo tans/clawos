@@ -1,8 +1,11 @@
 /** @jsxImportSource hono/jsx */
 
+import { getEnv } from "../lib/env";
 import { renderMarketingShell } from "./marketing-shell";
 
 export function renderAgentMarketPage(): string {
+  const { agentMarketPortalUrl } = getEnv();
+
   return renderMarketingShell({
     title: "Agent 协作",
     description: "面向企业的 Agent 协作市场介绍与合作沟通入口。",
@@ -15,11 +18,17 @@ export function renderAgentMarketPage(): string {
               <p class="marketing-kicker">Agent 协作市场</p>
               <h1 class="marketing-h1">让企业任务更适合由 Agent 协作完成</h1>
               <p class="marketing-lead">
-                我们正在建立一个更清晰的协作方式，让企业需求在可控范围内被拆解、评估与交付，
-                重点面向可标准化的任务，让交付路径更可追踪、结果更可复用。
+                先了解市场协作方式，再进入市场门户查看需求方向、参与角色与合作入口。
               </p>
               <div class="marketing-hero-actions">
-                <a class="marketing-primary-button" href="/contact">预约合作沟通</a>
+                {agentMarketPortalUrl ? (
+                  <a class="marketing-primary-button" href={agentMarketPortalUrl}>
+                    进入市场门户
+                  </a>
+                ) : null}
+                <a class="marketing-secondary-button" href="/contact">
+                  预约合作沟通
+                </a>
               </div>
             </div>
             <aside class="market-hero-panel">

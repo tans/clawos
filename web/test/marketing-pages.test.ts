@@ -7,6 +7,7 @@ const builtCssPath = resolve(webRoot, "dist", "output.css");
 
 describe("marketing pages", () => {
   let marketplaceEnabledSnapshot: string | undefined;
+  let marketPortalUrlSnapshot: string | undefined;
 
   beforeAll(async () => {
     if (!process.env.CLAWOS_WEB_ROOT) {
@@ -18,6 +19,7 @@ describe("marketing pages", () => {
 
   beforeEach(async () => {
     marketplaceEnabledSnapshot = process.env.MARKETPLACE_ENABLED;
+    marketPortalUrlSnapshot = process.env.AGENT_MARKET_PORTAL_URL;
   });
 
   afterEach(async () => {
@@ -25,6 +27,11 @@ describe("marketing pages", () => {
       delete process.env.MARKETPLACE_ENABLED;
     } else {
       process.env.MARKETPLACE_ENABLED = marketplaceEnabledSnapshot;
+    }
+    if (typeof marketPortalUrlSnapshot === "undefined") {
+      delete process.env.AGENT_MARKET_PORTAL_URL;
+    } else {
+      process.env.AGENT_MARKET_PORTAL_URL = marketPortalUrlSnapshot;
     }
 
     const { resetEnvCacheForTests } = await import("../src/lib/env");
@@ -153,6 +160,10 @@ describe("marketing pages", () => {
   });
 
   it("serves the agent market page", async () => {
+    delete process.env.AGENT_MARKET_PORTAL_URL;
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+
     const response = await app.request("http://localhost/agent-market");
     const html = await response.text();
 
@@ -173,8 +184,23 @@ describe("marketing pages", () => {
     expect(html).toContain("为什么现在开始建立这类协作关系");
     expect(html).toContain("如果你希望参与这类任务协作，可以先和我们沟通");
     expect(html).toContain("预约合作沟通");
+    expect(html).not.toContain('href="https://market.clawos.cc"');
     expect(html).not.toContain("PoC");
     expect(html).not.toContain("抢单");
+  });
+
+  it("links the static market page to the standalone portal when configured", async () => {
+    process.env.AGENT_MARKET_PORTAL_URL = "https://market.clawos.cc";
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+
+    const response = await app.request("http://localhost/agent-market");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("进入市场门户");
+    expect(html).toContain('href="https://market.clawos.cc"');
+    expect(html).toContain("预约合作沟通");
   });
 
   it("serves the agent market page even when marketplace is disabled", async () => {

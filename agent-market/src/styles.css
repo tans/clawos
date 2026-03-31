@@ -1,0 +1,393 @@
+:root {
+  --bg: #ffffff;
+  --bg-muted: #f7f8fa;
+  --panel: #fbfbfc;
+  --line: #e7e9ee;
+  --ink-strong: #0f172a;
+  --ink-normal: #1f2937;
+  --ink-soft: #6b7280;
+  --accent: #1d4ed8;
+  --accent-soft: rgba(29, 78, 216, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 70%, #f8fafc 100%);
+  color: var(--ink-normal);
+  font-family:
+    "Source Han Sans SC",
+    "PingFang SC",
+    "Noto Sans CJK SC",
+    "Microsoft YaHei",
+    sans-serif;
+}
+
+body {
+  line-height: 1.65;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.portal-shell {
+  min-height: 100vh;
+}
+
+.portal-header,
+.portal-hero,
+.portal-section {
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+}
+
+.portal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 84px;
+}
+
+.portal-brand {
+  color: var(--ink-strong);
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.portal-nav {
+  display: flex;
+  gap: 28px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.portal-nav a {
+  transition: color 120ms ease;
+}
+
+.portal-nav a:hover {
+  color: var(--ink-strong);
+}
+
+.portal-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: 48px;
+  padding: 52px 0 56px;
+}
+
+.portal-kicker,
+.section-label,
+.section-heading > p {
+  margin: 0 0 16px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.portal-hero h1,
+.section-heading h2,
+.portal-rule-panel h2 {
+  margin: 0;
+  color: var(--ink-strong);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.portal-hero h1 {
+  max-width: 11ch;
+  font-size: clamp(3rem, 7vw, 6rem);
+}
+
+.portal-lead {
+  max-width: 46rem;
+  margin: 20px 0 0;
+  color: var(--ink-soft);
+  font-size: 17px;
+  line-height: 1.9;
+}
+
+.portal-action-row,
+.portal-stat-row,
+.portal-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.portal-action-row {
+  margin-top: 24px;
+}
+
+.portal-action-row a,
+.portal-cta-grid a,
+.role-card a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: var(--ink-strong);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.portal-stat-row {
+  margin-top: 28px;
+}
+
+.portal-stat-row article,
+.hero-task-panel,
+.task-card,
+.role-card,
+.proof-card,
+.case-card,
+.portal-rule-panel {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.05);
+}
+
+.portal-stat-row article {
+  min-width: 140px;
+  padding: 18px 20px;
+}
+
+.portal-stat-row strong {
+  display: block;
+  color: var(--ink-strong);
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.portal-stat-row span {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.hero-task-panel,
+.task-card,
+.role-card,
+.proof-card,
+.case-card {
+  padding: 24px;
+}
+
+.hero-task-panel {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.hero-task-panel article {
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--panel);
+}
+
+.hero-task-panel span,
+.case-card > span {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hero-task-panel h2,
+.task-card h3,
+.role-card h3,
+.proof-card h3,
+.case-card h3 {
+  margin: 10px 0 8px;
+  color: var(--ink-strong);
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.hero-task-panel p,
+.task-card p,
+.role-card p,
+.proof-card p,
+.case-card p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.hero-role-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.hero-role-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.portal-section {
+  padding: 54px 0 0;
+}
+
+.section-heading {
+  max-width: 62ch;
+}
+
+.section-heading h2 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+
+.section-heading + .portal-filter-row,
+.section-heading + .portal-task-grid,
+.section-heading + .portal-role-grid,
+.section-heading + .portal-proof-grid,
+.section-heading + .portal-case-grid {
+  margin-top: 24px;
+}
+
+.portal-task-grid,
+.portal-role-grid,
+.portal-proof-grid,
+.portal-case-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.portal-task-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.portal-role-grid,
+.portal-proof-grid,
+.portal-case-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.filter-chip,
+.task-card-meta span,
+.rule-chip-list li,
+.task-card-foot span {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.portal-filter-row {
+  margin-top: 24px;
+}
+
+.task-card-meta,
+.task-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.task-card h3,
+.role-card h3,
+.proof-card h3,
+.case-card h3 {
+  font-size: 24px;
+}
+
+.task-card p,
+.role-card p,
+.proof-card p,
+.case-card p {
+  margin-bottom: 16px;
+}
+
+.task-card-foot {
+  margin-top: auto;
+}
+
+.portal-rule-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  padding: 32px;
+}
+
+.portal-rule-panel ol {
+  margin: 24px 0 0;
+  padding-left: 20px;
+  color: var(--ink-soft);
+  display: grid;
+  gap: 8px;
+}
+
+.rule-chip-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-content: start;
+}
+
+.portal-cta-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.portal-final-cta {
+  padding-bottom: 72px;
+}
+
+@media (max-width: 980px) {
+  .portal-hero,
+  .portal-rule-panel,
+  .portal-task-grid,
+  .portal-role-grid,
+  .portal-proof-grid,
+  .portal-case-grid,
+  .portal-cta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding-top: 16px;
+  }
+
+  .portal-nav {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .portal-hero {
+    gap: 28px;
+    padding-top: 28px;
+  }
+
+  .portal-hero h1 {
+    max-width: 15ch;
+    letter-spacing: -0.03em;
+  }
+}

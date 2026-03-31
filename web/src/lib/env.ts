@@ -10,6 +10,7 @@ export interface AppEnv {
   maxMcpPackageSizeBytes: number;
   storageDir: string;
   marketplaceEnabled: boolean;
+  agentMarketPortalUrl: string | null;
 }
 
 export interface StartupEnvCheck {
@@ -57,6 +58,11 @@ function readBooleanFlag(value: string | undefined, fallback: boolean): boolean 
   }
 }
 
+function readOptionalUrl(value: string | undefined): string | null {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
 export function getEnv(): AppEnv {
   if (cachedEnv) {
     return cachedEnv;
@@ -67,6 +73,7 @@ export function getEnv(): AppEnv {
   const maxConfigSizeMb = readInt(process.env.MAX_CONFIG_SIZE_MB, 2);
   const maxMcpPackageSizeMb = readInt(process.env.MAX_MCP_PACKAGE_SIZE_MB, maxInstallerSizeMb);
   const marketplaceEnabled = readBooleanFlag(process.env.MARKETPLACE_ENABLED, false);
+  const agentMarketPortalUrl = readOptionalUrl(process.env.AGENT_MARKET_PORTAL_URL);
 
   cachedEnv = {
     port,
@@ -78,6 +85,7 @@ export function getEnv(): AppEnv {
     maxMcpPackageSizeBytes: mbToBytes(maxMcpPackageSizeMb),
     storageDir: resolve(process.env.STORAGE_DIR || resolve(process.cwd(), "storage")),
     marketplaceEnabled,
+    agentMarketPortalUrl,
   };
 
   return cachedEnv;
