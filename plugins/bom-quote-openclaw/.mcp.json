@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "bom-mcp": {
+      "command": "bun",
+      "args": [
+        "/Users/ke/code/clawos/.worktrees/main-release/mcp/bom-mcp/src/index.ts",
+        "serve",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "BOM_MCP_STATE_DIR": "/Users/ke/.openclaw/state/bom-mcp",
+        "BOM_MCP_DB_PATH": "/Users/ke/.openclaw/state/bom-mcp/bom-mcp.sqlite",
+        "BOM_MCP_EXPORT_DIR": "/Users/ke/.openclaw/state/bom-mcp/exports",
+        "BOM_MCP_CACHE_DIR": "/Users/ke/.openclaw/state/bom-mcp/cache",
+        "BOM_MCP_FX_USD_CNY": "7.2",
+        "BOM_MCP_DIGIKEY_CDP_URL": "http://127.0.0.1:18802"
+      }
+    }
+  }
+}

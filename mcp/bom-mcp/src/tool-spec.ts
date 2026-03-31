@@ -141,6 +141,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description: "检查 bom-mcp 运行时依赖并报告健康状态。",
     inputSchema: {
       type: "object",
+      properties: {},
       additionalProperties: false,
     },
   },

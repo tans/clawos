@@ -129,9 +129,16 @@ describe("bom-mcp stdio server", () => {
 
       const toolsList = await client.request("tools/list");
       expect(toolsList.error).toBeUndefined();
-      const tools = ((toolsList.result as { tools?: Array<{ name?: string }> } | undefined)?.tools ?? []).map((tool) => tool.name);
+      const listedTools =
+        ((toolsList.result as { tools?: Array<{ name?: string; inputSchema?: Record<string, unknown> }> } | undefined)?.tools ??
+          []);
+      const tools = listedTools.map((tool) => tool.name);
       expect(tools).toContain("quote_customer_message");
       expect(tools).toContain("doctor");
+      const doctorSchema = listedTools.find((tool) => tool.name === "doctor")?.inputSchema as
+        | { properties?: Record<string, unknown> }
+        | undefined;
+      expect(doctorSchema?.properties).toEqual({});
 
       const doctorCall = await client.request("tools/call", {
         name: "doctor",

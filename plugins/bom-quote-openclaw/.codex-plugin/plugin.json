@@ -1,0 +1,18 @@
+{
+  "name": "bom-quote-openclaw",
+  "version": "0.1.0",
+  "description": "OpenClaw local bundle for the bom-quote skill and bom-mcp stdio runtime.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "BOM Quote OpenClaw",
+    "shortDescription": "Bundle bom-quote with bom-mcp for local OpenClaw testing.",
+    "longDescription": "Provides the bom-quote skill plus a linked bom-mcp stdio server so local OpenClaw sessions can quote electronics BOMs end to end.",
+    "developerName": "clawos",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ]
+  }
+}
