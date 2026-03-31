@@ -414,6 +414,16 @@ export function listCompaniesByOwnerUserId(ownerUserId: number): CompanyRow[] {
     .all(ownerUserId) as CompanyRow[];
 }
 
+export function getCompanyById(companyId: string): CompanyRow | null {
+  return db
+    .query(
+      `SELECT id, owner_user_id AS ownerUserId, name, slug, mode, created_at AS createdAt, updated_at AS updatedAt
+       FROM companies
+       WHERE id = ?`
+    )
+    .get(companyId) as CompanyRow | null;
+}
+
 export function existsCompanySlug(slug: string): boolean {
   const row = db.query("SELECT id FROM companies WHERE slug = ? LIMIT 1").get(slug) as { id: string } | null;
   return Boolean(row);

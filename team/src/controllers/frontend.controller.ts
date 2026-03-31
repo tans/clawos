@@ -48,7 +48,7 @@ export function createFrontendController(): Hono<AppEnv> {
     const requested = sanitizeRelativePath(c.req.path.replace(/^\/app\/?/, ""));
     const candidate = requested ? join(FRONTEND_DIST_DIR, requested) : join(FRONTEND_DIST_DIR, "index.html");
 
-    if (await fileExists(candidate)) {
+    if (requested.startsWith("assets/") && (await fileExists(candidate))) {
       return new Response(Bun.file(candidate), { headers: { "content-type": getContentType(candidate) } });
     }
 
