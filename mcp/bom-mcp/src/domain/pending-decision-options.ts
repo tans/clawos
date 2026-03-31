@@ -1,5 +1,5 @@
 import type { BomLine, PendingDecisionOption, QuoteLineDecisionType } from "../types";
-import { buildCandidateSearchQuery } from "./component-classifier";
+import { buildCandidateSearchQuery, looksLikeSpecificPartNumber } from "./component-classifier";
 import { lookupWebCandidates, type WebSupplier } from "./web-pricing";
 
 function fallbackCandidateOptions(line: BomLine): PendingDecisionOption[] {
@@ -31,7 +31,12 @@ export async function buildPendingDecisionOptions(
     webSuppliers?: WebSupplier[];
   },
 ): Promise<PendingDecisionOption[]> {
-  if (params.webPricing) {
+  const shouldUseWebCandidates = params.webPricing && (
+    params.decisionType === "missing_reliable_price" ||
+    looksLikeSpecificPartNumber(line.partNumber)
+  );
+
+  if (shouldUseWebCandidates) {
     const query = buildCandidateSearchQuery(line);
     const webOptions = await lookupWebCandidates(query, params.webSuppliers);
     if (webOptions.length > 0) {

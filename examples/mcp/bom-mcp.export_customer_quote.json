@@ -5,6 +5,7 @@
   "taxRate": 0.13,
   "webPricing": true,
   "webSuppliers": [
+    "ickey_cn",
     "digikey_cn",
     "ic_net"
   ]

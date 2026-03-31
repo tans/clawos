@@ -50,6 +50,11 @@ export function inferComponentFamily(line: BomLine): ComponentFamily {
 }
 
 export function buildCandidateSearchQuery(line: BomLine): string {
+  const specificPartNumber = line.partNumber.trim();
+  if (looksLikeSpecificPartNumber(specificPartNumber)) {
+    return specificPartNumber;
+  }
+
   const base = line.rawText?.trim() || line.description?.trim() || line.partNumber.trim();
   const family = inferComponentFamily(line);
   if (family === "capacitor" && !/\bcapacitor\b/i.test(base)) {

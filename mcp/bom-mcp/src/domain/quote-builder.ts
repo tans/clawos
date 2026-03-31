@@ -49,6 +49,7 @@ export async function buildQuoteResult(params: {
     }
 
     const price = await resolveLinePrice(line, {
+      quoteCurrency: params.currency,
       webPricing: params.webPricing,
       webSuppliers: params.webSuppliers,
     });
@@ -97,9 +98,22 @@ export async function buildQuoteResult(params: {
           : price.source === "catalog"
             ? "使用已记录的器件价格"
             : `使用 ${price.source} 网站抓取价格`;
-    const reason = price.warnings && price.warnings.length > 0
-      ? `${reasonBase}；${price.warnings.join("；")}`
-      : reasonBase;
+    const reasonSegments = [reasonBase];
+    if (price.sourceCurrency && price.sourceCurrency !== (params.currency || "CNY")) {
+      if (price.fxRate && price.fxPair && price.sourceUnitPrice !== undefined) {
+        reasonSegments.push(
+          `源站币种 ${price.sourceCurrency}`,
+          `源价 ${price.sourceUnitPrice}`,
+          `按 ${price.fxPair}=${price.fxRate} 换算`,
+        );
+      } else {
+        reasonSegments.push(`源站币种 ${price.sourceCurrency}`);
+      }
+    }
+    if (price.warnings && price.warnings.length > 0) {
+      reasonSegments.push(...price.warnings);
+    }
+    const reason = reasonSegments.join("；");
 
     return {
       line: {
@@ -124,6 +138,10 @@ export async function buildQuoteResult(params: {
         }),
         pricingState: price.pricingState,
         supplier: price.supplier,
+        sourceUnitPrice: price.sourceUnitPrice,
+        sourceCurrency: price.sourceCurrency,
+        fxRate: price.fxRate,
+        fxPair: price.fxPair,
         sourceUrl: price.sourceUrl,
         reason,
       },

@@ -12,7 +12,7 @@ export interface SubmitBomInput {
     taxRate?: number;
     targetLeadTimeDays?: number;
     webPricing?: boolean;
-    webSuppliers?: Array<"digikey_cn" | "ic_net">;
+    webSuppliers?: Array<"digikey_cn" | "ickey_cn" | "ic_net">;
   };
 }
 
@@ -43,7 +43,7 @@ export interface JobRecord {
 
 export type QuoteCompletionStatus = "completed" | "completed_with_decisions" | "failed";
 export type QuoteLineDecisionType = "resolved" | "ambiguous_candidates" | "missing_reliable_price" | "unresolved";
-export type QuotePriceSource = "input" | "catalog" | "digikey_cn" | "ic_net" | "manual" | "missing";
+export type QuotePriceSource = "input" | "catalog" | "digikey_cn" | "ickey_cn" | "ic_net" | "manual" | "missing";
 export type QuotePriceConfidence = "high" | "medium" | "low";
 export type QuotePricingState = "input" | "live_fetch" | "cached" | "stale_fallback";
 
@@ -64,6 +64,10 @@ export interface QuoteLine {
   priceConfidence?: QuotePriceConfidence;
   pricingState?: QuotePricingState;
   supplier?: string;
+  sourceUnitPrice?: number;
+  sourceCurrency?: string;
+  fxRate?: number;
+  fxPair?: string;
   sourceUrl?: string;
   reason: string;
 }

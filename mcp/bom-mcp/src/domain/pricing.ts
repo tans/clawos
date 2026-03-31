@@ -1,7 +1,21 @@
 import type { BomLine, QuotePriceSource, QuotePricingState } from "../types";
 import { getLatestPartPrice, type StoredPartPrice, upsertWebPartPrice } from "../infra/store";
 import { looksLikeSpecificPartNumber } from "./component-classifier";
+import { resolveFxRate } from "./fx";
 import { lookupWebPriceDetailed, type WebLookupAttempt, type WebSupplier } from "./web-pricing";
+
+function blockedAttemptMessage(attempt: WebLookupAttempt): string {
+  if (attempt.blockReason === "cloudflare_challenge") {
+    return `${attempt.supplier} 返回 Cloudflare challenge，当前需要浏览器会话或人工登录态`;
+  }
+  if (attempt.blockReason === "login_required") {
+    return `${attempt.supplier} 当前需要登录后才能访问报价页`;
+  }
+  if (attempt.blockReason === "js_challenge") {
+    return `${attempt.supplier} 返回 JS 防护页，当前需要浏览器会话或人工登录态`;
+  }
+  return `${attempt.supplier} 返回防护页，当前无法直接抓取`;
+}
 
 export interface LinePriceResolution {
   unitPrice?: number;
@@ -10,6 +24,10 @@ export interface LinePriceResolution {
   sourceRecordedAt?: string;
   pricingState?: QuotePricingState;
   supplier?: string;
+  sourceUnitPrice?: number;
+  sourceCurrency?: string;
+  fxRate?: number;
+  fxPair?: string;
   sourceUrl?: string;
   warnings?: string[];
 }
@@ -22,7 +40,7 @@ function summarizeLookupWarnings(attempts: WebLookupAttempt[]): string[] {
       continue;
     }
     if (attempt.status === "blocked") {
-      supplierMessages.set(attempt.supplier, `${attempt.supplier} 返回防护页，当前无法直接抓取`);
+      supplierMessages.set(attempt.supplier, blockedAttemptMessage(attempt));
     } else if (attempt.status === "http_error") {
       supplierMessages.set(attempt.supplier, `${attempt.supplier} 当前请求失败`);
     } else if (attempt.status === "error") {
@@ -45,7 +63,10 @@ function isExpiredStoredPrice(price: StoredPartPrice | null): boolean {
 }
 
 function mapStoredPriceSource(price: StoredPartPrice): Exclude<QuotePriceSource, "input" | "missing"> {
-  return price.sourceType === "catalog" || price.sourceType === "digikey_cn" || price.sourceType === "ic_net"
+  return price.sourceType === "catalog" ||
+      price.sourceType === "digikey_cn" ||
+      price.sourceType === "ickey_cn" ||
+      price.sourceType === "ic_net"
     ? price.sourceType
     : "manual";
 }
@@ -58,14 +79,54 @@ function buildStoredPriceResolution(price: StoredPartPrice, warnings: string[] =
     sourceRecordedAt: price.effectiveAt,
     pricingState: warnings.length > 0 ? "stale_fallback" : "cached",
     supplier: price.supplier,
+    sourceCurrency: price.currency,
     sourceUrl: price.sourceRef,
     warnings,
+  };
+}
+
+function applyQuoteCurrencyConversion(
+  resolution: LinePriceResolution,
+  quoteCurrency: string | undefined,
+): LinePriceResolution {
+  if (resolution.unitPrice === undefined) {
+    return resolution;
+  }
+
+  const normalizedQuoteCurrency = quoteCurrency?.trim().toUpperCase() || "CNY";
+  const sourceCurrency = resolution.sourceCurrency?.trim().toUpperCase();
+  if (!sourceCurrency || sourceCurrency === normalizedQuoteCurrency) {
+    return resolution;
+  }
+
+  const fxRate = resolveFxRate(sourceCurrency, normalizedQuoteCurrency);
+  if (!fxRate) {
+    return {
+      ...resolution,
+      sourceUnitPrice: Number(resolution.unitPrice.toFixed(4)),
+      unitPrice: undefined,
+      fxRate: undefined,
+      fxPair: `${sourceCurrency}/${normalizedQuoteCurrency}`,
+      warnings: [
+        ...(resolution.warnings ?? []),
+        `源站币种 ${sourceCurrency} 与报价币种 ${normalizedQuoteCurrency} 不同，缺少 ${sourceCurrency}/${normalizedQuoteCurrency} 汇率配置`,
+      ],
+    };
+  }
+
+  return {
+    ...resolution,
+    sourceUnitPrice: Number(resolution.unitPrice.toFixed(4)),
+    unitPrice: Number((resolution.unitPrice * fxRate.rate).toFixed(4)),
+    fxRate: Number(fxRate.rate.toFixed(6)),
+    fxPair: fxRate.pair,
   };
 }
 
 export async function resolveLinePrice(
   line: BomLine,
   options: {
+    quoteCurrency?: string;
     webPricing?: boolean;
     webSuppliers?: WebSupplier[];
   } = {},
@@ -85,11 +146,13 @@ export async function resolveLinePrice(
     const canRefreshExpiredWebPrice =
       options.webPricing &&
       looksLikeSpecificPartNumber(line.partNumber) &&
-      (storedPrice.sourceType === "digikey_cn" || storedPrice.sourceType === "ic_net") &&
+      (storedPrice.sourceType === "digikey_cn" ||
+        storedPrice.sourceType === "ickey_cn" ||
+        storedPrice.sourceType === "ic_net") &&
       isExpiredStoredPrice(storedPrice);
 
     if (!canRefreshExpiredWebPrice) {
-      return buildStoredPriceResolution(storedPrice);
+      return applyQuoteCurrencyConversion(buildStoredPriceResolution(storedPrice), options.quoteCurrency);
     }
 
     const webLookup = await lookupWebPriceDetailed(line.partNumber, options.webSuppliers);
@@ -102,21 +165,25 @@ export async function resolveLinePrice(
         currency: webLookup.offer.currency,
         sourceRef: webLookup.offer.url,
       });
-      return {
+      return applyQuoteCurrencyConversion({
         unitPrice: webLookup.offer.unitPrice,
         source: webLookup.offer.supplier,
         updatedAt,
         sourceRecordedAt: updatedAt,
         pricingState: "live_fetch",
         supplier: webLookup.offer.supplier,
+        sourceCurrency: webLookup.offer.currency,
         sourceUrl: webLookup.offer.url,
-      };
+      }, options.quoteCurrency);
     }
 
-    return buildStoredPriceResolution(storedPrice, [
-      `${storedPrice.sourceType} 缓存已过期，沿用上次确认价格（${storedPrice.effectiveAt}）`,
-      ...summarizeLookupWarnings(webLookup.attempts),
-    ]);
+    return applyQuoteCurrencyConversion(
+      buildStoredPriceResolution(storedPrice, [
+        `${storedPrice.sourceType} 缓存已过期，沿用上次确认价格（${storedPrice.effectiveAt}）`,
+        ...summarizeLookupWarnings(webLookup.attempts),
+      ]),
+      options.quoteCurrency,
+    );
   }
 
   if (options.webPricing && looksLikeSpecificPartNumber(line.partNumber)) {
@@ -130,15 +197,16 @@ export async function resolveLinePrice(
         currency: webLookup.offer.currency,
         sourceRef: webLookup.offer.url,
       });
-      return {
+      return applyQuoteCurrencyConversion({
         unitPrice: webLookup.offer.unitPrice,
         source: webLookup.offer.supplier,
         updatedAt,
         sourceRecordedAt: updatedAt,
         pricingState: "live_fetch",
         supplier: webLookup.offer.supplier,
+        sourceCurrency: webLookup.offer.currency,
         sourceUrl: webLookup.offer.url,
-      };
+      }, options.quoteCurrency);
     }
 
     return {
@@ -153,6 +221,7 @@ export async function resolveLinePrice(
 export async function computeLinePrice(
   line: BomLine,
   options: {
+    quoteCurrency?: string;
     webPricing?: boolean;
     webSuppliers?: WebSupplier[];
   } = {},

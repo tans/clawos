@@ -20,6 +20,7 @@ let bomMcpToolsPromise:
   | Promise<{
       runTool: typeof import("../../../mcp/bom-mcp/src/index").runTool;
       getJob: typeof import("../../../mcp/bom-mcp/src/infra/store").getJob;
+      buildPendingDecisionOptions: typeof import("../../../mcp/bom-mcp/src/domain/pending-decision-options").buildPendingDecisionOptions;
     }>
   | undefined;
 
@@ -28,9 +29,11 @@ async function loadBomMcpTools() {
   bomMcpToolsPromise ??= Promise.all([
     import("../../../mcp/bom-mcp/src/index"),
     import("../../../mcp/bom-mcp/src/infra/store"),
-  ]).then(([indexModule, storeModule]) => ({
+    import("../../../mcp/bom-mcp/src/domain/pending-decision-options"),
+  ]).then(([indexModule, storeModule, pendingDecisionOptionsModule]) => ({
     runTool: indexModule.runTool,
     getJob: storeModule.getJob,
+    buildPendingDecisionOptions: pendingDecisionOptionsModule.buildPendingDecisionOptions,
   }));
   return bomMcpToolsPromise;
 }
@@ -43,6 +46,14 @@ async function runTool(request: Parameters<typeof import("../../../mcp/bom-mcp/s
 async function getJob(jobId: string) {
   const tools = await loadBomMcpTools();
   return tools.getJob(jobId);
+}
+
+async function buildPendingDecisionOptions(
+  line: Parameters<typeof import("../../../mcp/bom-mcp/src/domain/pending-decision-options").buildPendingDecisionOptions>[0],
+  params: Parameters<typeof import("../../../mcp/bom-mcp/src/domain/pending-decision-options").buildPendingDecisionOptions>[1],
+) {
+  const tools = await loadBomMcpTools();
+  return tools.buildPendingDecisionOptions(line, params);
 }
 
 function sleep(ms: number): Promise<void> {
@@ -533,7 +544,231 @@ describe("bom-mcp tools", () => {
       };
 
       expect(quote.pendingDecisions[0]?.decisionType).toBe("missing_reliable_price");
-      expect(quote.pendingDecisions[0]?.reason).toContain("digikey_cn 返回防护页");
+      expect(quote.pendingDecisions[0]?.reason).toContain("digikey_cn 返回 Cloudflare challenge");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("surfaces auth-required web suppliers in missing-price reasons", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(
+        `
+        <script type="text/javascript">
+          document.write('<table></table>');
+          gotoUrl('https://member.ic.net.cn/login.php?from=www.ic.net.cn/search.php%3Fkeys%3DBLOCKEDPART123');
+        </script>
+        `,
+        { status: 200, headers: { "content-type": "text/html" } },
+      )) as typeof fetch;
+
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "csv",
+          content: "partNumber,quantity,description\nBLOCKEDPART123,2,MCU\n",
+          quoteParams: { webPricing: true, webSuppliers: ["ic_net"] },
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const quote = (await runTool({
+        tool: "get_quote",
+        args: { jobId: submitResult.jobId },
+      })) as {
+        pendingDecisions: Array<{ decisionType: string; reason: string }>;
+      };
+
+      expect(quote.pendingDecisions[0]?.decisionType).toBe("missing_reliable_price");
+      expect(quote.pendingDecisions[0]?.reason).toContain("ic_net 当前需要登录后才能访问报价页");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("includes ICkey CN exact-match options when price is still missing", async () => {
+    const originalFetch = globalThis.fetch;
+    const partNumber = `ICKEYMISS${Date.now()}`;
+
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("ickey.cn")) {
+        return new Response(
+          `
+          <div class="search-r-list">
+            <div class="search-th-name">${partNumber}</div>
+            <div class="search-th-info"></div>
+            <div class="search-th-maf">TI</div>
+            <div class="search-th-explain" title="Reel">Reel</div>
+            <div class="search-th-stock">
+              <div class="text-search">39800</div>
+              <div>1片起订</div>
+            </div>
+            <div class="search-th-delivery">
+              <div></div>
+              <div>内地:3-5工作日</div>
+            </div>
+            <div class="search-th-oper">
+              <div class="new-price-btn" data-href="//search.ickey.cn/site/index.html?keyword=${partNumber}">查看价格</div>
+            </div>
+          </div>
+          <div class="search-r-list">
+            <div class="search-th-name">${partNumber}G4</div>
+            <div class="search-th-info"></div>
+            <div class="search-th-maf">TI</div>
+            <div class="search-th-explain" title=""></div>
+            <div class="search-th-stock">
+              <div class="text-search">0</div>
+              <div>2500片起订</div>
+            </div>
+            <div class="search-th-delivery">
+              <div></div>
+              <div>内地:6-8周</div>
+            </div>
+            <div class="search-th-oper">
+              <div class="new-price-btn" data-href="//search.ickey.cn/site/index.html?keyword=${partNumber}G4">查看价格</div>
+            </div>
+          </div>
+          `,
+          { status: 200, headers: { "content-type": "text/html" } },
+        );
+      }
+      throw new Error(`unexpected url: ${url}`);
+    }) as typeof fetch;
+
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "csv",
+          content: `partNumber,quantity,description\n${partNumber},2,DC/DC converter\n`,
+          quoteParams: { webPricing: true, webSuppliers: ["ickey_cn"] },
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const quote = (await runTool({
+        tool: "get_quote",
+        args: { jobId: submitResult.jobId },
+      })) as {
+        pendingDecisions: Array<{
+          decisionType: string;
+          options: Array<{ partNumber?: string; manufacturer?: string; moq?: number; leadTime?: string; note?: string }>;
+          reason: string;
+        }>;
+      };
+
+      expect(quote.pendingDecisions[0]?.decisionType).toBe("missing_reliable_price");
+      expect(quote.pendingDecisions[0]?.options).toHaveLength(1);
+      expect(quote.pendingDecisions[0]?.options[0]?.partNumber).toBe(partNumber);
+      expect(quote.pendingDecisions[0]?.options[0]?.manufacturer).toBe("TI");
+      expect(quote.pendingDecisions[0]?.options[0]?.moq).toBe(1);
+      expect(quote.pendingDecisions[0]?.options[0]?.leadTime).toBe("内地:3-5工作日");
+      expect(quote.pendingDecisions[0]?.options[0]?.note).toContain("库存 39800");
+      expect(quote.pendingDecisions[0]?.reason).toContain("未获取到可靠价格");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("uses exact partNumber for missing-price candidate lookup even when customer-message raw text exists", async () => {
+    const originalFetch = globalThis.fetch;
+    const partNumber = `ICKEYQRY${Date.now()}`;
+    const expectedQuery = encodeURIComponent(partNumber);
+    const exactNewSearchUrl = `/new-search/${expectedQuery}/`;
+    const exactKeywordUrl = `keyword=${expectedQuery}`;
+
+    globalThis.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("ickey.cn")) {
+        throw new Error(`unexpected url: ${url}`);
+      }
+      const isExactQuery =
+        (url.includes(exactNewSearchUrl) || url.includes(exactKeywordUrl)) &&
+        !url.includes("%2C") &&
+        !/100n|capacitor/i.test(url);
+      if (!isExactQuery) {
+        return new Response("<html><body><div>no results</div></body></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        });
+      }
+      return new Response(
+        `
+        <div class="search-r-list">
+          <div class="search-th-name">${partNumber}</div>
+          <div class="search-th-info"></div>
+          <div class="search-th-maf">TI</div>
+          <div class="search-th-explain" title=""></div>
+          <div class="search-th-stock">
+            <div class="text-search">1234</div>
+            <div>5片起订</div>
+          </div>
+          <div class="search-th-delivery">
+            <div></div>
+            <div>内地:4-7工作日</div>
+          </div>
+          <div class="search-th-oper">
+            <div class="new-price-btn" data-href="//search.ickey.cn/site/index.html?keyword=${partNumber}">查看价格</div>
+          </div>
+        </div>
+        `,
+        { status: 200, headers: { "content-type": "text/html" } },
+      );
+    }) as typeof fetch;
+
+    try {
+      const quote = (await runTool({
+        tool: "quote_customer_message",
+        args: {
+          message: `Test BOM\n\`\`\`csv\npartNumber,quantity,description\n${partNumber},2,100n capacitor\n\`\`\`\n`,
+          currency: "CNY",
+          taxRate: 0,
+          webPricing: true,
+          webSuppliers: ["ickey_cn"],
+        },
+      })) as {
+        boms: Array<{
+          pendingDecisions: Array<{
+          options: Array<{ partNumber?: string; manufacturer?: string; moq?: number; leadTime?: string }>;
+          }>;
+        }>;
+      };
+
+      expect(quote.boms[0]?.pendingDecisions[0]?.options[0]?.partNumber).toBe(partNumber);
+      expect(quote.boms[0]?.pendingDecisions[0]?.options[0]?.manufacturer).toBe("TI");
+      expect(quote.boms[0]?.pendingDecisions[0]?.options[0]?.moq).toBe(5);
+      expect(quote.boms[0]?.pendingDecisions[0]?.options[0]?.leadTime).toBe("内地:4-7工作日");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("does not query web candidates for ambiguous non-specific part descriptions", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      throw new Error("web lookup should be skipped for ambiguous non-specific parts");
+    }) as typeof fetch;
+
+    try {
+      const options = await buildPendingDecisionOptions(
+        {
+          lineNo: 1,
+          partNumber: "CR2032 MFR SM",
+          quantity: 1,
+          description: "CR2032 MFR SM",
+          rawText: "CR2032 MFR SM,1,,CR2032 MFR SM",
+        },
+        {
+          decisionType: "ambiguous_candidates",
+          webPricing: true,
+          webSuppliers: ["ickey_cn", "digikey_cn", "ic_net"],
+        },
+      );
+
+      expect(options).toEqual([]);
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -768,7 +1003,7 @@ describe("bom-mcp tools", () => {
       expect(secondQuote.lines[0]?.pricingState).toBe("stale_fallback");
       expect(Number.isNaN(Date.parse(secondQuote.lines[0]?.sourceRecordedAt ?? ""))).toBeFalse();
       expect(secondQuote.lines[0]?.reason).toContain("缓存已过期，沿用上次确认价格");
-      expect(secondQuote.lines[0]?.reason).toContain("digikey_cn 返回防护页");
+      expect(secondQuote.lines[0]?.reason).toContain("digikey_cn 返回 Cloudflare challenge");
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -830,6 +1065,403 @@ describe("bom-mcp tools", () => {
       expect(csv).toContain("68u");
     } finally {
       globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("surfaces source currency in quote and csv export for DigiKey detail-page pricing", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalUsdCnyFx = process.env.BOM_MCP_FX_USD_CNY;
+    const originalFxRatesJson = process.env.BOM_MCP_FX_RATES_JSON;
+    process.env.BOM_MCP_FX_USD_CNY = "7.2";
+    delete process.env.BOM_MCP_FX_RATES_JSON;
+
+    globalThis.fetch = (async () =>
+      new Response(
+        `
+        <html>
+          <head>
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": "CL10A106KP8NNNC",
+                "mpn": "CL10A106KP8NNNC",
+                "url": "https://www.digikey.cn/zh/products/detail/samsung-electro-mechanics/CL10A106KP8NNNC/3886850",
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": "USD",
+                  "price": "0.18"
+                }
+              }
+            </script>
+          </head>
+          <body>
+            <h1>CL10A106KP8NNNC</h1>
+            <div>制造商产品编号 CL10A106KP8NNNC</div>
+            <div>所有价格均以 USD 计算</div>
+            <div>数量</div>
+            <div>单价</div>
+            <div>总价</div>
+            <div>1</div>
+            <div>$0.18000</div>
+            <div>$0.18</div>
+          </body>
+        </html>
+        `,
+        { status: 200, headers: { "content-type": "text/html" } },
+      )) as typeof fetch;
+
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "csv",
+          content: "partNumber,quantity,description\nCL10A106KP8NNNC,7,100n\n",
+          quoteParams: { currency: "CNY", taxRate: 0, webPricing: true, webSuppliers: ["digikey_cn"] },
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const quote = (await runTool({
+        tool: "get_quote",
+        args: { jobId: submitResult.jobId },
+      })) as {
+        lines: Array<{ sourceCurrency?: string; reason?: string; sourceUrl?: string }>;
+      };
+
+      expect(quote.lines[0]?.sourceCurrency).toBe("USD");
+      expect(quote.lines[0]?.reason).toContain("源站币种 USD");
+      expect(quote.lines[0]?.sourceUrl).toContain("digikey.cn");
+
+      const exported = (await runTool({
+        tool: "export_quote",
+        args: { jobId: submitResult.jobId, format: "csv" },
+      })) as FileFirstExportResult;
+
+      const csv = await readFile(exported.filePath, "utf-8");
+      expect(csv).toContain("sourceUnitPrice");
+      expect(csv).toContain("sourceCurrency");
+      expect(csv).toContain("fxRate");
+      expect(csv).toContain("USD");
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (originalUsdCnyFx === undefined) {
+        delete process.env.BOM_MCP_FX_USD_CNY;
+      } else {
+        process.env.BOM_MCP_FX_USD_CNY = originalUsdCnyFx;
+      }
+      if (originalFxRatesJson === undefined) {
+        delete process.env.BOM_MCP_FX_RATES_JSON;
+      } else {
+        process.env.BOM_MCP_FX_RATES_JSON = originalFxRatesJson;
+      }
+    }
+  });
+
+  it("converts DigiKey USD pricing into quote currency when FX is configured", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalUsdCnyFx = process.env.BOM_MCP_FX_USD_CNY;
+    const originalFxRatesJson = process.env.BOM_MCP_FX_RATES_JSON;
+    const partNumber = `CL10A106KP8NNNC-${Date.now()}`;
+    process.env.BOM_MCP_FX_USD_CNY = "7.2";
+    delete process.env.BOM_MCP_FX_RATES_JSON;
+
+    globalThis.fetch = (async () =>
+      new Response(
+        `
+        <html>
+          <head>
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": "${partNumber}",
+                "mpn": "${partNumber}",
+                "url": "https://www.digikey.cn/zh/products/detail/samsung-electro-mechanics/${partNumber}/3886850",
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": "USD",
+                  "price": "0.18"
+                }
+              }
+            </script>
+          </head>
+          <body>
+            <h1>${partNumber}</h1>
+            <div>制造商产品编号 ${partNumber}</div>
+            <div>所有价格均以 USD 计算</div>
+            <div>数量</div>
+            <div>单价</div>
+            <div>总价</div>
+            <div>1</div>
+            <div>$0.18000</div>
+            <div>$0.18</div>
+          </body>
+        </html>
+        `,
+        { status: 200, headers: { "content-type": "text/html" } },
+      )) as typeof fetch;
+
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "csv",
+          content: `partNumber,quantity,description\n${partNumber},7,100n\n`,
+          quoteParams: { currency: "CNY", taxRate: 0, webPricing: true, webSuppliers: ["digikey_cn"] },
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const quote = (await runTool({
+        tool: "get_quote",
+        args: { jobId: submitResult.jobId },
+      })) as {
+        lines: Array<{
+          unitPrice?: number;
+          subtotal?: number;
+          sourceUnitPrice?: number;
+          sourceCurrency?: string;
+          fxRate?: number;
+          fxPair?: string;
+          reason?: string;
+        }>;
+      };
+
+      expect(quote.lines[0]?.unitPrice).toBe(1.296);
+      expect(quote.lines[0]?.subtotal).toBe(9.072);
+      expect(quote.lines[0]?.sourceUnitPrice).toBe(0.18);
+      expect(quote.lines[0]?.sourceCurrency).toBe("USD");
+      expect(quote.lines[0]?.fxRate).toBe(7.2);
+      expect(quote.lines[0]?.fxPair).toBe("USD/CNY");
+      expect(quote.lines[0]?.reason).toContain("按 USD/CNY=7.2 换算");
+
+      const exported = (await runTool({
+        tool: "export_quote",
+        args: { jobId: submitResult.jobId, format: "csv" },
+      })) as FileFirstExportResult;
+
+      const csv = await readFile(exported.filePath, "utf-8");
+      expect(csv).toContain("sourceUnitPrice");
+      expect(csv).toContain("fxRate");
+      expect(csv).toContain("fxPair");
+      expect(csv).toContain("USD/CNY");
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (originalUsdCnyFx === undefined) {
+        delete process.env.BOM_MCP_FX_USD_CNY;
+      } else {
+        process.env.BOM_MCP_FX_USD_CNY = originalUsdCnyFx;
+      }
+      if (originalFxRatesJson === undefined) {
+        delete process.env.BOM_MCP_FX_RATES_JSON;
+      } else {
+        process.env.BOM_MCP_FX_RATES_JSON = originalFxRatesJson;
+      }
+    }
+  });
+
+  it("requires explicit FX configuration before resolving cross-currency DigiKey prices", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalUsdCnyFx = process.env.BOM_MCP_FX_USD_CNY;
+    const originalFxRatesJson = process.env.BOM_MCP_FX_RATES_JSON;
+    const originalOpenclawConfigPath = process.env.BOM_MCP_OPENCLAW_CONFIG_PATH;
+    const configPath = `/tmp/openclaw-bom-no-fx-${Date.now()}.json`;
+    const partNumber = `CL10A106KP8NNNC-NOFX-${Date.now()}`;
+    delete process.env.BOM_MCP_FX_USD_CNY;
+    delete process.env.BOM_MCP_FX_RATES_JSON;
+    process.env.BOM_MCP_OPENCLAW_CONFIG_PATH = configPath;
+    await Bun.write(configPath, JSON.stringify({ skills: { entries: { "bom-quote": { enabled: true } } } }));
+
+    globalThis.fetch = (async () =>
+      new Response(
+        `
+        <html>
+          <head>
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": "${partNumber}",
+                "mpn": "${partNumber}",
+                "url": "https://www.digikey.cn/zh/products/detail/samsung-electro-mechanics/${partNumber}/3886850",
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": "USD",
+                  "price": "0.18"
+                }
+              }
+            </script>
+          </head>
+          <body>
+            <h1>${partNumber}</h1>
+            <div>制造商产品编号 ${partNumber}</div>
+            <div>所有价格均以 USD 计算</div>
+            <div>数量</div>
+            <div>单价</div>
+            <div>总价</div>
+            <div>1</div>
+            <div>$0.18000</div>
+            <div>$0.18</div>
+          </body>
+        </html>
+        `,
+        { status: 200, headers: { "content-type": "text/html" } },
+      )) as typeof fetch;
+
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "csv",
+          content: `partNumber,quantity,description\n${partNumber},7,100n\n`,
+          quoteParams: { currency: "CNY", taxRate: 0, webPricing: true, webSuppliers: ["digikey_cn"] },
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const quote = (await runTool({
+        tool: "get_quote",
+        args: { jobId: submitResult.jobId },
+      })) as {
+        status: string;
+        lines: Array<{ decisionType?: string; reason?: string }>;
+        pendingDecisions: Array<{ reason?: string }>;
+      };
+
+      expect(quote.status).toBe("completed_with_decisions");
+      expect(quote.lines[0]?.decisionType).toBe("missing_reliable_price");
+      expect(quote.lines[0]?.reason).toContain("缺少 USD/CNY 汇率配置");
+      expect(quote.pendingDecisions[0]?.reason).toContain("缺少 USD/CNY 汇率配置");
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (originalUsdCnyFx === undefined) {
+        delete process.env.BOM_MCP_FX_USD_CNY;
+      } else {
+        process.env.BOM_MCP_FX_USD_CNY = originalUsdCnyFx;
+      }
+      if (originalFxRatesJson === undefined) {
+        delete process.env.BOM_MCP_FX_RATES_JSON;
+      } else {
+        process.env.BOM_MCP_FX_RATES_JSON = originalFxRatesJson;
+      }
+      if (originalOpenclawConfigPath === undefined) {
+        delete process.env.BOM_MCP_OPENCLAW_CONFIG_PATH;
+      } else {
+        process.env.BOM_MCP_OPENCLAW_CONFIG_PATH = originalOpenclawConfigPath;
+      }
+      await Bun.file(configPath).delete().catch(() => {});
+    }
+  });
+
+  it("reads FX configuration from openclaw skill config when env is unset", async () => {
+    const originalFetch = globalThis.fetch;
+    const originalUsdCnyFx = process.env.BOM_MCP_FX_USD_CNY;
+    const originalFxRatesJson = process.env.BOM_MCP_FX_RATES_JSON;
+    const originalOpenclawConfigPath = process.env.BOM_MCP_OPENCLAW_CONFIG_PATH;
+    const configPath = `/tmp/openclaw-bom-fx-${Date.now()}.json`;
+    const partNumber = `CL10A106KP8NNNC-OPENCLAW-${Date.now()}`;
+
+    delete process.env.BOM_MCP_FX_USD_CNY;
+    delete process.env.BOM_MCP_FX_RATES_JSON;
+    process.env.BOM_MCP_OPENCLAW_CONFIG_PATH = configPath;
+
+    await Bun.write(
+      configPath,
+      JSON.stringify({
+        skills: {
+          entries: {
+            "bom-quote": {
+              enabled: true,
+              env: {
+                BOM_MCP_FX_USD_CNY: "7.4",
+              },
+              config: {
+                fxRates: {
+                  "USD/CNY": 7.4,
+                },
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    globalThis.fetch = (async () =>
+      new Response(
+        `
+        <html>
+          <head>
+            <script type="application/ld+json">
+              {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": "${partNumber}",
+                "mpn": "${partNumber}",
+                "url": "https://www.digikey.cn/zh/products/detail/samsung-electro-mechanics/${partNumber}/3886850",
+                "offers": {
+                  "@type": "Offer",
+                  "priceCurrency": "USD",
+                  "price": "0.18"
+                }
+              }
+            </script>
+          </head>
+          <body>
+            <h1>${partNumber}</h1>
+            <div>制造商产品编号 ${partNumber}</div>
+            <div>所有价格均以 USD 计算</div>
+            <div>数量</div>
+            <div>单价</div>
+            <div>总价</div>
+            <div>1</div>
+            <div>$0.18000</div>
+            <div>$0.18</div>
+          </body>
+        </html>
+        `,
+        { status: 200, headers: { "content-type": "text/html" } },
+      )) as typeof fetch;
+
+    try {
+      const submitResult = (await runTool({
+        tool: "submit_bom",
+        args: {
+          sourceType: "csv",
+          content: `partNumber,quantity,description\n${partNumber},7,100n\n`,
+          quoteParams: { currency: "CNY", taxRate: 0, webPricing: true, webSuppliers: ["digikey_cn"] },
+        },
+      })) as { jobId: string };
+      await waitForSucceededJob(submitResult.jobId);
+
+      const quote = (await runTool({
+        tool: "get_quote",
+        args: { jobId: submitResult.jobId },
+      })) as {
+        lines: Array<{ unitPrice?: number; fxRate?: number; fxPair?: string }>;
+      };
+
+      expect(quote.lines[0]?.unitPrice).toBe(1.332);
+      expect(quote.lines[0]?.fxRate).toBe(7.4);
+      expect(quote.lines[0]?.fxPair).toBe("USD/CNY");
+    } finally {
+      globalThis.fetch = originalFetch;
+      if (originalUsdCnyFx === undefined) {
+        delete process.env.BOM_MCP_FX_USD_CNY;
+      } else {
+        process.env.BOM_MCP_FX_USD_CNY = originalUsdCnyFx;
+      }
+      if (originalFxRatesJson === undefined) {
+        delete process.env.BOM_MCP_FX_RATES_JSON;
+      } else {
+        process.env.BOM_MCP_FX_RATES_JSON = originalFxRatesJson;
+      }
+      if (originalOpenclawConfigPath === undefined) {
+        delete process.env.BOM_MCP_OPENCLAW_CONFIG_PATH;
+      } else {
+        process.env.BOM_MCP_OPENCLAW_CONFIG_PATH = originalOpenclawConfigPath;
+      }
+      await Bun.file(configPath).delete().catch(() => {});
     }
   });
 

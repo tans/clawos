@@ -55,7 +55,7 @@
 
 - 教 agent 什么时候使用 BOM 报价能力。
 - 规定推荐调用路径，例如优先 `quote_customer_message`、缺本地价时开启 `webPricing`、导出时使用 `export_customer_quote`。
-- 规定输出规范，例如展示 `priceUpdatedAt`、`sourceRecordedAt`、`pricingState`。
+- 规定输出规范，例如展示 `priceUpdatedAt`、`sourceRecordedAt`、`pricingState`，以及跨币种时的 `sourceCurrency`、`sourceUnitPrice`、`fxRate`。
 
 它本质上是“行为编排层”，不是计算层。
 
@@ -102,7 +102,7 @@
 - 多 BOM 消息优先调用 `quote_customer_message`
 - 默认 `currency = CNY`
 - 缺本地价时启用 `webPricing`
-- 优先 `webSuppliers: ["digikey_cn", "ic_net"]`
+- 优先 `webSuppliers: ["ickey_cn", "digikey_cn", "ic_net"]`
 - 文件导出优先 `export_customer_quote`
 
 这意味着 `bom-quote` 本身已经可以作为 OpenClaw skill 被加载。
@@ -128,6 +128,23 @@
 
 - 现有业务逻辑仍集中在 `runTool()`
 - stdio server 只是外层 transport 包装
+
+### 3.3 新增 `ickey_cn` 公开候选源
+
+当前 `bom-mcp` 已支持把 `ickey_cn` 作为第三个 web supplier 使用。
+
+它的当前能力边界是：
+
+- 可从公开 `new-search` 页面提取候选型号
+- 可提取 `manufacturer`、`stock`、`moq`、`leadTime`
+- 适合补强“同型号供货很多，需要业务挑选”的场景
+- 对公开页面没有稳定单价时，不会伪造价格，仍会输出 `missing_reliable_price`
+
+因此推荐的供应商顺序是：
+
+- `ickey_cn`
+- `digikey_cn`
+- `ic_net`
 
 ### 3.3 `bom-mcp` 已暴露的工具
 
@@ -161,6 +178,62 @@
 - 但它目前仍依赖 Bun 和源码运行时，不是单文件独立二进制
 
 ## 4. OpenClaw 侧如何接入
+
+### 4.0 跨币种价格现在需要显式 FX 配置
+
+这是当前接入时最容易忽略、但对结果正确性影响最大的点：
+
+- DigiKey China 真实产品页价格经常是 `USD`，而业务报价默认是 `CNY`。
+- `bom-mcp` 现在不会再把 `USD` 单价直接当成 `CNY` 输出。
+- 如果检测到源站币种与目标报价币种不同，但没有配置对应汇率，该行会进入 `missing_reliable_price`，原因里会明确提示缺少对应 FX 配置。
+
+推荐至少配置：
+
+```bash
+BOM_MCP_FX_USD_CNY=7.20
+```
+
+或者统一使用 JSON：
+
+```bash
+BOM_MCP_FX_RATES_JSON={"USD/CNY":7.20,"EUR/CNY":7.85}
+```
+
+如果你希望通过 OpenClaw skill 配置下发，而不是依赖外部 shell 环境，也可以直接写进 `~/.openclaw/openclaw.json`：
+
+```json5
+{
+  skills: {
+    entries: {
+      "bom-quote": {
+        enabled: true,
+        env: {
+          BOM_MCP_FX_USD_CNY: "7.20"
+        },
+        config: {
+          fxRates: {
+            "USD/CNY": 7.20
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+当前 `bom-mcp` 的读取优先级是：
+
+1. 进程环境变量
+2. `skills.entries.bom-quote.env`
+3. `skills.entries.bom-quote.config.fxRates`
+
+业务输出中建议同时展示：
+
+- `unitPrice`: 已按目标报价币种换算后的单价
+- `sourceUnitPrice`: 源站原始单价
+- `sourceCurrency`: 源站币种
+- `fxRate`
+- `fxPair`
 
 ## 4.1 skill 目录投放是支持的
 
@@ -238,6 +311,9 @@ export BOM_MCP_DB_PATH="$BOM_MCP_STATE_DIR/bom-mcp.sqlite"
 export BOM_MCP_EXPORT_DIR="$BOM_MCP_STATE_DIR/exports"
 export BOM_MCP_CACHE_DIR="$BOM_MCP_STATE_DIR/cache"
 export BOM_MCP_PUBLIC_BASE_URL="https://files.example.com/bom-mcp"
+export BOM_MCP_DIGIKEY_CDP_URL="http://127.0.0.1:9222"
+export BOM_MCP_WEB_IC_NET_COOKIE="PHPSESSID=...; ICNet[Host]=https%3A%2F%2Fwww.ic.net.cn"
+export BOM_MCP_WEB_DIGIKEY_CN_COOKIE="cf_clearance=..."
 ```
 
 仓库里也提供了可直接拷贝的样例文件：
@@ -261,13 +337,46 @@ bun run bom-mcp:serve
 如果只是在本机或内网里先跑通，也可以先不设置 `BOM_MCP_PUBLIC_BASE_URL`。
 这时导出结果仍然可用，只是只返回 `filePath` / `fileName` / `mimeType` 等本地文件元数据，不返回 `downloadUrl`。
 
+如果供应商网站需要浏览器会话或登录态，也可以通过 `BOM_MCP_WEB_*` 环境变量注入请求头：
+
+- 全局默认：
+  - `BOM_MCP_WEB_USER_AGENT`
+  - `BOM_MCP_WEB_COOKIE`
+  - `BOM_MCP_WEB_HEADERS_JSON`
+- 供应商覆盖：
+  - `BOM_MCP_WEB_DIGIKEY_CN_COOKIE`
+  - `BOM_MCP_WEB_DIGIKEY_CN_USER_AGENT`
+  - `BOM_MCP_WEB_DIGIKEY_CN_REFERER`
+  - `BOM_MCP_WEB_DIGIKEY_CN_HEADERS_JSON`
+  - `BOM_MCP_WEB_IC_NET_COOKIE`
+  - `BOM_MCP_WEB_IC_NET_USER_AGENT`
+  - `BOM_MCP_WEB_IC_NET_REFERER`
+  - `BOM_MCP_WEB_IC_NET_HEADERS_JSON`
+
+当前真实站点表现上，`digikey.cn` 常返回 Cloudflare challenge，`ic.net.cn` 可能返回登录跳转页；这两类情况下，`bom-mcp` 现在会在缺价原因里明确标注是 challenge 还是 login required，便于业务判断是“需要补会话”还是“需要人工补价”。
+
+对于 `digikey.cn`，`bom-mcp` 现在还支持优先走 CDP 浏览器会话：
+
+- 显式指定：
+  - `BOM_MCP_DIGIKEY_CDP_URL=http://127.0.0.1:9222`
+- 或者不显式指定，默认读取：
+  - `~/.openclaw/openclaw.json -> browser.cdpUrl`
+
+运行顺序是：
+
+1. 先尝试 DigiKey CDP 页面抓取
+2. CDP 不可用或未抽到价格时，再回退 HTTP 抓取
+3. HTTP 仍失败时，再输出 `Cloudflare challenge` 等明确原因
+
+这适合“浏览器里能正常打开 DigiKey，但纯 HTTP 会被 Cloudflare 拦截”的场景。
+
 业务侧推荐默认按下面的调用偏好使用：
 
 - 多 BOM 消息：`quote_customer_message`
 - 需要文件：`export_customer_quote`
 - 缺本地价时：
   - `webPricing = true`
-  - `webSuppliers = ["digikey_cn", "ic_net"]`
+  - `webSuppliers = ["ickey_cn", "digikey_cn", "ic_net"]`
 - 部署排障：先跑 `doctor`
 
 如果技术接入者需要一个最小心智模型，可以直接按下面理解：

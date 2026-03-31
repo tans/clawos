@@ -93,7 +93,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         webPricing: { type: "boolean" },
         webSuppliers: {
           type: "array",
-          items: { type: "string" },
+          items: { type: "string", enum: ["digikey_cn", "ickey_cn", "ic_net"] },
         },
       },
       required: ["message"],
@@ -129,7 +129,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         webPricing: { type: "boolean" },
         webSuppliers: {
           type: "array",
-          items: { type: "string" },
+          items: { type: "string", enum: ["digikey_cn", "ickey_cn", "ic_net"] },
         },
       },
       required: ["message"],

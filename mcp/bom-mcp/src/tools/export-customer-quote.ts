@@ -12,7 +12,7 @@ interface ExportCustomerQuoteInput {
   currency?: string;
   taxRate?: number;
   webPricing?: boolean;
-  webSuppliers?: Array<"digikey_cn" | "ic_net">;
+  webSuppliers?: Array<"digikey_cn" | "ickey_cn" | "ic_net">;
   format?: ExportFormat;
 }
 

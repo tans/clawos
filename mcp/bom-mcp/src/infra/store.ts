@@ -15,7 +15,7 @@ export interface StoredPartPrice {
   unitPrice: number;
   supplier?: string;
   currency: string;
-  sourceType: "manual" | "nl" | "manual_quote_sheet" | "catalog" | "digikey_cn" | "ic_net";
+  sourceType: "manual" | "nl" | "manual_quote_sheet" | "catalog" | "digikey_cn" | "ickey_cn" | "ic_net";
   sourceRef?: string;
   effectiveAt: string;
   expiresAt?: string;
@@ -400,7 +400,7 @@ export function upsertManualPartPrice(params: {
 export function upsertWebPartPrice(params: {
   partNumber: string;
   unitPrice: number;
-  supplier: "digikey_cn" | "ic_net";
+  supplier: "digikey_cn" | "ickey_cn" | "ic_net";
   currency?: string;
   sourceRef?: string;
 }): void {
