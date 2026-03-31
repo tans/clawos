@@ -14,6 +14,10 @@
 - `bom-quote` 已经是一个标准的 OpenClaw skill 目录，核心文件是 `skills/bom-quote/SKILL.md`。
 - `bom-mcp` 现在已经支持最小标准 MCP `stdio` server 模式，同时保留原来的单次命令行入口：`bun mcp/bom-mcp/src/index.ts <tool> '<json-args>'`。
 - `bom-mcp` manifest 已声明 `runtime.command`，宿主可以按 `bun src/index.ts serve --transport stdio` 拉起。
+- 仓库里现在已经有一个可直接给本地 OpenClaw 使用的 bundle：
+  - `plugins/bom-quote-openclaw/.codex-plugin/plugin.json`
+  - `plugins/bom-quote-openclaw/.mcp.json`
+  - `plugins/bom-quote-openclaw/skills/bom-quote/SKILL.md`
 - 因此，`bom-quote + bom-mcp` 现在已经具备“被 OpenClaw 或其他兼容 host 以 stdio 方式接入”的最小条件；ClawOS 更适合作为分发、安装和更新层。
 
 ### 1.2 回答两个核心问题
@@ -43,7 +47,32 @@
 
 - `skill` 可以脱离 ClawOS。
 - `bom-mcp` 现在已经可以脱离 ClawOS 作为最小 stdio MCP runtime 启动。
+- 对 OpenClaw 本地联调来说，当前最稳的方式已经不是只加 `skills.load.extraDirs`，而是直接安装仓库里的 bundle。
 - 但工程上仍建议让 ClawOS 负责下载、放置、升级，而不是让业务环境手工管理 runtime 文件。
+
+### 1.3 当前本地 OpenClaw 最短验证路径
+
+如果目标是“在开发机上尽快跑通本地 OpenClaw + BOM 报价”，当前推荐直接使用仓库里的 bundle：
+
+```bash
+openclaw plugins install --link /Users/ke/code/clawos/.worktrees/main-release/plugins/bom-quote-openclaw
+openclaw plugins inspect bom-quote-openclaw --json
+openclaw agent --local --to +15555550123 --message "如果你能调用 quote_customer_message 工具，只回答 yes；否则只回答 no。" --json
+```
+
+当前真实验证结果：
+
+- `plugins inspect bom-quote-openclaw` 已显示：
+  - `format: "bundle"`
+  - `bundleCapabilities: ["skills", "mcpServers"]`
+  - `mcpServers: [{ "name": "bom-mcp", "hasStdioTransport": true }]`
+- `agent --local` 已返回 `yes`
+- `systemPromptReport.tools.entries` 已出现：
+  - `quote_customer_message`
+  - `export_customer_quote`
+  - `doctor`
+
+这说明当前链路已经是“本地 OpenClaw 可真实调用 BOM 工具”，不是只停留在 skill 可发现状态。
 
 ## 2. 组件职责划分
 
@@ -386,6 +415,59 @@ bun run bom-mcp:serve
 - `doctor` 决定“环境有没有装对”
 - `filePath` 决定“导出文件最终落在哪”
 
+### 4.5 当前 OpenClaw bundle 的真实结构
+
+当前仓库中已经落地的 bundle 是：
+
+```txt
+plugins/
+  bom-quote-openclaw/
+    .codex-plugin/
+      plugin.json
+    .mcp.json
+    skills/
+      bom-quote/
+        SKILL.md
+```
+
+其中：
+
+- `.codex-plugin/plugin.json` 让 OpenClaw 按 Codex bundle 识别这个目录
+- `skills/bom-quote/SKILL.md` 提供 skill 指令层
+- `.mcp.json` 把 `bom-mcp` 的 stdio server 注入给 embedded local agent
+
+当前 `.mcp.json` 的正确 schema 是：
+
+```json
+{
+  "mcpServers": {
+    "bom-mcp": {
+      "command": "bun",
+      "args": [
+        "/Users/ke/code/clawos/.worktrees/main-release/mcp/bom-mcp/src/index.ts",
+        "serve",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "BOM_MCP_STATE_DIR": "/Users/ke/.openclaw/state/bom-mcp",
+        "BOM_MCP_DB_PATH": "/Users/ke/.openclaw/state/bom-mcp/bom-mcp.sqlite",
+        "BOM_MCP_EXPORT_DIR": "/Users/ke/.openclaw/state/bom-mcp/exports",
+        "BOM_MCP_CACHE_DIR": "/Users/ke/.openclaw/state/bom-mcp/cache",
+        "BOM_MCP_FX_USD_CNY": "7.2",
+        "BOM_MCP_DIGIKEY_CDP_URL": "http://127.0.0.1:18802"
+      }
+    }
+  }
+}
+```
+
+注意：
+
+- 不要写成 `{ "mcp": { "servers": ... } }`
+- 当前 OpenClaw bundle 解析期望的是顶层 `mcpServers`
+- 当前工具名在 local embedded agent 中保持 MCP 原名，不会自动改成 `bom-mcp__quote_customer_message`
+
 ## 5. 当前不依赖 ClawOS 能走到哪一步
 
 ### 5.1 可以做到的
@@ -457,6 +539,7 @@ bun run bom-mcp:serve
 - 对 OpenClaw 来说最自然
 - 可以把 skill 和工具运行时一起交付
 - 比单独散落的 skill/MCP 更好管理
+- 当前仓库已经有一个可本地安装的最小实现，可直接作为后续发布原型
 
 缺点：
 
@@ -523,6 +606,28 @@ bom-mcp serve --transport stdio
 1. 保留当前 `runTool()` 逻辑不动
 2. 已实现 `serve` 入口，把 MCP 协议层包在外面
 3. 下一步补齐更完整的协议覆盖，例如更丰富的错误语义和更稳定的内容结构
+
+### P0: 保持 tool schema 对模型函数注册友好
+
+本次本地 OpenClaw 联调里已经踩到一个真实问题：
+
+- `doctor` 的 `inputSchema` 只有 `{ type: "object", additionalProperties: false }`
+- 某些模型函数注册层会把它判定为“object schema missing properties”
+- 实际表现是本地 `agent --local` 直接报 `HTTP 400`
+
+因此建议统一约束：
+
+- 所有“空参数”工具都显式输出：
+
+```json
+{
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
+```
+
+这类兼容性细节很小，但会直接影响本地 OpenClaw 是否可用，应视为 P0 级联调要求。
 
 ### P0: 明确运行时目录与状态目录
 
@@ -636,26 +741,40 @@ bom-mcp doctor
 ### 8.2 如果改成 plugin bundle
 
 ```txt
+plugins/
+  bom-quote-openclaw/
+    .codex-plugin/
+      plugin.json
+    .mcp.json
+    skills/
+      bom-quote/
+        SKILL.md
+```
+
+或者按更通用的目标结构理解：
+
+```txt
 my-bom-plugin/
-  openclaw.plugin.json
+  .codex-plugin/
+    plugin.json
+  .mcp.json
   skills/
     bom-quote/
       SKILL.md
-  runtime/
-    bom-mcp/
-      bom-mcp
-      manifest.json
 ```
 
 ## 9. 实际接入建议
 
 如果目标是“尽快可用”，建议按下面顺序推进：
 
-1. 先保持现有 `bom-quote` skill 目录结构不变
-2. 新增一份正式技术文档，统一替代旧 README
-3. 已为 `bom-mcp` 增加最小 `stdio` server 模式
-4. 再决定走：
-   - OpenClaw plugin bundle
+1. 先直接复用仓库里的 `plugins/bom-quote-openclaw`
+2. 用 `openclaw plugins install --link <bundle-path>` 安装本地 bundle
+3. 先跑 `agent --local` 的 yes/no 工具可见性验证
+4. 再用真实 BOM 消息跑：
+   - `quote_customer_message`
+   - `export_customer_quote`
+5. 等本地链路稳定后，再决定走：
+   - OpenClaw plugin bundle 正式发布
    - 或 skill bundle + runtime bundle 双产物
 
 如果目标是“OpenClaw 内最佳交付体验”，推荐：
@@ -665,6 +784,32 @@ my-bom-plugin/
 如果目标是“跨宿主复用能力”，推荐：
 
 - 长期走 stdio MCP server + 独立 skill 包
+
+## 9.1 本地联调记录
+
+当前已经完成过一轮真实本地 OpenClaw 验证：
+
+1. 安装 bundle
+2. 本地 embedded agent 确认 `quote_customer_message` 可见
+3. 用 `mcp/bom-mcp/cases/multibom/case1.md` 跑多 BOM 报价
+4. 再要求 agent 直接导出 xlsx
+
+真实导出结果示例：
+
+```txt
+filePath: /Users/ke/.openclaw/state/bom-mcp/exports/req_1774937156289_ib44l4.xlsx
+fileName: req_1774937156289_ib44l4.xlsx
+format: xlsx
+mimeType: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+expiresAt: 2026-04-01T06:05:56.326Z
+```
+
+这说明当前链路已经是：
+
+- skill 可发现
+- MCP 可注入
+- agent 可实际算价
+- agent 可实际导出业务文件
 
 ## 10. 参考
 
