@@ -9,7 +9,7 @@ const domTest = typeof document === "undefined" ? test.skip : test;
 describe("AppShell", () => {
   domTest("renders the invite entry route before chat session exists", () => {
     render(<AppShell initialRoute="/app/invite/demo-token" />);
-    expect(screen.getByRole("heading", { name: /join your company workspace/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "加入公司工作台" })).toBeInTheDocument();
   });
 
   domTest("submits a nickname to enter the workspace", async () => {
@@ -17,8 +17,8 @@ describe("AppShell", () => {
 
     render(<InvitePage token="demo-token" onJoin={onJoin} />);
 
-    await userEvent.type(screen.getByLabelText(/nickname/i), "Iris");
-    await userEvent.click(screen.getByRole("button", { name: /enter workspace/i }));
+    await userEvent.type(screen.getByLabelText("昵称"), "Iris");
+    await userEvent.click(screen.getByRole("button", { name: "进入工作台" }));
 
     expect(onJoin).toHaveBeenCalledWith({
       displayName: "Iris",
@@ -143,25 +143,25 @@ describe("AppShell", () => {
 
     render(<AppShell initialRoute="/app/invite/demo-token" api={api as never} storage={storage} />);
 
-    await userEvent.type(screen.getByLabelText(/nickname/i), "Iris");
-    await userEvent.click(screen.getByRole("button", { name: /enter workspace/i }));
+    await userEvent.type(screen.getByLabelText("昵称"), "Iris");
+    await userEvent.click(screen.getByRole("button", { name: "进入工作台" }));
 
     expect(api.joinInvite).toHaveBeenCalledWith({
       token: "demo-token",
       displayName: "Iris",
     });
 
-    await userEvent.type(screen.getByLabelText(/team id/i), "team_sales");
-    await userEvent.type(screen.getByLabelText(/conversation title/i), "Lead follow-up");
-    await userEvent.click(screen.getByRole("button", { name: /create conversation/i }));
+    await userEvent.type(screen.getByLabelText("团队 ID"), "team_sales");
+    await userEvent.type(screen.getByLabelText("会话标题"), "Lead follow-up");
+    await userEvent.click(screen.getByRole("button", { name: "创建会话" }));
 
     expect(api.createConversation).toHaveBeenCalledWith("tsess_demo", {
       teamId: "team_sales",
       title: "Lead follow-up",
     });
 
-    await userEvent.type(screen.getByPlaceholderText(/message your team/i), "Draft the reply");
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    await userEvent.type(screen.getByPlaceholderText("输入消息给团队"), "Draft the reply");
+    await userEvent.click(screen.getByRole("button", { name: "发送" }));
 
     expect(api.sendMessage).toHaveBeenCalledWith("tsess_demo", "conv_1", {
       body: "Draft the reply",

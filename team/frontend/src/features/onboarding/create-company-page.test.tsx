@@ -96,6 +96,6 @@ describe("Create company onboarding", () => {
       slug: "alpha-ops",
       mode: "standard",
     });
-    expect(await screen.findByRole("heading", { name: /company profile/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "公司资料" })).toBeInTheDocument();
   });
 });

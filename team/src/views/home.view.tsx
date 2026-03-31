@@ -12,11 +12,11 @@ export function renderHomePage(): string {
           <p class="text-base-content/80">支持批量下发命令、配置读写、重启网关、追踪执行结果与审计记录。</p>
           <p class="mt-4 font-semibold text-lg">让你的龙虾健康成长</p>
           <div class="mt-6 flex flex-wrap gap-3">
-            <a class="btn btn-primary" href="/console/login">
-              进入控制台
+            <a class="btn btn-primary" href="/app/login">
+              进入 Team 工作台
             </a>
-            <a class="btn btn-outline" href="/console/register">
-              注册账号
+            <a class="btn btn-outline" href="/app/register">
+              注册管理员
             </a>
           </div>
         </div>

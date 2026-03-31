@@ -23,40 +23,40 @@ export function TeamManager({
 }: TeamManagerProps) {
   return (
     <section className="admin-card" id="teams">
-      <p className="eyebrow">Teams</p>
-      <h2>Business teams</h2>
+      <p className="eyebrow">团队</p>
+      <h2>业务团队</h2>
       <div className="admin-grid">
         <label className="field-stack">
-          <span>Team name</span>
+          <span>团队名称</span>
           <input
             className="text-input"
-            aria-label="Team name"
+            aria-label="团队名称"
             name="teamName"
             value={name}
             onChange={(event) => onNameChange(event.target.value)}
-            placeholder="Sales"
+            placeholder="销售团队"
           />
         </label>
         <label className="field-stack">
-          <span>Team description</span>
+          <span>团队说明</span>
           <input
             className="text-input"
-            aria-label="Team description"
+            aria-label="团队说明"
             name="teamDescription"
             value={description}
             onChange={(event) => onDescriptionChange(event.target.value)}
-            placeholder="Sales copilot"
+            placeholder="负责销售跟进与客户沟通"
           />
         </label>
         <label className="field-stack">
-          <span>Primary agent</span>
+          <span>主 Agent</span>
           <select
             className="text-input"
-            aria-label="Primary agent"
+            aria-label="主 Agent"
             value={primaryAgentId}
             onChange={(event) => onPrimaryAgentIdChange(event.target.value)}
           >
-            <option value="">Select an agent</option>
+            <option value="">请选择一个 Agent</option>
             {agents.map((agent) => (
               <option key={agent.id} value={agent.externalAgentId}>
                 {agent.name}
@@ -66,7 +66,7 @@ export function TeamManager({
         </label>
       </div>
       <button className="primary-button" type="button" onClick={onCreate}>
-        Create team
+        创建团队
       </button>
     </section>
   );

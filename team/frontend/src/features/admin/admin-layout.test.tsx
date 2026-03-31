@@ -9,16 +9,17 @@ describe("AdminLayout", () => {
   domTest("renders the setup navigation for company, gateway, agent, team, and invite screens", () => {
     render(<AdminLayout />);
 
-    expect(screen.getByRole("link", { name: /company/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /gateway/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /agents/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /teams/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /invites/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "公司" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "网关" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Agent" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "团队" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "邀请" })).toBeInTheDocument();
   });
 
   domTest("tests gateway, syncs agents, creates a team, and creates an invite", async () => {
     const api = {
       saveBrand: vi.fn().mockResolvedValue({ ok: true }),
+      saveGatewayConfig: vi.fn().mockResolvedValue({ ok: true }),
       testGateway: vi.fn().mockResolvedValue({ ok: true }),
       syncGatewayAgents: vi.fn().mockResolvedValue([
         {
@@ -58,21 +59,37 @@ describe("AdminLayout", () => {
 
     await userEvent.type(screen.getByLabelText(/base url/i), "https://gateway.example.com");
     await userEvent.type(screen.getByLabelText(/api key/i), "token_123");
-    await userEvent.click(screen.getByRole("button", { name: /test connection/i }));
+    await userEvent.click(screen.getByRole("button", { name: /保存 gateway/i }));
 
+    expect(api.saveGatewayConfig).toHaveBeenNthCalledWith(1, "company_alpha", {
+      baseUrl: "https://gateway.example.com",
+      apiKey: "token_123",
+    });
+    expect(await screen.findByText("Gateway 配置已保存。")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "测试连接" }));
+
+    expect(api.saveGatewayConfig).toHaveBeenNthCalledWith(2, "company_alpha", {
+      baseUrl: "https://gateway.example.com",
+      apiKey: "token_123",
+    });
     expect(api.testGateway).toHaveBeenCalledWith("company_alpha", {
       baseUrl: "https://gateway.example.com",
       apiKey: "token_123",
     });
 
-    await userEvent.click(screen.getByRole("button", { name: /sync agents/i }));
+    await userEvent.click(screen.getByRole("button", { name: "同步 Agent" }));
+    expect(api.saveGatewayConfig).toHaveBeenNthCalledWith(3, "company_alpha", {
+      baseUrl: "https://gateway.example.com",
+      apiKey: "token_123",
+    });
     expect(api.syncGatewayAgents).toHaveBeenCalledWith("company_alpha");
     expect((await screen.findAllByText(/sales lead agent/i)).length).toBeGreaterThan(0);
 
-    await userEvent.type(screen.getByLabelText(/team name/i), "Sales");
-    await userEvent.type(screen.getByLabelText(/team description/i), "Sales copilot");
-    await userEvent.selectOptions(screen.getByLabelText(/primary agent/i), "agent_sales_1");
-    await userEvent.click(screen.getByRole("button", { name: /create team/i }));
+    await userEvent.type(screen.getByLabelText("团队名称"), "Sales");
+    await userEvent.type(screen.getByLabelText("团队说明"), "Sales copilot");
+    await userEvent.selectOptions(screen.getByLabelText("主 Agent"), "agent_sales_1");
+    await userEvent.click(screen.getByRole("button", { name: "创建团队" }));
 
     expect(api.createTeam).toHaveBeenCalledWith("company_alpha", {
       name: "Sales",
@@ -80,9 +97,9 @@ describe("AdminLayout", () => {
       primaryAgentId: "agent_sales_1",
     });
 
-    await userEvent.clear(screen.getByLabelText(/usage limit/i));
-    await userEvent.type(screen.getByLabelText(/usage limit/i), "5");
-    await userEvent.click(screen.getByRole("button", { name: /create invite/i }));
+    await userEvent.clear(screen.getByLabelText("使用次数上限"));
+    await userEvent.type(screen.getByLabelText("使用次数上限"), "5");
+    await userEvent.click(screen.getByRole("button", { name: "创建邀请链接" }));
 
     expect(api.createInvite).toHaveBeenCalledWith("company_alpha", {
       expiresInHours: 24,

@@ -3,6 +3,7 @@ type GatewaySettingsProps = {
   apiKey: string;
   onBaseUrlChange: (value: string) => void;
   onApiKeyChange: (value: string) => void;
+  onSave: () => void;
   onTest: () => void;
   onSync: () => void;
 };
@@ -12,13 +13,14 @@ export function GatewaySettings({
   apiKey,
   onBaseUrlChange,
   onApiKeyChange,
+  onSave,
   onTest,
   onSync,
 }: GatewaySettingsProps) {
   return (
     <section className="admin-card" id="gateway">
-      <p className="eyebrow">Gateway</p>
-      <h2>Gateway connection</h2>
+      <p className="eyebrow">网关</p>
+      <h2>Gateway 连接配置</h2>
       <div className="admin-grid">
         <label className="field-stack">
           <span>Base URL</span>
@@ -44,11 +46,14 @@ export function GatewaySettings({
         </label>
       </div>
       <div className="button-row">
+        <button className="primary-button" type="button" onClick={onSave}>
+          保存 Gateway
+        </button>
         <button className="primary-button" type="button" onClick={onTest}>
-          Test connection
+          测试连接
         </button>
         <button className="secondary-button" type="button" onClick={onSync}>
-          Sync agents
+          同步 Agent
         </button>
       </div>
     </section>

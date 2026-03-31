@@ -34,14 +34,12 @@ export function InvitePage({ token, onJoin, pending = false, error }: InvitePage
   return (
     <main className="team-shell">
       <section className="invite-panel">
-        <p className="eyebrow">Invite entry</p>
-        <h1>Join your company workspace</h1>
-        <p className="lead">
-          Enter through your invite link to access your team conversations and the company assistant.
-        </p>
+        <p className="eyebrow">邀请入口</p>
+        <h1>加入公司工作台</h1>
+        <p className="lead">通过邀请链接进入团队会话，与公司 Agent 开始协作。</p>
         <form className="invite-form" onSubmit={handleSubmit}>
           <label className="field-label" htmlFor="invite-display-name">
-            Nickname
+            昵称
           </label>
           <input
             id="invite-display-name"
@@ -49,16 +47,16 @@ export function InvitePage({ token, onJoin, pending = false, error }: InvitePage
             name="displayName"
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="Your name"
+            placeholder="请输入你的昵称"
             disabled={pending}
           />
           <button className="primary-button" type="submit" disabled={pending}>
-            Enter workspace
+            进入工作台
           </button>
         </form>
         {error ? <div className="status-banner status-error">{error}</div> : null}
         <div className="info-row">
-          <span>Invite token</span>
+          <span>邀请令牌</span>
           <strong>{token}</strong>
         </div>
       </section>

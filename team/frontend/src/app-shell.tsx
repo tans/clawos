@@ -258,7 +258,7 @@ export function AppShell({ initialRoute, api = teamFrontendApi, storage: provide
         setSession(nextSession);
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to join the workspace.";
+      const message = error instanceof Error ? error.message : "加入工作台失败，请稍后重试。";
       setJoinError(message);
     } finally {
       setJoinPending(false);
@@ -350,15 +350,15 @@ export function AppShell({ initialRoute, api = teamFrontendApi, storage: provide
     );
   }
 
-  return (
-    <main className="team-shell">
-      <section className="invite-panel">
-        <p className="eyebrow">Team v1</p>
-        <h1>Open an invite or admin route</h1>
-        <p className="lead">Use `/app/invite/:token` for business chat or `/app/admin/:companyId` for company setup.</p>
-      </section>
-    </main>
-  );
+      return (
+        <main className="team-shell">
+          <section className="invite-panel">
+            <p className="eyebrow">Team v1</p>
+            <h1>打开邀请链接或管理入口</h1>
+            <p className="lead">业务成员使用 `/app/invite/:token` 进入会话，管理员使用 `/app/admin/:companyId` 继续配置公司。</p>
+          </section>
+        </main>
+      );
 }
 
 type ConnectedChatScreenProps = {
@@ -400,7 +400,7 @@ function ConnectedChatScreen({ api, session, defaultTeamId }: ConnectedChatScree
         if (!alive) {
           return;
         }
-        const message = loadError instanceof Error ? loadError.message : "Unable to load conversations.";
+        const message = loadError instanceof Error ? loadError.message : "加载会话失败，请稍后重试。";
         setError(message);
       } finally {
         if (alive) {

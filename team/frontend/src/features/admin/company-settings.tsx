@@ -23,25 +23,25 @@ export function CompanySettings({
 }: CompanySettingsProps) {
   return (
     <section className="admin-card" id="company">
-      <p className="eyebrow">Company</p>
-      <h2>Company profile</h2>
+      <p className="eyebrow">公司</p>
+      <h2>公司资料</h2>
       <div className="admin-grid">
         <label className="field-stack">
-          <span>Company name</span>
+          <span>公司名称</span>
           <input
             className="text-input"
-            aria-label="Company name"
+            aria-label="公司名称"
             name="companyName"
             value={brandName}
             onChange={(event) => onBrandNameChange(event.target.value)}
-            placeholder="Alpha Ops"
+            placeholder="阿尔法科技"
           />
         </label>
         <label className="field-stack">
-          <span>Theme color</span>
+          <span>主题色</span>
           <input
             className="text-input"
-            aria-label="Theme color"
+            aria-label="主题色"
             name="themeColor"
             value={themeColor}
             onChange={(event) => onThemeColorChange(event.target.value)}
@@ -49,14 +49,14 @@ export function CompanySettings({
           />
         </label>
         <label className="field-stack">
-          <span>Welcome text</span>
+          <span>欢迎语</span>
           <input
             className="text-input"
-            aria-label="Welcome text"
+            aria-label="欢迎语"
             name="welcomeText"
             value={welcomeText}
             onChange={(event) => onWelcomeTextChange(event.target.value)}
-            placeholder="Welcome to Alpha Ops"
+            placeholder="欢迎来到阿尔法科技"
           />
         </label>
         <label className="field-stack">
@@ -72,7 +72,7 @@ export function CompanySettings({
         </label>
       </div>
       <button className="primary-button" type="button" onClick={onSave}>
-        Save company
+        保存公司资料
       </button>
     </section>
   );

@@ -83,7 +83,7 @@ describe("Login onboarding", () => {
 
     render(<AppShell initialRoute="/app" api={api as never} storage={createMemoryStorage()} />);
 
-    expect(await screen.findByRole("heading", { name: /company profile/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "公司资料" })).toBeInTheDocument();
   });
 
   domTest("logs in and routes into the admin workspace when the admin already owns one company", async () => {
@@ -123,6 +123,6 @@ describe("Login onboarding", () => {
       email: "owner@example.com",
       password: "password123",
     });
-    expect(await screen.findByRole("heading", { name: /company profile/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "公司资料" })).toBeInTheDocument();
   });
 });

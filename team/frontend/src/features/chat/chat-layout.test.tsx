@@ -30,8 +30,8 @@ describe("ChatLayout", () => {
       />,
     );
 
-    await userEvent.type(screen.getByPlaceholderText(/message your team/i), "Draft the reply");
-    await userEvent.click(screen.getByRole("button", { name: /send/i }));
+    await userEvent.type(screen.getByPlaceholderText("输入消息给团队"), "Draft the reply");
+    await userEvent.click(screen.getByRole("button", { name: "发送" }));
 
     expect(onSend).toHaveBeenCalledWith(
       expect.objectContaining({

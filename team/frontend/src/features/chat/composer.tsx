@@ -38,18 +38,18 @@ export function Composer({ onSend, disabled = false }: ComposerProps) {
   return (
     <form className="composer" onSubmit={handleSubmit}>
       <label className="sr-only" htmlFor="chat-composer-input">
-        Message your team
+        输入消息给团队
       </label>
       <input
         id="chat-composer-input"
         className="text-input"
         value={body}
         onChange={(event) => setBody(event.target.value)}
-        placeholder="Message your team"
+        placeholder="输入消息给团队"
         disabled={disabled}
       />
       <label className="secondary-button" htmlFor="chat-composer-files">
-        Attach
+        添加附件
       </label>
       <input
         id="chat-composer-files"
@@ -60,7 +60,7 @@ export function Composer({ onSend, disabled = false }: ComposerProps) {
         disabled={disabled}
       />
       <button className="primary-button" type="submit" disabled={disabled}>
-        Send
+        发送
       </button>
     </form>
   );

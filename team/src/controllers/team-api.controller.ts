@@ -22,8 +22,8 @@ const MODULES: TeamModule[] = [
     metricValue: "4",
     highlights: ["空间模式切换", "成员邀请入口", "基础信息维护"],
     actions: [
-      { label: "查看公司列表", href: "/console/companies" },
-      { label: "新建 Team", href: "/console/companies/new" },
+      { label: "进入 Team 工作台", href: "/app" },
+      { label: "创建公司", href: "/app/company/new" },
     ],
   },
   {

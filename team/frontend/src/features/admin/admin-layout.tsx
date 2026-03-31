@@ -9,17 +9,26 @@ import { InviteManager } from "./invite-manager";
 import { TeamManager } from "./team-manager";
 
 const NAV_ITEMS = [
-  { id: "company", label: "Company" },
-  { id: "gateway", label: "Gateway" },
-  { id: "agents", label: "Agents" },
-  { id: "teams", label: "Teams" },
-  { id: "invites", label: "Invites" },
+  { id: "company", label: "公司" },
+  { id: "gateway", label: "网关" },
+  { id: "agents", label: "Agent" },
+  { id: "teams", label: "团队" },
+  { id: "invites", label: "邀请" },
 ];
 
 type AdminLayoutProps = {
   companyId?: string;
   api?: TeamFrontendApi;
   onTeamCreated?: (teamId: string) => void;
+};
+
+type GatewayConfigInput = {
+  baseUrl: string;
+  apiKey?: string;
+};
+
+type GatewayConfigPersistenceApi = {
+  saveGatewayConfig?: (companyId: string, input: GatewayConfigInput) => Promise<{ ok: boolean }>;
 };
 
 function readCompanyIdFromPath(): string | null {
@@ -30,11 +39,39 @@ function readCompanyIdFromPath(): string | null {
   return match?.[1] ?? null;
 }
 
+async function persistGatewayConfig(api: TeamFrontendApi, companyId: string, input: GatewayConfigInput): Promise<void> {
+  const gatewayApi = api as TeamFrontendApi & GatewayConfigPersistenceApi;
+  if (typeof gatewayApi.saveGatewayConfig === "function") {
+    await gatewayApi.saveGatewayConfig(companyId, input);
+    return;
+  }
+
+  const response = await fetch(`/api/team/admin/companies/${companyId}/gateway/config`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    let errorMessage = "Gateway 配置保存失败。";
+    try {
+      const payload = (await response.json()) as { error?: string; message?: string };
+      errorMessage = payload.message ?? payload.error ?? errorMessage;
+    } catch {
+      // Ignore malformed JSON and keep fallback error message.
+    }
+    throw new Error(errorMessage);
+  }
+}
+
 export function AdminLayout({ companyId: providedCompanyId, api = teamFrontendApi, onTeamCreated }: AdminLayoutProps) {
   const companyId = providedCompanyId ?? readCompanyIdFromPath() ?? "";
-  const [brandName, setBrandName] = useState("Alpha Ops");
+  const [brandName, setBrandName] = useState("阿尔法科技");
   const [themeColor, setThemeColor] = useState("#1d4ed8");
-  const [welcomeText, setWelcomeText] = useState("Welcome to your company workspace");
+  const [welcomeText, setWelcomeText] = useState("欢迎来到你的公司工作台");
   const [logoUrl, setLogoUrl] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -58,11 +95,18 @@ export function AdminLayout({ companyId: providedCompanyId, api = teamFrontendAp
     }
   }
 
+  async function saveGatewayConfig() {
+    await persistGatewayConfig(api, companyId, {
+      baseUrl,
+      apiKey: apiKey || undefined,
+    });
+  }
+
   return (
     <main className="team-shell">
       <section className="admin-shell">
         <aside className="chat-sidebar">
-          <p className="eyebrow">Admin setup</p>
+          <p className="eyebrow">管理配置</p>
           <ul className="sidebar-list">
             {NAV_ITEMS.map((item) => (
               <li key={item.id}>
@@ -86,7 +130,7 @@ export function AdminLayout({ companyId: providedCompanyId, api = teamFrontendAp
             onSave={() =>
               void runAction(async () => {
                 await api.saveBrand(companyId, { brandName, themeColor, welcomeText, logoUrl });
-                setStatusMessage("Company settings saved.");
+                setStatusMessage("公司资料已保存。");
               })
             }
           />
@@ -95,20 +139,28 @@ export function AdminLayout({ companyId: providedCompanyId, api = teamFrontendAp
             apiKey={apiKey}
             onBaseUrlChange={setBaseUrl}
             onApiKeyChange={setApiKey}
+            onSave={() =>
+              void runAction(async () => {
+                await saveGatewayConfig();
+                setStatusMessage("Gateway 配置已保存。");
+              })
+            }
             onTest={() =>
               void runAction(async () => {
+                await saveGatewayConfig();
                 await api.testGateway(companyId, { baseUrl, apiKey });
-                setStatusMessage("Gateway connection succeeded.");
+                setStatusMessage("Gateway 连通测试成功。");
               })
             }
             onSync={() =>
               void runAction(async () => {
+                await saveGatewayConfig();
                 const nextAgents = await api.syncGatewayAgents(companyId);
                 setAgents(nextAgents);
                 if (!primaryAgentId && nextAgents[0]) {
                   setPrimaryAgentId(nextAgents[0].externalAgentId);
                 }
-                setStatusMessage("Agents synced.");
+                setStatusMessage("Agent 已同步。");
               })
             }
           />
@@ -129,7 +181,7 @@ export function AdminLayout({ companyId: providedCompanyId, api = teamFrontendAp
                   primaryAgentId,
                 });
                 onTeamCreated?.(team.id);
-                setStatusMessage(`Team created: ${team.name}`);
+                setStatusMessage(`团队已创建：${team.name}`);
               })
             }
           />
@@ -146,7 +198,7 @@ export function AdminLayout({ companyId: providedCompanyId, api = teamFrontendAp
                   usageLimit: usageLimit.trim() ? Number(usageLimit) : null,
                 });
                 setLatestInvite(invite);
-                setStatusMessage("Invite created.");
+                setStatusMessage("邀请链接已创建。");
               })
             }
           />

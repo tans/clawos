@@ -19,7 +19,7 @@ type ChatLayoutProps = {
   onSend?: (input: ComposerSubmitInput) => void;
 };
 
-const DEFAULT_TEAMS: TeamSummary[] = [{ id: "team_general", name: "General", primaryAgentName: "Company Assistant" }];
+const DEFAULT_TEAMS: TeamSummary[] = [{ id: "team_general", name: "通用团队", primaryAgentName: "公司助理 Agent" }];
 
 const DEFAULT_CONVERSATIONS: TeamConversation[] = [
   {
@@ -27,7 +27,7 @@ const DEFAULT_CONVERSATIONS: TeamConversation[] = [
     companyId: "company_demo",
     teamId: "team_general",
     memberId: "member_demo",
-    title: "Welcome thread",
+    title: "欢迎会话",
     status: "open",
     lastMessageAt: 0,
     createdAt: 0,
@@ -59,7 +59,7 @@ export function ChatLayout({
       <section className="chat-workspace">
         <aside className="chat-sidebar">
           <div className="sidebar-block">
-            <p className="eyebrow">Teams</p>
+            <p className="eyebrow">团队</p>
             <ul className="sidebar-list">
               {teams.map((team) => (
                 <li key={team.id}>
@@ -70,7 +70,7 @@ export function ChatLayout({
             </ul>
           </div>
           <div className="sidebar-block">
-            <p className="eyebrow">Recent conversations</p>
+            <p className="eyebrow">最近会话</p>
             <ul className="sidebar-list">
               {conversations.map((conversation) => (
                 <li key={conversation.id} className={conversation.id === activeConversation?.id ? "active" : undefined}>
@@ -98,39 +98,39 @@ export function ChatLayout({
             <>
               <ConversationPane />
               <section className="admin-card">
-                <p className="eyebrow">New conversation</p>
-                <h2>Create a conversation</h2>
+                <p className="eyebrow">新建会话</p>
+                <h2>创建会话</h2>
                 <div className="admin-grid">
                   <label className="field-stack">
-                    <span>Team ID</span>
+                    <span>团队 ID</span>
                     <input
                       className="text-input"
-                      aria-label="Team ID"
+                      aria-label="团队 ID"
                       value={createTeamId}
                       onChange={(event) => onCreateTeamIdChange?.(event.target.value)}
                       placeholder="team_sales"
                     />
                   </label>
                   <label className="field-stack">
-                    <span>Conversation title</span>
+                    <span>会话标题</span>
                     <input
                       className="text-input"
-                      aria-label="Conversation title"
+                      aria-label="会话标题"
                       value={createTitle}
                       onChange={(event) => onCreateTitleChange?.(event.target.value)}
-                      placeholder="Lead follow-up"
+                      placeholder="销售线索跟进"
                     />
                   </label>
                 </div>
                 <button className="primary-button" type="button" onClick={onCreateConversation} disabled={pending}>
-                  Create conversation
+                  创建会话
                 </button>
               </section>
             </>
           )}
           {session ? (
             <div className="info-row">
-              <span>Session</span>
+              <span>当前身份</span>
               <strong>{session.displayName}</strong>
             </div>
           ) : null}

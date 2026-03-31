@@ -40,6 +40,7 @@
 - 先构建前端：`cd /Users/ke/code/clawos/team/frontend && bun run build`
 - 后端会从 `team/frontend/dist` 直接提供 `/app` 和 `/app/assets/*`
 - SPA 深链例如 `/app/invite/:token` 会回落到 `index.html`
+- 老入口 `/console/login`、`/console/register`、`/console/companies/new` 已迁移到 `/app/*` 并保留重定向兼容
 
 ## 验证命令
 

@@ -90,9 +90,9 @@ export function createConsoleController(): Hono<AppEnv> {
   controller.get("/console/login", async (c) => {
     const user = await readConsoleUserByCookie(c);
     if (user) {
-      return c.redirect("/console");
+      return c.redirect("/app");
     }
-    return c.html(renderLoginPage());
+    return c.redirect("/app/login");
   });
 
   controller.post("/console/login", async (c) => {
@@ -119,7 +119,7 @@ export function createConsoleController(): Hono<AppEnv> {
     return c.redirect("/console");
   });
 
-  controller.get("/console/register", (c) => c.html(renderRegisterPage()));
+  controller.get("/console/register", (c) => c.redirect("/app/register"));
 
   controller.post("/console/register", async (c) => {
     const body = (await c.req.parseBody()) as Record<string, string | File | (string | File)[]>;
@@ -151,6 +151,10 @@ export function createConsoleController(): Hono<AppEnv> {
     return c.redirect("/console/login");
   });
 
+  controller.get("/console/companies/new", (c) => {
+    return c.redirect("/app/company/new");
+  });
+
   controller.use("/console", requireConsoleAuth);
   controller.use("/console/*", requireConsoleAuth);
 
@@ -165,11 +169,6 @@ export function createConsoleController(): Hono<AppEnv> {
     const user = c.get("consoleUser");
     const message = c.req.query("msg") || "";
     return c.html(renderCompaniesPage(user, listCompaniesByOwnerUserId(user.id), message));
-  });
-
-  controller.get("/console/companies/new", (c) => {
-    const user = c.get("consoleUser");
-    return c.html(renderCreateCompanyPage(user));
   });
 
   controller.post("/console/companies/new", async (c) => {
