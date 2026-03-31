@@ -105,17 +105,31 @@ describe("marketing pages", () => {
     expect(assessmentIndex).toBeLessThan(deploymentIndex);
   });
 
-  it("uses enterprise deployment language in homepage navigation", async () => {
+  it("uses the fixed top navigation links without homepage anchors", async () => {
     const response = await app.request("http://localhost/");
     const html = await response.text();
+    const navStart = html.indexOf('<nav class="marketing-nav-links"');
+    const navEnd = html.indexOf("</nav>", navStart);
+    const navHtml = html.slice(navStart, navEnd);
 
     expect(response.status).toBe(200);
-    expect(html).toContain(">部署方式<");
-    expect(html).toContain(">部署评估<");
-    expect(html).not.toContain(">技能市场<");
+    expect(navStart).toBeGreaterThan(-1);
+    expect(navEnd).toBeGreaterThan(navStart);
+    expect(navHtml).toContain(">首页<");
+    expect(navHtml).toContain('href="/"');
+    expect(navHtml).toContain(">下载<");
+    expect(navHtml).toContain('href="/downloads"');
+    expect(navHtml).toContain(">任务市场<");
+    expect(navHtml).toContain('href="/agent-market"');
+    expect(navHtml).toContain(">联系我们<");
+    expect(navHtml).toContain('href="/contact"');
+    expect(navHtml).not.toContain('href="/#architecture"');
+    expect(navHtml).not.toContain('href="/#capabilities"');
+    expect(navHtml).not.toContain('href="/#solutions"');
+    expect(navHtml).not.toContain('href="/#governance"');
   });
 
-  it("shows the agent market entry surfaces when marketplace is enabled", async () => {
+  it("keeps the task market entry in top navigation when marketplace is enabled", async () => {
     process.env.MARKETPLACE_ENABLED = "1";
     const { resetEnvCacheForTests } = await import("../src/lib/env");
     resetEnvCacheForTests();
@@ -124,20 +138,20 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain(">Agent 协作<");
+    expect(html).toContain(">任务市场<");
     expect(html).toContain("href=\"/agent-market\"");
 
-    const navOrderAnchor = ">治理能力<";
-    const navOrderAnchorIndex = html.indexOf(navOrderAnchor);
-    const navMarketIndex = html.indexOf(">Agent 协作<", navOrderAnchorIndex);
-    const navDownloadsIndex = html.indexOf(">下载试用<", navOrderAnchorIndex);
-    const navAssessmentIndex = html.indexOf(">部署评估<", navOrderAnchorIndex);
-    expect(navOrderAnchorIndex).toBeGreaterThan(-1);
-    expect(navMarketIndex).toBeGreaterThan(-1);
+    const navHomeIndex = html.indexOf(">首页<");
+    const navDownloadsIndex = html.indexOf(">下载<", navHomeIndex);
+    const navMarketIndex = html.indexOf(">任务市场<", navHomeIndex);
+    const navContactIndex = html.indexOf(">联系我们<", navHomeIndex);
+    expect(navHomeIndex).toBeGreaterThan(-1);
     expect(navDownloadsIndex).toBeGreaterThan(-1);
-    expect(navAssessmentIndex).toBeGreaterThan(-1);
-    expect(navMarketIndex).toBeLessThan(navDownloadsIndex);
-    expect(navDownloadsIndex).toBeLessThan(navAssessmentIndex);
+    expect(navMarketIndex).toBeGreaterThan(-1);
+    expect(navContactIndex).toBeGreaterThan(-1);
+    expect(navHomeIndex).toBeLessThan(navDownloadsIndex);
+    expect(navDownloadsIndex).toBeLessThan(navMarketIndex);
+    expect(navMarketIndex).toBeLessThan(navContactIndex);
 
     const footerMarketIndex = html.lastIndexOf(">Agent 协作<");
     const footerDownloadsIndex = html.lastIndexOf(">下载试用<");
@@ -146,7 +160,7 @@ describe("marketing pages", () => {
     expect(footerMarketIndex).toBeLessThan(footerDownloadsIndex);
   });
 
-  it("hides the agent market entry surfaces when marketplace is disabled", async () => {
+  it("keeps the task market entry in top navigation when marketplace is disabled", async () => {
     delete process.env.MARKETPLACE_ENABLED;
     const { resetEnvCacheForTests } = await import("../src/lib/env");
     resetEnvCacheForTests();
@@ -155,8 +169,8 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).not.toContain(">Agent 协作<");
-    expect(html).not.toContain("href=\"/agent-market\"");
+    expect(html).toContain(">任务市场<");
+    expect(html).toContain("href=\"/agent-market\"");
   });
 
   it("serves the agent market page", async () => {

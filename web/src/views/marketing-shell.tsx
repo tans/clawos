@@ -11,25 +11,16 @@ type MarketingShellProps = PropsWithChildren<{
   currentPath: "/" | "/downloads" | "/contact" | "/agent-market";
 }>;
 
-const baseNavItems = [
-  { href: "/", label: "解决方案" },
-  { href: "/#architecture", label: "部署方式" },
-  { href: "/#capabilities", label: "核心能力" },
-  { href: "/#solutions", label: "适用场景" },
-  { href: "/#governance", label: "治理能力" },
+const topNavItems = [
+  { href: "/", label: "首页" },
+  { href: "/downloads", label: "下载" },
+  { href: "/agent-market", label: "任务市场" },
+  { href: "/contact", label: "联系我们" },
 ] as const;
 
 export function renderMarketingShell({ title, description, currentPath, children }: MarketingShellProps): string {
   const { brandName, brandLogoUrl, brandDomain } = getBrandConfig();
   const { marketplaceEnabled } = getEnv();
-  const navItems = marketplaceEnabled
-    ? [...baseNavItems, { href: "/agent-market", label: "Agent 协作" as const }]
-    : baseNavItems;
-  const finalNavItems = [
-    ...navItems,
-    { href: "/downloads", label: "下载试用" as const },
-    { href: "/contact", label: "部署评估" as const },
-  ];
 
   return `<!doctype html>${renderToString(
     <html lang="zh-CN">
@@ -50,7 +41,7 @@ export function renderMarketingShell({ title, description, currentPath, children
               <span>{brandName}</span>
             </a>
             <nav class="marketing-nav-links" aria-label="主导航">
-              {finalNavItems.map((item) => (
+              {topNavItems.map((item) => (
                 <a
                   href={item.href}
                   class={item.href === currentPath ? "marketing-nav-link is-active" : "marketing-nav-link"}
