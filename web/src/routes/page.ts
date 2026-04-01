@@ -1,11 +1,12 @@
 import { Hono } from "hono";
-import { readLatestRelease } from "../lib/storage";
+import { listPublishedProducts, readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
 import { renderAgentMarketPage } from "../views/agent-market";
 import { renderCeoLetterPage } from "../views/ceo-letter";
 import { renderContactPage } from "../views/contact";
 import { buildDownloadCards, renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
+import { renderShopPage } from "../views/shop";
 
 export const pageRoutes = new Hono();
 
@@ -33,6 +34,11 @@ pageRoutes.get("/downloads", async (c) => {
   });
 
   return c.html(renderDownloadsPage(cards));
+});
+
+pageRoutes.get("/shop", async (c) => {
+  const items = await listPublishedProducts();
+  return c.html(renderShopPage(items));
 });
 
 pageRoutes.get("/install-guide", (c) => {

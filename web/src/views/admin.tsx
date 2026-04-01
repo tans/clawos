@@ -13,21 +13,32 @@ interface AdminPageProps {
 }
 
 function LoginPage({ error }: { error?: string }) {
-  const { brandName } = getBrandConfig();
+  const { brandName, siteName, brandLogoUrl, seoDescription, seoKeywords } = getBrandConfig();
+  const pageTitle = `${siteName} 管理后台登录`;
 
   return (
     <html lang="zh-CN" data-theme="light">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{`${brandName} 后台登录`}</title>
+        <title>{pageTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords} />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="min-h-screen bg-base-200">
         <main class="mx-auto flex min-h-screen max-w-md items-center px-4">
           <section class="card w-full bg-base-100 shadow-xl">
             <div class="card-body">
-              <h1 class="card-title">后台登录</h1>
+              <div class="mb-2 flex items-center gap-3">
+                <img src={brandLogoUrl} alt={`${brandName} logo`} class="h-9 w-9 rounded-lg object-cover" />
+                <div>
+                  <h1 class="card-title">{`${brandName} 后台登录`}</h1>
+                  <p class="text-xs text-base-content/60">{siteName}</p>
+                </div>
+              </div>
               {error ? <p class="text-sm text-error">{error}</p> : null}
               <form class="space-y-4" method="post" action="/admin/login">
                 <label class="form-control">
@@ -109,7 +120,8 @@ function renderMcpTable(title: string, channel: ReleaseChannel, items: McpReleas
 }
 
 function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageProps) {
-  const { brandName } = getBrandConfig();
+  const { brandName, siteName, brandLogoUrl, seoDescription, seoKeywords } = getBrandConfig();
+  const pageTitle = `${siteName} 管理后台`;
   const shelfSet = new Set(shelf.filter((item) => item.published).map((item) => mcpKey(item)));
 
   return (
@@ -117,13 +129,23 @@ function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageP
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{`${brandName} 后台`}</title>
+        <title>{pageTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords} />
+        <meta name="robots" content="noindex,nofollow" />
+        <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="bg-base-200">
         <main class="mx-auto max-w-6xl space-y-6 px-4 py-6">
           <header class="flex items-center justify-between">
-            <h1 class="text-2xl font-semibold">{`${brandName} 后台`}</h1>
+            <div class="flex items-center gap-3">
+              <img src={brandLogoUrl} alt={`${brandName} logo`} class="h-10 w-10 rounded-xl object-cover" />
+              <div>
+                <h1 class="text-2xl font-semibold">{`${brandName} 后台`}</h1>
+                <p class="text-xs text-base-content/60">{siteName}</p>
+              </div>
+            </div>
             <form method="post" action="/admin/logout">
               <button class="btn btn-outline btn-sm" type="submit">
                 退出登录
@@ -136,6 +158,7 @@ function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageP
           <section class="card bg-base-100 shadow">
             <div class="card-body">
               <h2 class="card-title">新增 / 编辑商品</h2>
+              <p class="text-xs text-base-content/60">提示：商品 ID 重复时会覆盖更新该商品。</p>
               <form method="post" action="/admin/products/save" class="grid gap-3 md:grid-cols-2">
                 <input class="input input-bordered" name="id" placeholder="商品ID (如 pro-plan)" required />
                 <input class="input input-bordered" name="name" placeholder="商品名称" required />
@@ -162,7 +185,9 @@ function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageP
                     <tr>
                       <th>ID</th>
                       <th>名称</th>
+                      <th>描述</th>
                       <th>价格</th>
+                      <th>购买链接</th>
                       <th>状态</th>
                       <th>操作</th>
                     </tr>
@@ -170,7 +195,7 @@ function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageP
                   <tbody>
                     {products.length === 0 ? (
                       <tr>
-                        <td colSpan={5} class="text-center text-base-content/60">
+                        <td colSpan={7} class="text-center text-base-content/60">
                           暂无商品
                         </td>
                       </tr>
@@ -179,7 +204,19 @@ function AdminPage({ products, stableMcps, betaMcps, shelf, notice }: AdminPageP
                         <tr>
                           <td>{product.id}</td>
                           <td>{product.name}</td>
+                          <td class="max-w-xs truncate" title={product.description || "-"}>
+                            {product.description || "-"}
+                          </td>
                           <td>{product.priceCny || "-"}</td>
+                          <td>
+                            {product.link ? (
+                              <a class="link link-primary" href={product.link} target="_blank" rel="noreferrer">
+                                访问
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
                           <td>{product.published ? "已发布" : "草稿"}</td>
                           <td>
                             <form method="post" action="/admin/products/delete">

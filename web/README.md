@@ -125,8 +125,12 @@ web/
 - `ADMIN_USERNAME`：后台登录账号（用于 `/admin`）
 - `ADMIN_PASSWORD`：后台登录密码（用于 `/admin`）
 - `OEM_BRAND_NAME`：品牌名（默认 `ClawOS`，用于页面标题/导航/后台）
+- `OEM_SITE_NAME`：站点名（默认同 `OEM_BRAND_NAME`，用于后台页头与 SEO 站点名）
 - `OEM_BRAND_DOMAIN`：品牌域名或联系标识（默认 `clawos.cc`，用于页脚展示）
 - `OEM_BRAND_LOGO_URL`：品牌 Logo 地址（默认 `/public/logo.png`，支持绝对 URL 或站内路径）
+- `OEM_SEO_TITLE`：SEO 标题基准（默认同 `OEM_SITE_NAME`）
+- `OEM_SEO_DESCRIPTION`：SEO 描述（默认内置企业部署描述）
+- `OEM_SEO_KEYWORDS`：SEO 关键词（默认内置关键词）
 
 ## 后台管理
 
