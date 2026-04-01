@@ -38,6 +38,19 @@ function firstValue(value: string | File | (string | File)[] | undefined): strin
   return typeof value === "string" ? value : undefined;
 }
 
+function firstFile(value: unknown): (Blob & { name?: string }) | undefined {
+  if (Array.isArray(value)) {
+    return firstFile(value[0]);
+  }
+  if (value instanceof File) {
+    return value;
+  }
+  if (value instanceof Blob) {
+    return value;
+  }
+  return undefined;
+}
+
 function toPublished(raw: string | undefined): boolean {
   return raw === "true" || raw === "on" || raw === "1";
 }
@@ -226,13 +239,13 @@ adminRoutes.post("/admin/tasks/delete", requireAdminAuth, async (c) => {
 adminRoutes.post("/admin/upload/image", requireAdminAuth, async (c) => {
   try {
     const body = await c.req.parseBody();
-    const file = firstValue(body.file);
-    if (!(file instanceof File)) {
+    const file = firstFile(body.file) || firstFile(body.image) || firstFile(body.upload);
+    if (!file) {
       return c.json({ ok: false, error: "缺少文件" }, 400);
     }
     const kindRaw = firstValue(body.kind)?.trim().toLowerCase() || "misc";
     const kind = kindRaw === "logo" || kindRaw === "product" || kindRaw === "task" ? kindRaw : "misc";
-    const ext = extname(file.name).toLowerCase() || ".png";
+    const ext = extname(file.name || "").toLowerCase() || ".png";
     if (![".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"].includes(ext)) {
       return c.json({ ok: false, error: "仅支持图片格式" }, 400);
     }
