@@ -8,13 +8,13 @@ export function renderTasksSection(tasks: AdminTask[]) {
       <div class="card-body">
         <h2 class="card-title">任务管理</h2>
         <form method="post" action="/admin/tasks/save" class="grid gap-3 md:grid-cols-4">
-          <input class="input input-bordered md:col-span-2" name="title" placeholder="任务标题" required />
-          <select class="select select-bordered" name="priority" defaultValue="medium">
+          <input class="input input-bordered w-full md:col-span-2" name="title" placeholder="任务标题" required />
+          <select class="select select-bordered w-full" name="priority" defaultValue="medium">
             <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
           </select>
-          <input class="input input-bordered" type="date" name="dueDate" />
-          <textarea class="textarea textarea-bordered md:col-span-4" name="description" placeholder="任务描述" />
-          <input id="task-image-url" class="input input-bordered md:col-span-3" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
+          <input class="input input-bordered w-full" type="date" name="dueDate" />
+          <textarea class="textarea textarea-bordered w-full md:col-span-4" name="description" placeholder="任务描述" />
+          <input id="task-image-url" class="input input-bordered w-full md:col-span-3" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
           <div class="space-y-2 md:col-span-1">
             <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
             <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>

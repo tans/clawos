@@ -10,21 +10,21 @@ export function renderSettingsSection(settings: SiteSettings) {
         <form method="post" action="/admin/settings/save" class="grid gap-3 md:grid-cols-2">
           <label class="form-control">
             <span class="label-text">品牌名</span>
-            <input class="input input-bordered" name="brandName" value={settings.brandName} />
+            <input class="input input-bordered w-full" name="brandName" value={settings.brandName} />
           </label>
           <label class="form-control">
             <span class="label-text">站点名</span>
-            <input class="input input-bordered" name="siteName" value={settings.siteName} />
+            <input class="input input-bordered w-full" name="siteName" value={settings.siteName} />
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">品牌链接</span>
-            <input class="input input-bordered" name="brandUrl" value={settings.brandUrl} placeholder="https://example.com" />
+            <input class="input input-bordered w-full" name="brandUrl" value={settings.brandUrl} placeholder="https://example.com" />
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">Logo 图片地址</span>
             <input
               id="brand-logo-url"
-              class="input input-bordered"
+              class="input input-bordered w-full"
               name="brandLogoUrl"
               value={settings.brandLogoUrl}
               placeholder="选择文件后自动上传并回填地址"
@@ -33,20 +33,20 @@ export function renderSettingsSection(settings: SiteSettings) {
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">Logo 图片上传</span>
-            <input id="logo-upload-file" class="file-input file-input-bordered" type="file" accept="image/*" />
+            <input id="logo-upload-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
             <p id="logo-upload-status" class="mt-1 text-xs text-base-content/60">选择图片后自动上传</p>
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">SEO 标题</span>
-            <input class="input input-bordered" name="seoTitle" value={settings.seoTitle} />
+            <input class="input input-bordered w-full" name="seoTitle" value={settings.seoTitle} />
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">SEO 描述</span>
-            <textarea class="textarea textarea-bordered" name="seoDescription">{settings.seoDescription}</textarea>
+            <textarea class="textarea textarea-bordered w-full" name="seoDescription">{settings.seoDescription}</textarea>
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">SEO 关键词</span>
-            <input class="input input-bordered" name="seoKeywords" value={settings.seoKeywords} />
+            <input class="input input-bordered w-full" name="seoKeywords" value={settings.seoKeywords} />
           </label>
           <button class="btn btn-primary md:col-span-2" type="submit">保存设置</button>
         </form>
