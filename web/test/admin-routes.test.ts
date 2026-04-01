@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { resetBrandConfigCacheForTests } from "../src/lib/branding";
 import { resetEnvCacheForTests } from "../src/lib/env";
 import { storeMcpPackage } from "../src/lib/storage";
 import { app } from "../src/index";
@@ -15,7 +16,12 @@ beforeEach(async () => {
   process.env.ADMIN_USERNAME = "admin";
   process.env.ADMIN_PASSWORD = "secret";
   process.env.MAX_MCP_PACKAGE_SIZE_MB = "2";
+  process.env.OEM_SITE_NAME = "ClawOS 控制台";
+  process.env.OEM_BRAND_LOGO_URL = "/public/logo.png";
+  process.env.OEM_SEO_DESCRIPTION = "后台站点描述";
+  process.env.OEM_SEO_KEYWORDS = "后台,商品管理";
   resetEnvCacheForTests();
+  resetBrandConfigCacheForTests();
 });
 
 afterEach(async () => {
@@ -24,7 +30,12 @@ afterEach(async () => {
   delete process.env.ADMIN_USERNAME;
   delete process.env.ADMIN_PASSWORD;
   delete process.env.MAX_MCP_PACKAGE_SIZE_MB;
+  delete process.env.OEM_SITE_NAME;
+  delete process.env.OEM_BRAND_LOGO_URL;
+  delete process.env.OEM_SEO_DESCRIPTION;
+  delete process.env.OEM_SEO_KEYWORDS;
   resetEnvCacheForTests();
+  resetBrandConfigCacheForTests();
   if (tempStorageDir) {
     await rm(tempStorageDir, { recursive: true, force: true });
   }
@@ -35,6 +46,17 @@ describe("admin routes", () => {
     const response = await app.request("http://localhost/admin");
     expect(response.status).toBe(302);
     expect(response.headers.get("location")).toBe("/admin/login");
+  });
+
+  it("renders admin login SEO/site header with logo", async () => {
+    const response = await app.request("http://localhost/admin/login");
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain("ClawOS 控制台 管理后台登录");
+    expect(html).toContain("后台站点描述");
+    expect(html).toContain('name="keywords" content="后台,商品管理"');
+    expect(html).toContain('name="robots" content="noindex,nofollow"');
+    expect(html).toContain('src="/public/logo.png"');
   });
 
   it("supports login and managing products", async () => {

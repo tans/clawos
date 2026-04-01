@@ -8,6 +8,12 @@ const builtCssPath = resolve(webRoot, "dist", "output.css");
 describe("marketing pages", () => {
   let marketplaceEnabledSnapshot: string | undefined;
   let marketPortalUrlSnapshot: string | undefined;
+  let adminUsernameSnapshot: string | undefined;
+  let adminPasswordSnapshot: string | undefined;
+  let oemSiteNameSnapshot: string | undefined;
+  let oemSeoTitleSnapshot: string | undefined;
+  let oemSeoDescriptionSnapshot: string | undefined;
+  let oemSeoKeywordsSnapshot: string | undefined;
 
   beforeAll(async () => {
     if (!process.env.CLAWOS_WEB_ROOT) {
@@ -20,6 +26,12 @@ describe("marketing pages", () => {
   beforeEach(async () => {
     marketplaceEnabledSnapshot = process.env.MARKETPLACE_ENABLED;
     marketPortalUrlSnapshot = process.env.AGENT_MARKET_PORTAL_URL;
+    adminUsernameSnapshot = process.env.ADMIN_USERNAME;
+    adminPasswordSnapshot = process.env.ADMIN_PASSWORD;
+    oemSiteNameSnapshot = process.env.OEM_SITE_NAME;
+    oemSeoTitleSnapshot = process.env.OEM_SEO_TITLE;
+    oemSeoDescriptionSnapshot = process.env.OEM_SEO_DESCRIPTION;
+    oemSeoKeywordsSnapshot = process.env.OEM_SEO_KEYWORDS;
   });
 
   afterEach(async () => {
@@ -33,9 +45,41 @@ describe("marketing pages", () => {
     } else {
       process.env.AGENT_MARKET_PORTAL_URL = marketPortalUrlSnapshot;
     }
+    if (typeof adminUsernameSnapshot === "undefined") {
+      delete process.env.ADMIN_USERNAME;
+    } else {
+      process.env.ADMIN_USERNAME = adminUsernameSnapshot;
+    }
+    if (typeof adminPasswordSnapshot === "undefined") {
+      delete process.env.ADMIN_PASSWORD;
+    } else {
+      process.env.ADMIN_PASSWORD = adminPasswordSnapshot;
+    }
+    if (typeof oemSiteNameSnapshot === "undefined") {
+      delete process.env.OEM_SITE_NAME;
+    } else {
+      process.env.OEM_SITE_NAME = oemSiteNameSnapshot;
+    }
+    if (typeof oemSeoTitleSnapshot === "undefined") {
+      delete process.env.OEM_SEO_TITLE;
+    } else {
+      process.env.OEM_SEO_TITLE = oemSeoTitleSnapshot;
+    }
+    if (typeof oemSeoDescriptionSnapshot === "undefined") {
+      delete process.env.OEM_SEO_DESCRIPTION;
+    } else {
+      process.env.OEM_SEO_DESCRIPTION = oemSeoDescriptionSnapshot;
+    }
+    if (typeof oemSeoKeywordsSnapshot === "undefined") {
+      delete process.env.OEM_SEO_KEYWORDS;
+    } else {
+      process.env.OEM_SEO_KEYWORDS = oemSeoKeywordsSnapshot;
+    }
 
     const { resetEnvCacheForTests } = await import("../src/lib/env");
     resetEnvCacheForTests();
+    const { resetBrandConfigCacheForTests } = await import("../src/lib/branding");
+    resetBrandConfigCacheForTests();
   });
 
   it("renders the homepage as an enterprise conversion page", async () => {
@@ -119,6 +163,8 @@ describe("marketing pages", () => {
     expect(navHtml).toContain('href="/"');
     expect(navHtml).toContain(">下载<");
     expect(navHtml).toContain('href="/downloads"');
+    expect(navHtml).toContain(">商城<");
+    expect(navHtml).toContain('href="/shop"');
     expect(navHtml).toContain(">任务市场<");
     expect(navHtml).toContain('href="/agent-market"');
     expect(navHtml).toContain(">联系我们<");
@@ -143,21 +189,27 @@ describe("marketing pages", () => {
 
     const navHomeIndex = html.indexOf(">首页<");
     const navDownloadsIndex = html.indexOf(">下载<", navHomeIndex);
+    const navShopIndex = html.indexOf(">商城<", navHomeIndex);
     const navMarketIndex = html.indexOf(">任务市场<", navHomeIndex);
     const navContactIndex = html.indexOf(">联系我们<", navHomeIndex);
     expect(navHomeIndex).toBeGreaterThan(-1);
     expect(navDownloadsIndex).toBeGreaterThan(-1);
+    expect(navShopIndex).toBeGreaterThan(-1);
     expect(navMarketIndex).toBeGreaterThan(-1);
     expect(navContactIndex).toBeGreaterThan(-1);
     expect(navHomeIndex).toBeLessThan(navDownloadsIndex);
-    expect(navDownloadsIndex).toBeLessThan(navMarketIndex);
+    expect(navDownloadsIndex).toBeLessThan(navShopIndex);
+    expect(navShopIndex).toBeLessThan(navMarketIndex);
     expect(navMarketIndex).toBeLessThan(navContactIndex);
 
     const footerMarketIndex = html.lastIndexOf(">Agent 协作<");
     const footerDownloadsIndex = html.lastIndexOf(">下载试用<");
+    const footerShopIndex = html.lastIndexOf(">产品商城<");
     expect(footerMarketIndex).toBeGreaterThan(-1);
     expect(footerDownloadsIndex).toBeGreaterThan(-1);
+    expect(footerShopIndex).toBeGreaterThan(-1);
     expect(footerMarketIndex).toBeLessThan(footerDownloadsIndex);
+    expect(footerDownloadsIndex).toBeLessThan(footerShopIndex);
   });
 
   it("keeps the task market entry in top navigation when marketplace is disabled", async () => {
@@ -201,6 +253,62 @@ describe("marketing pages", () => {
     expect(html).not.toContain('href="https://market.clawos.cc"');
     expect(html).not.toContain("PoC");
     expect(html).not.toContain("抢单");
+  });
+
+  it("serves a shop page with published products", async () => {
+    process.env.ADMIN_USERNAME = "admin";
+    process.env.ADMIN_PASSWORD = "secret";
+    const { resetEnvCacheForTests } = await import("../src/lib/env");
+    resetEnvCacheForTests();
+
+    const loginForm = new FormData();
+    loginForm.set("username", "admin");
+    loginForm.set("password", "secret");
+    const loginResponse = await app.request("http://localhost/admin/login", {
+      method: "POST",
+      body: loginForm,
+    });
+    const cookie = loginResponse.headers.get("set-cookie") || "";
+
+    const saveForm = new FormData();
+    saveForm.set("id", "starter-plan");
+    saveForm.set("name", "Starter 套餐");
+    saveForm.set("description", "适用于小团队");
+    saveForm.set("priceCny", "99/月");
+    saveForm.set("link", "https://example.com/starter");
+    saveForm.set("published", "true");
+    await app.request("http://localhost/admin/products/save", {
+      method: "POST",
+      headers: { cookie },
+      body: saveForm,
+    });
+
+    const response = await app.request("http://localhost/shop");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain(">商城<");
+    expect(html).toContain("Starter 套餐");
+    expect(html).toContain("99/月");
+    expect(html).toContain("https://example.com/starter");
+    expect(html).toContain("立即购买");
+  });
+
+  it("injects configurable SEO meta on marketing pages", async () => {
+    process.env.OEM_SEO_TITLE = "演示站点";
+    process.env.OEM_SEO_DESCRIPTION = "这是自定义 SEO 描述";
+    process.env.OEM_SEO_KEYWORDS = "a,b,c";
+    process.env.OEM_SITE_NAME = "演示官网";
+    const { resetBrandConfigCacheForTests } = await import("../src/lib/branding");
+    resetBrandConfigCacheForTests();
+
+    const response = await app.request("http://localhost/shop");
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain("<title>商城 | 演示站点</title>");
+    expect(html).toContain('name="description" content="查看 ClawOS 已发布商品与购买入口。"');
+    expect(html).toContain('name="keywords" content="a,b,c"');
+    expect(html).toContain('property="og:site_name" content="演示官网"');
   });
 
   it("links the static market page to the standalone portal when configured", async () => {

@@ -8,27 +8,34 @@ import { getEnv } from "../lib/env";
 type MarketingShellProps = PropsWithChildren<{
   title: string;
   description: string;
-  currentPath: "/" | "/downloads" | "/contact" | "/agent-market";
+  currentPath: "/" | "/downloads" | "/shop" | "/contact" | "/agent-market";
 }>;
 
 const topNavItems = [
   { href: "/", label: "首页" },
   { href: "/downloads", label: "下载" },
+  { href: "/shop", label: "商城" },
   { href: "/agent-market", label: "任务市场" },
   { href: "/contact", label: "联系我们" },
 ] as const;
 
 export function renderMarketingShell({ title, description, currentPath, children }: MarketingShellProps): string {
-  const { brandName, brandLogoUrl, brandDomain } = getBrandConfig();
+  const { brandName, brandLogoUrl, brandDomain, siteName, seoTitle, seoDescription, seoKeywords } = getBrandConfig();
   const { marketplaceEnabled } = getEnv();
+  const finalTitle = `${title} | ${seoTitle}`;
+  const finalDescription = description?.trim() || seoDescription;
 
   return `<!doctype html>${renderToString(
     <html lang="zh-CN">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>{`${brandName} | ${title}`}</title>
-        <meta name="description" content={description} />
+        <title>{finalTitle}</title>
+        <meta name="description" content={finalDescription} />
+        <meta name="keywords" content={seoKeywords} />
+        <meta property="og:title" content={finalTitle} />
+        <meta property="og:description" content={finalDescription} />
+        <meta property="og:site_name" content={siteName} />
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
@@ -61,6 +68,7 @@ export function renderMarketingShell({ title, description, currentPath, children
             <div class="marketing-footer-links">
               {marketplaceEnabled ? <a href="/agent-market">Agent 协作</a> : null}
               <a href="/downloads">下载试用</a>
+              <a href="/shop">产品商城</a>
               <a href="/contact">部署评估</a>
             </div>
           </div>
