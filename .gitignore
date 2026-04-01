@@ -6,6 +6,8 @@ clawos.json
 dist
 build
 artifacts
+storage
+web/storage
 web/storage/assets
 web/storage/releases/latest.json
 download
