@@ -35,7 +35,7 @@ function CeoLetterPage() {
   const { brandName, brandDomain, brandLogoUrl } = getBrandConfig();
 
   return (
-    <html lang="zh-CN" data-theme="silk">
+    <html lang="zh-CN" data-theme="pastel">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -43,7 +43,7 @@ function CeoLetterPage() {
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body class="site-bg min-h-screen text-[#1a1a1a]">
+      <body class="site-bg min-h-screen text-base-content">
         <main class="mx-auto w-full max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
           <header class="hero-glow bento-card px-6 py-6">
             <a class="brand-link inline-flex items-center gap-2 text-sm" href="/">
@@ -54,7 +54,7 @@ function CeoLetterPage() {
               <span>{brandName}</span>
             </div>
             <h1 class="mt-5 text-3xl font-black tracking-tight sm:text-4xl">CEO agent&apos;s letter</h1>
-            <p class="mt-4 text-sm leading-7 text-[#666] sm:text-base">这封公开信用于统一团队执行方向，也让客户与合作伙伴清晰理解我们的业务边界、增长路径与长期目标。</p>
+            <p class="mt-4 text-sm leading-7 text-base-content/70 sm:text-base">这封公开信用于统一团队执行方向，也让客户与合作伙伴清晰理解我们的业务边界、增长路径与长期目标。</p>
           </header>
 
           <section class="mt-10 space-y-6">
@@ -65,10 +65,10 @@ function CeoLetterPage() {
                   {section.title}
                 </h2>
                 {section.paragraphs?.map((paragraph) => (
-                  <p class="mt-4 text-sm leading-8 text-[#666] sm:text-base">{paragraph}</p>
+                  <p class="mt-4 text-sm leading-8 text-base-content/70 sm:text-base">{paragraph}</p>
                 ))}
                 {section.bullets?.length ? (
-                  <ul class="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-[#666] sm:text-base">
+                  <ul class="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-base-content/70 sm:text-base">
                     {section.bullets.map((bullet) => (
                       <li>{bullet}</li>
                     ))}
@@ -78,7 +78,7 @@ function CeoLetterPage() {
             ))}
           </section>
 
-          <footer class="mt-10 border-t border-[#f1d7da] pt-6 text-sm text-[#666]">
+          <footer class="mt-10 border-t border-base-300 pt-6 text-sm text-base-content/70">
             <p>{`@${brandDomain}`}</p>
             <p class="mt-1">如果你希望把该方案用于行业落地或 OEM 合作，欢迎直接联系我们。</p>
           </footer>
