@@ -8,13 +8,34 @@ export function renderSettingsSection(settings: SiteSettings) {
       <div class="card-body">
         <h2 class="card-title">Logo / 品牌 / SEO 管理</h2>
         <form method="post" action="/admin/settings/save" class="grid gap-3 md:grid-cols-2">
-          <input class="input input-bordered" name="brandName" value={settings.brandName} />
-          <input class="input input-bordered" name="siteName" value={settings.siteName} />
-          <input class="input input-bordered md:col-span-2" name="brandUrl" value={settings.brandUrl} placeholder="https://example.com" />
-          <input id="brand-logo-url" class="input input-bordered md:col-span-2" name="brandLogoUrl" value={settings.brandLogoUrl} />
-          <input class="input input-bordered md:col-span-2" name="seoTitle" value={settings.seoTitle} />
-          <textarea class="textarea textarea-bordered md:col-span-2" name="seoDescription">{settings.seoDescription}</textarea>
-          <input class="input input-bordered md:col-span-2" name="seoKeywords" value={settings.seoKeywords} />
+          <label class="form-control">
+            <span class="label-text">品牌名</span>
+            <input class="input input-bordered" name="brandName" value={settings.brandName} />
+          </label>
+          <label class="form-control">
+            <span class="label-text">站点名</span>
+            <input class="input input-bordered" name="siteName" value={settings.siteName} />
+          </label>
+          <label class="form-control md:col-span-2">
+            <span class="label-text">品牌链接</span>
+            <input class="input input-bordered" name="brandUrl" value={settings.brandUrl} placeholder="https://example.com" />
+          </label>
+          <label class="form-control md:col-span-2">
+            <span class="label-text">Logo 图片地址</span>
+            <input id="brand-logo-url" class="input input-bordered" name="brandLogoUrl" value={settings.brandLogoUrl} />
+          </label>
+          <label class="form-control md:col-span-2">
+            <span class="label-text">SEO 标题</span>
+            <input class="input input-bordered" name="seoTitle" value={settings.seoTitle} />
+          </label>
+          <label class="form-control md:col-span-2">
+            <span class="label-text">SEO 描述</span>
+            <textarea class="textarea textarea-bordered" name="seoDescription">{settings.seoDescription}</textarea>
+          </label>
+          <label class="form-control md:col-span-2">
+            <span class="label-text">SEO 关键词</span>
+            <input class="input input-bordered" name="seoKeywords" value={settings.seoKeywords} />
+          </label>
           <button class="btn btn-primary md:col-span-2" type="submit">保存设置</button>
         </form>
       </div>

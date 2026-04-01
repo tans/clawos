@@ -14,10 +14,10 @@ export function renderTasksSection(tasks: AdminTask[]) {
           </select>
           <input class="input input-bordered" type="date" name="dueDate" />
           <textarea class="textarea textarea-bordered md:col-span-4" name="description" placeholder="任务描述" />
-          <input id="task-image-url" class="input input-bordered md:col-span-3" name="imageUrl" placeholder="任务图片 URL" />
-          <div class="flex gap-2 md:col-span-1">
+          <input id="task-image-url" class="input input-bordered md:col-span-3" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
+          <div class="space-y-2 md:col-span-1">
             <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-            <button class="btn btn-outline" type="button" onclick={"uploadAdminImage('task-image-file','task-image-url','task')"}>上传</button>
+            <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
           </div>
           <button class="btn btn-primary md:col-span-4" type="submit">新增任务</button>
         </form>

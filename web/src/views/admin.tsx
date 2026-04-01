@@ -84,22 +84,16 @@ function renderActiveSection(props: AdminPageProps) {
         <section class="card mb-6 bg-base-100 shadow">
           <div class="card-body">
             <h3 class="card-title text-base">Logo 上传</h3>
-            <div class="flex gap-2">
+            <div class="space-y-2">
               <input
                 id="logo-upload-file"
-                class="file-input file-input-bordered w-full"
+                class="file-input file-input-bordered"
                 type="file"
                 accept="image/*"
               />
-              <button
-                class="btn btn-outline"
-                type="button"
-                onclick={
-                  "uploadAdminImage('logo-upload-file','brand-logo-url','logo')"
-                }
-              >
-                上传并填充 Logo URL
-              </button>
+              <p id="logo-upload-status" class="text-xs text-base-content/60">
+                选择图片后自动上传并回填 Logo 地址
+              </p>
             </div>
           </div>
         </section>
@@ -217,24 +211,35 @@ function AdminPage(props: AdminPageProps) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
-          async function uploadAdminImage(fileInputId, urlInputId, kind) {
+          async function uploadAdminImage(fileInputId, urlInputId, kind, statusId) {
             const fileInput = document.getElementById(fileInputId);
             const urlInput = document.getElementById(urlInputId);
+            const status = statusId ? document.getElementById(statusId) : null;
             const file = fileInput?.files?.[0];
             if (!file) {
-              alert('请先选择图片');
+              if (status) status.textContent = '请先选择图片';
               return;
             }
+            if (status) status.textContent = '上传中...';
             const formData = new FormData();
             formData.set('file', file);
             formData.set('kind', kind);
             const response = await fetch('/admin/upload/image', { method: 'POST', body: formData });
             const payload = await response.json();
             if (!response.ok || !payload.ok) {
-              alert(payload.error || '上传失败');
+              if (status) status.textContent = payload.error || '上传失败';
               return;
             }
             urlInput.value = payload.url;
+            if (status) status.textContent = '上传成功，已自动回填地址';
+          }
+
+          function bindAutoUpload(fileInputId, urlInputId, kind, statusId) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput) return;
+            fileInput.addEventListener('change', () => {
+              uploadAdminImage(fileInputId, urlInputId, kind, statusId);
+            });
           }
 
           const productModal = document.getElementById('product-modal');
@@ -260,6 +265,19 @@ function AdminPage(props: AdminPageProps) {
             document.getElementById('product-published').checked = Boolean(product.published);
             if (productModal) productModal.showModal();
           }
+          function openEditProductModalFromEncoded(encodedProduct) {
+            if (!encodedProduct) return;
+            try {
+              const product = JSON.parse(decodeURIComponent(encodedProduct));
+              openEditProductModal(product);
+            } catch (error) {
+              console.error('无法解析商品信息', error);
+            }
+          }
+
+          bindAutoUpload('logo-upload-file', 'brand-logo-url', 'logo', 'logo-upload-status');
+          bindAutoUpload('product-image-file', 'product-image-url', 'product', 'product-image-upload-status');
+          bindAutoUpload('task-image-file', 'task-image-url', 'task', 'task-image-upload-status');
         `,
           }}
         />
