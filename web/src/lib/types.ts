@@ -64,3 +64,24 @@ export interface McpShelfItem {
   published: boolean;
   updatedAt: string;
 }
+
+
+export interface AdminTask {
+  id: string;
+  title: string;
+  description: string;
+  done: boolean;
+  priority: "low" | "medium" | "high";
+  dueDate: string;
+  updatedAt: string;
+}
+
+export interface SiteSettings {
+  brandName: string;
+  siteName: string;
+  brandLogoUrl: string;
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string;
+  updatedAt: string;
+}

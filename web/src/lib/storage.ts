@@ -4,6 +4,7 @@ import { basename, extname, join, resolve } from "node:path";
 import { getEnv } from "./env";
 import { sha256Hex } from "./hash";
 import type {
+  AdminTask,
   InstallerPlatform,
   LatestRelease,
   McpManifest,
@@ -13,6 +14,7 @@ import type {
   Product,
   ReleaseAsset,
   ReleaseChannel,
+  SiteSettings,
 } from "./types";
 
 const RELEASE_FILE_NAME = "latest.json";
@@ -30,6 +32,8 @@ const MCP_RELEASE_FILE_NAME_BY_CHANNEL: Record<ReleaseChannel, string> = {
 };
 const MCP_SHELF_FILE_NAME = "mcp-shelf.json";
 const PRODUCTS_FILE_NAME = "products.json";
+const TASKS_FILE_NAME = "tasks.json";
+const SITE_SETTINGS_FILE_NAME = "site-settings.json";
 const CONFIG_CANONICAL_NAME = "clawos_xiake.json";
 const INSTALLER_PLATFORMS: InstallerPlatform[] = ["windows", "macos", "linux"];
 const UPDATER_ASSET_MAX_ENTRIES = 240;
@@ -91,6 +95,16 @@ function getMcpShelfFilePath(): string {
 function getProductsFilePath(): string {
   const env = getEnv();
   return resolve(env.storageDir, "releases", PRODUCTS_FILE_NAME);
+}
+
+function getTasksFilePath(): string {
+  const env = getEnv();
+  return resolve(env.storageDir, "releases", TASKS_FILE_NAME);
+}
+
+function getSiteSettingsFilePath(): string {
+  const env = getEnv();
+  return resolve(env.storageDir, "releases", SITE_SETTINGS_FILE_NAME);
 }
 
 function getInstallerDir(platform?: InstallerPlatform): string {
@@ -297,6 +311,55 @@ function normalizeMcpManifest(raw: unknown, fallbackId?: string, fallbackVersion
     id,
     name,
     version,
+  };
+}
+
+function normalizeTaskPriority(raw: unknown): AdminTask["priority"] {
+  if (raw === "high" || raw === "low") {
+    return raw;
+  }
+  return "medium";
+}
+
+function normalizeTask(raw: unknown): AdminTask | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const data = raw as Record<string, unknown>;
+  if (typeof data.id !== "string" || !data.id.trim() || typeof data.title !== "string" || !data.title.trim()) {
+    return null;
+  }
+
+  return {
+    id: data.id.trim(),
+    title: data.title.trim(),
+    description: typeof data.description === "string" ? data.description.trim() : "",
+    done: data.done === true,
+    priority: normalizeTaskPriority(data.priority),
+    dueDate: typeof data.dueDate === "string" ? data.dueDate : "",
+    updatedAt: typeof data.updatedAt === "string" && data.updatedAt.trim() ? data.updatedAt : nowIso(),
+  };
+}
+
+function normalizeSiteSettings(raw: unknown): SiteSettings | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const data = raw as Record<string, unknown>;
+  if (typeof data.brandName !== "string" || typeof data.siteName !== "string") {
+    return null;
+  }
+
+  return {
+    brandName: data.brandName.trim(),
+    siteName: data.siteName.trim(),
+    brandLogoUrl: typeof data.brandLogoUrl === "string" ? data.brandLogoUrl.trim() : "",
+    seoTitle: typeof data.seoTitle === "string" ? data.seoTitle.trim() : "",
+    seoDescription: typeof data.seoDescription === "string" ? data.seoDescription.trim() : "",
+    seoKeywords: typeof data.seoKeywords === "string" ? data.seoKeywords.trim() : "",
+    updatedAt: typeof data.updatedAt === "string" && data.updatedAt.trim() ? data.updatedAt : nowIso(),
   };
 }
 
@@ -507,6 +570,91 @@ export async function deleteProduct(productId: string): Promise<void> {
 export async function listPublishedProducts(): Promise<Product[]> {
   const all = await readProducts();
   return all.filter((item) => item.published);
+}
+
+export async function readTasks(): Promise<AdminTask[]> {
+  await ensureStorageDirs();
+  try {
+    const content = await readFile(getTasksFilePath(), "utf-8");
+    const raw = JSON.parse(content);
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((item) => normalizeTask(item))
+      .filter((item): item is AdminTask => Boolean(item))
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+export async function writeTasks(tasks: AdminTask[]): Promise<void> {
+  await ensureStorageDirs();
+  await writeFile(getTasksFilePath(), `${JSON.stringify(tasks, null, 2)}\n`, "utf-8");
+}
+
+export async function upsertTask(task: Omit<AdminTask, "updatedAt">): Promise<AdminTask> {
+  const title = task.title.trim();
+  if (!title) throw new Error("任务标题不能为空");
+  const id = task.id.trim() || `task-${Date.now()}`;
+  const next: AdminTask = {
+    ...task,
+    id,
+    title,
+    description: task.description.trim(),
+    dueDate: task.dueDate.trim(),
+    updatedAt: nowIso(),
+  };
+
+  const all = await readTasks();
+  const filtered = all.filter((item) => item.id !== id);
+  await writeTasks([next, ...filtered]);
+  return next;
+}
+
+export async function toggleTask(taskId: string): Promise<void> {
+  const id = taskId.trim();
+  const all = await readTasks();
+  await writeTasks(
+    all.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            done: !item.done,
+            updatedAt: nowIso(),
+          }
+        : item,
+    ),
+  );
+}
+
+export async function deleteTask(taskId: string): Promise<void> {
+  const id = taskId.trim();
+  const all = await readTasks();
+  await writeTasks(all.filter((item) => item.id !== id));
+}
+
+export async function readSiteSettings(): Promise<SiteSettings | null> {
+  await ensureStorageDirs();
+  try {
+    const content = await readFile(getSiteSettingsFilePath(), "utf-8");
+    return normalizeSiteSettings(JSON.parse(content));
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+export async function writeSiteSettings(settings: Omit<SiteSettings, "updatedAt">): Promise<SiteSettings> {
+  const next: SiteSettings = {
+    ...settings,
+    updatedAt: nowIso(),
+  };
+  await ensureStorageDirs();
+  await writeFile(getSiteSettingsFilePath(), `${JSON.stringify(next, null, 2)}\n`, "utf-8");
+  return next;
 }
 
 export async function readMcpShelf(): Promise<McpShelfItem[]> {

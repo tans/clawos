@@ -9,13 +9,19 @@ import {
 } from "../lib/auth";
 import {
   deleteProduct,
-  listMcpReleases,
+  deleteTask,
   normalizeReleaseChannel,
-  readMcpShelf,
+  readLatestRelease,
   readProducts,
-  setMcpShelfStatus,
+  readSiteSettings,
+  readTasks,
+  toggleTask,
   upsertProduct,
+  upsertTask,
+  writeLatestRelease,
+  writeSiteSettings,
 } from "../lib/storage";
+import { getBrandConfig } from "../lib/branding";
 import { renderAdminLoginPage, renderAdminPage } from "../views/admin";
 
 export const adminRoutes = new Hono();
@@ -68,20 +74,35 @@ adminRoutes.post("/admin/logout", (c) => {
 });
 
 adminRoutes.get("/admin", requireAdminAuth, async (c) => {
-  const [products, stableMcps, betaMcps, shelf] = await Promise.all([
+  const [products, tasks, settings, stableRelease, betaRelease, alphaRelease] = await Promise.all([
     readProducts(),
-    listMcpReleases("stable"),
-    listMcpReleases("beta"),
-    readMcpShelf(),
+    readTasks(),
+    readSiteSettings(),
+    readLatestRelease("stable"),
+    readLatestRelease("beta"),
+    readLatestRelease("alpha"),
   ]);
+  const fallback = getBrandConfig();
 
   return c.html(
     renderAdminPage({
       products,
-      stableMcps,
-      betaMcps,
-      shelf,
+      tasks,
       notice: c.req.query("notice") || undefined,
+      settings: settings || {
+        brandName: fallback.brandName,
+        siteName: fallback.siteName,
+        brandLogoUrl: fallback.brandLogoUrl,
+        seoTitle: fallback.seoTitle,
+        seoDescription: fallback.seoDescription,
+        seoKeywords: fallback.seoKeywords,
+        updatedAt: new Date().toISOString(),
+      },
+      releases: {
+        stable: stableRelease,
+        beta: betaRelease,
+        alpha: alphaRelease,
+      },
     })
   );
 });
@@ -110,19 +131,60 @@ adminRoutes.post("/admin/products/delete", requireAdminAuth, async (c) => {
   return noticeRedirect(c, "商品已删除");
 });
 
-adminRoutes.post("/admin/mcp/shelf", requireAdminAuth, async (c) => {
+adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  await writeSiteSettings({
+    brandName: firstValue(body.brandName)?.trim() || "ClawOS",
+    siteName: firstValue(body.siteName)?.trim() || "ClawOS",
+    brandLogoUrl: firstValue(body.brandLogoUrl)?.trim() || "/public/logo.png",
+    seoTitle: firstValue(body.seoTitle)?.trim() || "ClawOS",
+    seoDescription: firstValue(body.seoDescription)?.trim() || "",
+    seoKeywords: firstValue(body.seoKeywords)?.trim() || "",
+  });
+  return noticeRedirect(c, "品牌与 SEO 设置已保存");
+});
+
+adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
+  const current = await readLatestRelease(channel);
+  const version = firstValue(body.version)?.trim() || "dev";
+  await writeLatestRelease({
+    version,
+    publishedAt: new Date().toISOString(),
+    installer: current?.installer || null,
+    installers: current?.installers || {},
+    xiakeConfig: current?.xiakeConfig || null,
+    updaterAssets: current?.updaterAssets || [],
+  }, channel);
+  return noticeRedirect(c, `已更新 ${channel} 版本为 ${version}`);
+});
+
+adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
   try {
-    const body = await c.req.parseBody();
-    const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
-    const published = toPublished(firstValue(body.published));
-    await setMcpShelfStatus({
-      mcpId: firstValue(body.mcpId)?.trim() || "",
-      version: firstValue(body.version)?.trim() || "",
-      channel,
-      published,
+    await upsertTask({
+      id: firstValue(body.id)?.trim() || "",
+      title: firstValue(body.title)?.trim() || "",
+      description: firstValue(body.description)?.trim() || "",
+      dueDate: firstValue(body.dueDate)?.trim() || "",
+      priority: (firstValue(body.priority) as "low" | "medium" | "high") || "medium",
+      done: toPublished(firstValue(body.done)),
     });
-    return noticeRedirect(c, published ? "MCP 已上架" : "MCP 已下架");
+    return noticeRedirect(c, "任务已保存");
   } catch (error) {
-    return noticeRedirect(c, `操作失败: ${(error as Error).message}`);
+    return noticeRedirect(c, `任务保存失败: ${(error as Error).message}`);
   }
+});
+
+adminRoutes.post("/admin/tasks/toggle", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  await toggleTask(firstValue(body.id)?.trim() || "");
+  return noticeRedirect(c, "任务状态已更新");
+});
+
+adminRoutes.post("/admin/tasks/delete", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  await deleteTask(firstValue(body.id)?.trim() || "");
+  return noticeRedirect(c, "任务已删除");
 });
