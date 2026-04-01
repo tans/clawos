@@ -1,642 +1,696 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: pastel --default, light;
+    themes:
+        winter --default,
+        light;
 }
 
 @theme {
-  --animate-page-fade: page-fade 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    --animate-page-fade: page-fade 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @layer base {
-  :root {
-    --brand-accent: var(--color-primary);
-    --brand-accent-strong: color-mix(in oklab, var(--color-primary) 84%, black);
-    --ink-strong: var(--color-base-content);
-    --ink-normal: color-mix(in oklab, var(--color-base-content) 88%, transparent);
-    --ink-soft: color-mix(in oklab, var(--color-base-content) 62%, transparent);
-    --surface-base: var(--color-base-100);
-    --surface-muted: var(--color-base-200);
-    --surface-panel: var(--color-base-200);
-    --line-soft: color-mix(in oklab, var(--color-base-content) 14%, transparent);
-    --line-strong: color-mix(in oklab, var(--color-base-content) 24%, transparent);
-    --shadow-soft: 0 10px 26px color-mix(in oklab, var(--color-base-content) 8%, transparent);
-    --shadow-hero: 0 24px 46px color-mix(in oklab, var(--color-base-content) 10%, transparent);
-    --surface-card: var(--color-base-100);
-    --brand-red: var(--brand-accent);
-    --brand-red-deep: var(--brand-accent-strong);
-  }
-
-  html {
-    font-size: 15px;
-    scroll-padding-top: 5.75rem;
-  }
-
-  @media (max-width: 640px) {
-    html {
-      font-size: 14px;
+    :root {
+        --brand-accent: var(--color-primary);
+        --brand-accent-strong: color-mix(
+            in oklab,
+            var(--color-primary) 84%,
+            black
+        );
+        --ink-strong: var(--color-base-content);
+        --ink-normal: color-mix(
+            in oklab,
+            var(--color-base-content) 88%,
+            transparent
+        );
+        --ink-soft: color-mix(
+            in oklab,
+            var(--color-base-content) 62%,
+            transparent
+        );
+        --surface-base: var(--color-base-100);
+        --surface-muted: var(--color-base-200);
+        --surface-panel: var(--color-base-200);
+        --line-soft: color-mix(
+            in oklab,
+            var(--color-base-content) 14%,
+            transparent
+        );
+        --line-strong: color-mix(
+            in oklab,
+            var(--color-base-content) 24%,
+            transparent
+        );
+        --shadow-soft: 0 10px 26px
+            color-mix(in oklab, var(--color-base-content) 8%, transparent);
+        --shadow-hero: 0 24px 46px
+            color-mix(in oklab, var(--color-base-content) 10%, transparent);
+        --surface-card: var(--color-base-100);
+        --brand-red: var(--brand-accent);
+        --brand-red-deep: var(--brand-accent-strong);
     }
-  }
 
-  body {
-    background: var(--surface-base);
-    color: var(--ink-normal);
-    font-family:
-      "Source Han Sans SC",
-      "PingFang SC",
-      "Noto Sans CJK SC",
-      "Microsoft YaHei",
-      sans-serif;
-  }
+    html {
+        font-size: 15px;
+        scroll-padding-top: 5.75rem;
+    }
+
+    @media (max-width: 640px) {
+        html {
+            font-size: 14px;
+        }
+    }
+
+    body {
+        background: var(--surface-base);
+        color: var(--ink-normal);
+        font-family:
+            "Source Han Sans SC", "PingFang SC", "Noto Sans CJK SC",
+            "Microsoft YaHei", sans-serif;
+    }
 }
 
 @keyframes page-fade {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes hero-slogan-rotate {
-  0%,
-  20% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    0%,
+    20% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-  25%,
-  95% {
-    opacity: 0;
-    transform: translateY(0.35em);
-  }
+    25%,
+    95% {
+        opacity: 0;
+        transform: translateY(0.35em);
+    }
 
-  100% {
-    opacity: 0;
-    transform: translateY(0);
-  }
+    100% {
+        opacity: 0;
+        transform: translateY(0);
+    }
 }
 
 @utility page-fade {
-  animation: var(--animate-page-fade);
+    animation: var(--animate-page-fade);
 }
 
 @layer utilities {
-  .glass-nav {
-    backdrop-filter: blur(12px);
-    background: rgb(255 255 255 / 86%);
-  }
-
-  .site-bg {
-    background:
-      radial-gradient(circle at 0% 0%, rgb(37 99 235 / 7%), transparent 36%),
-      radial-gradient(circle at 100% 0%, rgb(37 99 235 / 4%), transparent 44%),
-      linear-gradient(180deg, #fff 0%, #fff 58%, var(--surface-muted) 100%);
-  }
-
-  .hero-glow {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 16% 18%, rgb(37 99 235 / 8%), transparent 36%),
-      radial-gradient(circle at 88% 12%, rgb(37 99 235 / 10%), transparent 48%),
-      linear-gradient(145deg, #fff 0%, var(--surface-muted) 100%);
-  }
-
-  .aqua-glow {
-    background: linear-gradient(120deg, #fff 0%, var(--surface-muted) 100%);
-  }
-
-  .bento-card {
-    @apply card card-border bg-base-100 shadow-sm;
-  }
-
-  .marketing-body {
-    background:
-      radial-gradient(circle at top right, rgb(37 99 235 / 0.06), transparent 28%),
-      linear-gradient(180deg, #fff 0%, #fff 65%, #f8fafc 100%);
-  }
-
-  .marketing-skip-link {
-    position: absolute;
-    top: -3rem;
-    left: 1rem;
-    z-index: 60;
-    border-radius: 0.5rem;
-    border: 1px solid var(--line-strong);
-    background: #fff;
-    color: var(--ink-strong);
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    transition: top 160ms ease;
-  }
-
-  .marketing-skip-link:focus-visible {
-    top: 0.75rem;
-    outline: 2px solid var(--brand-accent);
-    outline-offset: 2px;
-  }
-
-  .marketing-nav {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    border-bottom: 1px solid rgb(229 231 235 / 0.72);
-    background: rgb(255 255 255 / 0.96);
-    backdrop-filter: blur(18px);
-  }
-
-  .marketing-nav-inner {
-    display: flex;
-    min-height: 4.75rem;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding-block: 0.9rem;
-  }
-
-  .marketing-nav-links {
-    display: none;
-    align-items: center;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  .marketing-brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: var(--ink-strong);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .marketing-brand-mark {
-    width: 2.25rem;
-    height: 2.25rem;
-    flex-shrink: 0;
-    border-radius: 0.8rem;
-    border: 1px solid var(--line-soft);
-    background: #fff;
-    object-fit: cover;
-    box-shadow: var(--shadow-soft);
-  }
-
-  .marketing-nav-link {
-    display: inline-flex;
-    align-items: center;
-    color: var(--ink-normal);
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 0.25rem 0;
-    transition: color 160ms ease;
-  }
-
-  .marketing-nav-link:hover {
-    color: var(--ink-strong);
-  }
-
-  .marketing-nav-link.is-active {
-    color: var(--ink-strong);
-  }
-
-  .marketing-section[id] {
-    scroll-margin-top: 5.75rem;
-  }
-
-  .marketing-nav-inner,
-  .marketing-footer-inner,
-  .marketing-section-inner {
-    margin: 0 auto;
-    width: 100%;
-    max-width: 80rem;
-    padding-inline: 1.25rem;
-  }
-
-  .marketing-card {
-    border-radius: 1rem;
-    border: 1px solid rgb(229 231 235 / 0.7);
-    background: #fff;
-    box-shadow: none;
-  }
-
-  .marketing-section {
-    position: relative;
-  }
-
-  .marketing-page-hero {
-    display: grid;
-    gap: 0.9rem;
-    background: transparent;
-  }
-
-  .marketing-proof-panel {
-    background: transparent;
-  }
-
-  .marketing-final-cta {
-    border-color: rgb(229 231 235 / 0.9);
-    background: transparent;
-  }
-
-  .marketing-hero {
-    display: grid;
-    gap: 2rem;
-    align-items: start;
-    padding-block: 5rem 4rem;
-  }
-
-  .market-page {
-    display: grid;
-    gap: 3rem;
-    padding-block: 5.5rem 5rem;
-  }
-
-  .market-page .market-section {
-    padding-block: 3.75rem;
-  }
-
-  .market-hero-grid {
-    display: grid;
-    gap: 2.5rem;
-    align-items: start;
-  }
-
-  .market-hero-copy {
-    max-width: 46rem;
-  }
-
-  .market-hero-panel {
-    border-radius: 1.25rem;
-    border: 1px solid rgb(229 231 235 / 0.6);
-    background: var(--surface-muted);
-    padding: 1.75rem;
-  }
-
-  .market-hero-panel-title {
-    color: var(--ink-soft);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  .market-hero-signal-list {
-    display: grid;
-    gap: 1rem;
-    margin-top: 1.25rem;
-  }
-
-  .market-hero-signal {
-    display: grid;
-    gap: 0.35rem;
-  }
-
-  .market-hero-signal-label {
-    color: var(--ink-strong);
-    font-weight: 600;
-  }
-
-  .market-hero-signal-text {
-    color: var(--ink-soft);
-    font-size: 0.92rem;
-  }
-
-  .market-task-grid,
-  .market-participant-grid {
-    display: grid;
-    gap: 0.8rem;
-    margin-top: 1.5rem;
-    padding-left: 1.25rem;
-    list-style: disc;
-    color: var(--ink-soft);
-  }
-
-  .market-flow-panel {
-    margin-top: 1.75rem;
-    border-radius: 1.25rem;
-    border: 1px solid rgb(229 231 235 / 0.55);
-    background: var(--surface-panel);
-    padding: 1.5rem 1.75rem;
-  }
-
-  .market-flow-steps {
-    display: grid;
-    gap: 0.6rem;
-    padding-left: 1.25rem;
-    list-style: decimal;
-    color: var(--ink-soft);
-  }
-
-  .market-section-narrow {
-    max-width: 56rem;
-  }
-
-  .market-final-cta {
-    padding-bottom: 6rem;
-  }
-
-  .market-final-cta-inner {
-    border-radius: 1.5rem;
-    border: 1px solid rgb(229 231 235 / 0.55);
-    background: var(--surface-muted);
-    padding: 2.5rem;
-  }
-
-  .marketing-kicker {
-    color: var(--brand-accent-strong);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  .marketing-h1 {
-    max-width: 13ch;
-    font-size: clamp(2.8rem, 6vw, 5.4rem);
-    line-height: 1.04;
-    letter-spacing: -0.04em;
-    color: var(--ink-strong);
-  }
-
-  .marketing-h2 {
-    font-size: clamp(2rem, 4vw, 3.25rem);
-    line-height: 1.06;
-    letter-spacing: -0.035em;
-    color: var(--ink-strong);
-  }
-
-  .marketing-lead {
-    max-width: 48rem;
-    color: var(--ink-soft);
-  }
-
-  .marketing-cta-row {
-    align-items: center;
-  }
-
-  .marketing-primary-button {
-    @apply btn btn-primary;
-  }
-
-  .marketing-primary-button:hover {
-    transform: translateY(-1px);
-  }
-
-  .marketing-primary-button:focus-visible {
-    outline: 2px solid var(--brand-accent);
-    outline-offset: 2px;
-  }
-
-  .marketing-secondary-button {
-    @apply btn btn-outline;
-  }
-
-  .marketing-secondary-button:hover {
-    transform: translateY(-1px);
-  }
-
-  .marketing-secondary-button:focus-visible {
-    outline: 2px solid var(--brand-accent);
-    outline-offset: 2px;
-  }
-
-  .section-title {
-    @apply text-2xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-3xl;
-  }
-
-  .section-marker {
-    color: var(--brand-red);
-    font-weight: 700;
-    margin-right: 0.5rem;
-  }
-
-  .subcaps {
-    color: var(--brand-red);
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-  }
-
-  .primary-button {
-    @apply btn btn-primary btn-sm;
-  }
-
-  .primary-button:hover {
-    transform: translateY(-1px);
-  }
-
-  .primary-button:active {
-    transform: translateY(0);
-  }
-
-  .secondary-button {
-    @apply btn btn-outline btn-sm;
-  }
-
-  .secondary-button:hover {
-    transform: translateY(-1px);
-  }
-
-  .secondary-button:active {
-    transform: translateY(0);
-  }
-
-  .channel-badge {
-    border-radius: 999px;
-    border: 1px solid var(--line-strong);
-    background: var(--surface-muted);
-    padding: 0.125rem 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--brand-accent-strong);
-    letter-spacing: 0.03em;
-  }
-
-  .brand-link {
-    color: var(--brand-red);
-    font-weight: 600;
-    transition: transform 120ms ease;
-  }
-
-  .brand-link:hover {
-    transform: translateX(2px);
-  }
-
-  .panel-card {
-    @apply card card-border bg-base-100 shadow-sm;
-  }
-
-  .hero-orbit {
-    position: absolute;
-    inset: auto -9rem -9rem auto;
-    width: 18rem;
-    height: 18rem;
-    border-radius: 999px;
-    border: 1px solid rgb(37 99 235 / 20%);
-    background:
-      radial-gradient(circle at 30% 30%, rgb(37 99 235 / 20%), transparent 48%),
-      radial-gradient(circle at 70% 65%, rgb(37 99 235 / 16%), transparent 46%);
-    filter: blur(0.4px);
-    opacity: 0.8;
-    pointer-events: none;
-  }
-
-  .hero-metrics {
-    border-top: 1px solid var(--line-soft);
-    padding-top: 1rem;
-  }
-
-  .hero-metric-label {
-    color: var(--ink-soft);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .hero-metric-value {
-    margin-top: 0.2rem;
-    color: var(--ink-strong);
-    font-size: 1.05rem;
-    font-weight: 700;
-  }
-
-  .hero-slogan-rotator {
-    display: inline-block;
-    position: relative;
-    min-width: 6em;
-    height: 1.3em;
-    vertical-align: top;
-  }
-
-  .hero-slogan-item {
-    position: absolute;
-    inset: 0 auto auto 0;
-    opacity: 0;
-    animation: hero-slogan-rotate 12s infinite;
-    animation-delay: calc(var(--slogan-index) * 3s);
-    white-space: nowrap;
-  }
-
-  .hero-slogan-item:first-child {
-    opacity: 1;
-  }
-
-  .marketing-grid-2,
-  .marketing-grid-3,
-  .marketing-grid-4 {
-    display: grid;
-    gap: 1.25rem;
-  }
-
-  .marketing-download-primary {
-    background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
-  }
-
-  .marketing-download-consult {
-    background: linear-gradient(180deg, #fff 0%, var(--surface-panel) 100%);
-  }
-
-  .marketing-platform-list {
-    align-items: stretch;
-  }
-
-  .marketing-footer {
-    margin-top: 2rem;
-    border-top: 1px solid var(--line-soft);
-    background: rgb(255 255 255 / 0.88);
-  }
-
-  .marketing-footer-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
-    padding-block: 1.25rem 2rem;
-    color: var(--ink-soft);
-    font-size: 0.92rem;
-  }
-
-  .marketing-footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .marketing-footer-links a {
-    color: var(--ink-normal);
-    font-weight: 600;
-  }
+    .glass-nav {
+        backdrop-filter: blur(12px);
+        background: rgb(255 255 255 / 86%);
+    }
+
+    .site-bg {
+        background:
+            radial-gradient(
+                circle at 0% 0%,
+                rgb(37 99 235 / 7%),
+                transparent 36%
+            ),
+            radial-gradient(
+                circle at 100% 0%,
+                rgb(37 99 235 / 4%),
+                transparent 44%
+            ),
+            linear-gradient(
+                180deg,
+                #fff 0%,
+                #fff 58%,
+                var(--surface-muted) 100%
+            );
+    }
+
+    .hero-glow {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        background:
+            radial-gradient(
+                circle at 16% 18%,
+                rgb(37 99 235 / 8%),
+                transparent 36%
+            ),
+            radial-gradient(
+                circle at 88% 12%,
+                rgb(37 99 235 / 10%),
+                transparent 48%
+            ),
+            linear-gradient(145deg, #fff 0%, var(--surface-muted) 100%);
+    }
+
+    .aqua-glow {
+        background: linear-gradient(120deg, #fff 0%, var(--surface-muted) 100%);
+    }
+
+    .bento-card {
+        @apply card card-border bg-base-100 shadow-sm;
+    }
+
+    .marketing-body {
+        background:
+            radial-gradient(
+                circle at top right,
+                rgb(37 99 235 / 0.06),
+                transparent 28%
+            ),
+            linear-gradient(180deg, #fff 0%, #fff 65%, #f8fafc 100%);
+    }
+
+    .marketing-skip-link {
+        position: absolute;
+        top: -3rem;
+        left: 1rem;
+        z-index: 60;
+        border-radius: 0.5rem;
+        border: 1px solid var(--line-strong);
+        background: #fff;
+        color: var(--ink-strong);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        transition: top 160ms ease;
+    }
+
+    .marketing-skip-link:focus-visible {
+        top: 0.75rem;
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+    }
+
+    .marketing-nav {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        border-bottom: 1px solid rgb(229 231 235 / 0.72);
+        background: rgb(255 255 255 / 0.96);
+        backdrop-filter: blur(18px);
+    }
+
+    .marketing-nav-inner {
+        display: flex;
+        min-height: 4.75rem;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding-block: 0.9rem;
+    }
+
+    .marketing-nav-links {
+        display: none;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .marketing-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--ink-strong);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+
+    .marketing-brand-mark {
+        width: 2.25rem;
+        height: 2.25rem;
+        flex-shrink: 0;
+        border-radius: 0.8rem;
+        border: 1px solid var(--line-soft);
+        background: #fff;
+        object-fit: cover;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .marketing-nav-link {
+        display: inline-flex;
+        align-items: center;
+        color: var(--ink-normal);
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.25rem 0;
+        transition: color 160ms ease;
+    }
+
+    .marketing-nav-link:hover {
+        color: var(--ink-strong);
+    }
+
+    .marketing-nav-link.is-active {
+        color: var(--ink-strong);
+    }
+
+    .marketing-section[id] {
+        scroll-margin-top: 5.75rem;
+    }
+
+    .marketing-nav-inner,
+    .marketing-footer-inner,
+    .marketing-section-inner {
+        margin: 0 auto;
+        width: 100%;
+        max-width: 80rem;
+        padding-inline: 1.25rem;
+    }
+
+    .marketing-card {
+        border-radius: 1rem;
+        border: 1px solid rgb(229 231 235 / 0.7);
+        background: #fff;
+        box-shadow: none;
+    }
+
+    .marketing-section {
+        position: relative;
+    }
+
+    .marketing-page-hero {
+        display: grid;
+        gap: 0.9rem;
+        background: transparent;
+    }
+
+    .marketing-proof-panel {
+        background: transparent;
+    }
+
+    .marketing-final-cta {
+        border-color: rgb(229 231 235 / 0.9);
+        background: transparent;
+    }
+
+    .marketing-hero {
+        display: grid;
+        gap: 2rem;
+        align-items: start;
+        padding-block: 5rem 4rem;
+    }
+
+    .market-page {
+        display: grid;
+        gap: 3rem;
+        padding-block: 5.5rem 5rem;
+    }
+
+    .market-page .market-section {
+        padding-block: 3.75rem;
+    }
+
+    .market-hero-grid {
+        display: grid;
+        gap: 2.5rem;
+        align-items: start;
+    }
+
+    .market-hero-copy {
+        max-width: 46rem;
+    }
+
+    .market-hero-panel {
+        border-radius: 1.25rem;
+        border: 1px solid rgb(229 231 235 / 0.6);
+        background: var(--surface-muted);
+        padding: 1.75rem;
+    }
+
+    .market-hero-panel-title {
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
+
+    .market-hero-signal-list {
+        display: grid;
+        gap: 1rem;
+        margin-top: 1.25rem;
+    }
+
+    .market-hero-signal {
+        display: grid;
+        gap: 0.35rem;
+    }
+
+    .market-hero-signal-label {
+        color: var(--ink-strong);
+        font-weight: 600;
+    }
+
+    .market-hero-signal-text {
+        color: var(--ink-soft);
+        font-size: 0.92rem;
+    }
+
+    .market-task-grid,
+    .market-participant-grid {
+        display: grid;
+        gap: 0.8rem;
+        margin-top: 1.5rem;
+        padding-left: 1.25rem;
+        list-style: disc;
+        color: var(--ink-soft);
+    }
+
+    .market-flow-panel {
+        margin-top: 1.75rem;
+        border-radius: 1.25rem;
+        border: 1px solid rgb(229 231 235 / 0.55);
+        background: var(--surface-panel);
+        padding: 1.5rem 1.75rem;
+    }
+
+    .market-flow-steps {
+        display: grid;
+        gap: 0.6rem;
+        padding-left: 1.25rem;
+        list-style: decimal;
+        color: var(--ink-soft);
+    }
+
+    .market-section-narrow {
+        max-width: 56rem;
+    }
+
+    .market-final-cta {
+        padding-bottom: 6rem;
+    }
+
+    .market-final-cta-inner {
+        border-radius: 1.5rem;
+        border: 1px solid rgb(229 231 235 / 0.55);
+        background: var(--surface-muted);
+        padding: 2.5rem;
+    }
+
+    .marketing-kicker {
+        color: var(--brand-accent-strong);
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
+
+    .marketing-h1 {
+        max-width: 13ch;
+        font-size: clamp(2.8rem, 6vw, 5.4rem);
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+        color: var(--ink-strong);
+    }
+
+    .marketing-h2 {
+        font-size: clamp(2rem, 4vw, 3.25rem);
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+        color: var(--ink-strong);
+    }
+
+    .marketing-lead {
+        max-width: 48rem;
+        color: var(--ink-soft);
+    }
+
+    .marketing-cta-row {
+        align-items: center;
+    }
+
+    .marketing-primary-button {
+        @apply btn btn-primary;
+    }
+
+    .marketing-primary-button:hover {
+        transform: translateY(-1px);
+    }
+
+    .marketing-primary-button:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+    }
+
+    .marketing-secondary-button {
+        @apply btn btn-outline;
+    }
+
+    .marketing-secondary-button:hover {
+        transform: translateY(-1px);
+    }
+
+    .marketing-secondary-button:focus-visible {
+        outline: 2px solid var(--brand-accent);
+        outline-offset: 2px;
+    }
+
+    .section-title {
+        @apply text-2xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-3xl;
+    }
+
+    .section-marker {
+        color: var(--brand-red);
+        font-weight: 700;
+        margin-right: 0.5rem;
+    }
+
+    .subcaps {
+        color: var(--brand-red);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+    }
+
+    .primary-button {
+        @apply btn btn-primary btn-sm;
+    }
+
+    .primary-button:hover {
+        transform: translateY(-1px);
+    }
+
+    .primary-button:active {
+        transform: translateY(0);
+    }
+
+    .secondary-button {
+        @apply btn btn-outline btn-sm;
+    }
+
+    .secondary-button:hover {
+        transform: translateY(-1px);
+    }
+
+    .secondary-button:active {
+        transform: translateY(0);
+    }
+
+    .channel-badge {
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: var(--surface-muted);
+        padding: 0.125rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--brand-accent-strong);
+        letter-spacing: 0.03em;
+    }
+
+    .brand-link {
+        color: var(--brand-red);
+        font-weight: 600;
+        transition: transform 120ms ease;
+    }
+
+    .brand-link:hover {
+        transform: translateX(2px);
+    }
+
+    .panel-card {
+        @apply card card-border bg-base-100 shadow-sm;
+    }
+
+    .hero-orbit {
+        position: absolute;
+        inset: auto -9rem -9rem auto;
+        width: 18rem;
+        height: 18rem;
+        border-radius: 999px;
+        border: 1px solid rgb(37 99 235 / 20%);
+        background:
+            radial-gradient(
+                circle at 30% 30%,
+                rgb(37 99 235 / 20%),
+                transparent 48%
+            ),
+            radial-gradient(
+                circle at 70% 65%,
+                rgb(37 99 235 / 16%),
+                transparent 46%
+            );
+        filter: blur(0.4px);
+        opacity: 0.8;
+        pointer-events: none;
+    }
+
+    .hero-metrics {
+        border-top: 1px solid var(--line-soft);
+        padding-top: 1rem;
+    }
+
+    .hero-metric-label {
+        color: var(--ink-soft);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .hero-metric-value {
+        margin-top: 0.2rem;
+        color: var(--ink-strong);
+        font-size: 1.05rem;
+        font-weight: 700;
+    }
+
+    .hero-slogan-rotator {
+        display: inline-block;
+        position: relative;
+        min-width: 6em;
+        height: 1.3em;
+        vertical-align: top;
+    }
+
+    .hero-slogan-item {
+        position: absolute;
+        inset: 0 auto auto 0;
+        opacity: 0;
+        animation: hero-slogan-rotate 12s infinite;
+        animation-delay: calc(var(--slogan-index) * 3s);
+        white-space: nowrap;
+    }
+
+    .hero-slogan-item:first-child {
+        opacity: 1;
+    }
+
+    .marketing-grid-2,
+    .marketing-grid-3,
+    .marketing-grid-4 {
+        display: grid;
+        gap: 1.25rem;
+    }
+
+    .marketing-download-primary {
+        background: linear-gradient(180deg, #fff 0%, #f8fbff 100%);
+    }
+
+    .marketing-download-consult {
+        background: linear-gradient(180deg, #fff 0%, var(--surface-panel) 100%);
+    }
+
+    .marketing-platform-list {
+        align-items: stretch;
+    }
+
+    .marketing-footer {
+        margin-top: 2rem;
+        border-top: 1px solid var(--line-soft);
+        background: rgb(255 255 255 / 0.88);
+    }
+
+    .marketing-footer-inner {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        padding-block: 1.25rem 2rem;
+        color: var(--ink-soft);
+        font-size: 0.92rem;
+    }
+
+    .marketing-footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .marketing-footer-links a {
+        color: var(--ink-normal);
+        font-weight: 600;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-fade,
-  .primary-button,
-  .secondary-button,
-  .brand-link,
-  .hero-slogan-item,
-  .marketing-primary-button,
-  .marketing-secondary-button,
-  .marketing-skip-link {
-    animation: none;
-    transition: none;
-  }
+    .page-fade,
+    .primary-button,
+    .secondary-button,
+    .brand-link,
+    .hero-slogan-item,
+    .marketing-primary-button,
+    .marketing-secondary-button,
+    .marketing-skip-link {
+        animation: none;
+        transition: none;
+    }
 
-  .primary-button:hover,
-  .secondary-button:hover,
-  .brand-link:hover,
-  .marketing-primary-button:hover,
-  .marketing-secondary-button:hover {
-    transform: none;
-  }
+    .primary-button:hover,
+    .secondary-button:hover,
+    .brand-link:hover,
+    .marketing-primary-button:hover,
+    .marketing-secondary-button:hover {
+        transform: none;
+    }
 
-  .hero-slogan-item {
-    opacity: 0;
-  }
+    .hero-slogan-item {
+        opacity: 0;
+    }
 
-  .hero-slogan-item:first-child {
-    opacity: 1;
-  }
+    .hero-slogan-item:first-child {
+        opacity: 1;
+    }
 }
 
 @media (min-width: 768px) {
-  .marketing-footer-inner {
-    align-items: center;
-    justify-content: space-between;
-    flex-direction: row;
-  }
+    .marketing-footer-inner {
+        align-items: center;
+        justify-content: space-between;
+        flex-direction: row;
+    }
 
-  .market-page .market-section {
-    padding-block: 4.25rem;
-  }
+    .market-page .market-section {
+        padding-block: 4.25rem;
+    }
 
-  .market-task-grid,
-  .market-participant-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+    .market-task-grid,
+    .market-participant-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 }
 
 @media (min-width: 1024px) {
-  .marketing-nav-links {
-    display: flex;
-  }
+    .marketing-nav-links {
+        display: flex;
+    }
 
-  .market-hero-grid {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    gap: 3.5rem;
-  }
+    .market-hero-grid {
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+        gap: 3.5rem;
+    }
 
-  .market-page .market-section {
-    padding-block: 4.75rem;
-  }
+    .market-page .market-section {
+        padding-block: 4.75rem;
+    }
 
-  .market-final-cta-inner {
-    padding: 3.5rem;
-  }
+    .market-final-cta-inner {
+        padding: 3.5rem;
+    }
 }

@@ -9,11 +9,12 @@ import type { AdminPageProps, AdminSection } from "./admin-sections/types";
 import { renderVersionsSection } from "./admin-sections/versions";
 
 function LoginPage({ error }: { error?: string }) {
-  const { brandName, siteName, brandLogoUrl, seoDescription, seoKeywords } = getBrandConfig();
+  const { brandName, siteName, brandLogoUrl, seoDescription, seoKeywords } =
+    getBrandConfig();
   const pageTitle = `${siteName} 管理后台登录`;
 
   return (
-    <html lang="zh-CN" data-theme="pastel">
+    <html lang="zh-CN" data-theme="winter">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -29,7 +30,11 @@ function LoginPage({ error }: { error?: string }) {
           <section class="card w-full bg-base-100 shadow-xl">
             <div class="card-body">
               <div class="mb-2 flex items-center gap-3">
-                <img src={brandLogoUrl} alt={`${brandName} logo`} class="h-9 w-9 rounded-lg object-cover" />
+                <img
+                  src={brandLogoUrl}
+                  alt={`${brandName} logo`}
+                  class="h-9 w-9 rounded-lg object-cover"
+                />
                 <div>
                   <h1 class="card-title">{`${brandName} 后台登录`}</h1>
                   <p class="text-xs text-base-content/60">{siteName}</p>
@@ -39,13 +44,25 @@ function LoginPage({ error }: { error?: string }) {
               <form class="space-y-4" method="post" action="/admin/login">
                 <label class="form-control">
                   <span class="label-text">账号</span>
-                  <input class="input input-bordered" type="text" name="username" required />
+                  <input
+                    class="input input-bordered"
+                    type="text"
+                    name="username"
+                    required
+                  />
                 </label>
                 <label class="form-control">
                   <span class="label-text">密码</span>
-                  <input class="input input-bordered" type="password" name="password" required />
+                  <input
+                    class="input input-bordered"
+                    type="password"
+                    name="password"
+                    required
+                  />
                 </label>
-                <button class="btn btn-primary w-full" type="submit">登录</button>
+                <button class="btn btn-primary w-full" type="submit">
+                  登录
+                </button>
               </form>
             </div>
           </section>
@@ -68,8 +85,21 @@ function renderActiveSection(props: AdminPageProps) {
           <div class="card-body">
             <h3 class="card-title text-base">Logo 上传</h3>
             <div class="flex gap-2">
-              <input id="logo-upload-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-              <button class="btn btn-outline" type="button" onclick={"uploadAdminImage('logo-upload-file','brand-logo-url','logo')"}>上传并填充 Logo URL</button>
+              <input
+                id="logo-upload-file"
+                class="file-input file-input-bordered w-full"
+                type="file"
+                accept="image/*"
+              />
+              <button
+                class="btn btn-outline"
+                type="button"
+                onclick={
+                  "uploadAdminImage('logo-upload-file','brand-logo-url','logo')"
+                }
+              >
+                上传并填充 Logo URL
+              </button>
             </div>
           </div>
         </section>
@@ -89,7 +119,7 @@ function AdminPage(props: AdminPageProps) {
   const pageTitle = `${props.settings.siteName} 管理后台`;
 
   return (
-    <html lang="zh-CN" data-theme="pastel">
+    <html lang="zh-CN" data-theme="winter">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -106,21 +136,38 @@ function AdminPage(props: AdminPageProps) {
           <div class="drawer-content p-4 lg:p-8">
             <div class="navbar mb-4 rounded-box bg-base-100 shadow">
               <div class="flex-1">
-                <label for="admin-sidebar" class="btn btn-ghost btn-square lg:hidden">☰</label>
+                <label
+                  for="admin-sidebar"
+                  class="btn btn-ghost btn-square lg:hidden"
+                >
+                  ☰
+                </label>
                 <div class="ml-2 flex items-center gap-3">
-                  <img src={props.settings.brandLogoUrl} alt={`${props.settings.brandName} logo`} class="h-9 w-9 rounded-lg object-cover" />
+                  <img
+                    src={props.settings.brandLogoUrl}
+                    alt={`${props.settings.brandName} logo`}
+                    class="h-9 w-9 rounded-lg object-cover"
+                  />
                   <div>
-                    <h1 class="text-lg font-semibold">{props.settings.brandName} 后台</h1>
-                    <p class="text-xs text-base-content/60">{props.settings.siteName}</p>
+                    <h1 class="text-lg font-semibold">
+                      {props.settings.brandName} 后台
+                    </h1>
+                    <p class="text-xs text-base-content/60">
+                      {props.settings.siteName}
+                    </p>
                   </div>
                 </div>
               </div>
               <form method="post" action="/admin/logout">
-                <button class="btn btn-outline btn-sm" type="submit">退出登录</button>
+                <button class="btn btn-outline btn-sm" type="submit">
+                  退出登录
+                </button>
               </form>
             </div>
 
-            {props.notice ? <div class="alert alert-success mb-4 text-sm">{props.notice}</div> : null}
+            {props.notice ? (
+              <div class="alert alert-success mb-4 text-sm">{props.notice}</div>
+            ) : null}
             {renderActiveSection(props)}
           </div>
 
@@ -128,16 +175,48 @@ function AdminPage(props: AdminPageProps) {
             <label for="admin-sidebar" class="drawer-overlay" />
             <aside class="min-h-full w-64 bg-base-100 p-4">
               <ul class="menu gap-1 text-sm">
-                <li class="menu-title"><span>后台导航</span></li>
-                <li><a href={sectionHref("settings")} class={props.activeSection === "settings" ? "active" : ""}>品牌与 SEO</a></li>
-                <li><a href={sectionHref("versions")} class={props.activeSection === "versions" ? "active" : ""}>版本管理</a></li>
-                <li><a href={sectionHref("products")} class={props.activeSection === "products" ? "active" : ""}>商品管理</a></li>
-                <li><a href={sectionHref("tasks")} class={props.activeSection === "tasks" ? "active" : ""}>任务管理</a></li>
+                <li class="menu-title">
+                  <span>后台导航</span>
+                </li>
+                <li>
+                  <a
+                    href={sectionHref("settings")}
+                    class={props.activeSection === "settings" ? "active" : ""}
+                  >
+                    品牌与 SEO
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={sectionHref("versions")}
+                    class={props.activeSection === "versions" ? "active" : ""}
+                  >
+                    版本管理
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={sectionHref("products")}
+                    class={props.activeSection === "products" ? "active" : ""}
+                  >
+                    商品管理
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={sectionHref("tasks")}
+                    class={props.activeSection === "tasks" ? "active" : ""}
+                  >
+                    任务管理
+                  </a>
+                </li>
               </ul>
             </aside>
           </div>
         </div>
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
           async function uploadAdminImage(fileInputId, urlInputId, kind) {
             const fileInput = document.getElementById(fileInputId);
             const urlInput = document.getElementById(urlInputId);
@@ -181,7 +260,9 @@ function AdminPage(props: AdminPageProps) {
             document.getElementById('product-published').checked = Boolean(product.published);
             if (productModal) productModal.showModal();
           }
-        ` }} />
+        `,
+          }}
+        />
       </body>
     </html>
   );

@@ -38,7 +38,7 @@ function CeoLetterPage() {
   const letterSections = buildLetterSections(brandName);
 
   return (
-    <html lang="zh-CN" data-theme="pastel">
+    <html lang="zh-CN" data-theme="winter">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -49,15 +49,26 @@ function CeoLetterPage() {
       <body class="site-bg min-h-screen text-base-content">
         <main class="mx-auto w-full max-w-4xl px-5 py-10 sm:px-8 sm:py-14">
           <header class="hero-glow bento-card px-6 py-6">
-            <a class="brand-link inline-flex items-center gap-2 text-sm" href="/">
+            <a
+              class="brand-link inline-flex items-center gap-2 text-sm"
+              href="/"
+            >
               ← 返回官网
             </a>
             <div class="mt-5 flex items-center gap-3 text-lg font-semibold">
-              <img src={brandLogoUrl} alt={`${brandName} Logo`} class="size-9 rounded-lg object-contain" />
+              <img
+                src={brandLogoUrl}
+                alt={`${brandName} Logo`}
+                class="size-9 rounded-lg object-contain"
+              />
               <span>{brandName}</span>
             </div>
-            <h1 class="mt-5 text-3xl font-black tracking-tight sm:text-4xl">CEO agent&apos;s letter</h1>
-            <p class="mt-4 text-sm leading-7 text-base-content/70 sm:text-base">这封公开信用于统一团队执行方向，也让客户与合作伙伴清晰理解我们的业务边界、增长路径与长期目标。</p>
+            <h1 class="mt-5 text-3xl font-black tracking-tight sm:text-4xl">
+              CEO agent&apos;s letter
+            </h1>
+            <p class="mt-4 text-sm leading-7 text-base-content/70 sm:text-base">
+              这封公开信用于统一团队执行方向，也让客户与合作伙伴清晰理解我们的业务边界、增长路径与长期目标。
+            </p>
           </header>
 
           <section class="mt-10 space-y-6">
@@ -68,7 +79,9 @@ function CeoLetterPage() {
                   {section.title}
                 </h2>
                 {section.paragraphs?.map((paragraph) => (
-                  <p class="mt-4 text-sm leading-8 text-base-content/70 sm:text-base">{paragraph}</p>
+                  <p class="mt-4 text-sm leading-8 text-base-content/70 sm:text-base">
+                    {paragraph}
+                  </p>
                 ))}
                 {section.bullets?.length ? (
                   <ul class="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-base-content/70 sm:text-base">
@@ -82,8 +95,19 @@ function CeoLetterPage() {
           </section>
 
           <footer class="mt-10 border-t border-base-300 pt-6 text-sm text-base-content/70">
-            <p><a class="brand-link" href={brandUrl} target="_blank" rel="noreferrer">{brandDomain}</a></p>
-            <p class="mt-1">如果你希望把该方案用于行业落地或 OEM 合作，欢迎直接联系我们。</p>
+            <p>
+              <a
+                class="brand-link"
+                href={brandUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {brandDomain}
+              </a>
+            </p>
+            <p class="mt-1">
+              如果你希望把该方案用于行业落地或 OEM 合作，欢迎直接联系我们。
+            </p>
           </footer>
         </main>
       </body>

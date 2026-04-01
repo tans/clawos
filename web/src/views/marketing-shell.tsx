@@ -8,7 +8,13 @@ import { getEnv } from "../lib/env";
 type MarketingShellProps = PropsWithChildren<{
   title: string;
   description: string;
-  currentPath: "/" | "/downloads" | "/shop" | "/contact" | "/agent-market" | "/market";
+  currentPath:
+    | "/"
+    | "/downloads"
+    | "/shop"
+    | "/contact"
+    | "/agent-market"
+    | "/market";
 }>;
 
 const topNavItems = [
@@ -19,14 +25,28 @@ const topNavItems = [
   { href: "/contact", label: "联系我们" },
 ] as const;
 
-export function renderMarketingShell({ title, description, currentPath, children }: MarketingShellProps): string {
-  const { brandName, brandLogoUrl, brandUrl, brandDomain, siteName, seoTitle, seoDescription, seoKeywords } = getBrandConfig();
+export function renderMarketingShell({
+  title,
+  description,
+  currentPath,
+  children,
+}: MarketingShellProps): string {
+  const {
+    brandName,
+    brandLogoUrl,
+    brandUrl,
+    brandDomain,
+    siteName,
+    seoTitle,
+    seoDescription,
+    seoKeywords,
+  } = getBrandConfig();
   const { marketplaceEnabled } = getEnv();
   const finalTitle = `${title} | ${seoTitle}`;
   const finalDescription = description?.trim() || seoDescription;
 
   return `<!doctype html>${renderToString(
-    <html lang="zh-CN" data-theme="pastel">
+    <html lang="zh-CN" data-theme="winter">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -51,7 +71,11 @@ export function renderMarketingShell({ title, description, currentPath, children
           <div class="navbar mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="navbar-start">
               <a href="/" class="btn btn-ghost px-2 text-lg font-semibold">
-                <img src={brandLogoUrl} alt={`${brandName} logo`} class="h-8 w-8 rounded" />
+                <img
+                  src={brandLogoUrl}
+                  alt={`${brandName} logo`}
+                  class="h-8 w-8 rounded"
+                />
                 <span>{brandName}</span>
               </a>
             </div>
@@ -59,13 +83,25 @@ export function renderMarketingShell({ title, description, currentPath, children
               <ul class="menu menu-horizontal px-1 text-sm">
                 {topNavItems.map((item) => (
                   <li>
-                    <a href={item.href} class={item.href === currentPath ? "active font-semibold" : ""}>{item.label}</a>
+                    <a
+                      href={item.href}
+                      class={
+                        item.href === currentPath ? "active font-semibold" : ""
+                      }
+                    >
+                      {item.label}
+                    </a>
                   </li>
                 ))}
               </ul>
             </div>
             <div class="navbar-end gap-2">
-              <a href="/contact" class="btn btn-primary btn-sm hidden sm:inline-flex">咨询方案</a>
+              <a
+                href="/contact"
+                class="btn btn-primary btn-sm hidden sm:inline-flex"
+              >
+                咨询方案
+              </a>
             </div>
           </div>
         </header>
@@ -76,16 +112,33 @@ export function renderMarketingShell({ title, description, currentPath, children
           <div class="footer mx-auto max-w-7xl items-center px-4 py-8 text-base-content sm:px-6 lg:px-8">
             <aside>
               <p class="font-semibold">
-                <a class="link link-hover" href={brandUrl} target="_blank" rel="noreferrer">{`${brandName} · ${brandDomain}`}</a>
+                <a
+                  class="link link-hover"
+                  href={brandUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >{`${brandName} · ${brandDomain}`}</a>
               </p>
-              <p class="text-sm text-base-content/60">让 Agent 协作更标准，让任务交付更稳定。</p>
+              <p class="text-sm text-base-content/60">
+                让 Agent 协作更标准，让任务交付更稳定。
+              </p>
             </aside>
             <nav class="md:place-self-center md:justify-self-end">
               <div class="grid grid-flow-col gap-4 text-sm">
-                {marketplaceEnabled ? <a class="link link-hover" href="/market">Agent 协作</a> : null}
-                <a class="link link-hover" href="/downloads">下载试用</a>
-                <a class="link link-hover" href="/shop">产品商城</a>
-                <a class="link link-hover" href="/contact">部署评估</a>
+                {marketplaceEnabled ? (
+                  <a class="link link-hover" href="/market">
+                    Agent 协作
+                  </a>
+                ) : null}
+                <a class="link link-hover" href="/downloads">
+                  下载试用
+                </a>
+                <a class="link link-hover" href="/shop">
+                  产品商城
+                </a>
+                <a class="link link-hover" href="/contact">
+                  部署评估
+                </a>
               </div>
             </nav>
           </div>
