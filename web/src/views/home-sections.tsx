@@ -292,6 +292,29 @@ export function PocPathSection() {
   return null;
 }
 
+export function OemSection() {
+  return (
+    <section id="oem" class="marketing-section py-24 sm:py-28">
+      <div class="marketing-section-inner">
+        <div class="rounded-3xl border border-[color:var(--line-soft)] bg-white p-8 shadow-sm sm:p-10">
+          <div class="max-w-3xl space-y-4">
+            <p class="marketing-kicker">OEM Program</p>
+            <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">
+              OEM 白牌能力开放中
+            </h2>
+            <p class="text-base leading-8 text-[color:var(--ink-soft)]">
+              支持品牌方以 OEM 方式快速进入交付：品牌替换、主机白牌采购、自有商城与任务市场能力将逐步开放。
+            </p>
+          </div>
+          <div class="mt-8">
+            <a class="marketing-primary-button" href="/oem">查看 OEM 方案</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function FinalCtaSection() {
   return (
     <section class="marketing-section py-24 sm:py-32">
