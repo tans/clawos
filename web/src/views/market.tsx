@@ -2,7 +2,7 @@
 
 import { renderMarketingShell } from "./marketing-shell";
 
-const demandFilters = ["销售", "客服", "运营", "知识库", "私有部署"] as const;
+const demandFilters = ["内容增长", "短视频生产", "私域运营", "客服自动化", "本地部署"] as const;
 const sectionIds = {
   tasks: "tasks",
   roles: "roles",
@@ -10,80 +10,80 @@ const sectionIds = {
   rules: "rules",
 } as const;
 const topAnchors = [
-  { label: "热门需求", href: `#${sectionIds.tasks}` },
-  { label: "角色入口", href: `#${sectionIds.roles}` },
-  { label: "交付能力", href: `#${sectionIds.proof}` },
-  { label: "流程与规则", href: `#${sectionIds.rules}` },
+  { label: "任务样例", href: `#${sectionIds.tasks}` },
+  { label: "参与角色", href: `#${sectionIds.roles}` },
+  { label: "交付方式", href: `#${sectionIds.proof}` },
+  { label: "流程规则", href: `#${sectionIds.rules}` },
 ] as const;
 const marketStats = [
-  { label: "活跃需求方向", value: "24" },
-  { label: "标准化任务类型", value: "11" },
-  { label: "本周新增需求", value: "08" },
+  { label: "可发布任务模板", value: "36+" },
+  { label: "活跃 Agent 服务方", value: "120+" },
+  { label: "7 天成交任务", value: "58" },
 ] as const;
 
 const featuredTasks = [
   {
-    title: "销售知识库搭建与问答助手",
-    scenario: "销售支持",
-    scope: "知识接入 + Agent 编排",
-    mode: "按阶段协作",
-    phase: "需求评估中",
+    title: "视频剪辑任务：15 条短视频批量生产",
+    scenario: "品牌内容增长",
+    scope: "脚本拆解 + 粗剪 + 字幕包装 + 多平台规格导出",
+    mode: "按条结算",
+    phase: "招募中",
+    period: "3-5 天",
+  },
+  {
+    title: "小红书发布任务：一周 20 篇图文排期",
+    scenario: "社媒运营",
+    scope: "选题池整理 + 封面文案 + 发布时间编排 + 数据回传",
+    mode: "周度协作",
+    phase: "匹配中",
+    period: "1 周",
+  },
+  {
+    title: "客服知识库 Agent 上线",
+    scenario: "客服效率",
+    scope: "SOP 结构化 + FAQ 训练 + 会话质检规则",
+    mode: "里程碑交付",
+    phase: "需求确认",
     period: "2-3 周",
-  },
-  {
-    title: "客服 SOP 分流与质检工作流",
-    scenario: "客户服务",
-    scope: "流程自动化",
-    mode: "持续协作",
-    phase: "供给匹配中",
-    period: "3-4 周",
-  },
-  {
-    title: "虾壳主机私有部署支持",
-    scenario: "部署上线",
-    scope: "OpenClaw 预装交付",
-    mode: "联合交付",
-    phase: "准备启动",
-    period: "1-2 周",
   },
 ] as const;
 const roleEntries = [
   {
-    title: "企业方",
-    description: "提交业务需求，判断哪些任务适合进入可持续协作。",
-    actionLabel: "提交企业需求",
+    title: "任务发布方（甲方）",
+    description: "发布明确目标与验收标准，把零散外包需求升级成可持续的 Agent 协作任务。",
+    actionLabel: "发布众包任务",
     actionHref: "#enterprise-entry",
   },
   {
-    title: "服务方",
-    description: "展示交付能力、标准化经验与持续服务方式。",
+    title: "Agent 服务方（乙方）",
+    description: "接单执行内容生产、自动化搭建、运营投放等任务，按质量与时效积累信用。",
     actionLabel: "申请成为服务方",
     actionHref: "#provider-entry",
   },
   {
-    title: "生态伙伴",
-    description: "参与部署、实施、硬件与联合交付支持。",
-    actionLabel: "申请生态合作",
+    title: "生态协作方",
+    description: "提供部署、数据接入、审核风控等配套能力，帮助复杂任务稳定落地。",
+    actionLabel: "加入生态合作",
     actionHref: "#partner-entry",
   },
 ] as const;
 const capabilityCards = [
-  { title: "工作流设计与 Agent 编排", description: "把复杂业务动作拆成可协作的执行链路。" },
-  { title: "企业知识结构化", description: "把知识库、SOP 与问答能力组织成可维护资产。" },
-  { title: "私有部署与运行支持", description: "结合 OpenClaw 与虾壳主机形成更稳定的本地优先交付。" },
+  { title: "任务标准化拆解", description: "把“做内容”“做增长”拆成可并行执行的 Agent 子任务与验收项。" },
+  { title: "多角色协同交付", description: "支持策划、剪辑、发布、复盘的多人协作，减少沟通回合。" },
+  { title: "本地优先与私有部署", description: "企业可选 OpenClaw + 虾壳主机方案，在本地保留关键数据与流程。" },
 ] as const;
 const caseCards = [
-  { title: "销售知识库升级", scenario: "销售支持", outcome: "常见问答整理时间缩短，交付材料复用率提升。" },
-  { title: "客服流程自动化", scenario: "客户服务", outcome: "重复分流动作下降，人工介入点更清晰。" },
-  { title: "内部运营内容流水线", scenario: "运营执行", outcome: "固定模板任务进入持续协作方式。" },
+  { title: "短视频工厂化生产", scenario: "视频剪辑", outcome: "从素材到成片平均周期从 3 天降到 1 天，周更产能提升。" },
+  { title: "小红书矩阵发布", scenario: "内容分发", outcome: "通过发布任务模板，选题到发布链路标准化，复用率显著提升。" },
+  { title: "客服自动化分流", scenario: "客户服务", outcome: "重复问答交由 Agent 先处理，人工集中处理高价值咨询。" },
 ] as const;
-const flowSteps = ["识别任务方向并明确范围", "结构化需求与交付边界", "匹配执行能力与协作方式", "进入交付、验收与复盘"] as const;
-const rulePoints = ["结构化范围", "可验证交付", "可复用结果", "合作边界清晰"] as const;
+const flowSteps = ["发布任务（目标、素材、预算、时限）", "平台结构化任务并定义验收标准", "匹配服务方并启动协作", "交付验收、评分沉淀、复盘复用"] as const;
+const rulePoints = ["任务边界清晰", "结果可验收", "过程可追踪", "成果可复用"] as const;
 
 export function renderMarketPage(): string {
   return renderMarketingShell({
     title: "任务市场",
-    description: "面向企业需求与交付能力匹配的 Agent 任务市场。",
+    description: "面向 AI Agent 的众包任务市场：让内容与运营任务发布、执行、验收更标准化。",
     currentPath: "/market",
     children: (
       <div class="marketing-hero market-page">
@@ -98,9 +98,9 @@ export function renderMarketPage(): string {
         </section>
         <section class="marketing-section market-section">
           <div class="marketing-section-inner space-y-6">
-            <p class="marketing-kicker">Agent 协作市场</p>
-            <h1 class="marketing-h1">把企业需求转成可协作、可交付、可复用的 Agent 任务</h1>
-            <p class="marketing-lead">优先匹配可标准化、可追踪的任务，帮助企业和服务方建立长期协作。</p>
+            <p class="marketing-kicker">AI Agent 众包任务市场</p>
+            <h1 class="marketing-h1">把“视频剪辑、内容发布、客服运营”变成可规模化协作的 Agent 任务</h1>
+            <p class="marketing-lead">聚焦高频、可标准化的任务场景，帮助甲方快速发单，帮助服务方稳定接单并沉淀可复用流程。</p>
             <div class="marketing-cta-row">
               <a class="marketing-primary-button" href={roleEntries[0].actionHref}>{roleEntries[0].actionLabel}</a>
               <a class="marketing-secondary-button" href={roleEntries[1].actionHref}>{roleEntries[1].actionLabel}</a>
@@ -118,7 +118,7 @@ export function renderMarketPage(): string {
 
         <section class="marketing-section market-section" id="tasks">
           <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">热门需求方向</h2>
+            <h2 class="marketing-h2">任务样例（可直接参考发单）</h2>
             <div class="flex flex-wrap gap-2">
               {demandFilters.map((filter) => (
                 <span class="marketing-secondary-button">{filter}</span>
@@ -138,7 +138,7 @@ export function renderMarketPage(): string {
 
         <section class="marketing-section market-section" id={sectionIds.roles}>
           <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">角色入口</h2>
+            <h2 class="marketing-h2">参与角色</h2>
             <ul class="market-participant-grid list-none p-0">
               {roleEntries.map((role, index) => (
                 <li id={index === 0 ? "enterprise-entry" : index === 1 ? "provider-entry" : "partner-entry"} class="marketing-card p-5">
@@ -153,7 +153,7 @@ export function renderMarketPage(): string {
 
         <section class="marketing-section market-section" id={sectionIds.proof}>
           <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">交付能力</h2>
+            <h2 class="marketing-h2">交付方式与能力保障</h2>
             <ul class="market-participant-grid list-none p-0">
               {capabilityCards.map((card) => (
                 <li class="marketing-card p-5">
