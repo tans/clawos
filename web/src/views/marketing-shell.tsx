@@ -26,7 +26,7 @@ export function renderMarketingShell({ title, description, currentPath, children
   const finalDescription = description?.trim() || seoDescription;
 
   return `<!doctype html>${renderToString(
-    <html lang="zh-CN" data-theme="corporate">
+    <html lang="zh-CN" data-theme="pastel">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
