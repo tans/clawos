@@ -144,4 +144,34 @@ describe("admin routes", () => {
     const tasksRaw = await readFile(join(tempStorageDir, "releases", "tasks.json"), "utf-8");
     expect(tasksRaw).toContain("上线商品页");
   });
+
+  it("supports admin image upload with multipart file", async () => {
+    const loginForm = new FormData();
+    loginForm.set("username", "admin");
+    loginForm.set("password", "secret");
+    const loginResponse = await app.request("http://localhost/admin/login", {
+      method: "POST",
+      body: loginForm,
+    });
+    const cookie = loginResponse.headers.get("set-cookie") || "";
+
+    const body = new FormData();
+    body.set("kind", "product");
+    body.set("file", new File([new TextEncoder().encode("fake-image-bytes")], "sample.png", { type: "image/png" }));
+
+    const uploadResponse = await app.request("http://localhost/admin/upload/image", {
+      method: "POST",
+      headers: { cookie },
+      body,
+    });
+    const payload = (await uploadResponse.json()) as Record<string, unknown>;
+    expect(uploadResponse.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(typeof payload.url).toBe("string");
+    expect(String(payload.url)).toMatch(/^\/admin-assets\/product-\d+-[0-9a-f-]+\.png$/);
+
+    const fileName = String(payload.url).replace("/admin-assets/", "");
+    const stored = await readFile(join(tempStorageDir, "assets", "admin-images", fileName), "utf-8");
+    expect(stored).toBe("fake-image-bytes");
+  });
 });
