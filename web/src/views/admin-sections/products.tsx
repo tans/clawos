@@ -38,16 +38,16 @@ export function renderProductsSection(products: Product[]) {
         <div class="modal-box">
           <h3 class="font-bold text-lg" id="product-modal-title">新增商品</h3>
           <form method="post" action="/admin/products/save" class="mt-4 grid gap-3 md:grid-cols-2">
-            <input id="product-id" class="input input-bordered" name="id" placeholder="商品ID (如 pro-plan)" required />
-            <input id="product-name" class="input input-bordered" name="name" placeholder="商品名称" required />
-            <input id="product-description" class="input input-bordered md:col-span-2" name="description" placeholder="商品描述" />
-            <input id="product-image-url" class="input input-bordered md:col-span-2" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
+            <input id="product-id" class="input input-bordered w-full" name="id" placeholder="商品ID (如 pro-plan)" required />
+            <input id="product-name" class="input input-bordered w-full" name="name" placeholder="商品名称" required />
+            <input id="product-description" class="input input-bordered w-full md:col-span-2" name="description" placeholder="商品描述" />
+            <input id="product-image-url" class="input input-bordered w-full md:col-span-2" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
             <div class="md:col-span-2 space-y-2">
               <input id="product-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
               <p id="product-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
             </div>
-            <input id="product-price" class="input input-bordered" name="priceCny" placeholder="价格 (如 199/月)" />
-            <input id="product-link" class="input input-bordered" name="link" placeholder="购买链接" />
+            <input id="product-price" class="input input-bordered w-full" name="priceCny" placeholder="价格 (如 199/月)" />
+            <input id="product-link" class="input input-bordered w-full" name="link" placeholder="购买链接" />
             <label class="label cursor-pointer justify-start gap-3 md:col-span-2">
               <input id="product-published" class="checkbox" type="checkbox" name="published" value="true" />
               <span class="label-text">发布到前台</span>
