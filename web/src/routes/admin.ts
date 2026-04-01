@@ -25,7 +25,7 @@ import {
   writeSiteSettings,
 } from "../lib/storage";
 import { getEnv } from "../lib/env";
-import { getBrandConfig } from "../lib/branding";
+import { getBrandConfig, resetBrandConfigCache } from "../lib/branding";
 import { renderAdminLoginPage, renderAdminPage } from "../views/admin";
 
 export const adminRoutes = new Hono();
@@ -173,6 +173,7 @@ adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
     seoDescription: firstValue(body.seoDescription)?.trim() || "",
     seoKeywords: firstValue(body.seoKeywords)?.trim() || "",
   });
+  resetBrandConfigCache();
   return noticeRedirect(c, "品牌与 SEO 设置已保存", "settings");
 });
 

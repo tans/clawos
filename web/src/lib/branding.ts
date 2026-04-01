@@ -65,7 +65,7 @@ export function getBrandConfig(): BrandConfig {
 
   let settingsOverride: Record<string, unknown> | null = null;
   try {
-    const filePath = resolve(getEnv().storageDir, "site-settings.json");
+    const filePath = resolve(getEnv().storageDir, "releases", "site-settings.json");
     if (existsSync(filePath)) {
       settingsOverride = JSON.parse(readFileSync(filePath, "utf-8")) as Record<string, unknown>;
     }
@@ -105,6 +105,10 @@ export function getBrandConfig(): BrandConfig {
   return cachedBrandConfig;
 }
 
-export function resetBrandConfigCacheForTests(): void {
+export function resetBrandConfigCache(): void {
   cachedBrandConfig = null;
+}
+
+export function resetBrandConfigCacheForTests(): void {
+  resetBrandConfigCache();
 }
