@@ -45,22 +45,24 @@ const governanceItems = [
   },
 ] as const;
 
-const faqItems = [
-  {
-    question: "ClawOS 是聊天机器人平台吗？",
-    answer: "不是。ClawOS 面向企业执行场景，核心不是对话入口，而是部署、接入、治理与持续运行。",
-  },
-  {
-    question: "必须上云才能使用吗？",
-    answer: "不需要。支持本地优先和混合部署，适合对数据驻留和网络边界有要求的团队。",
-  },
-  {
-    question: "部署评估一般会确认什么？",
-    answer: "通常会先确认业务切入点、系统边界、部署方式和上线准备条件，再决定实施顺序。",
-  },
-] as const;
+function buildFaqItems(brandName: string) {
+  return [
+    {
+      question: `${brandName} 是聊天机器人平台吗？`,
+      answer: `不是。${brandName} 面向企业执行场景，核心不是对话入口，而是部署、接入、治理与持续运行。`,
+    },
+    {
+      question: "必须上云才能使用吗？",
+      answer: "不需要。支持本地优先和混合部署，适合对数据驻留和网络边界有要求的团队。",
+    },
+    {
+      question: "部署评估一般会确认什么？",
+      answer: "通常会先确认业务切入点、系统边界、部署方式和上线准备条件，再决定实施顺序。",
+    },
+  ] as const;
+}
 
-export function HomeHero() {
+export function HomeHero({ brandName }: { brandName: string }) {
   return (
     <section class="marketing-section py-24 sm:py-32">
       <div class="marketing-section-inner">
@@ -69,7 +71,7 @@ export function HomeHero() {
             <p class="marketing-kicker">Enterprise AI Deployment</p>
             <h1 class="marketing-h1 max-w-5xl">让企业部署可管理、可持续运行的 AI 执行系统</h1>
             <p class="marketing-lead max-w-3xl text-base leading-8 text-[color:var(--ink-soft)] sm:text-lg">
-              ClawOS 面向真实业务流程，帮助企业完成 AI 能力的部署、接入、治理与长期运行。虾壳主机提供预装
+              {brandName} 面向真实业务流程，帮助企业完成 AI 能力的部署、接入、治理与长期运行。虾壳主机提供预装
               OpenClaw 的交付形态，缩短上线准备周期。
             </p>
             <div class="marketing-cta-row flex flex-wrap gap-3">
@@ -81,7 +83,7 @@ export function HomeHero() {
           <aside class="space-y-7 text-sm text-[color:var(--ink-soft)] lg:pl-10 lg:pt-2">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--ink-strong)]">交付形态</p>
-              <p>ClawOS + 虾壳主机</p>
+              <p>{`${brandName} + 虾壳主机`}</p>
             </div>
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--ink-strong)]">部署方式</p>
@@ -137,7 +139,7 @@ export function CoreValueSection() {
   );
 }
 
-export function ArchitectureSection() {
+export function ArchitectureSection({ brandName }: { brandName: string }) {
   return (
     <section id="architecture" class="marketing-section py-24 sm:py-28">
       <div class="marketing-section-inner">
@@ -145,17 +147,17 @@ export function ArchitectureSection() {
           <div class="max-w-2xl space-y-4">
             <p class="marketing-kicker">Deployment Model</p>
             <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">
-              ClawOS 与虾壳主机的交付方式
+              {`${brandName} 与虾壳主机的交付方式`}
             </h2>
             <p class="text-base leading-8 text-[color:var(--ink-soft)]">
-              ClawOS 提供企业 AI 执行系统的核心能力，虾壳主机作为预装 OpenClaw 的交付形态，帮助团队更快进入部署准备、系统接入和长期运行阶段。
+              {brandName} 提供企业 AI 执行系统的核心能力，虾壳主机作为预装 OpenClaw 的交付形态，帮助团队更快进入部署准备、系统接入和长期运行阶段。
             </p>
           </div>
 
           <div class="space-y-8">
             <article class="border-t border-[color:var(--line-soft)] pt-6">
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--brand-accent-strong)]">01</p>
-              <h3 class="mt-2 text-xl font-semibold text-[color:var(--ink-strong)]">ClawOS</h3>
+              <h3 class="mt-2 text-xl font-semibold text-[color:var(--ink-strong)]">{brandName}</h3>
               <p class="mt-3 text-sm leading-8 text-[color:var(--ink-soft)]">
                 负责任务执行、角色协作、系统接入和长期运行的核心系统层。
               </p>
@@ -260,7 +262,8 @@ export function GovernanceSection() {
   );
 }
 
-export function FaqSection() {
+export function FaqSection({ brandName }: { brandName: string }) {
+  const faqItems = buildFaqItems(brandName);
   return (
     <section class="marketing-section py-24 sm:py-28">
       <div class="marketing-section-inner">
