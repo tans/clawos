@@ -26,7 +26,7 @@ export function renderMarketingShell({ title, description, currentPath, children
   const finalDescription = description?.trim() || seoDescription;
 
   return `<!doctype html>${renderToString(
-    <html lang="zh-CN">
+    <html lang="zh-CN" data-theme="corporate">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -39,38 +39,53 @@ export function renderMarketingShell({ title, description, currentPath, children
         <link rel="icon" type="image/png" href={brandLogoUrl} />
         <link rel="stylesheet" href="/styles.css" />
       </head>
-      <body class="marketing-body">
-        <a class="marketing-skip-link" href="#main-content">跳转到主要内容</a>
-        <header class="marketing-nav">
-          <div class="marketing-nav-inner">
-            <a class="marketing-brand" href="/">
-              <img src={brandLogoUrl} alt={`${brandName} logo`} class="marketing-brand-mark" />
-              <span>{brandName}</span>
-            </a>
-            <nav class="marketing-nav-links" aria-label="主导航">
-              {topNavItems.map((item) => (
-                <a
-                  href={item.href}
-                  class={item.href === currentPath ? "marketing-nav-link is-active" : "marketing-nav-link"}
-                >
-                  {item.label}
-                </a>
-              ))}
-            </nav>
+      <body class="min-h-screen bg-base-100 text-base-content">
+        <a
+          href="#main-content"
+          class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-box focus:bg-base-100 focus:px-4 focus:py-2 focus:shadow"
+        >
+          跳转到主要内容
+        </a>
+
+        <header class="sticky top-0 z-40 border-b border-base-200/70 bg-base-100/85 backdrop-blur">
+          <div class="navbar mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="navbar-start">
+              <a href="/" class="btn btn-ghost px-2 text-lg font-semibold">
+                <img src={brandLogoUrl} alt={`${brandName} logo`} class="h-8 w-8 rounded" />
+                <span>{brandName}</span>
+              </a>
+            </div>
+            <div class="navbar-center hidden lg:flex">
+              <ul class="menu menu-horizontal px-1 text-sm">
+                {topNavItems.map((item) => (
+                  <li>
+                    <a href={item.href} class={item.href === currentPath ? "active font-semibold" : ""}>{item.label}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div class="navbar-end gap-2">
+              <a href="/contact" class="btn btn-primary btn-sm hidden sm:inline-flex">咨询方案</a>
+            </div>
           </div>
         </header>
 
         <main id="main-content">{children}</main>
 
-        <footer class="marketing-footer">
-          <div class="marketing-footer-inner">
-            <p>{`${brandName} · ${brandDomain}`}</p>
-            <div class="marketing-footer-links">
-              {marketplaceEnabled ? <a href="/market">Agent 协作</a> : null}
-              <a href="/downloads">下载试用</a>
-              <a href="/shop">产品商城</a>
-              <a href="/contact">部署评估</a>
-            </div>
+        <footer class="border-t border-base-200 bg-base-100">
+          <div class="footer mx-auto max-w-7xl items-center px-4 py-8 text-base-content sm:px-6 lg:px-8">
+            <aside>
+              <p class="font-semibold">{`${brandName} · ${brandDomain}`}</p>
+              <p class="text-sm text-base-content/60">让 Agent 协作更标准，让任务交付更稳定。</p>
+            </aside>
+            <nav class="md:place-self-center md:justify-self-end">
+              <div class="grid grid-flow-col gap-4 text-sm">
+                {marketplaceEnabled ? <a class="link link-hover" href="/market">Agent 协作</a> : null}
+                <a class="link link-hover" href="/downloads">下载试用</a>
+                <a class="link link-hover" href="/shop">产品商城</a>
+                <a class="link link-hover" href="/contact">部署评估</a>
+              </div>
+            </nav>
           </div>
         </footer>
       </body>
