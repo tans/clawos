@@ -16,7 +16,6 @@ const baseEnv: AppEnv = {
   maxMcpPackageSizeBytes: 1,
   storageDir: "/tmp/clawos-web",
   marketplaceEnabled: false,
-  agentMarketPortalUrl: null,
 };
 
 describe("validateStartupEnv", () => {
@@ -87,32 +86,5 @@ describe("getEnv marketplace flag", () => {
     resetEnvCacheForTests();
     const env = getEnv();
     expect(env.marketplaceEnabled).toBeFalse();
-  });
-});
-
-describe("getEnv agent market portal URL", () => {
-  const originalValue = process.env.AGENT_MARKET_PORTAL_URL;
-
-  afterEach(() => {
-    resetEnvCacheForTests();
-    if (originalValue === undefined) {
-      delete process.env.AGENT_MARKET_PORTAL_URL;
-    } else {
-      process.env.AGENT_MARKET_PORTAL_URL = originalValue;
-    }
-  });
-
-  it("reads AGENT_MARKET_PORTAL_URL when set", () => {
-    process.env.AGENT_MARKET_PORTAL_URL = "https://market.clawos.cc";
-    resetEnvCacheForTests();
-    const env = getEnv();
-    expect(env.agentMarketPortalUrl).toBe("https://market.clawos.cc");
-  });
-
-  it("treats blank AGENT_MARKET_PORTAL_URL as unset", () => {
-    process.env.AGENT_MARKET_PORTAL_URL = "   ";
-    resetEnvCacheForTests();
-    const env = getEnv();
-    expect(env.agentMarketPortalUrl).toBeNull();
   });
 });
