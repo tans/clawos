@@ -69,7 +69,7 @@ export function HomeHero({ brandName }: { brandName: string }) {
         <div class="grid gap-16 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.8fr)] lg:gap-24">
           <div class="max-w-4xl space-y-8">
             <p class="marketing-kicker">Enterprise AI Deployment</p>
-            <h1 class="marketing-h1 max-w-5xl">让企业部署可管理、可持续运行的 AI 执行系统</h1>
+            <h1 class="marketing-h1 max-w-5xl">企业级 AI Agent 操作系统</h1>
             <p class="marketing-lead max-w-3xl text-base leading-8 text-[color:var(--ink-soft)] sm:text-lg">
               {brandName} 面向真实业务流程，帮助企业完成 AI 能力的部署、接入、治理与长期运行。虾壳主机提供预装
               OpenClaw 的交付形态，缩短上线准备周期。
