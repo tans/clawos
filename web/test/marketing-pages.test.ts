@@ -85,6 +85,8 @@ describe("marketing pages", () => {
     expect(html).toContain("了解部署方式");
     expect(html).toContain("ClawOS 与虾壳主机的交付方式");
     expect(html).toContain("虾壳主机");
+    expect(html).toContain("OEM 白牌能力开放中");
+    expect(html).toContain('href="/oem"');
     expect(html).toContain("企业部署 AI，真正难的不是模型，而是部署与治理");
     expect(html).not.toContain("首页要表达的不是");
     expect(html).not.toContain("首页不再罗列过多产品术语");
@@ -243,6 +245,18 @@ describe("marketing pages", () => {
     expect(html).toContain("申请生态合作");
     expect(html).toContain("活跃需求方向");
     expect(html).toContain("工作流设计与 Agent 编排");
+  });
+
+  it("serves the OEM page", async () => {
+    const response = await app.request("http://localhost/oem");
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(html).toContain("OEM 白牌合作方案");
+    expect(html).toContain("品牌与 Logo 可定制");
+    expect(html).toContain("白牌主机采购");
+    expect(html).toContain("自有商城");
+    expect(html).toContain("任务市场能力");
   });
 
   it("serves a shop page with published products", async () => {

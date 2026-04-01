@@ -7,6 +7,7 @@ import { renderContactPage } from "../views/contact";
 import { buildDownloadCards, renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
+import { renderOemPage } from "../views/oem";
 import { renderShopPage } from "../views/shop";
 
 export const pageRoutes = new Hono();
@@ -64,4 +65,8 @@ pageRoutes.get("/ceo-letter", (c) => {
 
 pageRoutes.get("/contact", (c) => {
   return c.html(renderContactPage());
+});
+
+pageRoutes.get("/oem", (c) => {
+  return c.html(renderOemPage());
 });

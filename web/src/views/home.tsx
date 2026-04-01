@@ -9,6 +9,7 @@ import {
   GovernanceSection,
   HardwareSection,
   HomeHero,
+  OemSection,
   PocPathSection,
   ScenarioSection,
 } from "./home-sections";
@@ -25,6 +26,7 @@ function HomePage() {
       <HardwareSection />
       <GovernanceSection />
       <PocPathSection />
+      <OemSection />
       <FaqSection />
       <FinalCtaSection />
     </>

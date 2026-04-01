@@ -51,6 +51,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
+  imageUrl: string;
   priceCny: string;
   link: string;
   published: boolean;
@@ -70,6 +71,7 @@ export interface AdminTask {
   id: string;
   title: string;
   description: string;
+  imageUrl: string;
   done: boolean;
   priority: "low" | "medium" | "high";
   dueDate: string;

@@ -1,4 +1,7 @@
 import { Hono, type Context } from "hono";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { extname, resolve } from "node:path";
 import {
   canUseAdminLogin,
   clearAdminSession,
@@ -21,6 +24,7 @@ import {
   writeLatestRelease,
   writeSiteSettings,
 } from "../lib/storage";
+import { getEnv } from "../lib/env";
 import { getBrandConfig } from "../lib/branding";
 import { renderAdminLoginPage, renderAdminPage } from "../views/admin";
 
@@ -38,8 +42,51 @@ function toPublished(raw: string | undefined): boolean {
   return raw === "true" || raw === "on" || raw === "1";
 }
 
-function noticeRedirect(c: Context, message: string): Response {
-  return c.redirect(`/admin?notice=${encodeURIComponent(message)}`, 302);
+type AdminSection = "settings" | "versions" | "products" | "tasks";
+
+function sectionPath(section: AdminSection): string {
+  if (section === "settings") {
+    return "/admin";
+  }
+  return `/admin/${section}`;
+}
+
+function noticeRedirect(c: Context, message: string, section: AdminSection = "settings"): Response {
+  return c.redirect(`${sectionPath(section)}?notice=${encodeURIComponent(message)}`, 302);
+}
+
+async function renderAdminSection(c: Context, activeSection: AdminSection): Promise<Response> {
+  const [products, tasks, settings, stableRelease, betaRelease, alphaRelease] = await Promise.all([
+    readProducts(),
+    readTasks(),
+    readSiteSettings(),
+    readLatestRelease("stable"),
+    readLatestRelease("beta"),
+    readLatestRelease("alpha"),
+  ]);
+  const fallback = getBrandConfig();
+  return c.html(
+    renderAdminPage({
+      activeSection,
+      products,
+      tasks,
+      notice: c.req.query("notice") || undefined,
+      settings: settings || {
+        brandName: fallback.brandName,
+        siteName: fallback.siteName,
+        brandLogoUrl: fallback.brandLogoUrl,
+        seoTitle: fallback.seoTitle,
+        seoDescription: fallback.seoDescription,
+        seoKeywords: fallback.seoKeywords,
+        updatedAt: new Date().toISOString(),
+      },
+      releases: {
+        stable: stableRelease,
+        beta: betaRelease,
+        alpha: alphaRelease,
+      },
+    }),
+  );
 }
 
 adminRoutes.get("/admin/login", (c) => {
@@ -74,37 +121,19 @@ adminRoutes.post("/admin/logout", (c) => {
 });
 
 adminRoutes.get("/admin", requireAdminAuth, async (c) => {
-  const [products, tasks, settings, stableRelease, betaRelease, alphaRelease] = await Promise.all([
-    readProducts(),
-    readTasks(),
-    readSiteSettings(),
-    readLatestRelease("stable"),
-    readLatestRelease("beta"),
-    readLatestRelease("alpha"),
-  ]);
-  const fallback = getBrandConfig();
+  return renderAdminSection(c, "settings");
+});
 
-  return c.html(
-    renderAdminPage({
-      products,
-      tasks,
-      notice: c.req.query("notice") || undefined,
-      settings: settings || {
-        brandName: fallback.brandName,
-        siteName: fallback.siteName,
-        brandLogoUrl: fallback.brandLogoUrl,
-        seoTitle: fallback.seoTitle,
-        seoDescription: fallback.seoDescription,
-        seoKeywords: fallback.seoKeywords,
-        updatedAt: new Date().toISOString(),
-      },
-      releases: {
-        stable: stableRelease,
-        beta: betaRelease,
-        alpha: alphaRelease,
-      },
-    })
-  );
+adminRoutes.get("/admin/versions", requireAdminAuth, async (c) => {
+  return renderAdminSection(c, "versions");
+});
+
+adminRoutes.get("/admin/products", requireAdminAuth, async (c) => {
+  return renderAdminSection(c, "products");
+});
+
+adminRoutes.get("/admin/tasks", requireAdminAuth, async (c) => {
+  return renderAdminSection(c, "tasks");
 });
 
 adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
@@ -114,13 +143,14 @@ adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
       id: firstValue(body.id)?.trim() || "",
       name: firstValue(body.name)?.trim() || "",
       description: firstValue(body.description)?.trim() || "",
+      imageUrl: firstValue(body.imageUrl)?.trim() || "",
       priceCny: firstValue(body.priceCny)?.trim() || "",
       link: firstValue(body.link)?.trim() || "",
       published: toPublished(firstValue(body.published)),
     });
-    return noticeRedirect(c, "商品已保存");
+    return noticeRedirect(c, "商品已保存", "products");
   } catch (error) {
-    return noticeRedirect(c, `保存失败: ${(error as Error).message}`);
+    return noticeRedirect(c, `保存失败: ${(error as Error).message}`, "products");
   }
 });
 
@@ -128,7 +158,7 @@ adminRoutes.post("/admin/products/delete", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
   const id = firstValue(body.id)?.trim() || "";
   await deleteProduct(id);
-  return noticeRedirect(c, "商品已删除");
+  return noticeRedirect(c, "商品已删除", "products");
 });
 
 adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
@@ -141,7 +171,7 @@ adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
     seoDescription: firstValue(body.seoDescription)?.trim() || "",
     seoKeywords: firstValue(body.seoKeywords)?.trim() || "",
   });
-  return noticeRedirect(c, "品牌与 SEO 设置已保存");
+  return noticeRedirect(c, "品牌与 SEO 设置已保存", "settings");
 });
 
 adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
@@ -157,7 +187,7 @@ adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
     xiakeConfig: current?.xiakeConfig || null,
     updaterAssets: current?.updaterAssets || [],
   }, channel);
-  return noticeRedirect(c, `已更新 ${channel} 版本为 ${version}`);
+  return noticeRedirect(c, `已更新 ${channel} 版本为 ${version}`, "versions");
 });
 
 adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {
@@ -167,24 +197,70 @@ adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {
       id: firstValue(body.id)?.trim() || "",
       title: firstValue(body.title)?.trim() || "",
       description: firstValue(body.description)?.trim() || "",
+      imageUrl: firstValue(body.imageUrl)?.trim() || "",
       dueDate: firstValue(body.dueDate)?.trim() || "",
       priority: (firstValue(body.priority) as "low" | "medium" | "high") || "medium",
       done: toPublished(firstValue(body.done)),
     });
-    return noticeRedirect(c, "任务已保存");
+    return noticeRedirect(c, "任务已保存", "tasks");
   } catch (error) {
-    return noticeRedirect(c, `任务保存失败: ${(error as Error).message}`);
+    return noticeRedirect(c, `任务保存失败: ${(error as Error).message}`, "tasks");
   }
 });
 
 adminRoutes.post("/admin/tasks/toggle", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
   await toggleTask(firstValue(body.id)?.trim() || "");
-  return noticeRedirect(c, "任务状态已更新");
+  return noticeRedirect(c, "任务状态已更新", "tasks");
 });
 
 adminRoutes.post("/admin/tasks/delete", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
   await deleteTask(firstValue(body.id)?.trim() || "");
-  return noticeRedirect(c, "任务已删除");
+  return noticeRedirect(c, "任务已删除", "tasks");
+});
+
+adminRoutes.post("/admin/upload/image", requireAdminAuth, async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const file = firstValue(body.file);
+    if (!(file instanceof File)) {
+      return c.json({ ok: false, error: "缺少文件" }, 400);
+    }
+    const kindRaw = firstValue(body.kind)?.trim().toLowerCase() || "misc";
+    const kind = kindRaw === "logo" || kindRaw === "product" || kindRaw === "task" ? kindRaw : "misc";
+    const ext = extname(file.name).toLowerCase() || ".png";
+    if (![".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"].includes(ext)) {
+      return c.json({ ok: false, error: "仅支持图片格式" }, 400);
+    }
+    const fileName = `${kind}-${Date.now()}-${randomUUID()}${ext}`;
+    const dir = resolve(getEnv().storageDir, "assets", "admin-images");
+    await mkdir(dir, { recursive: true });
+    await writeFile(resolve(dir, fileName), new Uint8Array(await file.arrayBuffer()));
+    return c.json({ ok: true, url: `/admin-assets/${fileName}` });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+adminRoutes.get("/admin-assets/:fileName", async (c) => {
+  const fileName = c.req.param("fileName");
+  if (!/^[A-Za-z0-9._-]+$/.test(fileName)) {
+    return c.text("Not Found", 404);
+  }
+  const filePath = resolve(getEnv().storageDir, "assets", "admin-images", fileName);
+  try {
+    const content = await readFile(filePath);
+    const ext = extname(fileName).toLowerCase();
+    const contentType =
+      ext === ".png" ? "image/png" :
+      ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+      ext === ".webp" ? "image/webp" :
+      ext === ".gif" ? "image/gif" :
+      ext === ".svg" ? "image/svg+xml" :
+      "application/octet-stream";
+    return new Response(content, { headers: { "content-type": contentType, "cache-control": "public, max-age=3600" } });
+  } catch {
+    return c.text("Not Found", 404);
+  }
 });
