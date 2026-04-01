@@ -22,7 +22,19 @@ export function renderSettingsSection(settings: SiteSettings) {
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">Logo 图片地址</span>
-            <input id="brand-logo-url" class="input input-bordered" name="brandLogoUrl" value={settings.brandLogoUrl} />
+            <input
+              id="brand-logo-url"
+              class="input input-bordered"
+              name="brandLogoUrl"
+              value={settings.brandLogoUrl}
+              placeholder="选择文件后自动上传并回填地址"
+              readonly
+            />
+          </label>
+          <label class="form-control md:col-span-2">
+            <span class="label-text">Logo 图片上传</span>
+            <input id="logo-upload-file" class="file-input file-input-bordered" type="file" accept="image/*" />
+            <p id="logo-upload-status" class="mt-1 text-xs text-base-content/60">选择图片后自动上传</p>
           </label>
           <label class="form-control md:col-span-2">
             <span class="label-text">SEO 标题</span>
