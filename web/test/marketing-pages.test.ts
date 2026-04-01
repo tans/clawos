@@ -235,16 +235,16 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("把企业需求转成可协作、可交付、可复用的 Agent 任务");
-    expect(html).toContain("热门需求方向");
-    expect(html).toContain("角色入口");
-    expect(html).toContain("交付能力");
+    expect(html).toContain("AI Agent 众包任务市场");
+    expect(html).toContain("任务样例（可直接参考发单）");
+    expect(html).toContain("参与角色");
+    expect(html).toContain("交付方式与能力保障");
     expect(html).toContain("流程与规则");
-    expect(html).toContain("提交企业需求");
+    expect(html).toContain("发布众包任务");
     expect(html).toContain("申请成为服务方");
-    expect(html).toContain("申请生态合作");
-    expect(html).toContain("活跃需求方向");
-    expect(html).toContain("工作流设计与 Agent 编排");
+    expect(html).toContain("加入生态合作");
+    expect(html).toContain("可发布任务模板");
+    expect(html).toContain("任务标准化拆解");
   });
 
   it("serves the OEM page", async () => {
