@@ -21,7 +21,8 @@ export function renderProductsSection(products: Product[]) {
                     <button
                       class="btn btn-xs btn-outline"
                       type="button"
-                      onclick={`openEditProductModal(${JSON.stringify(product).replaceAll('"', "&quot;")})`}
+                      data-product={encodeURIComponent(JSON.stringify(product))}
+                      onclick={"openEditProductModalFromEncoded(this.dataset.product)"}
                     >
                       编辑
                     </button>
@@ -40,10 +41,10 @@ export function renderProductsSection(products: Product[]) {
             <input id="product-id" class="input input-bordered" name="id" placeholder="商品ID (如 pro-plan)" required />
             <input id="product-name" class="input input-bordered" name="name" placeholder="商品名称" required />
             <input id="product-description" class="input input-bordered md:col-span-2" name="description" placeholder="商品描述" />
-            <input id="product-image-url" class="input input-bordered md:col-span-2" name="imageUrl" placeholder="商品图片 URL" />
-            <div class="md:col-span-2 flex gap-2">
-              <input id="product-image-file" class="file-input file-input-bordered flex-1" type="file" accept="image/*" />
-              <button class="btn btn-outline" type="button" onclick={"uploadAdminImage('product-image-file','product-image-url','product')"}>上传图片</button>
+            <input id="product-image-url" class="input input-bordered md:col-span-2" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
+            <div class="md:col-span-2 space-y-2">
+              <input id="product-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
+              <p id="product-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
             </div>
             <input id="product-price" class="input input-bordered" name="priceCny" placeholder="价格 (如 199/月)" />
             <input id="product-link" class="input input-bordered" name="link" placeholder="购买链接" />
