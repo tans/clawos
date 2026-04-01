@@ -78,27 +78,7 @@ function sectionHref(section: AdminSection): string {
 
 function renderActiveSection(props: AdminPageProps) {
   if (props.activeSection === "settings") {
-    return (
-      <>
-        {renderSettingsSection(props.settings)}
-        <section class="card mb-6 bg-base-100 shadow">
-          <div class="card-body">
-            <h3 class="card-title text-base">Logo 上传</h3>
-            <div class="space-y-2">
-              <input
-                id="logo-upload-file"
-                class="file-input file-input-bordered"
-                type="file"
-                accept="image/*"
-              />
-              <p id="logo-upload-status" class="text-xs text-base-content/60">
-                选择图片后自动上传并回填 Logo 地址
-              </p>
-            </div>
-          </div>
-        </section>
-      </>
-    );
+    return renderSettingsSection(props.settings);
   }
   if (props.activeSection === "versions") {
     return renderVersionsSection(props.releases);
@@ -215,19 +195,23 @@ function AdminPage(props: AdminPageProps) {
             const fileInput = document.getElementById(fileInputId);
             const urlInput = document.getElementById(urlInputId);
             const status = statusId ? document.getElementById(statusId) : null;
+            if (!(fileInput instanceof HTMLInputElement)) {
+              if (status) status.textContent = '上传控件不可用，请刷新后重试';
+              return;
+            }
             const file = fileInput?.files?.[0];
             if (!file) {
-              if (status) status.textContent = '请先选择图片';
+              if (status) status.textContent = '缺少文件：请先选择图片后再上传';
               return;
             }
             if (status) status.textContent = '上传中...';
             const formData = new FormData();
-            formData.set('file', file);
+            formData.append('file', file);
             formData.set('kind', kind);
             const response = await fetch('/admin/upload/image', { method: 'POST', body: formData });
             const payload = await response.json();
             if (!response.ok || !payload.ok) {
-              if (status) status.textContent = payload.error || '上传失败';
+              if (status) status.textContent = payload.error === '缺少文件' ? '上传失败：缺少文件，请重新选择图片' : (payload.error || '上传失败');
               return;
             }
             urlInput.value = payload.url;
