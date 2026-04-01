@@ -80,7 +80,7 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("让企业部署可管理、可持续运行的 AI 执行系统");
+    expect(html).toContain("企业级 AI Agent 操作系统");
     expect(html).toContain("申请部署评估");
     expect(html).toContain("了解部署方式");
     expect(html).toContain("ClawOS 与虾壳主机的交付方式");
@@ -132,7 +132,7 @@ describe("marketing pages", () => {
     const response = await app.request("http://localhost/");
     const html = await response.text();
 
-    const heroAnchor = "让企业部署可管理、可持续运行的 AI 执行系统";
+    const heroAnchor = "企业级 AI Agent 操作系统";
     const heroIndex = html.indexOf(heroAnchor);
     expect(heroIndex).toBeGreaterThan(-1);
 
