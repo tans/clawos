@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resetBrandConfigCacheForTests } from "../src/lib/branding";
 import { resetEnvCacheForTests } from "../src/lib/env";
-import { storeMcpPackage } from "../src/lib/storage";
 import { app } from "../src/index";
 
 let tempStorageDir = "";
@@ -99,52 +98,45 @@ describe("admin routes", () => {
     expect(items[0]?.name).toBe("Pro 套餐");
   });
 
-  it("can publish MCP to shelf", async () => {
-    await storeMcpPackage({
-      mcpId: "wechat-mcp",
-      version: "0.1.0",
-      fileName: "wechat-mcp-0.1.0.zip",
-      bytes: new TextEncoder().encode("fake-mcp"),
-      channel: "stable",
-      manifest: {
-        schemaVersion: "1.0",
-        id: "wechat-mcp",
-        name: "WeChat MCP",
-        version: "0.1.0",
-      },
-    });
-
+  it("supports branding settings and task management", async () => {
     const loginForm = new FormData();
     loginForm.set("username", "admin");
     loginForm.set("password", "secret");
-
     const loginResponse = await app.request("http://localhost/admin/login", {
       method: "POST",
       body: loginForm,
     });
     const cookie = loginResponse.headers.get("set-cookie") || "";
 
-    const shelfForm = new FormData();
-    shelfForm.set("mcpId", "wechat-mcp");
-    shelfForm.set("version", "0.1.0");
-    shelfForm.set("channel", "stable");
-    shelfForm.set("published", "true");
+    const settingsForm = new FormData();
+    settingsForm.set("brandName", "新品牌");
+    settingsForm.set("siteName", "新站点");
+    settingsForm.set("brandLogoUrl", "/public/new-logo.png");
+    settingsForm.set("seoTitle", "新标题");
+    settingsForm.set("seoDescription", "新描述");
+    settingsForm.set("seoKeywords", "a,b");
 
-    const shelfResponse = await app.request("http://localhost/admin/mcp/shelf", {
+    const settingsResp = await app.request("http://localhost/admin/settings/save", {
       method: "POST",
       headers: { cookie },
-      body: shelfForm,
+      body: settingsForm,
     });
-    expect(shelfResponse.status).toBe(302);
+    expect(settingsResp.status).toBe(302);
 
-    const publicResponse = await app.request("http://localhost/api/mcps/shelf?channel=stable");
-    const payload = (await publicResponse.json()) as Record<string, unknown>;
-    const items = payload.items as Array<Record<string, unknown>>;
+    const taskForm = new FormData();
+    taskForm.set("title", "上线商品页");
+    taskForm.set("priority", "high");
+    const taskResp = await app.request("http://localhost/admin/tasks/save", {
+      method: "POST",
+      headers: { cookie },
+      body: taskForm,
+    });
+    expect(taskResp.status).toBe(302);
 
-    expect(publicResponse.status).toBe(200);
-    expect(payload.ok).toBe(true);
-    expect(items).toHaveLength(1);
-    expect(items[0]?.id).toBe("wechat-mcp");
-    expect(items[0]?.version).toBe("0.1.0");
+    const settingsRaw = await readFile(join(tempStorageDir, "releases", "site-settings.json"), "utf-8");
+    expect(settingsRaw).toContain("新品牌");
+
+    const tasksRaw = await readFile(join(tempStorageDir, "releases", "tasks.json"), "utf-8");
+    expect(tasksRaw).toContain("上线商品页");
   });
 });
