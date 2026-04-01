@@ -1,5 +1,6 @@
 /** @jsxImportSource hono/jsx */
 
+import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
 interface DownloadChannelCard {
@@ -22,15 +23,16 @@ function formatPublishedAt(value: string | null): string {
 }
 
 export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
+  const { brandName } = getBrandConfig();
   return renderMarketingShell({
     title: "下载试用",
-    description: "ClawOS 下载试用入口与企业部署评估入口。",
+    description: `${brandName} 下载试用入口与企业部署评估入口。`,
     currentPath: "/downloads",
-    children: <DownloadsPage cards={cards} />,
+    children: <DownloadsPage cards={cards} brandName={brandName} />,
   });
 }
 
-function DownloadsPage({ cards }: { cards: DownloadChannelCard[] }) {
+function DownloadsPage({ cards, brandName }: { cards: DownloadChannelCard[]; brandName: string }) {
   const stable = cards.find((card) => card.id === "stable");
   const secondary = cards.filter((card) => card.id !== "stable");
 
@@ -40,7 +42,7 @@ function DownloadsPage({ cards }: { cards: DownloadChannelCard[] }) {
         <div class="marketing-section-inner">
           <div class="marketing-card marketing-page-hero p-6 sm:p-8">
             <p class="marketing-kicker">Trial Entry</p>
-            <h1 class="marketing-h2 mt-2 text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">下载 ClawOS，开始你的企业 AI 试点</h1>
+            <h1 class="marketing-h2 mt-2 text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">{`下载 ${brandName}，开始你的企业 AI 试点`}</h1>
             <p class="marketing-lead mt-4 max-w-3xl text-base leading-8 text-[color:var(--ink-soft)]">先从桌面试用开始；如果需要本地优先部署或虾壳主机交付，可直接咨询企业部署方案。</p>
           </div>
         </div>

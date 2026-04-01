@@ -4,7 +4,7 @@ import { renderToString } from "hono/jsx/dom/server";
 import { getBrandConfig } from "../lib/branding";
 
 export function renderAgentPage(): string {
-  const { brandName, brandDomain, brandLogoUrl } = getBrandConfig();
+  const { brandName, brandDomain, brandLogoUrl, brandUrl } = getBrandConfig();
   const brandToken = brandName.toLowerCase().replace(/\s+/g, "-");
 
   const agentPitch = [
@@ -72,7 +72,7 @@ export function renderAgentPage(): string {
 
           <footer class="page-fade mx-auto mt-16 max-w-5xl border-t border-base-300 px-2 py-8 text-sm text-base-content/70">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p>{`@${brandDomain}`}</p>
+              <a class="link link-hover" href={brandUrl} target="_blank" rel="noreferrer">{brandDomain}</a>
               <p>客服联系: tianshe00</p>
             </div>
           </footer>

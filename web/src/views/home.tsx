@@ -13,30 +13,33 @@ import {
   PocPathSection,
   ScenarioSection,
 } from "./home-sections";
+import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
 function HomePage() {
+  const { brandName } = getBrandConfig();
   return (
     <>
-      <HomeHero />
+      <HomeHero brandName={brandName} />
       <CoreValueSection />
       <CapabilityMatrixSection />
-      <ArchitectureSection />
+      <ArchitectureSection brandName={brandName} />
       <ScenarioSection />
       <HardwareSection />
       <GovernanceSection />
       <PocPathSection />
       <OemSection />
-      <FaqSection />
+      <FaqSection brandName={brandName} />
       <FinalCtaSection />
     </>
   );
 }
 
 export function renderHomePage() {
+  const { brandName } = getBrandConfig();
   return renderMarketingShell({
     title: "企业 AI 部署解决方案",
-    description: "ClawOS 帮助企业完成 AI 能力的部署、接入、治理与长期运行，虾壳主机提供预装 OpenClaw 的交付形态。",
+    description: `${brandName} 帮助企业完成 AI 能力的部署、接入、治理与长期运行，虾壳主机提供预装 OpenClaw 的交付形态。`,
     currentPath: "/",
     children: <HomePage />,
   });

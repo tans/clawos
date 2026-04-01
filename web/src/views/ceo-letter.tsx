@@ -3,36 +3,39 @@
 import { renderToString } from "hono/jsx/dom/server";
 import { getBrandConfig } from "../lib/branding";
 
-const letterSections = [
-  {
-    title: "我们在做什么",
-    paragraphs: [
-      "我们正在建设一套软硬一体、可复制、可规模化的智能执行体系：虾壳主机作为交付入口，OpenClaw 作为能力底座，ClawOS 作为统一业务操作系统。",
-      "这三者不是分散产品，而是一条连续价值链。我们追求的不是展示技术复杂度，而是让客户用最短路径把智能体能力转化为可持续产出。",
-    ],
-  },
-  {
-    title: "统一业务架构",
-    bullets: [
-      "基础交付层：虾壳主机，缩短从采购到见效的路径。",
-      "能力平台层：ClawOS 负责维护配置、MCP 技能安装，并逐步完成集群远程控制。",
-      "行业方案层：推出视频内容剪辑、客户线索获取等开箱即用主机。",
-      "生态增长层：通过 OEM 能力把平台价值复制到更多行业和渠道。",
-    ],
-  },
-  {
-    title: "统一执行目标",
-    bullets: [
-      "客户成功：让客户快速上线并看到经营结果。",
-      "交付效率：用标准主机与能力包降低部署和复制成本。",
-      "运营稳定：通过 ClawOS 保证系统可持续运行与治理。",
-      "生态增长：通过行业模板与 OEM 实现规模化扩张。",
-    ],
-  },
-] as const;
+function buildLetterSections(brandName: string) {
+  return [
+    {
+      title: "我们在做什么",
+      paragraphs: [
+        `我们正在建设一套软硬一体、可复制、可规模化的智能执行体系：虾壳主机作为交付入口，OpenClaw 作为能力底座，${brandName} 作为统一业务操作系统。`,
+        "这三者不是分散产品，而是一条连续价值链。我们追求的不是展示技术复杂度，而是让客户用最短路径把智能体能力转化为可持续产出。",
+      ],
+    },
+    {
+      title: "统一业务架构",
+      bullets: [
+        "基础交付层：虾壳主机，缩短从采购到见效的路径。",
+        `能力平台层：${brandName} 负责维护配置、MCP 技能安装，并逐步完成集群远程控制。`,
+        "行业方案层：推出视频内容剪辑、客户线索获取等开箱即用主机。",
+        "生态增长层：通过 OEM 能力把平台价值复制到更多行业和渠道。",
+      ],
+    },
+    {
+      title: "统一执行目标",
+      bullets: [
+        "客户成功：让客户快速上线并看到经营结果。",
+        "交付效率：用标准主机与能力包降低部署和复制成本。",
+        `运营稳定：通过 ${brandName} 保证系统可持续运行与治理。`,
+        "生态增长：通过行业模板与 OEM 实现规模化扩张。",
+      ],
+    },
+  ] as const;
+}
 
 function CeoLetterPage() {
-  const { brandName, brandDomain, brandLogoUrl } = getBrandConfig();
+  const { brandName, brandDomain, brandLogoUrl, brandUrl } = getBrandConfig();
+  const letterSections = buildLetterSections(brandName);
 
   return (
     <html lang="zh-CN" data-theme="pastel">
@@ -79,7 +82,7 @@ function CeoLetterPage() {
           </section>
 
           <footer class="mt-10 border-t border-base-300 pt-6 text-sm text-base-content/70">
-            <p>{`@${brandDomain}`}</p>
+            <p><a class="brand-link" href={brandUrl} target="_blank" rel="noreferrer">{brandDomain}</a></p>
             <p class="mt-1">如果你希望把该方案用于行业落地或 OEM 合作，欢迎直接联系我们。</p>
           </footer>
         </main>

@@ -1,8 +1,9 @@
 /** @jsxImportSource hono/jsx */
 
 import { renderMarketingShell } from "./marketing-shell";
+import { getBrandConfig } from "../lib/branding";
 
-function OemPage() {
+function OemPage({ brandName }: { brandName: string }) {
   return (
     <section class="marketing-section py-20 sm:py-24">
       <div class="marketing-section-inner space-y-10">
@@ -10,7 +11,7 @@ function OemPage() {
           <p class="marketing-kicker">OEM Program</p>
           <h1 class="marketing-h1">OEM 白牌合作方案</h1>
           <p class="text-base leading-8 text-[color:var(--ink-soft)]">
-            面向渠道商、交付商与品牌方的 OEM 能力页。你可以基于 ClawOS 建立自己的品牌体验，并逐步接入更多白牌能力。
+            {`面向渠道商、交付商与品牌方的 OEM 能力页。你可以基于 ${brandName} 建立自己的品牌体验，并逐步接入更多白牌能力。`}
           </p>
         </div>
 
@@ -50,10 +51,11 @@ function OemPage() {
 }
 
 export function renderOemPage() {
+  const { brandName } = getBrandConfig();
   return renderMarketingShell({
     title: "OEM 白牌合作",
-    description: "了解 ClawOS OEM 能力：品牌定制、白牌主机采购、自有商城和任务市场扩展。",
+    description: `了解 ${brandName} OEM 能力：品牌定制、白牌主机采购、自有商城和任务市场扩展。`,
     currentPath: "/oem",
-    children: <OemPage />,
+    children: <OemPage brandName={brandName} />,
   });
 }

@@ -82,6 +82,7 @@ export interface SiteSettings {
   brandName: string;
   siteName: string;
   brandLogoUrl: string;
+  brandUrl: string;
   seoTitle: string;
   seoDescription: string;
   seoKeywords: string;
