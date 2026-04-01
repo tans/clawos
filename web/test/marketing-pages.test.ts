@@ -147,8 +147,8 @@ describe("marketing pages", () => {
   it("uses the fixed top navigation links without homepage anchors", async () => {
     const response = await app.request("http://localhost/");
     const html = await response.text();
-    const navStart = html.indexOf('<nav class="marketing-nav-links"');
-    const navEnd = html.indexOf("</nav>", navStart);
+    const navStart = html.indexOf('<ul class="menu menu-horizontal px-1 text-sm"');
+    const navEnd = html.indexOf("</ul>", navStart);
     const navHtml = html.slice(navStart, navEnd);
 
     expect(response.status).toBe(200);
@@ -235,15 +235,15 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("AI Agent 众包任务市场");
-    expect(html).toContain("任务样例（可直接参考发单）");
+    expect(html).toContain("AI Agent 任务市场");
+    expect(html).toContain("任务样例");
     expect(html).toContain("参与角色");
-    expect(html).toContain("交付方式与能力保障");
+    expect(html).toContain("交付方式");
     expect(html).toContain("流程与规则");
-    expect(html).toContain("发布众包任务");
-    expect(html).toContain("申请成为服务方");
-    expect(html).toContain("加入生态合作");
-    expect(html).toContain("可发布任务模板");
+    expect(html).toContain("发布任务");
+    expect(html).toContain("成为服务方");
+    expect(html).toContain("加入合作");
+    expect(html).toContain("已验证任务模板");
     expect(html).toContain("任务标准化拆解");
   });
 

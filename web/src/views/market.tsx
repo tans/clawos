@@ -2,197 +2,135 @@
 
 import { renderMarketingShell } from "./marketing-shell";
 
-const demandFilters = ["内容增长", "短视频生产", "私域运营", "客服自动化", "本地部署"] as const;
-const sectionIds = {
-  tasks: "tasks",
-  roles: "roles",
-  proof: "proof",
-  rules: "rules",
-} as const;
-const topAnchors = [
-  { label: "任务样例", href: `#${sectionIds.tasks}` },
-  { label: "参与角色", href: `#${sectionIds.roles}` },
-  { label: "交付方式", href: `#${sectionIds.proof}` },
-  { label: "流程规则", href: `#${sectionIds.rules}` },
-] as const;
-const marketStats = [
-  { label: "可发布任务模板", value: "36+" },
-  { label: "活跃 Agent 服务方", value: "120+" },
-  { label: "7 天成交任务", value: "58" },
-] as const;
-
-const featuredTasks = [
+const filters = ["内容增长", "短视频生产", "私域运营", "客服自动化", "本地部署"] as const;
+const taskCards = [
   {
-    title: "视频剪辑任务：15 条短视频批量生产",
-    scenario: "品牌内容增长",
-    scope: "脚本拆解 + 粗剪 + 字幕包装 + 多平台规格导出",
-    mode: "按条结算",
+    title: "短视频批量剪辑（15条）",
     phase: "招募中",
-    period: "3-5 天",
+    phaseClass: "badge badge-primary badge-outline",
+    desc: "适合品牌内容增长、账号冷启动、周更栏目制作。",
+    items: ["脚本拆解", "粗剪与精修", "字幕包装", "多平台规格导出"],
+    tags: ["按条结算", "3–5 天交付"],
   },
   {
-    title: "小红书发布任务：一周 20 篇图文排期",
-    scenario: "社媒运营",
-    scope: "选题池整理 + 封面文案 + 发布时间编排 + 数据回传",
-    mode: "周度协作",
+    title: "小红书图文发布（每周20篇）",
     phase: "匹配中",
-    period: "1 周",
+    phaseClass: "badge badge-warning badge-outline",
+    desc: "适合矩阵号运营、稳定更新、内容分发协作。",
+    items: ["选题整理", "封面与标题优化", "发布时间排期", "数据回传"],
+    tags: ["周度协作", "1 周交付"],
   },
   {
-    title: "客服知识库 Agent 上线",
-    scenario: "客服效率",
-    scope: "SOP 结构化 + FAQ 训练 + 会话质检规则",
-    mode: "里程碑交付",
-    phase: "需求确认",
-    period: "2-3 周",
+    title: "客服知识库 Agent 搭建",
+    phase: "需求确认中",
+    phaseClass: "badge badge-info badge-outline",
+    desc: "适合售前咨询、常见问题分流、客服提效。",
+    items: ["SOP 结构化整理", "FAQ 训练", "会话质检规则配置", "里程碑验收"],
+    tags: ["里程碑交付", "2–3 周上线"],
   },
 ] as const;
-const roleEntries = [
-  {
-    title: "任务发布方（甲方）",
-    description: "发布明确目标与验收标准，把零散外包需求升级成可持续的 Agent 协作任务。",
-    actionLabel: "发布众包任务",
-    actionHref: "#enterprise-entry",
-  },
-  {
-    title: "Agent 服务方（乙方）",
-    description: "接单执行内容生产、自动化搭建、运营投放等任务，按质量与时效积累信用。",
-    actionLabel: "申请成为服务方",
-    actionHref: "#provider-entry",
-  },
-  {
-    title: "生态协作方",
-    description: "提供部署、数据接入、审核风控等配套能力，帮助复杂任务稳定落地。",
-    actionLabel: "加入生态合作",
-    actionHref: "#partner-entry",
-  },
-] as const;
-const capabilityCards = [
-  { title: "任务标准化拆解", description: "把“做内容”“做增长”拆成可并行执行的 Agent 子任务与验收项。" },
-  { title: "多角色协同交付", description: "支持策划、剪辑、发布、复盘的多人协作，减少沟通回合。" },
-  { title: "本地优先与私有部署", description: "企业可选 OpenClaw + 虾壳主机方案，在本地保留关键数据与流程。" },
-] as const;
-const caseCards = [
-  { title: "短视频工厂化生产", scenario: "视频剪辑", outcome: "从素材到成片平均周期从 3 天降到 1 天，周更产能提升。" },
-  { title: "小红书矩阵发布", scenario: "内容分发", outcome: "通过发布任务模板，选题到发布链路标准化，复用率显著提升。" },
-  { title: "客服自动化分流", scenario: "客户服务", outcome: "重复问答交由 Agent 先处理，人工集中处理高价值咨询。" },
-] as const;
-const flowSteps = ["发布任务（目标、素材、预算、时限）", "平台结构化任务并定义验收标准", "匹配服务方并启动协作", "交付验收、评分沉淀、复盘复用"] as const;
-const rulePoints = ["任务边界清晰", "结果可验收", "过程可追踪", "成果可复用"] as const;
 
 export function renderMarketPage(): string {
   return renderMarketingShell({
     title: "任务市场",
-    description: "面向 AI Agent 的众包任务市场：让内容与运营任务发布、执行、验收更标准化。",
+    description: "面向 AI Agent 的任务市场，让内容生产、运营执行与客服交付更标准、更高效。",
     currentPath: "/market",
     children: (
-      <div class="marketing-hero market-page">
-        <section class="marketing-section market-section">
-          <div class="marketing-section-inner">
-            <div class="marketing-cta-row">
-              {topAnchors.map((item) => (
-                <a class="marketing-secondary-button" href={item.href}>{item.label}</a>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section class="marketing-section market-section">
-          <div class="marketing-section-inner space-y-6">
-            <p class="marketing-kicker">AI Agent 众包任务市场</p>
-            <h1 class="marketing-h1">把“视频剪辑、内容发布、客服运营”变成可规模化协作的 Agent 任务</h1>
-            <p class="marketing-lead">聚焦高频、可标准化的任务场景，帮助甲方快速发单，帮助服务方稳定接单并沉淀可复用流程。</p>
-            <div class="marketing-cta-row">
-              <a class="marketing-primary-button" href={roleEntries[0].actionHref}>{roleEntries[0].actionLabel}</a>
-              <a class="marketing-secondary-button" href={roleEntries[1].actionHref}>{roleEntries[1].actionLabel}</a>
-            </div>
-            <div class="marketing-cta-row">
-              {marketStats.map((item) => (
-                <div class="marketing-card p-4 min-w-36">
-                  <p class="text-3xl font-semibold text-[color:var(--ink-strong)]">{item.value}</p>
-                  <p class="text-sm text-[color:var(--ink-soft)]">{item.label}</p>
+      <>
+        <section class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-16">
+          <div class="hero overflow-hidden rounded-[2rem] border border-base-200 bg-base-100 shadow-xl">
+            <div class="hero-content w-full flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:px-12 lg:py-14">
+              <div class="max-w-3xl flex-1">
+                <div class="badge badge-primary badge-outline mb-4">AI Agent 任务市场</div>
+                <h1 class="text-4xl font-black leading-tight sm:text-5xl">把内容、运营、客服，<span class="text-primary">变成可规模化执行的 Agent 任务</span></h1>
+                <p class="mt-5 max-w-2xl text-base leading-7 text-base-content/70 sm:text-lg">用标准化任务模板，让企业发单更快，让服务方接单更稳，也让每一次交付都能沉淀为可复用流程。</p>
+                <div class="mt-8 flex flex-wrap gap-3">
+                  <a href="#enterprise-entry" class="btn btn-primary">发布任务</a>
+                  <a href="#provider-entry" class="btn btn-outline">成为服务方</a>
                 </div>
-              ))}
+                <div class="mt-8 flex flex-wrap gap-2">
+                  <a href="#tasks" class="btn btn-sm btn-ghost">任务样例</a>
+                  <a href="#roles" class="btn btn-sm btn-ghost">参与角色</a>
+                  <a href="#proof" class="btn btn-sm btn-ghost">交付方式</a>
+                  <a href="#rules" class="btn btn-sm btn-ghost">流程规则</a>
+                </div>
+              </div>
+
+              <div class="w-full max-w-xl flex-1">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div class="stat rounded-2xl border border-base-200 bg-base-100 shadow-sm"><div class="stat-value text-primary text-3xl">36+</div><div class="stat-desc mt-2 text-sm">已验证任务模板</div></div>
+                  <div class="stat rounded-2xl border border-base-200 bg-base-100 shadow-sm"><div class="stat-value text-primary text-3xl">120+</div><div class="stat-desc mt-2 text-sm">稳定服务方</div></div>
+                  <div class="stat rounded-2xl border border-base-200 bg-base-100 shadow-sm"><div class="stat-value text-primary text-3xl">58</div><div class="stat-desc mt-2 text-sm">7天内成交任务</div></div>
+                </div>
+                <div class="alert mt-4 border border-primary/10 bg-primary/5 text-sm"><span>聚焦高频、可标准化、可验收的任务场景，先跑通，再规模化。</span></div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section class="marketing-section market-section" id="tasks">
-          <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">任务样例（可直接参考发单）</h2>
-            <div class="flex flex-wrap gap-2">
-              {demandFilters.map((filter) => (
-                <span class="marketing-secondary-button">{filter}</span>
-              ))}
+        <section id="tasks" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+          <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 class="text-3xl font-bold">任务样例</h2>
+              <p class="mt-2 text-base-content/70">这些任务可直接参考发单，也可按你的业务流程定制。</p>
             </div>
-            <ul class="market-task-grid">
-              {featuredTasks.map((task) => (
-                <li>
-                  <strong>{task.title}</strong>
-                  <div>{task.scenario} · {task.scope}</div>
-                  <div>{task.mode} · {task.phase} · {task.period}</div>
-                </li>
-              ))}
-            </ul>
+            <div class="flex flex-wrap gap-2">{filters.map((x) => <span class="badge badge-outline badge-lg">{x}</span>)}</div>
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {taskCards.map((task) => (
+              <article class="card border border-base-200 bg-base-100 shadow-sm">
+                <div class="card-body">
+                  <div class="flex items-start justify-between gap-3">
+                    <h3 class="card-title text-xl">{task.title}</h3>
+                    <div class={task.phaseClass}>{task.phase}</div>
+                  </div>
+                  <p class="text-base-content/70">{task.desc}</p>
+                  <div class="divider my-1" />
+                  <ul class="space-y-2 text-sm text-base-content/80">{task.items.map((item) => <li>{item}</li>)}</ul>
+                  <div class="card-actions mt-4 justify-between"><div class="flex flex-wrap gap-2">{task.tags.map((tag) => <span class="badge badge-ghost">{tag}</span>)}</div></div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
-        <section class="marketing-section market-section" id={sectionIds.roles}>
-          <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">参与角色</h2>
-            <ul class="market-participant-grid list-none p-0">
-              {roleEntries.map((role, index) => (
-                <li id={index === 0 ? "enterprise-entry" : index === 1 ? "provider-entry" : "partner-entry"} class="marketing-card p-5">
-                  <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">{role.title}</h3>
-                  <p>{role.description}</p>
-                  <a class="marketing-secondary-button mt-3 inline-flex" href={role.actionHref}>{role.actionLabel}</a>
-                </li>
-              ))}
-            </ul>
+        <section id="roles" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+          <div class="mb-6"><h2 class="text-3xl font-bold">参与角色</h2><p class="mt-2 text-base-content/70">发单、接单、交付、协作，各方职责更清晰。</p></div>
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <article id="enterprise-entry" class="card border border-base-200 bg-base-100 shadow-sm"><div class="card-body"><div class="badge badge-primary badge-soft w-fit">甲方</div><h3 class="card-title text-xl">任务发布方</h3><p class="leading-7 text-base-content/75">明确目标、预算和验收标准，把零散外包变成可持续的标准化任务。</p><div class="card-actions mt-4"><a href="#rules" class="btn btn-primary btn-sm">发布任务</a></div></div></article>
+            <article id="provider-entry" class="card border border-base-200 bg-base-100 shadow-sm"><div class="card-body"><div class="badge badge-secondary badge-soft w-fit">乙方</div><h3 class="card-title text-xl">Agent 服务方</h3><p class="leading-7 text-base-content/75">承接内容生产、自动化搭建、运营执行等任务，按质量和效率积累评分与信用。</p><div class="card-actions mt-4"><a href="#rules" class="btn btn-outline btn-sm">成为服务方</a></div></div></article>
+            <article id="partner-entry" class="card border border-base-200 bg-base-100 shadow-sm"><div class="card-body"><div class="badge badge-accent badge-soft w-fit">合作方</div><h3 class="card-title text-xl">生态协作方</h3><p class="leading-7 text-base-content/75">提供部署、数据接入、审核风控等能力，让复杂任务也能稳定交付。</p><div class="card-actions mt-4"><a href="/contact" class="btn btn-outline btn-sm">加入合作</a></div></div></article>
           </div>
         </section>
 
-        <section class="marketing-section market-section" id={sectionIds.proof}>
-          <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">交付方式与能力保障</h2>
-            <ul class="market-participant-grid list-none p-0">
-              {capabilityCards.map((card) => (
-                <li class="marketing-card p-5">
-                  <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">{card.title}</h3>
-                  <p>{card.description}</p>
-                </li>
-              ))}
-            </ul>
-            <ul class="market-participant-grid list-none p-0">
-              {caseCards.map((card) => (
-                <li class="marketing-card p-5">
-                  <p class="marketing-kicker">{card.scenario}</p>
-                  <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">{card.title}</h3>
-                  <p>{card.outcome}</p>
-                </li>
-              ))}
-            </ul>
+        <section id="proof" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+          <div class="mb-6"><h2 class="text-3xl font-bold">交付方式</h2><p class="mt-2 text-base-content/70">不只是撮合，更强调任务拆解、协同和验收。</p></div>
+          <div class="grid gap-4 md:grid-cols-3">
+            <div class="card border border-base-200 bg-base-100 shadow-sm"><div class="card-body"><h3 class="card-title">任务标准化拆解</h3><p class="text-base-content/75">把复杂任务拆成清晰步骤，方便并行执行，也方便逐项验收。</p></div></div>
+            <div class="card border border-base-200 bg-base-100 shadow-sm"><div class="card-body"><h3 class="card-title">多角色协同交付</h3><p class="text-base-content/75">支持策划、剪辑、发布、复盘协同推进，减少反复沟通。</p></div></div>
+            <div class="card border border-base-200 bg-base-100 shadow-sm"><div class="card-body"><h3 class="card-title">本地优先与私有部署</h3><p class="text-base-content/75">企业可选 OpenClaw + 虾壳主机方案，核心数据与流程保留在本地。</p></div></div>
           </div>
         </section>
 
-        <section class="marketing-section market-section" id={sectionIds.rules}>
-          <div class="marketing-section-inner space-y-6">
-            <h2 class="marketing-h2">流程与规则</h2>
-            <div class="market-flow-panel">
-              <ol class="market-flow-steps">
-                {flowSteps.map((step) => <li>{step}</li>)}
-              </ol>
-            </div>
-            <ul class="market-participant-grid">
-              {rulePoints.map((rule) => <li>{rule}</li>)}
+        <section id="rules" class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+          <div class="mb-6"><h2 class="text-3xl font-bold">流程与规则</h2><p class="mt-2 text-base-content/70">从发单到复盘，每一步都更清晰。</p></div>
+          <div class="rounded-[2rem] border border-base-200 bg-base-100 p-6 shadow-sm">
+            <ul class="steps steps-vertical w-full lg:steps-horizontal">
+              <li class="step step-primary">发布任务：目标、素材、预算、时间</li>
+              <li class="step step-primary">平台结构化任务并生成验收标准</li>
+              <li class="step step-primary">匹配服务方并启动协作</li>
+              <li class="step step-primary">验收、评分、复盘、复用</li>
             </ul>
-            <div class="marketing-cta-row">
-              {roleEntries.map((role) => (
-                <a class="marketing-primary-button" href={role.actionHref}>{role.actionLabel}</a>
-              ))}
+            <div class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <div class="rounded-box border border-base-200 bg-base-100 px-4 py-4 text-center font-medium">边界清晰</div>
+              <div class="rounded-box border border-base-200 bg-base-100 px-4 py-4 text-center font-medium">结果可验收</div>
+              <div class="rounded-box border border-base-200 bg-base-100 px-4 py-4 text-center font-medium">过程可追踪</div>
+              <div class="rounded-box border border-base-200 bg-base-100 px-4 py-4 text-center font-medium">成果可复用</div>
             </div>
           </div>
         </section>
-      </div>
+      </>,
     ),
   });
 }
