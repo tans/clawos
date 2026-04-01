@@ -74,6 +74,21 @@ openclaw agent --local --to +15555550123 --message "如果你能调用 quote_cus
 
 这说明当前链路已经是“本地 OpenClaw 可真实调用 BOM 工具”，不是只停留在 skill 可发现状态。
 
+> 说明：仓库内 `plugins/bom-quote-openclaw/.mcp.json` 现在是模板占位内容（`__BOM_MCP_ENTRY__` 等），
+> 安装前请先运行：
+>
+> ```bash
+> bash scripts/setup-bom-quote-openclaw.sh
+> ```
+>
+> Windows（PowerShell / CMD）可使用：
+>
+> ```bat
+> scripts\setup-bom-quote-openclaw.bat
+> ```
+>
+> 该脚本会按当前机器路径生成可直接使用的 `.mcp.json`，避免把 `/Users/...` 之类个人绝对路径提交到仓库。
+
 ## 2. 组件职责划分
 
 建议把整体系统理解为 4 层：
