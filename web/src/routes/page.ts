@@ -6,6 +6,7 @@ import { renderCeoLetterPage } from "../views/ceo-letter";
 import { renderContactPage } from "../views/contact";
 import { buildDownloadCards, renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
+import { renderMarketPage } from "../views/market";
 import { renderShopPage } from "../views/shop";
 
 export const pageRoutes = new Hono();
@@ -51,6 +52,10 @@ pageRoutes.get("/to-agent", (c) => {
 
 pageRoutes.get("/agent-market", (c) => {
   return c.html(renderAgentMarketPage());
+});
+
+pageRoutes.get("/market", (c) => {
+  return c.html(renderMarketPage());
 });
 
 pageRoutes.get("/ceo-letter", (c) => {

@@ -8,14 +8,14 @@ import { getEnv } from "../lib/env";
 type MarketingShellProps = PropsWithChildren<{
   title: string;
   description: string;
-  currentPath: "/" | "/downloads" | "/shop" | "/contact" | "/agent-market";
+  currentPath: "/" | "/downloads" | "/shop" | "/contact" | "/agent-market" | "/market";
 }>;
 
 const topNavItems = [
   { href: "/", label: "首页" },
   { href: "/downloads", label: "下载" },
   { href: "/shop", label: "商城" },
-  { href: "/agent-market", label: "任务市场" },
+  { href: "/market", label: "任务市场" },
   { href: "/contact", label: "联系我们" },
 ] as const;
 
@@ -66,7 +66,7 @@ export function renderMarketingShell({ title, description, currentPath, children
           <div class="marketing-footer-inner">
             <p>{`${brandName} · ${brandDomain}`}</p>
             <div class="marketing-footer-links">
-              {marketplaceEnabled ? <a href="/agent-market">Agent 协作</a> : null}
+              {marketplaceEnabled ? <a href="/market">Agent 协作</a> : null}
               <a href="/downloads">下载试用</a>
               <a href="/shop">产品商城</a>
               <a href="/contact">部署评估</a>
