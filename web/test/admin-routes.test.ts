@@ -136,6 +136,11 @@ describe("admin routes", () => {
     const settingsRaw = await readFile(join(tempStorageDir, "releases", "site-settings.json"), "utf-8");
     expect(settingsRaw).toContain("新品牌");
 
+    const loginPageResp = await app.request("http://localhost/admin/login");
+    const loginHtml = await loginPageResp.text();
+    expect(loginPageResp.status).toBe(200);
+    expect(loginHtml).toContain("新品牌 后台登录");
+
     const tasksRaw = await readFile(join(tempStorageDir, "releases", "tasks.json"), "utf-8");
     expect(tasksRaw).toContain("上线商品页");
   });
