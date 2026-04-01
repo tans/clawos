@@ -1,6 +1,7 @@
 /** @jsxImportSource hono/jsx */
 
 import type { Product } from "../lib/types";
+import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
 function ShopPage({ items }: { items: Product[] }) {
@@ -53,9 +54,10 @@ function ShopPage({ items }: { items: Product[] }) {
 }
 
 export function renderShopPage(items: Product[]) {
+  const { brandName } = getBrandConfig();
   return renderMarketingShell({
     title: "商城",
-    description: "查看 ClawOS 已发布商品与购买入口。",
+    description: `查看 ${brandName} 已发布商品与购买入口。`,
     currentPath: "/shop",
     children: <ShopPage items={items} />,
   });

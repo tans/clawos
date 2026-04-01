@@ -10,6 +10,7 @@ export function renderSettingsSection(settings: SiteSettings) {
         <form method="post" action="/admin/settings/save" class="grid gap-3 md:grid-cols-2">
           <input class="input input-bordered" name="brandName" value={settings.brandName} />
           <input class="input input-bordered" name="siteName" value={settings.siteName} />
+          <input class="input input-bordered md:col-span-2" name="brandUrl" value={settings.brandUrl} placeholder="https://example.com" />
           <input id="brand-logo-url" class="input input-bordered md:col-span-2" name="brandLogoUrl" value={settings.brandLogoUrl} />
           <input class="input input-bordered md:col-span-2" name="seoTitle" value={settings.seoTitle} />
           <textarea class="textarea textarea-bordered md:col-span-2" name="seoDescription">{settings.seoDescription}</textarea>

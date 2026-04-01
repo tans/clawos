@@ -20,7 +20,7 @@ const topNavItems = [
 ] as const;
 
 export function renderMarketingShell({ title, description, currentPath, children }: MarketingShellProps): string {
-  const { brandName, brandLogoUrl, brandDomain, siteName, seoTitle, seoDescription, seoKeywords } = getBrandConfig();
+  const { brandName, brandLogoUrl, brandUrl, brandDomain, siteName, seoTitle, seoDescription, seoKeywords } = getBrandConfig();
   const { marketplaceEnabled } = getEnv();
   const finalTitle = `${title} | ${seoTitle}`;
   const finalDescription = description?.trim() || seoDescription;
@@ -75,7 +75,9 @@ export function renderMarketingShell({ title, description, currentPath, children
         <footer class="border-t border-base-200 bg-base-100">
           <div class="footer mx-auto max-w-7xl items-center px-4 py-8 text-base-content sm:px-6 lg:px-8">
             <aside>
-              <p class="font-semibold">{`${brandName} · ${brandDomain}`}</p>
+              <p class="font-semibold">
+                <a class="link link-hover" href={brandUrl} target="_blank" rel="noreferrer">{`${brandName} · ${brandDomain}`}</a>
+              </p>
               <p class="text-sm text-base-content/60">让 Agent 协作更标准，让任务交付更稳定。</p>
             </aside>
             <nav class="md:place-self-center md:justify-self-end">
