@@ -45,6 +45,37 @@ const governanceItems = [
   },
 ] as const;
 
+const productRouteItems = [
+  {
+    title: "Hardware",
+    subtitle: "本地优先部署",
+    description: "适合需要内网运行、设备可控和稳定执行环境的团队。",
+    href: "/contact",
+    cta: "申请硬件部署评估",
+  },
+  {
+    title: "Enterprise",
+    subtitle: "组织级治理与协作",
+    description: "适合多角色协作、权限治理和长期运营要求明确的企业。",
+    href: "/contact",
+    cta: "查看企业落地路径",
+  },
+  {
+    title: "Agent 众包市场",
+    subtitle: "任务撮合与交付",
+    description: "发布任务、匹配服务方、按里程碑验收，提升任务交付效率。",
+    href: "/market",
+    cta: "进入任务市场",
+  },
+  {
+    title: "商城",
+    subtitle: "硬件与模板即买即用",
+    description: "集中购买硬件、模板和服务包，缩短从选型到上线的周期。",
+    href: "/shop",
+    cta: "进入产品商城",
+  },
+] as const;
+
 function buildFaqItems(brandName: string) {
   return [
     {
@@ -288,11 +319,78 @@ export function FaqSection({ brandName }: { brandName: string }) {
 }
 
 export function HardwareSection() {
-  return null;
+  return (
+    <section class="marketing-section py-24 sm:py-28">
+      <div class="marketing-section-inner">
+        <div class="max-w-3xl space-y-4">
+          <p class="marketing-kicker">Route First</p>
+          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">
+            先做产品分流，再做深度阅读
+          </h2>
+          <p class="text-base leading-8 text-[color:var(--ink-soft)]">
+            首页先回答“我该去哪里”，再进入具体页面看方案细节。下面四个入口对应不同的采购与落地路径。
+          </p>
+        </div>
+
+        <div class="mt-14 grid gap-6 md:grid-cols-2">
+          {productRouteItems.map((item) => (
+            <article class="rounded-2xl border border-[color:var(--line-soft)] bg-white p-6 shadow-sm sm:p-7">
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--brand-accent-strong)]">{item.subtitle}</p>
+              <h3 class="mt-3 text-2xl font-semibold text-[color:var(--ink-strong)]">{item.title}</h3>
+              <p class="mt-4 text-sm leading-8 text-[color:var(--ink-soft)]">{item.description}</p>
+              <div class="mt-6">
+                <a class="marketing-secondary-button" href={item.href}>
+                  {item.cta}
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function PocPathSection() {
-  return null;
+  return (
+    <section class="marketing-section py-24 sm:py-28">
+      <div class="marketing-section-inner">
+        <div class="grid gap-10 lg:grid-cols-2">
+          <article class="rounded-3xl border border-[color:var(--line-soft)] bg-white p-8 shadow-sm sm:p-10">
+            <p class="marketing-kicker">Marketplace Highlight</p>
+            <h3 class="text-2xl font-semibold text-[color:var(--ink-strong)]">Agent 众包市场</h3>
+            <p class="mt-4 text-sm leading-8 text-[color:var(--ink-soft)]">
+              支持企业发布任务、服务方接单、里程碑验收与交付评价。把“临时需求”沉淀为“可复用任务模板”。
+            </p>
+            <ul class="mt-6 list-disc space-y-2 pl-5 text-sm text-[color:var(--ink-soft)]">
+              <li>任务模板：客服自动化、线索触达、内容生产、数据分析</li>
+              <li>角色机制：需求方、服务方、审核协同</li>
+              <li>交付方式：里程碑拆分 + 结果验收</li>
+            </ul>
+            <div class="mt-7">
+              <a class="marketing-primary-button" href="/market">发布任务或成为服务方</a>
+            </div>
+          </article>
+
+          <article class="rounded-3xl border border-[color:var(--line-soft)] bg-white p-8 shadow-sm sm:p-10">
+            <p class="marketing-kicker">Store Highlight</p>
+            <h3 class="text-2xl font-semibold text-[color:var(--ink-strong)]">商城</h3>
+            <p class="mt-4 text-sm leading-8 text-[color:var(--ink-soft)]">
+              集中提供硬件、Agent 模板与服务包，帮助团队按预算快速完成选型与采购。
+            </p>
+            <ul class="mt-6 list-disc space-y-2 pl-5 text-sm text-[color:var(--ink-soft)]">
+              <li>硬件套餐：按规模选择算力与交付配置</li>
+              <li>数字商品：模板、行业包、工作流资产</li>
+              <li>服务商品：部署实施、代运营与专家支持</li>
+            </ul>
+            <div class="mt-7">
+              <a class="marketing-primary-button" href="/shop">查看商城方案</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export function OemSection() {
