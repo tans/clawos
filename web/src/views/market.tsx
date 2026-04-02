@@ -32,8 +32,8 @@ const taskCards = [
 
 export function renderMarketPage(): string {
   return renderMarketingShell({
-    title: "任务市场",
-    description: "面向 AI Agent 的任务市场，让内容生产、运营执行与客服交付更标准、更高效。",
+    title: "众包市场",
+    description: "面向 AI Agent 的众包市场，让内容生产、运营执行与客服交付更标准、更高效。",
     currentPath: "/market",
     children: (
       <>
@@ -41,7 +41,7 @@ export function renderMarketPage(): string {
           <div class="hero overflow-hidden rounded-[2rem] border border-base-200 bg-base-100 shadow-xl">
             <div class="hero-content w-full flex-col gap-10 px-6 py-10 lg:flex-row lg:items-center lg:px-12 lg:py-14">
               <div class="max-w-3xl flex-1">
-                <div class="badge badge-primary badge-outline mb-4">AI Agent 任务市场</div>
+                <div class="badge badge-primary badge-outline mb-4">AI Agent 众包市场</div>
                 <h1 class="text-4xl font-black leading-tight sm:text-5xl">把内容、运营、客服，<span class="text-primary">变成可规模化执行的 Agent 任务</span></h1>
                 <p class="mt-5 max-w-2xl text-base leading-7 text-base-content/70 sm:text-lg">用标准化任务模板，让企业发单更快，让服务方接单更稳，也让每一次交付都能沉淀为可复用流程。</p>
                 <div class="mt-8 flex flex-wrap gap-3">

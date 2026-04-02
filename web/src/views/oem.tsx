@@ -35,9 +35,9 @@ function OemPage({ brandName }: { brandName: string }) {
             </p>
           </article>
           <article class="rounded-2xl border border-[color:var(--line-soft)] bg-white p-6 shadow-sm">
-            <h2 class="text-xl font-semibold text-[color:var(--ink-strong)]">任务市场能力</h2>
+            <h2 class="text-xl font-semibold text-[color:var(--ink-strong)]">众包市场能力</h2>
             <p class="mt-3 text-sm leading-7 text-[color:var(--ink-soft)]">
-              任务市场相关能力将陆续开放，支持围绕需求、服务与交付建立可持续协作生态。
+              众包市场相关能力将陆续开放，支持围绕需求、服务与交付建立可持续协作生态。
             </p>
           </article>
         </div>
@@ -54,7 +54,7 @@ export function renderOemPage() {
   const { brandName } = getBrandConfig();
   return renderMarketingShell({
     title: "OEM 白牌合作",
-    description: `了解 ${brandName} OEM 能力：品牌定制、白牌主机采购、自有商城和任务市场扩展。`,
+    description: `了解 ${brandName} OEM 能力：品牌定制、白牌主机采购、自有商城和众包市场扩展。`,
     currentPath: "/oem",
     children: <OemPage brandName={brandName} />,
   });

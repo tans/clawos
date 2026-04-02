@@ -12,10 +12,10 @@ export function renderAgentMarketPage(): string {
         <section class="marketing-section market-section">
           <div class="marketing-section-inner market-section-narrow space-y-6">
             <p class="marketing-kicker">Agent 协作市场</p>
-            <h1 class="marketing-h1">任务市场已并入主站</h1>
+            <h1 class="marketing-h1">众包市场已并入主站</h1>
             <p class="marketing-lead">现在可直接在主站访问任务大厅，不再依赖独立 agent-market 子项目。</p>
             <div class="marketing-hero-actions">
-              <a class="marketing-primary-button" href="/market">进入任务市场</a>
+              <a class="marketing-primary-button" href="/market">进入众包市场</a>
               <a class="marketing-secondary-button" href="/contact">预约合作沟通</a>
             </div>
           </div>

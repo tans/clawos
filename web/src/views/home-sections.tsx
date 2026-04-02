@@ -306,7 +306,7 @@ export function OemSection() {
               OEM 白牌能力开放中
             </h2>
             <p class="text-base leading-8 text-[color:var(--ink-soft)]">
-              支持品牌方以 OEM 方式快速进入交付：品牌替换、主机白牌采购、自有商城与任务市场能力将逐步开放。
+              支持品牌方以 OEM 方式快速进入交付：品牌替换、主机白牌采购、自有商城与众包市场能力将逐步开放。
             </p>
           </div>
           <div class="mt-8">

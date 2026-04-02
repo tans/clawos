@@ -160,7 +160,7 @@ describe("marketing pages", () => {
     expect(navHtml).toContain('href="/downloads"');
     expect(navHtml).toContain(">商城<");
     expect(navHtml).toContain('href="/shop"');
-    expect(navHtml).toContain(">任务市场<");
+    expect(navHtml).toContain(">众包市场<");
     expect(navHtml).toContain('href="/market"');
     expect(navHtml).toContain(">联系我们<");
     expect(navHtml).toContain('href="/contact"');
@@ -179,13 +179,13 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain(">任务市场<");
+    expect(html).toContain(">众包市场<");
     expect(html).toContain("href=\"/market\"");
 
     const navHomeIndex = html.indexOf(">首页<");
     const navDownloadsIndex = html.indexOf(">下载<", navHomeIndex);
     const navShopIndex = html.indexOf(">商城<", navHomeIndex);
-    const navMarketIndex = html.indexOf(">任务市场<", navHomeIndex);
+    const navMarketIndex = html.indexOf(">众包市场<", navHomeIndex);
     const navContactIndex = html.indexOf(">联系我们<", navHomeIndex);
     expect(navHomeIndex).toBeGreaterThan(-1);
     expect(navDownloadsIndex).toBeGreaterThan(-1);
@@ -216,7 +216,7 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain(">任务市场<");
+    expect(html).toContain(">众包市场<");
     expect(html).toContain("href=\"/market\"");
   });
 
@@ -225,7 +225,7 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("任务市场已并入主站");
+    expect(html).toContain("众包市场已并入主站");
     expect(html).toContain("href=\"/market\"");
     expect(html).toContain("预约合作沟通");
   });
@@ -235,7 +235,7 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("AI Agent 任务市场");
+    expect(html).toContain("AI Agent 众包市场");
     expect(html).toContain("任务样例");
     expect(html).toContain("参与角色");
     expect(html).toContain("交付方式");
@@ -256,7 +256,7 @@ describe("marketing pages", () => {
     expect(html).toContain("品牌与 Logo 可定制");
     expect(html).toContain("白牌主机采购");
     expect(html).toContain("自有商城");
-    expect(html).toContain("任务市场能力");
+    expect(html).toContain("众包市场能力");
   });
 
   it("serves a shop page with published products", async () => {
@@ -324,7 +324,7 @@ describe("marketing pages", () => {
     const html = await response.text();
 
     expect(response.status).toBe(200);
-    expect(html).toContain("任务市场已并入主站");
+    expect(html).toContain("众包市场已并入主站");
   });
 
   it("exposes agent market layout hooks in the stylesheet", async () => {
