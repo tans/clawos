@@ -5,7 +5,7 @@
   "scripts": {
     "tailwind:build": "tailwindcss -c tailwind.config.mjs -i src/styles/input.css -o dist/output.css --minify",
     "tailwind:watch": "tailwindcss -c tailwind.config.mjs -i src/styles/input.css -o dist/output.css --watch",
-    "dev": "bun run tailwind:watch & bun --watch src/index.ts",
+    "dev": "bun run tailwind:build && bun --watch src/index.ts",
     "start": "bun run tailwind:build && bun run src/index.ts",
     "test": "bun test",
     "pm2:start": "pm2 start ecosystem.config.cjs --only clawos",

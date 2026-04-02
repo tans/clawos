@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>轮播测试</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              600: '#3b82f6',
+              700: '#2563eb',
+              50: '#eff6ff',
+              200: '#bfdbfe',
+            },
+            secondary: {
+              900: '#1e293b',
+              800: '#334155',
+              600: '#64748b',
+            },
+            gray: {
+              100: '#f8fafc',
+              200: '#e2e8f0',
+              300: '#cbd5e1',
+            },
+          },
+        },
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .shadow-soft {
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      }
+      .shadow-medium {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+  <div class="container mx-auto px-4 py-16">
+    <div class="relative w-full max-w-md h-80 sm:h-96 bg-white rounded-xl shadow-soft border border-gray-100 overflow-hidden">
+      <div id="carousel" class="flex transition-transform duration-500 ease-in-out h-full">
+        <!-- 交付形态卡片 -->
+        <div class="w-full flex-shrink-0 flex flex-col p-6">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">交付形态</p>
+          <h3 class="mt-2 text-xl font-semibold text-secondary-900">ClawOS + 虾壳主机</h3>
+          <div class="mt-4 flex-grow flex items-center justify-center">
+            <img src="/public/交付形态UI.png" alt="交付形态" class="max-h-48 sm:max-h-56 object-contain" />
+          </div>
+        </div>
+        <!-- 部署方式卡片 -->
+        <div class="w-full flex-shrink-0 flex flex-col p-6">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">部署方式</p>
+          <h3 class="mt-2 text-xl font-semibold text-secondary-900">本地优先、企业内网、混合环境</h3>
+          <div class="mt-4 flex-grow flex items-center justify-center">
+            <img src="/public/部署方式UI设计.png" alt="部署方式" class="max-h-48 sm:max-h-56 object-contain" />
+          </div>
+        </div>
+        <!-- 适用团队卡片 -->
+        <div class="w-full flex-shrink-0 flex flex-col p-6">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">适用团队</p>
+          <h3 class="mt-2 text-xl font-semibold text-secondary-900">运营、制造、交付、内部支持</h3>
+          <div class="mt-4 flex-grow flex items-center justify-center">
+            <img src="/public/适用团队.png" alt="适用团队" class="max-h-48 sm:max-h-56 object-contain" />
+          </div>
+        </div>
+      </div>
+      <!-- 轮播指示器 -->
+      <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+        <button class="w-2 h-2 rounded-full bg-primary-600 carousel-indicator" data-index="0"></button>
+        <button class="w-2 h-2 rounded-full bg-gray-300 carousel-indicator" data-index="1"></button>
+        <button class="w-2 h-2 rounded-full bg-gray-300 carousel-indicator" data-index="2"></button>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const carousel = document.getElementById('carousel');
+      if (carousel) {
+        const indicators = document.querySelectorAll('.carousel-indicator');
+        let currentIndex = 0;
+        const totalSlides = 3;
+        
+        function updateCarousel() {
+          carousel.style.transform = `translateX(-${currentIndex * 100}%)`;
+          indicators.forEach((indicator, index) => {
+            if (index === currentIndex) {
+              indicator.classList.add('bg-primary-600');
+              indicator.classList.remove('bg-gray-300');
+            } else {
+              indicator.classList.remove('bg-primary-600');
+              indicator.classList.add('bg-gray-300');
+            }
+          });
+        }
+        
+        function nextSlide() {
+          currentIndex = (currentIndex + 1) % totalSlides;
+          updateCarousel();
+        }
+        
+        indicators.forEach((indicator, index) => {
+          indicator.addEventListener('click', () => {
+            currentIndex = index;
+            updateCarousel();
+          });
+        });
+        
+        // 自动轮播
+        setInterval(nextSlide, 5000);
+      }
+    });
+  </script>
+</body>
+</html>
