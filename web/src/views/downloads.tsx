@@ -15,6 +15,13 @@ interface DownloadChannelCard {
   linuxUrl: string;
 }
 
+interface DownloadHistoryItem {
+  fileName: string;
+  platformLabel: string;
+  version: string;
+  uploadedAt: string;
+}
+
 function formatPublishedAt(value: string | null): string {
   if (!value) return "暂无发布时间";
   const date = new Date(value);
@@ -22,19 +29,26 @@ function formatPublishedAt(value: string | null): string {
   return date.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
+export function renderDownloadsPage(cards: DownloadChannelCard[], history: DownloadHistoryItem[]): string {
   const { brandName } = getBrandConfig();
   return renderMarketingShell({
     title: "下载试用",
     description: `${brandName} 下载试用入口与企业部署评估入口。`,
     currentPath: "/downloads",
-    children: <DownloadsPage cards={cards} brandName={brandName} />,
+    children: <DownloadsPage cards={cards} history={history} brandName={brandName} />,
   });
 }
 
-function DownloadsPage({ cards, brandName }: { cards: DownloadChannelCard[]; brandName: string }) {
+function DownloadsPage({
+  cards,
+  history,
+  brandName,
+}: {
+  cards: DownloadChannelCard[];
+  history: DownloadHistoryItem[];
+  brandName: string;
+}) {
   const stable = cards.find((card) => card.id === "stable");
-  const secondary = cards.filter((card) => card.id !== "stable");
 
   return (
     <>
@@ -70,18 +84,45 @@ function DownloadsPage({ cards, brandName }: { cards: DownloadChannelCard[]; bra
       </section>
 
       <section class="marketing-section py-6 sm:py-10">
-        <div class="marketing-section-inner marketing-grid-2 grid gap-5 lg:grid-cols-2">
-          {secondary.map((card) => (
-            <article key={card.id} class="marketing-card p-5 sm:p-6">
-              <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">{card.label}</h3>
-              <p class="mt-3 text-sm text-[color:var(--ink-soft)]">{`版本：${card.version}`}</p>
-              <p class="mt-1 text-sm text-[color:var(--ink-soft)]">{`发布时间：${card.publishedAt}`}</p>
-            </article>
-          ))}
+        <div class="marketing-section-inner">
+          <article class="marketing-card p-5 sm:p-6">
+            <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">历史版本</h3>
+            {history.length === 0 ? (
+              <p class="mt-3 text-sm text-[color:var(--ink-soft)]">暂无历史版本记录</p>
+            ) : (
+              <ul class="mt-4 space-y-3">
+                {history.map((item) => (
+                  <li key={`${item.fileName}-${item.platformLabel}`} class="rounded-2xl border border-[color:var(--line-soft)] px-4 py-3">
+                    <p class="text-sm font-medium text-[color:var(--ink-strong)]">{item.version}</p>
+                    <p class="mt-1 text-xs text-[color:var(--ink-soft)]">{`${item.platformLabel} · ${item.uploadedAt}`}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
         </div>
       </section>
     </>
   );
+}
+
+export function buildDownloadHistory(input: Array<{
+  fileName: string;
+  platform: "windows" | "macos" | "linux";
+  uploadedAt: string;
+  versionHint: string | null;
+}>): DownloadHistoryItem[] {
+  const platformLabel: Record<"windows" | "macos" | "linux", string> = {
+    windows: "Windows",
+    macos: "macOS",
+    linux: "Linux",
+  };
+  return input.slice(0, 12).map((item) => ({
+    fileName: item.fileName,
+    platformLabel: platformLabel[item.platform],
+    version: item.versionHint?.trim() || item.fileName,
+    uploadedAt: formatPublishedAt(item.uploadedAt),
+  }));
 }
 
 export function buildDownloadCards(input: {
