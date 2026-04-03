@@ -26,44 +26,85 @@ function LoginPage({ error }: { error?: string }) {
         <link rel="stylesheet" href="/styles.css" />
       </head>
       <body class="min-h-screen bg-base-200">
-        <main class="mx-auto flex min-h-screen max-w-md items-center px-4">
-          <section class="card w-full bg-base-100 shadow-xl">
-            <div class="card-body">
-              <div class="mb-2 flex items-center gap-3">
-                <img
-                  src={brandLogoUrl}
-                  alt={`${brandName} logo`}
-                  class="h-9 w-9 rounded-lg object-cover"
-                />
-                <div>
-                  <h1 class="card-title">{`${brandName} 后台登录`}</h1>
-                  <p class="text-xs text-base-content/60">{siteName}</p>
+        <main class="mx-auto flex min-h-screen w-full max-w-6xl items-center px-4 py-10">
+          <section class="grid w-full overflow-hidden rounded-3xl border border-base-300 bg-base-100 shadow-2xl lg:grid-cols-2">
+            <div class="relative hidden overflow-hidden bg-gradient-to-br from-primary to-secondary p-10 text-primary-content lg:block">
+              <div class="absolute -left-14 top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+              <div class="absolute -bottom-16 right-6 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
+              <div class="relative flex h-full flex-col justify-between">
+                <div class="space-y-4">
+                  <p class="text-sm uppercase tracking-[0.2em] text-primary-content/80">
+                    Admin Console
+                  </p>
+                  <h2 class="text-3xl font-semibold leading-tight">
+                    安全管理你的
+                    <br />
+                    {brandName} 内容系统
+                  </h2>
+                  <p class="max-w-sm text-sm text-primary-content/80">
+                    登录后可统一维护版本、产品、站点配置与任务列表，所有变更都会立即同步到线上展示。
+                  </p>
                 </div>
+                <ul class="space-y-3 text-sm text-primary-content/90">
+                  <li>• 版本发布与安装包信息可视化管理</li>
+                  <li>• 产品内容与图片素材集中维护</li>
+                  <li>• 站点信息与任务协作一站式处理</li>
+                </ul>
               </div>
-              {error ? <p class="text-sm text-error">{error}</p> : null}
-              <form class="space-y-4" method="post" action="/admin/login">
-                <label class="form-control">
-                  <span class="label-text">账号</span>
-                  <input
-                    class="input input-bordered"
-                    type="text"
-                    name="username"
-                    required
+            </div>
+
+            <div class="p-6 sm:p-10">
+              <div class="mx-auto max-w-md">
+                <div class="mb-8 flex items-center gap-3">
+                  <img
+                    src={brandLogoUrl}
+                    alt={`${brandName} logo`}
+                    class="h-11 w-11 rounded-xl object-cover ring ring-base-300"
                   />
-                </label>
-                <label class="form-control">
-                  <span class="label-text">密码</span>
-                  <input
-                    class="input input-bordered"
-                    type="password"
-                    name="password"
-                    required
-                  />
-                </label>
-                <button class="btn btn-primary w-full" type="submit">
-                  登录
-                </button>
-              </form>
+                  <div>
+                    <h1 class="text-xl font-semibold">{`${brandName} 后台登录`}</h1>
+                    <p class="text-xs text-base-content/60">{siteName}</p>
+                  </div>
+                </div>
+
+                {error ? (
+                  <div class="alert alert-error mb-5 py-2 text-sm">
+                    <span>{error}</span>
+                  </div>
+                ) : null}
+
+                <form class="space-y-5" method="post" action="/admin/login">
+                  <label class="form-control">
+                    <span class="label-text mb-1 text-sm">账号</span>
+                    <input
+                      class="input input-bordered h-11"
+                      type="text"
+                      name="username"
+                      placeholder="请输入管理员账号"
+                      autocomplete="username"
+                      required
+                    />
+                  </label>
+                  <label class="form-control">
+                    <span class="label-text mb-1 text-sm">密码</span>
+                    <input
+                      class="input input-bordered h-11"
+                      type="password"
+                      name="password"
+                      placeholder="请输入登录密码"
+                      autocomplete="current-password"
+                      required
+                    />
+                  </label>
+                  <button class="btn btn-primary h-11 w-full text-base" type="submit">
+                    登录管理后台
+                  </button>
+                </form>
+
+                <p class="mt-5 text-xs text-base-content/60">
+                  如遇登录问题，请检查环境变量 ADMIN_USERNAME 与 ADMIN_PASSWORD 是否配置正确。
+                </p>
+              </div>
             </div>
           </section>
         </main>
