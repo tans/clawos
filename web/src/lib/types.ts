@@ -11,6 +11,8 @@ export type ReleaseChannel = "stable" | "beta" | "alpha" | "canary";
 
 export interface LatestRelease {
   version: string;
+  changelog?: string;
+  thumbnailUrl?: string;
   publishedAt: string;
   installer: ReleaseAsset | null;
   installers?: Partial<Record<InstallerPlatform, ReleaseAsset>>;

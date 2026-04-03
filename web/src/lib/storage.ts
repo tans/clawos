@@ -67,6 +67,8 @@ function detectVersionFromFileName(fileName: string): string | null {
 function createEmptyRelease(): LatestRelease {
   return {
     version: "dev",
+    changelog: "",
+    thumbnailUrl: "",
     publishedAt: nowIso(),
     installer: null,
     installers: {},
@@ -270,6 +272,8 @@ function normalizeRelease(raw: unknown): LatestRelease {
 
   return {
     version: typeof data.version === "string" && data.version.trim() ? data.version : "dev",
+    changelog: typeof data.changelog === "string" ? data.changelog.trim() : "",
+    thumbnailUrl: typeof data.thumbnailUrl === "string" ? data.thumbnailUrl.trim() : "",
     publishedAt:
       typeof data.publishedAt === "string" && data.publishedAt.trim() ? data.publishedAt : nowIso(),
     installer: normalizeAsset(data.installer),
