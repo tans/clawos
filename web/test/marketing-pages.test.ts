@@ -101,7 +101,10 @@ describe("marketing pages", () => {
     expect(response.status).toBe(200);
     expect(html).toContain("下载 ClawOS，开始你的企业 AI 试点");
     expect(html).toContain("下载稳定版");
+    expect(html).toContain("历史版本");
     expect(html).toContain("申请部署评估");
+    expect(html).not.toContain("测试版");
+    expect(html).not.toContain("内测版");
     expect(html).not.toContain("下载中心");
 
     const headingAnchor = "下载 ClawOS，开始你的企业 AI 试点";

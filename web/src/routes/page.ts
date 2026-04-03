@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { listPublishedProducts, readLatestRelease } from "../lib/storage";
+import { listInstallerHistory, listPublishedProducts, readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
 import { renderAgentMarketPage } from "../views/agent-market";
 import { renderCeoLetterPage } from "../views/ceo-letter";
 import { renderContactPage } from "../views/contact";
-import { buildDownloadCards, renderDownloadsPage } from "../views/downloads";
+import { buildDownloadCards, buildDownloadHistory, renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
 import { renderOemPage } from "../views/oem";
@@ -17,10 +17,11 @@ pageRoutes.get("/", (c) => {
 });
 
 pageRoutes.get("/downloads", async (c) => {
-  const [stableLatest, betaLatest, alphaLatest] = await Promise.all([
+  const [stableLatest, betaLatest, alphaLatest, installerHistory] = await Promise.all([
     readLatestRelease("stable"),
     readLatestRelease("beta"),
     readLatestRelease("alpha"),
+    listInstallerHistory(),
   ]);
 
   const cards = buildDownloadCards({
@@ -35,7 +36,8 @@ pageRoutes.get("/downloads", async (c) => {
     hasAlphaInstaller: Boolean(alphaLatest?.installer),
   });
 
-  return c.html(renderDownloadsPage(cards));
+  const history = buildDownloadHistory(installerHistory);
+  return c.html(renderDownloadsPage(cards, history));
 });
 
 pageRoutes.get("/shop", async (c) => {
