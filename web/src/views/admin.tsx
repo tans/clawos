@@ -261,6 +261,7 @@ function AdminPage(props: AdminPageProps) {
           }
 
           const productModal = document.getElementById('product-modal');
+          const taskModal = document.getElementById('task-modal');
           function openCreateProductModal() {
             document.getElementById('product-modal-title').textContent = '新增商品';
             document.getElementById('product-id').value = '';
@@ -271,6 +272,16 @@ function AdminPage(props: AdminPageProps) {
             document.getElementById('product-link').value = '';
             document.getElementById('product-published').checked = false;
             if (productModal) productModal.showModal();
+          }
+          function openCreateTaskModal() {
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-priority').value = 'medium';
+            document.getElementById('task-due-date').value = '';
+            document.getElementById('task-description').value = '';
+            document.getElementById('task-image-url').value = '';
+            document.getElementById('task-image-file').value = '';
+            document.getElementById('task-image-upload-status').textContent = '选择图片后自动上传';
+            if (taskModal) taskModal.showModal();
           }
           function openEditProductModal(product) {
             document.getElementById('product-modal-title').textContent = '编辑商品';
