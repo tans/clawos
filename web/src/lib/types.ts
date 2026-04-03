@@ -20,6 +20,15 @@ export interface LatestRelease {
   updaterAssets?: ReleaseAsset[];
 }
 
+export interface AdminInstallerHistoryItem {
+  fileName: string;
+  platform: InstallerPlatform;
+  size: number;
+  uploadedAt: string;
+  relativePath: string;
+  versionHint: string | null;
+}
+
 export interface McpManifest {
   schemaVersion: string;
   id: string;

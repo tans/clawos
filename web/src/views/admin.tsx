@@ -165,7 +165,7 @@ function AdminPage(props: AdminPageProps) {
                     href={sectionHref("versions")}
                     class={props.activeSection === "versions" ? "active" : ""}
                   >
-                    版本管理
+                    软件管理
                   </a>
                 </li>
                 <li>
@@ -218,7 +218,7 @@ function AdminPage(props: AdminPageProps) {
             if (status) status.textContent = '上传成功，已自动回填地址';
           }
 
-          async function uploadReleaseInstaller(channel, fileInputId, statusId) {
+          async function uploadReleaseInstaller(fileInputId, statusId) {
             const fileInput = document.getElementById(fileInputId);
             const status = document.getElementById(statusId);
             if (!fileInput || !status) {
@@ -236,7 +236,7 @@ function AdminPage(props: AdminPageProps) {
             status.textContent = '安装包上传中...';
             const formData = new FormData();
             formData.set('file', file);
-            formData.set('channel', channel);
+            formData.set('channel', 'stable');
             if (version) {
               formData.set('version', version);
             }

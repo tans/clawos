@@ -7,6 +7,7 @@ import type {
   AdminTask,
   InstallerPlatform,
   LatestRelease,
+  AdminInstallerHistoryItem,
   McpManifest,
   McpRegistryEntry,
   McpRelease,
@@ -1066,6 +1067,37 @@ export async function resolveLatestInstaller(
   const absolutePath = absoluteAssetPath(candidate.relativePath);
   await ensureReadable(absolutePath);
   return { release: latest, asset: candidate, absolutePath };
+}
+
+export async function listInstallerHistory(): Promise<AdminInstallerHistoryItem[]> {
+  await ensureStorageDirs();
+  const results: AdminInstallerHistoryItem[] = [];
+
+  for (const platform of INSTALLER_PLATFORMS) {
+    const dir = getInstallerDir(platform);
+    const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (!entry.isFile()) {
+        continue;
+      }
+      const fileName = entry.name;
+      const absolutePath = resolve(dir, fileName);
+      const fileStat = await stat(absolutePath).catch(() => null);
+      if (!fileStat || !fileStat.isFile() || fileStat.size <= 0) {
+        continue;
+      }
+      results.push({
+        fileName,
+        platform,
+        size: fileStat.size,
+        uploadedAt: fileStat.mtime.toISOString(),
+        relativePath: relativeAssetPath("installer", fileName, platform),
+        versionHint: detectVersionFromFileName(fileName),
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
 }
 
 export async function resolveLatestXiakeConfig(channel: ReleaseChannel = "stable"): Promise<ResolvedDownload> {

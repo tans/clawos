@@ -15,6 +15,7 @@ import {
   deleteTask,
   normalizeInstallerPlatform,
   normalizeReleaseChannel,
+  listInstallerHistory,
   readLatestRelease,
   readProducts,
   readSiteSettings,
@@ -71,13 +72,12 @@ function noticeRedirect(c: Context, message: string, section: AdminSection = "se
 }
 
 async function renderAdminSection(c: Context, activeSection: AdminSection): Promise<Response> {
-  const [products, tasks, settings, stableRelease, betaRelease, alphaRelease] = await Promise.all([
+  const [products, tasks, settings, stableRelease, installerHistory] = await Promise.all([
     readProducts(),
     readTasks(),
     readSiteSettings(),
     readLatestRelease("stable"),
-    readLatestRelease("beta"),
-    readLatestRelease("alpha"),
+    listInstallerHistory(),
   ]);
   const fallback = getBrandConfig();
   return c.html(
@@ -97,9 +97,8 @@ async function renderAdminSection(c: Context, activeSection: AdminSection): Prom
         updatedAt: new Date().toISOString(),
       },
       releases: {
-        stable: stableRelease,
-        beta: betaRelease,
-        alpha: alphaRelease,
+        latest: stableRelease,
+        history: installerHistory,
       },
     }),
   );
@@ -194,7 +193,7 @@ adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
 
 adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
-  const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
+  const channel = "stable";
   const current = await readLatestRelease(channel);
   const version = firstValue(body.version)?.trim() || "dev";
   const changelog = firstValue(body.changelog)?.trim() || "";
@@ -209,7 +208,7 @@ adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
     xiakeConfig: current?.xiakeConfig || null,
     updaterAssets: current?.updaterAssets || [],
   }, channel);
-  return noticeRedirect(c, `已更新 ${channel} 版本为 ${version}`, "versions");
+  return noticeRedirect(c, `已更新版本为 ${version}`, "versions");
 });
 
 adminRoutes.post("/admin/upload/installer", requireAdminAuth, async (c) => {
