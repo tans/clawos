@@ -218,6 +218,40 @@ function AdminPage(props: AdminPageProps) {
             if (status) status.textContent = '上传成功，已自动回填地址';
           }
 
+          async function uploadReleaseInstaller(channel, fileInputId, statusId) {
+            const fileInput = document.getElementById(fileInputId);
+            const status = document.getElementById(statusId);
+            if (!fileInput || !status) {
+              return;
+            }
+            const file = fileInput?.files?.[0];
+            if (!file) {
+              status.textContent = '缺少安装包：请先选择文件';
+              return;
+            }
+            const versionInput = fileInput
+              .closest('form')
+              ?.querySelector('input[name=\"version\"]');
+            const version = (versionInput?.value || '').trim();
+            status.textContent = '安装包上传中...';
+            const formData = new FormData();
+            formData.set('file', file);
+            formData.set('channel', channel);
+            if (version) {
+              formData.set('version', version);
+            }
+            const response = await fetch('/admin/upload/installer', {
+              method: 'POST',
+              body: formData
+            });
+            const payload = await response.json();
+            if (!response.ok || !payload.ok) {
+              status.textContent = payload.error || '安装包上传失败';
+              return;
+            }
+            status.textContent = '安装包上传成功：' + payload.fileName + '（版本 ' + payload.version + '）';
+          }
+
           function bindAutoUpload(fileInputId, urlInputId, kind, statusId) {
             const fileInput = document.getElementById(fileInputId);
             if (!fileInput) return;

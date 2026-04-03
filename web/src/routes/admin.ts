@@ -13,11 +13,13 @@ import {
 import {
   deleteProduct,
   deleteTask,
+  normalizeInstallerPlatform,
   normalizeReleaseChannel,
   readLatestRelease,
   readProducts,
   readSiteSettings,
   readTasks,
+  storeInstaller,
   toggleTask,
   upsertProduct,
   upsertTask,
@@ -195,8 +197,12 @@ adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
   const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
   const current = await readLatestRelease(channel);
   const version = firstValue(body.version)?.trim() || "dev";
+  const changelog = firstValue(body.changelog)?.trim() || "";
+  const thumbnailUrl = firstValue(body.thumbnailUrl)?.trim() || "";
   await writeLatestRelease({
     version,
+    changelog,
+    thumbnailUrl,
     publishedAt: new Date().toISOString(),
     installer: current?.installer || null,
     installers: current?.installers || {},
@@ -204,6 +210,37 @@ adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
     updaterAssets: current?.updaterAssets || [],
   }, channel);
   return noticeRedirect(c, `已更新 ${channel} 版本为 ${version}`, "versions");
+});
+
+adminRoutes.post("/admin/upload/installer", requireAdminAuth, async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const file = firstFile(body.file) || firstFile(body.upload);
+    if (!file) {
+      return c.json({ ok: false, error: "缺少安装包文件" }, 400);
+    }
+    const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
+    const version = firstValue(body.version)?.trim() || undefined;
+    const platform = normalizeInstallerPlatform(firstValue(body.platform)) || undefined;
+    const result = await storeInstaller({
+      fileName: file.name || "clawos-setup.zip",
+      bytes: new Uint8Array(await file.arrayBuffer()),
+      channel,
+      version,
+      platform,
+    });
+    return c.json({
+      ok: true,
+      channel,
+      version: result.release.version,
+      fileName: result.asset.name,
+      platform: platform || null,
+      size: result.asset.size,
+      downloadUrl: `/downloads/${channel === "stable" ? "latest" : channel}`,
+    });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
 });
 
 adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {
