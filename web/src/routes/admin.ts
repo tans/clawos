@@ -1,34 +1,42 @@
 import { Hono, type Context } from "hono";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import {
   canUseAdminLogin,
   clearAdminSession,
   hasAdminSession,
   requireAdminAuth,
-  setAdminSession,
   verifyAdminCredentials,
+  setAdminSession,
 } from "../lib/auth";
 import {
+  deleteDownloadItem,
   deleteProduct,
   deleteTask,
-  normalizeReleaseChannel,
-  readLatestRelease,
-  readProducts,
-  readSiteSettings,
-  readTasks,
-  toggleTask,
+  getDownloadItemById,
+  readDownloadItems,
+  storeDownloadFile,
+  upsertDownloadItem,
   upsertProduct,
   upsertTask,
-  writeLatestRelease,
   writeSiteSettings,
+  toggleTask,
+  deleteTask,
+  readProducts,
+  readTasks,
+  readSiteSettings,
 } from "../lib/storage";
 import { getEnv } from "../lib/env";
 import { getBrandConfig, resetBrandConfigCache } from "../lib/branding";
 import { renderAdminLoginPage, renderAdminPage } from "../views/admin";
 
 export const adminRoutes = new Hono();
+
+type AdminSection = "settings" | "downloads" | "products" | "tasks";
+
+function sectionPath(section: AdminSection): string {
+  return section === "settings" ? "/admin" : `/admin/${section}`;
+}
 
 function firstValue(value: string | File | (string | File)[] | undefined): string | undefined {
   if (Array.isArray(value)) {
@@ -39,29 +47,13 @@ function firstValue(value: string | File | (string | File)[] | undefined): strin
 }
 
 function firstFile(value: unknown): (Blob & { name?: string }) | undefined {
-  if (Array.isArray(value)) {
-    return firstFile(value[0]);
-  }
-  if (value instanceof File) {
-    return value;
-  }
-  if (value instanceof Blob) {
-    return value;
-  }
+  if (value instanceof File) return value;
+  if (value instanceof Blob) return value;
   return undefined;
 }
 
-function toPublished(raw: string | undefined): boolean {
+function toBool(raw: string | undefined): boolean {
   return raw === "true" || raw === "on" || raw === "1";
-}
-
-type AdminSection = "settings" | "versions" | "products" | "tasks";
-
-function sectionPath(section: AdminSection): string {
-  if (section === "settings") {
-    return "/admin";
-  }
-  return `/admin/${section}`;
 }
 
 function noticeRedirect(c: Context, message: string, section: AdminSection = "settings"): Response {
@@ -69,13 +61,11 @@ function noticeRedirect(c: Context, message: string, section: AdminSection = "se
 }
 
 async function renderAdminSection(c: Context, activeSection: AdminSection): Promise<Response> {
-  const [products, tasks, settings, stableRelease, betaRelease, alphaRelease] = await Promise.all([
+  const [products, tasks, settings, downloads] = await Promise.all([
     readProducts(),
     readTasks(),
     readSiteSettings(),
-    readLatestRelease("stable"),
-    readLatestRelease("beta"),
-    readLatestRelease("alpha"),
+    readDownloadItems(),
   ]);
   const fallback = getBrandConfig();
   return c.html(
@@ -83,7 +73,6 @@ async function renderAdminSection(c: Context, activeSection: AdminSection): Prom
       activeSection,
       products,
       tasks,
-      notice: c.req.query("notice") || undefined,
       settings: settings || {
         brandName: fallback.brandName,
         siteName: fallback.siteName,
@@ -94,37 +83,24 @@ async function renderAdminSection(c: Context, activeSection: AdminSection): Prom
         seoKeywords: fallback.seoKeywords,
         updatedAt: new Date().toISOString(),
       },
-      releases: {
-        stable: stableRelease,
-        beta: betaRelease,
-        alpha: alphaRelease,
-      },
+      downloads,
+      notice: c.req.query("notice") || undefined,
     }),
   );
 }
 
 adminRoutes.get("/admin/login", (c) => {
-  if (hasAdminSession(c)) {
-    return c.redirect("/admin", 302);
-  }
-  if (!canUseAdminLogin()) {
-    return c.html(renderAdminLoginPage("服务端未配置 ADMIN_USERNAME / ADMIN_PASSWORD"), 503);
-  }
+  if (hasAdminSession(c)) return c.redirect("/admin", 302);
+  if (!canUseAdminLogin()) return c.html(renderAdminLoginPage("服务端未配置 ADMIN_USERNAME / ADMIN_PASSWORD"), 503);
   return c.html(renderAdminLoginPage());
 });
 
 adminRoutes.post("/admin/login", async (c) => {
-  if (!canUseAdminLogin()) {
-    return c.html(renderAdminLoginPage("服务端未配置 ADMIN_USERNAME / ADMIN_PASSWORD"), 503);
-  }
+  if (!canUseAdminLogin()) return c.html(renderAdminLoginPage("服务端未配置 ADMIN_USERNAME / ADMIN_PASSWORD"), 503);
   const body = await c.req.parseBody();
   const username = firstValue(body.username)?.trim() || "";
   const password = firstValue(body.password) || "";
-
-  if (!verifyAdminCredentials(username, password)) {
-    return c.html(renderAdminLoginPage("账号或密码错误"), 401);
-  }
-
+  if (!verifyAdminCredentials(username, password)) return c.html(renderAdminLoginPage("账号或密码错误"), 401);
   setAdminSession(c);
   return c.redirect("/admin", 302);
 });
@@ -134,25 +110,69 @@ adminRoutes.post("/admin/logout", (c) => {
   return c.redirect("/admin/login", 302);
 });
 
-adminRoutes.get("/admin", requireAdminAuth, async (c) => {
-  return renderAdminSection(c, "settings");
+adminRoutes.get("/admin", requireAdminAuth, async (c) => renderAdminSection(c, "settings"));
+adminRoutes.get("/admin/downloads", requireAdminAuth, async (c) => renderAdminSection(c, "downloads"));
+adminRoutes.get("/admin/products", requireAdminAuth, async (c) => renderAdminSection(c, "products"));
+adminRoutes.get("/admin/tasks", requireAdminAuth, async (c) => renderAdminSection(c, "tasks"));
+
+// ---------------------------------------------------------------------------
+// Download Items
+// ---------------------------------------------------------------------------
+
+adminRoutes.post("/admin/downloads/save", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const id = firstValue(body.id)?.trim().toLowerCase() || "";
+  const originalId = firstValue(body.originalId)?.trim().toLowerCase();
+
+  try {
+    // If changing ID, delete old one
+    if (originalId && originalId !== id) {
+      await deleteDownloadItem(originalId);
+    }
+    const item = await upsertDownloadItem({
+      id,
+      name: firstValue(body.name)?.trim() || "",
+      description: firstValue(body.description)?.trim() || "",
+      version: firstValue(body.version)?.trim() || "",
+      files: originalId && originalId === id
+        ? (await getDownloadItemById(id))?.files ?? []
+        : [],
+      published: toBool(firstValue(body.published)),
+      sortOrder: Number(firstValue(body.sortOrder) || 0),
+    });
+    return noticeRedirect(c, `下载项「${item.name}」已保存`, "downloads");
+  } catch (error) {
+    return noticeRedirect(c, `保存失败: ${(error as Error).message}`, "downloads");
+  }
 });
 
-adminRoutes.get("/admin/versions", requireAdminAuth, async (c) => {
-  return renderAdminSection(c, "versions");
+adminRoutes.post("/admin/downloads/delete", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const id = firstValue(body.id)?.trim() || "";
+  await deleteDownloadItem(id);
+  return noticeRedirect(c, "下载项已删除", "downloads");
 });
 
-adminRoutes.get("/admin/products", requireAdminAuth, async (c) => {
-  return renderAdminSection(c, "products");
+adminRoutes.post("/admin/downloads/upload-file", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const itemId = firstValue(body.itemId)?.trim().toLowerCase() || "";
+  const file = firstFile(body.file);
+  if (!file) return noticeRedirect(c, "请选择文件", "downloads");
+  try {
+    await storeDownloadFile(itemId, file.name || "unknown", new Uint8Array(await file.arrayBuffer()));
+    return noticeRedirect(c, `文件「${file.name}」已上传`, "downloads");
+  } catch (error) {
+    return noticeRedirect(c, `上传失败: ${(error as Error).message}`, "downloads");
+  }
 });
 
-adminRoutes.get("/admin/tasks", requireAdminAuth, async (c) => {
-  return renderAdminSection(c, "tasks");
-});
+// ---------------------------------------------------------------------------
+// Products
+// ---------------------------------------------------------------------------
 
 adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
   try {
-    const body = await c.req.parseBody();
     await upsertProduct({
       id: firstValue(body.id)?.trim() || "",
       name: firstValue(body.name)?.trim() || "",
@@ -160,7 +180,7 @@ adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
       imageUrl: firstValue(body.imageUrl)?.trim() || "",
       priceCny: firstValue(body.priceCny)?.trim() || "",
       link: firstValue(body.link)?.trim() || "",
-      published: toPublished(firstValue(body.published)),
+      published: toBool(firstValue(body.published)),
     });
     return noticeRedirect(c, "商品已保存", "products");
   } catch (error) {
@@ -170,10 +190,13 @@ adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
 
 adminRoutes.post("/admin/products/delete", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
-  const id = firstValue(body.id)?.trim() || "";
-  await deleteProduct(id);
+  await deleteProduct(firstValue(body.id)?.trim() || "");
   return noticeRedirect(c, "商品已删除", "products");
 });
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
 
 adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
@@ -190,21 +213,9 @@ adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
   return noticeRedirect(c, "品牌与 SEO 设置已保存", "settings");
 });
 
-adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
-  const body = await c.req.parseBody();
-  const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
-  const current = await readLatestRelease(channel);
-  const version = firstValue(body.version)?.trim() || "dev";
-  await writeLatestRelease({
-    version,
-    publishedAt: new Date().toISOString(),
-    installer: current?.installer || null,
-    installers: current?.installers || {},
-    xiakeConfig: current?.xiakeConfig || null,
-    updaterAssets: current?.updaterAssets || [],
-  }, channel);
-  return noticeRedirect(c, `已更新 ${channel} 版本为 ${version}`, "versions");
-});
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
 
 adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {
   const body = await c.req.parseBody();
@@ -216,7 +227,7 @@ adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {
       imageUrl: firstValue(body.imageUrl)?.trim() || "",
       dueDate: firstValue(body.dueDate)?.trim() || "",
       priority: (firstValue(body.priority) as "low" | "medium" | "high") || "medium",
-      done: toPublished(firstValue(body.done)),
+      done: toBool(firstValue(body.done)),
     });
     return noticeRedirect(c, "任务已保存", "tasks");
   } catch (error) {
@@ -236,13 +247,15 @@ adminRoutes.post("/admin/tasks/delete", requireAdminAuth, async (c) => {
   return noticeRedirect(c, "任务已删除", "tasks");
 });
 
+// ---------------------------------------------------------------------------
+// Admin Image Upload
+// ---------------------------------------------------------------------------
+
 adminRoutes.post("/admin/upload/image", requireAdminAuth, async (c) => {
   try {
     const body = await c.req.parseBody();
     const file = firstFile(body.file) || firstFile(body.image) || firstFile(body.upload);
-    if (!file) {
-      return c.json({ ok: false, error: "缺少文件" }, 400);
-    }
+    if (!file) return c.json({ ok: false, error: "缺少文件" }, 400);
     const kindRaw = firstValue(body.kind)?.trim().toLowerCase() || "misc";
     const kind = kindRaw === "logo" || kindRaw === "product" || kindRaw === "task" ? kindRaw : "misc";
     const ext = extname(file.name || "").toLowerCase() || ".png";
@@ -251,8 +264,7 @@ adminRoutes.post("/admin/upload/image", requireAdminAuth, async (c) => {
     }
     const fileName = `${kind}-${Date.now()}-${randomUUID()}${ext}`;
     const dir = resolve(getEnv().storageDir, "assets", "admin-images");
-    await mkdir(dir, { recursive: true });
-    await writeFile(resolve(dir, fileName), new Uint8Array(await file.arrayBuffer()));
+    await Bun.write(resolve(dir, fileName), new Uint8Array(await file.arrayBuffer()));
     return c.json({ ok: true, url: `/admin-assets/${fileName}` });
   } catch (error) {
     return c.json({ ok: false, error: (error as Error).message }, 400);
@@ -261,12 +273,10 @@ adminRoutes.post("/admin/upload/image", requireAdminAuth, async (c) => {
 
 adminRoutes.get("/admin-assets/:fileName", async (c) => {
   const fileName = c.req.param("fileName");
-  if (!/^[A-Za-z0-9._-]+$/.test(fileName)) {
-    return c.text("Not Found", 404);
-  }
+  if (!/^[A-Za-z0-9._-]+$/.test(fileName)) return c.text("Not Found", 404);
   const filePath = resolve(getEnv().storageDir, "assets", "admin-images", fileName);
   try {
-    const content = await readFile(filePath);
+    const content = await Bun.file(filePath).arrayBuffer();
     const ext = extname(fileName).toLowerCase();
     const contentType =
       ext === ".png" ? "image/png" :

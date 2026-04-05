@@ -66,7 +66,6 @@ export interface McpShelfItem {
   updatedAt: string;
 }
 
-
 export interface AdminTask {
   id: string;
   title: string;
@@ -86,5 +85,31 @@ export interface SiteSettings {
   seoTitle: string;
   seoDescription: string;
   seoKeywords: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Download Items (new unified download module)
+// ---------------------------------------------------------------------------
+
+export interface DownloadFile {
+  name: string;
+  /** bytes */
+  size: number;
+  sha256: string;
+  uploadedAt: string;
+  /** relative path within storage, e.g. "downloads/{itemId}/{fileName}" */
+  relativePath: string;
+}
+
+export interface DownloadItem {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  files: DownloadFile[];
+  published: boolean;
+  sortOrder: number;
+  createdAt: string;
   updatedAt: string;
 }

@@ -3,131 +3,84 @@
 import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
-interface DownloadChannelCard {
-  id: "stable" | "beta" | "alpha";
-  label: string;
-  badgeClass: string;
+interface DownloadItemCard {
+  id: string;
+  name: string;
+  description: string;
   version: string;
-  publishedAt: string;
-  hasInstaller: boolean;
-  windowsUrl: string;
-  macosUrl: string;
-  linuxUrl: string;
+  fileCount: number;
+  firstFile: { name: string; size: number; sha256: string } | null;
+  downloadUrl: string | null;
+  updatedAt: string;
 }
 
-function formatPublishedAt(value: string | null): string {
-  if (!value) return "暂无发布时间";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "暂无发布时间";
-  return date.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function renderDownloadsPage(cards: DownloadChannelCard[]): string {
-  const { brandName } = getBrandConfig();
-  return renderMarketingShell({
-    title: "下载试用",
-    description: `${brandName} 下载试用入口与企业部署评估入口。`,
-    currentPath: "/downloads",
-    children: <DownloadsPage cards={cards} brandName={brandName} />,
-  });
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
-function DownloadsPage({ cards, brandName }: { cards: DownloadChannelCard[]; brandName: string }) {
-  const stable = cards.find((card) => card.id === "stable");
-  const secondary = cards.filter((card) => card.id !== "stable");
-
+function DownloadItemRow({ item }: { item: DownloadItemCard }) {
   return (
-    <>
-      <section class="marketing-section py-10 sm:py-14">
-        <div class="marketing-section-inner">
-          <div class="marketing-card marketing-page-hero p-6 sm:p-8">
-            <p class="marketing-kicker">Trial Entry</p>
-            <h1 class="marketing-h2 mt-2 text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">{`下载 ${brandName}，开始你的企业 AI 试点`}</h1>
-            <p class="marketing-lead mt-4 max-w-3xl text-base leading-8 text-[color:var(--ink-soft)]">先从桌面试用开始；如果需要本地优先部署或虾壳主机交付，可直接咨询企业部署方案。</p>
-          </div>
+    <div class="marketing-card p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h3 class="text-base font-semibold text-[color:var(--ink-strong)]">{item.name}</h3>
+          <span class="badge badge-outline text-xs">{item.version}</span>
+          {item.fileCount > 1 ? (
+            <span class="badge badge-ghost text-xs">{item.fileCount} 个文件</span>
+          ) : null}
         </div>
-      </section>
-
-      <section class="marketing-section py-6 sm:py-8">
-        <div class="marketing-section-inner lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)] lg:gap-6">
-          <article class="marketing-card marketing-download-primary p-6 sm:p-8">
-            <p class="marketing-kicker">Stable</p>
-            <h2 class="mt-2 text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">下载稳定版</h2>
-            <p class="mt-3 text-sm text-[color:var(--ink-soft)]">{`当前版本：${stable?.version ?? "dev"}`}</p>
-            <div class="marketing-platform-list mt-5 grid gap-3 sm:flex sm:flex-wrap">
-              <a class="marketing-primary-button" href={stable?.windowsUrl ?? "/downloads/latest/windows"}>下载 Windows</a>
-              <a class="marketing-secondary-button" href={stable?.macosUrl ?? "/downloads/latest/macos"}>下载 macOS</a>
-              <a class="marketing-secondary-button" href={stable?.linuxUrl ?? "/downloads/latest/linux"}>下载 Linux</a>
-            </div>
-          </article>
-
-          <aside class="marketing-card marketing-download-consult mt-6 p-6 sm:p-8 lg:mt-0">
-            <h2 class="text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">需要企业部署？</h2>
-            <p class="mt-3 text-sm leading-7 text-[color:var(--ink-soft)]">如果你需要本地优先部署、虾壳主机交付或上线前评估，可直接发起部署评估。</p>
-            <a class="marketing-primary-button mt-5" href="/contact">申请部署评估</a>
-          </aside>
-        </div>
-      </section>
-
-      <section class="marketing-section py-6 sm:py-10">
-        <div class="marketing-section-inner marketing-grid-2 grid gap-5 lg:grid-cols-2">
-          {secondary.map((card) => (
-            <article key={card.id} class="marketing-card p-5 sm:p-6">
-              <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">{card.label}</h3>
-              <p class="mt-3 text-sm text-[color:var(--ink-soft)]">{`版本：${card.version}`}</p>
-              <p class="mt-1 text-sm text-[color:var(--ink-soft)]">{`发布时间：${card.publishedAt}`}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-    </>
+        <p class="mt-1 text-sm text-[color:var(--ink-soft)] line-clamp-2">
+          {item.description || "暂无描述"}
+        </p>
+        <p class="mt-1 text-xs text-base-content/40">
+          更新于 {formatDate(item.updatedAt)}
+          {item.firstFile ? ` · ${formatSize(item.firstFile.size)}` : ""}
+        </p>
+      </div>
+      <div class="flex gap-2 shrink-0">
+        {item.downloadUrl ? (
+          <a class="btn btn-primary btn-sm" href={item.downloadUrl}>
+            下载
+          </a>
+        ) : (
+          <span class="btn btn-disabled btn-sm">无可用文件</span>
+        )}
+      </div>
+    </div>
   );
 }
 
-export function buildDownloadCards(input: {
-  stableVersion: string | null;
-  stablePublishedAt: string | null;
-  hasStableInstaller: boolean;
-  betaVersion: string | null;
-  betaPublishedAt: string | null;
-  hasBetaInstaller: boolean;
-  alphaVersion: string | null;
-  alphaPublishedAt: string | null;
-  hasAlphaInstaller: boolean;
-}): DownloadChannelCard[] {
-  return [
-    {
-      id: "stable",
-      label: "稳定版",
-      badgeClass: "badge-neutral",
-      version: input.stableVersion?.trim() || "dev",
-      publishedAt: formatPublishedAt(input.stablePublishedAt),
-      hasInstaller: input.hasStableInstaller,
-      windowsUrl: "/downloads/latest/windows",
-      macosUrl: "/downloads/latest/macos",
-      linuxUrl: "/downloads/latest/linux",
-    },
-    {
-      id: "beta",
-      label: "测试版",
-      badgeClass: "badge-warning",
-      version: input.betaVersion?.trim() || "dev",
-      publishedAt: formatPublishedAt(input.betaPublishedAt),
-      hasInstaller: input.hasBetaInstaller,
-      windowsUrl: "/downloads/beta/windows",
-      macosUrl: "/downloads/beta/macos",
-      linuxUrl: "/downloads/beta/linux",
-    },
-    {
-      id: "alpha",
-      label: "内测版",
-      badgeClass: "badge-info",
-      version: input.alphaVersion?.trim() || "dev",
-      publishedAt: formatPublishedAt(input.alphaPublishedAt),
-      hasInstaller: input.hasAlphaInstaller,
-      windowsUrl: "/downloads/alpha/windows",
-      macosUrl: "/downloads/alpha/macos",
-      linuxUrl: "/downloads/alpha/linux",
-    },
-  ];
+function DownloadsGrid({ items, brandName }: { items: DownloadItemCard[]; brandName: string }) {
+  if (items.length === 0) {
+    return (
+      <div class="text-center py-16 text-base-content/40">
+        暂无下载项
+      </div>
+    );
+  }
+  return (
+    <div class="space-y-3">
+      {items.map((item) => (
+        <DownloadItemRow key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
+
+export function renderDownloadsPage(items: DownloadItemCard[]): string {
+  const { brandName } = getBrandConfig();
+  return renderMarketingShell({
+    title: "下载中心",
+    description: `下载 ${brandName} 相关软件与安装包。`,
+    currentPath: "/downloads",
+    children: <DownloadsGrid items={items} brandName={brandName} />,
+  });
 }

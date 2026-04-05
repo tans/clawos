@@ -1,16 +1,12 @@
-import type { AdminTask, LatestRelease, Product, SiteSettings } from "../../lib/types";
+import type { AdminTask, DownloadItem, Product, SiteSettings } from "../../lib/types";
 
-export type AdminSection = "settings" | "versions" | "products" | "tasks";
+export type AdminSection = "settings" | "downloads" | "products" | "tasks";
 
 export interface AdminPageProps {
   products: Product[];
   tasks: AdminTask[];
   settings: SiteSettings;
-  releases: {
-    stable: LatestRelease | null;
-    beta: LatestRelease | null;
-    alpha: LatestRelease | null;
-  };
+  downloads: DownloadItem[];
   notice?: string;
   activeSection: AdminSection;
 }
