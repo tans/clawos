@@ -1,0 +1,20 @@
+{
+  "apps": [
+    {
+      "name": "buytoken",
+      "cwd": "/root/buytoken",
+      "script": "/root/.bun/bin/bun",
+      "interpreterArgs": ["run", "src/index.ts"],
+      "env": {
+        "PORT": 3003,
+        "NODE_ENV": "production"
+      },
+      "autorestart": true,
+      "watch": false,
+      "merge_logs": true,
+      "time": true,
+      "out_file": "logs/buytoken.out.log",
+      "error_file": "logs/buytoken.err.log"
+    }
+  ]
+}
