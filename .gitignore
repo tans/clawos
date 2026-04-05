@@ -28,3 +28,4 @@ mission/data/
 web/logs/
 .codex-tmp-build
 .worktrees
+ssh
