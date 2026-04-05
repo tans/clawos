@@ -425,7 +425,7 @@ export function HardwareSection() {
             Route First
           </div>
           <h2 class="text-display-md text-ink-strong mb-4">
-            先做产品分流，再做深度阅读
+            选择需要了解的方面
           </h2>
           <p class="text-body-lg text-ink-soft">
             首页先回答"我该去哪里"，再进入具体页面看方案细节。
