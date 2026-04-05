@@ -4,9 +4,9 @@
       "name": "buytoken",
       "cwd": "/root/buytoken",
       "script": "/root/.bun/bin/bun",
-      "interpreterArgs": ["run", "src/index.ts"],
+      "args": "run src/index.ts",
       "env": {
-        "PORT": 3003,
+        "PORT": 26450,
         "NODE_ENV": "production"
       },
       "autorestart": true,
