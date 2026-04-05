@@ -277,6 +277,13 @@
         position: relative;
     }
 
+    .focus-scroll-page > .marketing-section {
+        transition:
+            opacity 280ms ease,
+            transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+        transform-origin: center center;
+    }
+
     .marketing-page-hero {
         display: grid;
         gap: 0.9rem;
@@ -430,10 +437,12 @@
 
     .marketing-primary-button {
         @apply btn btn-primary;
+        color: #fff;
     }
 
     .marketing-primary-button:hover {
         transform: translateY(-1px);
+        color: #fff;
     }
 
     .marketing-primary-button:focus-visible {
@@ -443,6 +452,31 @@
 
     .marketing-secondary-button {
         @apply btn btn-outline;
+    }
+
+    .focus-outline-button {
+        display: inline-block;
+        border: 1px solid #111827;
+        background: #ffffff;
+        color: #111827;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition:
+            transform 180ms ease,
+            box-shadow 180ms ease,
+            background-color 180ms ease;
+    }
+
+    .focus-outline-button:hover {
+        background: #f9fafb;
+        color: #111827;
+        box-shadow: 0 8px 18px rgb(15 23 42 / 0.08);
+        transform: translateY(-1px);
+    }
+
+    .focus-outline-button:focus-visible {
+        outline: 2px solid #111827;
+        outline-offset: 2px;
     }
 
     .marketing-secondary-button:hover {
@@ -657,6 +691,12 @@
     .hero-slogan-item:first-child {
         opacity: 1;
     }
+
+    .focus-scroll-page > .marketing-section {
+        transition: none;
+        transform: none;
+        opacity: 1;
+    }
 }
 
 @media (min-width: 768px) {
@@ -677,8 +717,33 @@
 }
 
 @media (min-width: 1024px) {
+    html.home-focus-enabled {
+        scroll-behavior: smooth;
+    }
+
     .marketing-nav-links {
         display: flex;
+    }
+
+    .focus-scroll-page > .marketing-section {
+        min-height: auto;
+        opacity: 0.76;
+        transform: scale(1);
+    }
+
+    .focus-scroll-page > .marketing-section.is-nearby {
+        opacity: 0.88;
+        transform: scale(1);
+    }
+
+    .focus-scroll-page > .marketing-section.is-focused {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .focus-scroll-page > .marketing-section.is-dimmed {
+        opacity: 0.68;
+        transform: scale(1);
     }
 
     .market-hero-grid {
