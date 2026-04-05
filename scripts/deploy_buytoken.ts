@@ -6,7 +6,8 @@
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DOMAIN = "buytoken.clawos.cc";
 const PORT = 26450;
@@ -16,6 +17,7 @@ const OPENRESTY_CONTAINER = "1Panel-openresty-IZie";
 const BASE_URL = process.env.BASE_URL || `https://${DOMAIN}`;
 
 // Load env from clawos/.env
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const clawosEnvPath = resolve(__dirname, "..", ".env");
 const clawosEnv: Record<string, string> = {};
 try {
@@ -35,10 +37,10 @@ try {
 const SSH_KEY = resolve(__dirname, "..", "ssh", "id_ed25519_1panel");
 
 async function ssh(cmd: string, timeout = 30000): Promise<string> {
-  const { execSync } = await import("node:child_process");
-  const fullCmd = `ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=60 root@clawos.cc ${JSON.stringify(cmd)}`;
+  const { execSync, spawnSync } = await import("node:child_process");
+  console.log("[ssh]", cmd.split("\n").slice(0, 3).join("\\n"), "...");
   try {
-    return execSync(fullCmd, { encoding: "utf-8", timeout });
+    return spawnSync("ssh", ["-i", SSH_KEY, "root@clawos.cc", cmd], { encoding: "utf-8", timeout, shell: false }).stdout || "";
   } catch (err: unknown) {
     const e = err as { status?: number; message?: string; stderr?: string };
     if (e.status !== 0) return e.stderr || String(err);
@@ -47,10 +49,9 @@ async function ssh(cmd: string, timeout = 30000): Promise<string> {
 }
 
 async function sshNoFail(cmd: string, timeout = 30000): Promise<string> {
-  const { execSync } = await import("node:child_process");
-  const fullCmd = `ssh -i "${SSH_KEY}" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o ServerAliveInterval=60 root@clawos.cc ${JSON.stringify(cmd)}`;
+  const { spawnSync } = await import("node:child_process");
   try {
-    return execSync(fullCmd, { encoding: "utf-8", timeout });
+    return spawnSync("ssh", ["-i", SSH_KEY, "root@clawos.cc", cmd], { encoding: "utf-8", timeout, shell: false }).stdout || "";
   } catch (err: unknown) {
     return (err as { stderr?: string }).stderr || (err as { stdout?: string }).stdout || "";
   }

@@ -4,14 +4,17 @@ const capabilityItems = [
   {
     title: "私有部署",
     description: "数据留在本地，网络边界自己掌控，适合对数据安全有要求的团队。",
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
   },
   {
     title: "技能接入",
     description: "把内部流程、工具和数据接入 AI，让它能真正做事而不是聊天。",
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`,
   },
   {
     title: "权限与审计",
     description: "谁能用、做了什么，全部留记录，满足合规和内部审计需求。",
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`,
   },
 ] as const;
 
@@ -48,31 +51,31 @@ const governanceItems = [
 const productRouteItems = [
   {
     title: "Hardware",
-    subtitle: "本地优先部署",
-    description: "适合需要内网运行、设备可控和稳定执行环境的团队。",
+    subtitle: "硬件主机",
+    description: "预装系统的交付硬件，本地运行，到手即用。",
     href: "/contact",
-    cta: "申请硬件部署评估",
+    cta: "了解硬件方案",
   },
   {
     title: "Enterprise",
-    subtitle: "组织级治理与协作",
-    description: "适合多角色协作、权限治理和长期运营要求明确的企业。",
+    subtitle: "企业授权",
+    description: "多角色协作、权限治理和长期运营要求明确的企业。",
     href: "/contact",
     cta: "查看企业落地路径",
   },
   {
-    title: "Agent 众包市场",
-    subtitle: "任务撮合与交付",
-    description: "发布任务、匹配服务方、按里程碑验收，提升任务交付效率。",
+    title: "Agent 市场",
+    subtitle: "任务协作",
+    description: "发布任务、匹配服务方、按里程碑验收。",
     href: "/market",
     cta: "进入任务市场",
   },
   {
     title: "商城",
-    subtitle: "硬件与模板即买即用",
-    description: "集中购买硬件、模板和服务包，缩短从选型到上线的周期。",
+    subtitle: "即买即用",
+    description: "硬件、模板和服务包，缩短从选型到上线的周期。",
     href: "/shop",
-    cta: "进入产品商城",
+    cta: "查看商城方案",
   },
 ] as const;
 
@@ -95,69 +98,77 @@ function buildFaqItems(brandName: string) {
 
 export function HomeHero({ brandName }: { brandName: string }) {
   return (
-    <section class="marketing-section py-16 sm:py-24 md:py-32 relative overflow-hidden">
-      {/* 背景渐变 */}
-      <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 -z-10"></div>
-      {/* 装饰元素 */}
-      <div class="absolute top-10 right-10 w-40 h-40 sm:w-64 sm:h-64 bg-blue-100 rounded-full opacity-30 blur-3xl animate-pulse-slow"></div>
-      <div class="absolute bottom-10 left-10 w-56 h-56 sm:w-80 sm:h-80 bg-indigo-100 rounded-full opacity-20 blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
-      
-      <div class="marketing-section-inner relative z-10">
-        <div class="grid gap-12 md:gap-16 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.8fr)] lg:gap-24">
-          <div class="max-w-4xl space-y-6 sm:space-y-8 animate-slide-up">
-            <p class="marketing-kicker text-primary-600">Enterprise AI Deployment</p>
-            <h1 class="marketing-h1 max-w-5xl text-secondary-900 leading-tight text-3xl sm:text-4xl md:text-5xl">
-              企业级 AI 智能体 操作系统
-            </h1>
-            <p class="marketing-lead max-w-3xl text-base leading-7 sm:leading-8 text-secondary-600 sm:text-lg">
-              {brandName} 让 AI 进入真实业务流程：本地部署、数据可控、权限清晰、运行稳定。虾壳主机预装开箱即用。
-            </p>
-            <div class="marketing-cta-row flex flex-wrap gap-3 sm:gap-4">
-              <a class="marketing-primary-button bg-primary-600 hover:bg-primary-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 w-full sm:w-auto" href="/contact">
-                申请部署评估
-              </a>
-              <a class="marketing-secondary-button border border-primary-200 text-primary-700 hover:bg-primary-50 px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-medium transition-all duration-300 w-full sm:w-auto" href="/#architecture">
-                了解部署方式
-              </a>
+    <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-hero-section">
+      {/* Subtle Background */}
+      <div class="absolute inset-0 bg-grid-pattern opacity-[0.015]"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-accent/[0.03] blur-3xl -translate-y-1/2"></div>
+
+      <div class="section-inner relative z-10 py-20 lg:py-28">
+        <div class="max-w-4xl mx-auto text-center">
+          {/* Badge */}
+          <div class="deco-badge mx-auto mb-8 animate-on-scroll">
+            <span class="deco-circle"></span>
+            Enterprise AI Deployment
+          </div>
+
+          {/* Headline */}
+          <h1 class="text-display-xl text-ink-strong mb-6 animate-on-scroll stagger-1">
+            企业级 AI
+            <br />
+            <span class="text-accent">智能体</span> 操作系统
+          </h1>
+
+          {/* Subheadline */}
+          <p class="text-body-lg text-ink-soft max-w-2xl mx-auto mb-10 leading-relaxed animate-on-scroll stagger-2">
+            {brandName} 让 AI 进入真实业务流程：本地部署、数据可控、权限清晰、运行稳定。预装主机到手即用。
+          </p>
+
+          {/* CTA */}
+          <div class="flex flex-wrap justify-center gap-4 mb-16 animate-on-scroll stagger-3">
+            <a href="/contact" class="btn-primary-warm">
+              申请部署评估
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+            <a href="/#architecture" class="btn-outline-warm">
+              了解部署方式
+            </a>
+          </div>
+
+          {/* Product Visual */}
+          <div class="card-warm-static rounded-3xl p-6 sm:p-10 max-w-3xl mx-auto animate-on-scroll stagger-4">
+            <div class="text-left mb-6">
+              <div class="deco-badge mb-4">交付形态</div>
+              <h3 class="text-display-sm text-ink-strong">
+                {brandName} + 虾壳主机
+              </h3>
+            </div>
+            <div class="aspect-[16/9] rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden">
+              <img
+                src="/public/delivery-ui.webp"
+                alt="交付形态"
+                class="w-full h-full object-contain"
+              />
             </div>
           </div>
 
-          <aside class="lg:pl-10 lg:pt-2 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <div class="relative w-full max-w-md h-80 sm:h-96 bg-white rounded-[2rem] shadow-soft border border-gray-100 overflow-hidden">
-              <div id="carousel" class="flex transition-transform duration-500 ease-in-out h-full">
-                {/* 交付形态卡片 */}
-                <div class="w-full flex-shrink-0 flex flex-col p-6">
-                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">交付形态</p>
-                  <h3 class="mt-2 text-xl font-semibold text-secondary-900">{`${brandName} + 虾壳主机`}</h3>
-                  <div class="mt-4 flex-grow flex items-center justify-center">
-                    <img src="/public/delivery-ui.webp" alt="交付形态" class="max-h-52 sm:max-h-64 rounded-2xl object-contain" />
-                  </div>
-                </div>
-                {/* 部署方式卡片 */}
-                <div class="w-full flex-shrink-0 flex flex-col p-6">
-                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">部署方式</p>
-                  <h3 class="mt-2 text-xl font-semibold text-secondary-900">本地优先、企业内网、混合环境</h3>
-                  <div class="mt-4 flex-grow flex items-center justify-center">
-                    <img src="/public/deployment-ui.webp" alt="部署方式" class="max-h-52 sm:max-h-64 rounded-2xl object-contain" />
-                  </div>
-                </div>
-                {/* 适用团队卡片 */}
-                <div class="w-full flex-shrink-0 flex flex-col p-6">
-                  <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">适用团队</p>
-                  <h3 class="mt-2 text-xl font-semibold text-secondary-900">运营、制造、交付、内部支持</h3>
-                  <div class="mt-4 flex-grow flex items-center justify-center">
-                    <img src="/public/team-ui.webp" alt="适用团队" class="max-h-52 sm:max-h-64 rounded-2xl object-contain" />
-                  </div>
-                </div>
-              </div>
-              {/* 轮播指示器 */}
-              <div class="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-                <button class="w-2 h-2 rounded-full bg-primary-600 carousel-indicator" data-index="0"></button>
-                <button class="w-2 h-2 rounded-full bg-gray-300 carousel-indicator" data-index="1"></button>
-                <button class="w-2 h-2 rounded-full bg-gray-300 carousel-indicator" data-index="2"></button>
-              </div>
+          {/* Simple Stats Row */}
+          <div class="flex flex-wrap justify-center gap-8 sm:gap-16 mt-12 pt-8 border-t border-line-soft animate-on-scroll stagger-5">
+            <div class="text-center">
+              <p class="text-display-sm text-ink-strong font-display">100%</p>
+              <p class="text-label text-ink-faint mt-1">数据可控</p>
             </div>
-          </aside>
+            <div class="text-center">
+              <p class="text-display-sm text-ink-strong font-display">本地优先</p>
+              <p class="text-label text-ink-faint mt-1">部署方式</p>
+            </div>
+            <div class="text-center">
+              <p class="text-display-sm text-ink-strong font-display">7×24</p>
+              <p class="text-label text-ink-faint mt-1">稳定运行</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -166,37 +177,55 @@ export function HomeHero({ brandName }: { brandName: string }) {
 
 export function CoreValueSection() {
   return (
-    <section class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Why This Layer</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            企业 AI，难的不是选模型，而是用起来
+    <section class="section-spacing relative overflow-hidden">
+      <div class="absolute inset-0 bg-surface-muted/50"></div>
+      <div class="absolute top-0 right-0 w-96 h-96 rounded-full bg-accent/5 blur-3xl"></div>
+
+      <div class="section-inner relative z-10">
+        <div class="max-w-3xl mb-16 animate-on-scroll">
+          <div class="deco-badge mb-6">
+            <span class="deco-circle"></span>
+            Why This Layer
+          </div>
+          <h2 class="text-display-md text-ink-strong mb-6">
+            企业 AI，难的不是选模型，
+            <br />
+            而是<span class="text-accent">用起来</span>
           </h2>
-          <p class="text-base leading-8 text-secondary-600">
+          <p class="text-body-lg text-ink-soft max-w-2xl">
             模型哪家都能用，真正决定能否长期运行的，是部署方式、权限管理和持续维护能力。
           </p>
         </div>
 
-        <div class="mt-16 grid gap-10 md:grid-cols-3">
-          <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <h3 class="text-xl font-semibold text-secondary-900">不只是聊天</h3>
-            <p class="mt-3 text-sm leading-8 text-secondary-600">
-              AI 能代替你执行操作，不只是回答问题。
-            </p>
-          </article>
-          <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <h3 class="text-xl font-semibold text-secondary-900">不止于模型</h3>
-            <p class="mt-3 text-sm leading-8 text-secondary-600">
-              接入内部系统、数据和工具链，比选哪个模型更重要。
-            </p>
-          </article>
-          <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <h3 class="text-xl font-semibold text-secondary-900">可持续运行</h3>
-            <p class="mt-3 text-sm leading-8 text-secondary-600">
-              从上线第一天就考虑长期运维，不是演示完就结束。
-            </p>
-          </article>
+        <div class="grid gap-8 md:grid-cols-3">
+          {[
+            {
+              title: "不只是聊天",
+              desc: "AI 能代替你执行操作，不只是回答问题。",
+              delay: 1,
+            },
+            {
+              title: "不止于模型",
+              desc: "接入内部系统、数据和工具链，比选哪个模型更重要。",
+              delay: 2,
+            },
+            {
+              title: "可持续运行",
+              desc: "从上线第一天就考虑长期运维，不是演示完就结束。",
+              delay: 3,
+            },
+          ].map((item, index) => (
+            <article
+              key={item.title}
+              class={`card-warm rounded-2xl p-8 animate-on-scroll stagger-${item.delay}`}
+            >
+              <div class="w-12 h-12 rounded-xl bg-accent/10 text-accent flex items-center justify-center mb-6">
+                <span class="text-display-sm font-display">{String(index + 1).padStart(2, '0')}</span>
+              </div>
+              <h3 class="text-display-sm text-ink-strong mb-3">{item.title}</h3>
+              <p class="text-body-md text-ink-soft">{item.desc}</p>
+            </article>
+          ))}
         </div>
       </div>
     </section>
@@ -205,41 +234,61 @@ export function CoreValueSection() {
 
 export function ArchitectureSection({ brandName }: { brandName: string }) {
   return (
-    <section id="architecture" class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20">
-          <div class="max-w-2xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <p class="marketing-kicker text-primary-600">Deployment Model</p>
-            <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-              {`${brandName} 与虾壳主机的交付方式`}
+    <section id="architecture" class="section-spacing relative">
+      <div class="section-inner">
+        <div class="grid gap-16 lg:grid-cols-[1fr_1fr] lg:gap-24 items-start">
+          {/* Left Content */}
+          <div class="animate-on-scroll">
+            <div class="deco-badge mb-6">
+              <span class="deco-circle"></span>
+              Deployment Model
+            </div>
+            <h2 class="text-display-md text-ink-strong mb-6">
+              {brandName} 与虾壳主机
+              <br />
+              的交付方式
             </h2>
-            <p class="text-base leading-8 text-secondary-600">
+            <p class="text-body-lg text-ink-soft mb-8">
               软件 + 硬件一体化交付，到手即用，缩短从选型到上线的周期。
             </p>
+
+            <div class="flex flex-wrap gap-4">
+              <a href="/contact" class="btn-primary-warm">
+                申请评估
+              </a>
+            </div>
           </div>
 
-          <div class="space-y-8">
-            <article class="border-t border-gray-100 pt-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">01</p>
-              <h3 class="mt-2 text-xl font-semibold text-secondary-900">{brandName}</h3>
-              <p class="mt-3 text-sm leading-8 text-secondary-600">
-                企业 AI 操作系统，负责任务执行、权限管理和系统接入。
-              </p>
-            </article>
-            <article class="border-t border-gray-100 pt-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">02</p>
-              <h3 class="mt-2 text-xl font-semibold text-secondary-900">Skill 接入</h3>
-              <p class="mt-3 text-sm leading-8 text-secondary-600">
-                把内部工具、数据和流程接入 AI，形成可复用的执行能力。
-              </p>
-            </article>
-            <article class="border-t border-gray-100 pt-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">03</p>
-              <h3 class="mt-2 text-xl font-semibold text-secondary-900">虾壳主机</h3>
-              <p class="mt-3 text-sm leading-8 text-secondary-600">
-                预装 {brandName} 的硬件主机，本地运行，到手即用。
-              </p>
-            </article>
+          {/* Right Steps */}
+          <div class="space-y-0">
+            {[
+              {
+                num: "01",
+                title: brandName,
+                desc: "企业 AI 操作系统，负责任务执行、权限管理和系统接入。",
+              },
+              {
+                num: "02",
+                title: "Skill 接入",
+                desc: "把内部工具、数据和流程接入 AI，形成可复用的执行能力。",
+              },
+              {
+                num: "03",
+                title: "虾壳主机",
+                desc: "预装系统的硬件主机，本地运行，到手即用。",
+              },
+            ].map((item, index) => (
+              <article
+                key={item.num}
+                class={`relative pl-16 py-8 border-b border-line-soft animate-on-scroll stagger-${index + 1}`}
+              >
+                <span class="absolute left-0 top-8 text-5xl font-display font-bold text-accent/20">
+                  {item.num}
+                </span>
+                <h3 class="text-display-sm text-ink-strong mb-2">{item.title}</h3>
+                <p class="text-body-md text-ink-soft">{item.desc}</p>
+              </article>
+            ))}
           </div>
         </div>
       </div>
@@ -249,21 +298,32 @@ export function ArchitectureSection({ brandName }: { brandName: string }) {
 
 export function CapabilityMatrixSection() {
   return (
-    <section id="capabilities" class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Core Capability</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            核心能力
-          </h2>
-          <p class="text-base leading-8 text-secondary-600">聚焦企业团队真正会关心的三类能力。</p>
+    <section id="capabilities" class="section-spacing relative overflow-hidden">
+      <div class="absolute inset-0 bg-surface-muted/30"></div>
+      <div class="deco-dot-grid top-20 left-[60%] opacity-20"></div>
+
+      <div class="section-inner relative z-10">
+        <div class="text-center max-w-2xl mx-auto mb-16 animate-on-scroll">
+          <div class="deco-badge mx-auto mb-6">
+            <span class="deco-circle"></span>
+            Core Capability
+          </div>
+          <h2 class="text-display-md text-ink-strong mb-4">核心能力</h2>
+          <p class="text-body-lg text-ink-soft">聚焦企业团队真正会关心的三类能力。</p>
         </div>
 
-        <div class="mt-14 grid gap-12 md:grid-cols-3">
+        <div class="grid gap-8 md:grid-cols-3">
           {capabilityItems.map((item, index) => (
-            <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: `${0.2 + index * 0.1}s` }}>
-              <h3 class="text-xl font-semibold text-secondary-900">{item.title}</h3>
-              <p class="mt-3 text-sm leading-8 text-secondary-600">{item.description}</p>
+            <article
+              key={item.title}
+              class={`card-warm rounded-2xl p-8 animate-on-scroll stagger-${index + 1}`}
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-ink text-surface flex items-center justify-center mb-6"
+                dangerouslySetInnerHTML={{ __html: item.icon }}
+              />
+              <h3 class="text-xl font-semibold text-ink-strong mb-3">{item.title}</h3>
+              <p class="text-body-md text-ink-soft">{item.description}</p>
             </article>
           ))}
         </div>
@@ -274,23 +334,32 @@ export function CapabilityMatrixSection() {
 
 export function ScenarioSection() {
   return (
-    <section id="solutions" class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Use Cases</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            适用场景
-          </h2>
-          <p class="text-base leading-8 text-secondary-600">
+    <section id="solutions" class="section-spacing">
+      <div class="section-inner">
+        <div class="max-w-3xl mb-16 animate-on-scroll">
+          <div class="deco-badge mb-6">
+            <span class="deco-circle"></span>
+            Use Cases
+          </div>
+          <h2 class="text-display-md text-ink-strong mb-4">适用场景</h2>
+          <p class="text-body-lg text-ink-soft">
             适合那些已经明确知道 AI 需要进入哪个业务流程、但仍在评估如何部署和管理的团队。
           </p>
         </div>
 
-        <div class="mt-16 grid gap-12 md:grid-cols-3">
+        <div class="grid gap-8 md:grid-cols-3">
           {scenarioItems.map((item, index) => (
-            <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: `${0.2 + index * 0.1}s` }}>
-              <h3 class="text-xl font-semibold text-secondary-900">{item.title}</h3>
-              <p class="mt-3 text-sm leading-8 text-secondary-600">{item.description}</p>
+            <article
+              key={item.title}
+              class={`card-warm rounded-2xl p-8 animate-on-scroll stagger-${index + 1}`}
+            >
+              <div class="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center mb-6">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-ink-strong mb-3">{item.title}</h3>
+              <p class="text-body-md text-ink-soft">{item.description}</p>
             </article>
           ))}
         </div>
@@ -301,49 +370,41 @@ export function ScenarioSection() {
 
 export function GovernanceSection() {
   return (
-    <section id="governance" class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Governance</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
+    <section id="governance" class="section-spacing relative">
+      <div class="absolute inset-0 bg-ink"></div>
+      <div class="absolute inset-0 opacity-5">
+        <div class="absolute inset-0 bg-grid-pattern"></div>
+      </div>
+
+      <div class="section-inner relative z-10">
+        <div class="max-w-3xl mb-16 animate-on-scroll">
+          <div class="deco-badge mb-6" style={{ background: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa' }}>
+            <span class="deco-circle" style={{ background: '#60a5fa' }}></span>
+            Governance
+          </div>
+          <h2 class="text-display-md text-surface mb-4">
             部署前需要确认的事
           </h2>
-          <p class="text-base leading-8 text-secondary-600">
+          <p class="text-body-lg text-surface/70">
             企业级系统不是先上线再说。先把数据怎么管、谁能用什么确认清楚，后续运行才不出问题。
           </p>
         </div>
 
-        <div class="mt-16 grid gap-12 md:grid-cols-3">
+        <div class="grid gap-8 md:grid-cols-3">
           {governanceItems.map((item, index) => (
-            <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: `${0.2 + index * 0.1}s` }}>
-              <h3 class="text-xl font-semibold text-secondary-900">{item.title}</h3>
-              <p class="mt-3 text-sm leading-8 text-secondary-600">{item.description}</p>
+            <article
+              key={item.title}
+              class={`animate-on-scroll stagger-${index + 1}`}
+              style={{ transitionDelay: `${(index + 1) * 100}ms` }}
+            >
+              <div class="rounded-2xl p-8 border border-white/10 bg-white/5 backdrop-blur-sm">
+                <div class="text-4xl font-display font-bold text-accent/30 mb-4">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+                <h3 class="text-xl font-semibold text-surface mb-3">{item.title}</h3>
+                <p class="text-body-md text-surface/60">{item.description}</p>
+              </div>
             </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function FaqSection({ brandName }: { brandName: string }) {
-  const faqItems = buildFaqItems(brandName);
-  return (
-    <section class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Questions</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            常见问题
-          </h2>
-        </div>
-
-        <div class="mt-14 space-y-6">
-          {faqItems.map((item, index) => (
-            <details class="border-t border-gray-100 pt-5 animate-fade-in" style={{ animationDelay: `${0.2 + index * 0.1}s` }}>
-              <summary class="cursor-pointer text-base font-semibold text-secondary-900 hover:text-primary-700 transition-colors duration-300">{item.question}</summary>
-              <p class="mt-3 max-w-4xl text-sm leading-8 text-secondary-600">{item.answer}</p>
-            </details>
           ))}
         </div>
       </div>
@@ -353,28 +414,48 @@ export function FaqSection({ brandName }: { brandName: string }) {
 
 export function HardwareSection() {
   return (
-    <section class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Route First</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
+    <section class="section-spacing relative overflow-hidden">
+      <div class="deco-dot-grid top-10 right-[5%] opacity-20"></div>
+      <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-accent/5 to-transparent"></div>
+
+      <div class="section-inner relative z-10">
+        <div class="max-w-3xl mb-16 animate-on-scroll">
+          <div class="deco-badge mb-6">
+            <span class="deco-circle"></span>
+            Route First
+          </div>
+          <h2 class="text-display-md text-ink-strong mb-4">
             先做产品分流，再做深度阅读
           </h2>
-          <p class="text-base leading-8 text-secondary-600">
-            首页先回答“我该去哪里”，再进入具体页面看方案细节。下面四个入口对应不同的采购与落地路径。
+          <p class="text-body-lg text-ink-soft">
+            首页先回答"我该去哪里"，再进入具体页面看方案细节。
           </p>
         </div>
 
-        <div class="mt-14 grid gap-6 md:grid-cols-2">
+        <div class="grid gap-6 md:grid-cols-2">
           {productRouteItems.map((item, index) => (
-            <article class="rounded-2xl border border-gray-100 bg-white p-6 shadow-soft sm:p-7 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: `${0.2 + index * 0.1}s` }}>
-              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-primary-600">{item.subtitle}</p>
-              <h3 class="mt-3 text-2xl font-semibold text-secondary-900">{item.title}</h3>
-              <p class="mt-4 text-sm leading-8 text-secondary-600">{item.description}</p>
-              <div class="mt-6">
-                <a class="inline-block border border-primary-200 text-primary-700 hover:bg-primary-50 px-6 py-3 rounded-lg font-medium transition-all duration-300" href={item.href}>
-                  {item.cta}
-                </a>
+            <article
+              key={item.title}
+              class={`card-warm rounded-2xl p-8 animate-on-scroll stagger-${index + 1}`}
+            >
+              <div class="flex flex-col h-full">
+                <div class="flex items-start justify-between mb-6">
+                  <div>
+                    <p class="text-label text-accent mb-2">{item.subtitle}</p>
+                    <h3 class="text-display-sm text-ink-strong">{item.title}</h3>
+                  </div>
+                  <div class="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-ink-soft">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+                <p class="text-body-md text-ink-soft flex-grow">{item.description}</p>
+                <div class="mt-6">
+                  <a href={item.href} class="btn-outline-warm text-sm">
+                    {item.cta}
+                  </a>
+                </div>
               </div>
             </article>
           ))}
@@ -386,49 +467,73 @@ export function HardwareSection() {
 
 export function PocPathSection() {
   return (
-    <section class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="grid gap-10 lg:grid-cols-2">
-          <article class="rounded-3xl border border-gray-100 bg-white p-8 shadow-soft sm:p-10 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <p class="marketing-kicker text-primary-600">Marketplace Highlight</p>
-            <h3 class="text-2xl font-semibold text-secondary-900">Agent 众包市场</h3>
-            <p class="mt-4 text-sm leading-8 text-secondary-600">
-              支持企业发布任务、服务方接单、里程碑验收与交付评价。把“临时需求”沉淀为“可复用任务模板”。
-            </p>
-            <ul class="mt-6 list-disc space-y-2 pl-5 text-sm text-secondary-600">
-              <li>任务模板：客服自动化、线索触达、内容生产、数据分析</li>
-              <li>角色机制：需求方、服务方、审核协同</li>
-              <li>交付方式：里程碑拆分 + 结果验收</li>
-            </ul>
-            <div class="mt-7">
-              <a
-                class="focus-outline-button px-6 py-3"
-                href="/market"
-              >
-                发布任务或成为服务方
-              </a>
+    <section class="section-spacing relative">
+      <div class="section-inner">
+        <div class="grid gap-8 lg:grid-cols-2">
+          {/* Agent Market Card */}
+          <article class="card-ink rounded-3xl p-10 animate-on-scroll">
+            <div class="deco-badge mb-6" style={{ background: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa' }}>
+              <span class="deco-circle" style={{ background: '#60a5fa' }}></span>
+              Marketplace Highlight
             </div>
+            <h3 class="text-display-sm text-surface mb-4">Agent 众包市场</h3>
+            <p class="text-body-md text-surface/70 mb-8">
+              支持企业发布任务、服务方接单、里程碑验收与交付评价。把"临时需求"沉淀为"可复用任务模板"。
+            </p>
+            <ul class="space-y-3 text-body-md text-surface/60 mb-8">
+              <li class="flex items-start gap-3">
+                <span class="text-accent mt-1">—</span>
+                <span>任务模板：客服自动化、线索触达、内容生产、数据分析</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-accent mt-1">—</span>
+                <span>角色机制：需求方、服务方、审核协同</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-accent mt-1">—</span>
+                <span>交付方式：里程碑拆分 + 结果验收</span>
+              </li>
+            </ul>
+            <a href="/market" class="inline-flex items-center gap-2 text-surface font-semibold hover:text-accent transition-colors group">
+              <span>发布任务或成为服务方</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform group-hover:translate-x-1 transition-transform">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
           </article>
 
-          <article class="rounded-3xl border border-gray-100 bg-white p-8 shadow-soft sm:p-10 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <p class="marketing-kicker text-primary-600">Store Highlight</p>
-            <h3 class="text-2xl font-semibold text-secondary-900">商城</h3>
-            <p class="mt-4 text-sm leading-8 text-secondary-600">
+          {/* Store Card */}
+          <article class="card-warm rounded-3xl p-10 animate-on-scroll stagger-2">
+            <div class="deco-badge mb-6">
+              <span class="deco-circle"></span>
+              Store Highlight
+            </div>
+            <h3 class="text-display-sm text-ink-strong mb-4">商城</h3>
+            <p class="text-body-md text-ink-soft mb-8">
               集中提供硬件、Agent 模板与服务包，帮助团队按预算快速完成选型与采购。
             </p>
-            <ul class="mt-6 list-disc space-y-2 pl-5 text-sm text-secondary-600">
-              <li>硬件套餐：按规模选择算力与交付配置</li>
-              <li>数字商品：模板、行业包、工作流资产</li>
-              <li>服务商品：部署实施、代运营与专家支持</li>
+            <ul class="space-y-3 text-body-md text-ink-soft mb-8">
+              <li class="flex items-start gap-3">
+                <span class="text-accent mt-1">—</span>
+                <span>硬件套餐：按规模选择算力与交付配置</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-accent mt-1">—</span>
+                <span>数字商品：模板、行业包、工作流资产</span>
+              </li>
+              <li class="flex items-start gap-3">
+                <span class="text-accent mt-1">—</span>
+                <span>服务商品：部署实施、代运营与专家支持</span>
+              </li>
             </ul>
-            <div class="mt-7">
-              <a
-                class="focus-outline-button px-6 py-3"
-                href="/shop"
-              >
-                查看商城方案
-              </a>
-            </div>
+            <a href="/shop" class="inline-flex items-center gap-2 text-ink font-semibold hover:text-accent transition-colors group">
+              <span>查看商城方案</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform group-hover:translate-x-1 transition-transform">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
           </article>
         </div>
       </div>
@@ -438,26 +543,72 @@ export function PocPathSection() {
 
 export function OemSection() {
   return (
-    <section id="oem" class="marketing-section py-24 sm:py-28">
-      <div class="marketing-section-inner">
-        <div class="rounded-3xl border border-gray-100 bg-white p-8 shadow-soft sm:p-10 transition-all duration-300 hover:shadow-medium animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div class="max-w-3xl space-y-4">
-            <p class="marketing-kicker text-primary-600">OEM Program</p>
-            <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-              OEM 白牌能力开放中
-            </h2>
-            <p class="text-base leading-8 text-secondary-600">
-              支持品牌方以 OEM 方式快速进入交付：品牌替换、主机白牌采购、自有商城与众包市场能力将逐步开放。
-            </p>
+    <section id="oem" class="section-spacing relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-transparent"></div>
+
+      <div class="section-inner relative z-10">
+        <div class="card-warm-static rounded-3xl p-12 md:p-16 animate-on-scroll">
+          <div class="grid gap-12 md:grid-cols-[1fr_auto] md:items-center">
+            <div class="max-w-3xl">
+              <div class="deco-badge mb-6">
+                <span class="deco-circle"></span>
+                OEM Program
+              </div>
+              <h2 class="text-display-md text-ink-strong mb-4">
+                OEM 白牌能力开放中
+              </h2>
+              <p class="text-body-lg text-ink-soft">
+                支持品牌方以 OEM 方式快速进入交付：品牌替换、主机白牌采购、自有商城与众包市场能力将逐步开放。
+              </p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a href="/oem" class="btn-primary-warm whitespace-nowrap">
+                查看 OEM 方案
+              </a>
+            </div>
           </div>
-          <div class="mt-8">
-            <a
-              class="focus-outline-button px-8 py-4"
-              href="/oem"
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function FaqSection({ brandName }: { brandName: string }) {
+  const faqItems = buildFaqItems(brandName);
+  return (
+    <section class="section-spacing relative">
+      <div class="absolute inset-0 bg-surface-muted/30"></div>
+
+      <div class="section-inner-narrow relative z-10">
+        <div class="max-w-2xl mx-auto text-center mb-16 animate-on-scroll">
+          <div class="deco-badge mx-auto mb-6">
+            <span class="deco-circle"></span>
+            Questions
+          </div>
+          <h2 class="text-display-md text-ink-strong mb-4">常见问题</h2>
+        </div>
+
+        <div class="space-y-6 max-w-3xl mx-auto">
+          {faqItems.map((item, index) => (
+            <details
+              key={item.question}
+              class="card-warm rounded-2xl animate-on-scroll"
+              style={{ transitionDelay: `${index * 100}ms` }}
             >
-              查看 OEM 方案
-            </a>
-          </div>
+              <summary class="p-6 cursor-pointer list-none flex items-center justify-between gap-4 text-left">
+                <span class="text-lg font-semibold text-ink-strong">{item.question}</span>
+                <span class="w-8 h-8 rounded-full bg-surface-muted flex items-center justify-center flex-shrink-0 transition-transform details-toggle-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </span>
+              </summary>
+              <div class="px-6 pb-6 text-body-md text-ink-soft border-t border-line-soft pt-4">
+                {item.answer}
+              </div>
+            </details>
+          ))}
         </div>
       </div>
     </section>
@@ -466,22 +617,31 @@ export function OemSection() {
 
 export function FinalCtaSection() {
   return (
-    <section class="marketing-section py-24 sm:py-32 relative overflow-hidden">
-      {/* 背景渐变 */}
-      <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 -z-10"></div>
-      
-      <div class="marketing-section-inner border-t border-gray-100 pt-12 sm:pt-16 relative z-10">
-        <div class="max-w-4xl space-y-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <p class="marketing-kicker text-primary-600">Next Step</p>
-          <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            从部署评估开始，确认怎么用起来
+    <section class="section-spacing relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-b from-surface to-surface-muted"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-accent/5 blur-3xl"></div>
+
+      <div class="section-inner relative z-10">
+        <div class="max-w-3xl mx-auto text-center animate-on-scroll">
+          <div class="deco-badge mx-auto mb-6">
+            <span class="deco-circle"></span>
+            Next Step
+          </div>
+          <h2 class="text-display-md text-ink-strong mb-6">
+            从部署评估开始，
+            <br />
+            确认怎么<span class="text-accent">用起来</span>
           </h2>
-          <p class="max-w-3xl text-base leading-8 text-secondary-600">
+          <p class="text-body-lg text-ink-soft mb-10 max-w-2xl mx-auto">
             适合已经明确要把 AI 引入业务流程，但需要确认部署方式和接入方案的团队。
           </p>
-          <div class="marketing-cta-row flex flex-wrap gap-4">
-            <a class="focus-outline-button px-8 py-4" href="/contact">申请部署评估</a>
-            <a class="focus-outline-button px-8 py-4" href="/downloads">下载试用</a>
+          <div class="flex flex-wrap justify-center gap-4">
+            <a href="/contact" class="btn-primary-warm">
+              申请部署评估
+            </a>
+            <a href="/downloads" class="btn-outline-warm">
+              下载试用
+            </a>
           </div>
         </div>
       </div>
