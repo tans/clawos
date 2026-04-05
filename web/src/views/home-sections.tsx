@@ -2,46 +2,46 @@
 
 const capabilityItems = [
   {
-    title: "部署边界",
-    description: "明确系统运行位置、访问方式和组织边界，避免从一开始就失控。",
+    title: "私有部署",
+    description: "数据留在本地，网络边界自己掌控，适合对数据安全有要求的团队。",
   },
   {
-    title: "执行编排",
-    description: "围绕岗位、角色和任务链路组织 AI 执行能力，而不是停留在单点工具。",
+    title: "技能接入",
+    description: "把内部流程、工具和数据接入 AI，让它能真正做事而不是聊天。",
   },
   {
-    title: "治理机制",
-    description: "覆盖权限、审计、数据边界和运行监控，适合长期运行与逐步扩展。",
+    title: "权限与审计",
+    description: "谁能用、做了什么，全部留记录，满足合规和内部审计需求。",
   },
 ] as const;
 
 const scenarioItems = [
   {
     title: "销售与客户运营",
-    description: "把线索跟进、客户复盘和信息整理纳入持续运行的执行链路，减少人为断点。",
+    description: "把跟进客户、整理信息等重复工作交给 AI，减少人为遗漏和等待。",
   },
   {
     title: "制造与交付协同",
-    description: "围绕询价、BOM、交付追踪等流程组织多角色协作，提升交付确定性。",
+    description: "让询价、交付追踪等流程自动流转，多方协同更顺畅。",
   },
   {
-    title: "内部支持与知识执行",
-    description: "让知识库、制度和内部流程进入权限边界内的执行系统，而不是停留在搜索入口。",
+    title: "内部支持与知识库",
+    description: "把制度、文档和流程固化到系统中，有问题直接问 AI，不用搜索。",
   },
 ] as const;
 
 const governanceItems = [
   {
-    title: "本地优先部署",
-    description: "适合对数据边界、访问路径和组织内网有明确要求的团队。",
+    title: "本地优先",
+    description: "数据留在自己服务器，网络完全可控，没有数据外泄风险。",
   },
   {
     title: "权限与审计",
-    description: "围绕角色权限、操作留痕和审计追踪建立基础治理能力。",
+    description: "谁能操作什么、做了什么，全部记录，审计和追责有据可查。",
   },
   {
-    title: "上线准备",
-    description: "在部署前确认系统接入、运行监控和后续维护方式，减少上线后的返工。",
+    title: "上线支持",
+    description: "协助确认接入方式、运行监控和后期维护，减少上线后的问题。",
   },
 ] as const;
 
@@ -80,15 +80,15 @@ function buildFaqItems(brandName: string) {
   return [
     {
       question: `${brandName} 是聊天机器人平台吗？`,
-      answer: `不是。${brandName} 面向企业执行场景，核心不是对话入口，而是部署、接入、治理与持续运行。`,
+      answer: `不是。${brandName} 让 AI 执行真实业务操作，不只是聊天。能接入内部系统、代替人工操作、留下操作记录。`,
     },
     {
       question: "必须上云才能使用吗？",
-      answer: "不需要。支持本地优先和混合部署，适合对数据驻留和网络边界有要求的团队。",
+      answer: "不需要。支持本地部署，数据留在自己服务器，网络完全可控。",
     },
     {
       question: "部署评估一般会确认什么？",
-      answer: "通常会先确认业务切入点、系统边界、部署方式和上线准备条件，再决定实施顺序。",
+      answer: "确认从哪里切入业务、怎么接入现有系统、用什么部署方式，以及后续维护方式。",
     },
   ] as const;
 }
@@ -110,8 +110,7 @@ export function HomeHero({ brandName }: { brandName: string }) {
               企业级 AI 智能体 操作系统
             </h1>
             <p class="marketing-lead max-w-3xl text-base leading-7 sm:leading-8 text-secondary-600 sm:text-lg">
-              {brandName} 面向真实业务流程，帮助企业完成 AI 能力的部署、接入、治理与长期运行。虾壳主机提供预装
-              OpenClaw 的交付形态，缩短上线准备周期。
+              {brandName} 让 AI 进入真实业务流程：本地部署、数据可控、权限清晰、运行稳定。虾壳主机预装开箱即用。
             </p>
             <div class="marketing-cta-row flex flex-wrap gap-3 sm:gap-4">
               <a class="marketing-primary-button bg-primary-600 hover:bg-primary-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 w-full sm:w-auto" href="/contact">
@@ -172,30 +171,30 @@ export function CoreValueSection() {
         <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <p class="marketing-kicker text-primary-600">Why This Layer</p>
           <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            企业部署 AI 真正难的不是模型！而是部署与治理
+            企业 AI，难的不是选模型，而是用起来
           </h2>
           <p class="text-base leading-8 text-secondary-600">
-            模型可以替换 入口可以增加 但真正决定能否上线和长期运行的 是部署边界 系统接入 权限治理和持续维护能力!
+            模型哪家都能用，真正决定能否长期运行的，是部署方式、权限管理和持续维护能力。
           </p>
         </div>
 
         <div class="mt-16 grid gap-10 md:grid-cols-3">
           <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <h3 class="text-xl font-semibold text-secondary-900">不是聊天入口</h3>
+            <h3 class="text-xl font-semibold text-secondary-900">不只是聊天</h3>
             <p class="mt-3 text-sm leading-8 text-secondary-600">
-              传统AI模型只能你问我答，如今ClawOS系统已经进入业务流程并承担执行任务。
+              AI 能代替你执行操作，不只是回答问题。
             </p>
           </article>
           <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-            <h3 class="text-xl font-semibold text-secondary-900">不是模型堆叠</h3>
+            <h3 class="text-xl font-semibold text-secondary-900">不止于模型</h3>
             <p class="mt-3 text-sm leading-8 text-secondary-600">
-              企业应该更关心部署方式、接入路径和运行边界，而不是短时间内叠加多少能力名词。
+              接入内部系统、数据和工具链，比选哪个模型更重要。
             </p>
           </article>
           <article class="p-6 bg-white rounded-xl shadow-soft border border-gray-100 transition-all duration-300 hover:shadow-medium hover:-translate-y-1 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-            <h3 class="text-xl font-semibold text-secondary-900">不是一次性演示</h3>
+            <h3 class="text-xl font-semibold text-secondary-900">可持续运行</h3>
             <p class="mt-3 text-sm leading-8 text-secondary-600">
-              从第一天开始就要考虑上线准备、持续治理和长期维护，这才是企业系统的尺度。
+              从上线第一天就考虑长期运维，不是演示完就结束。
             </p>
           </article>
         </div>
@@ -215,7 +214,7 @@ export function ArchitectureSection({ brandName }: { brandName: string }) {
               {`${brandName} 与虾壳主机的交付方式`}
             </h2>
             <p class="text-base leading-8 text-secondary-600">
-              {brandName} 提供企业 AI 执行系统的核心能力，虾壳主机作为预装 OpenClaw 的交付形态，帮助团队更快进入部署准备、系统接入和长期运行阶段。
+              软件 + 硬件一体化交付，到手即用，缩短从选型到上线的周期。
             </p>
           </div>
 
@@ -224,21 +223,21 @@ export function ArchitectureSection({ brandName }: { brandName: string }) {
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">01</p>
               <h3 class="mt-2 text-xl font-semibold text-secondary-900">{brandName}</h3>
               <p class="mt-3 text-sm leading-8 text-secondary-600">
-                负责任务执行、角色协作、系统接入和长期运行的核心系统层。
+                企业 AI 操作系统，负责任务执行、权限管理和系统接入。
               </p>
             </article>
             <article class="border-t border-gray-100 pt-6 animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">02</p>
               <h3 class="mt-2 text-xl font-semibold text-secondary-900">Skill 接入</h3>
               <p class="mt-3 text-sm leading-8 text-secondary-600">
-                将业务动作、内部流程和执行能力组织成可复用的系统能力，而不是散落的工具集合。
+                把内部工具、数据和流程接入 AI，形成可复用的执行能力。
               </p>
             </article>
             <article class="border-t border-gray-100 pt-6 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <p class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">03</p>
               <h3 class="mt-2 text-xl font-semibold text-secondary-900">虾壳主机</h3>
               <p class="mt-3 text-sm leading-8 text-secondary-600">
-                预装 OpenClaw 的本地优先交付形态，适合需要更快上线、更清晰边界和更稳定运行环境的团队。
+                预装 {brandName} 的硬件主机，本地运行，到手即用。
               </p>
             </article>
           </div>
@@ -307,10 +306,10 @@ export function GovernanceSection() {
         <div class="max-w-3xl space-y-4 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <p class="marketing-kicker text-primary-600">Governance</p>
           <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            部署前需要先确认的治理要点
+            部署前需要确认的事
           </h2>
           <p class="text-base leading-8 text-secondary-600">
-            企业系统不是先上再说。部署前先把运行边界、接入方式和治理要求确认清楚，后续上线才不会反复返工。
+            企业级系统不是先上线再说。先把数据怎么管、谁能用什么确认清楚，后续运行才不出问题。
           </p>
         </div>
 
@@ -475,10 +474,10 @@ export function FinalCtaSection() {
         <div class="max-w-4xl space-y-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <p class="marketing-kicker text-primary-600">Next Step</p>
           <h2 class="marketing-section-title text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl">
-            从部署评估开始，先确认系统边界、上线方式与业务切入点
+            从部署评估开始，确认怎么用起来
           </h2>
           <p class="max-w-3xl text-base leading-8 text-secondary-600">
-            适合已经明确要把 AI 引入业务流程、但还需要确认部署方式、接入范围和交付安排的团队。
+            适合已经明确要把 AI 引入业务流程，但需要确认部署方式和接入方案的团队。
           </p>
           <div class="marketing-cta-row flex flex-wrap gap-4">
             <a class="focus-outline-button px-8 py-4" href="/contact">申请部署评估</a>
