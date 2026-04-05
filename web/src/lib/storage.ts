@@ -170,6 +170,7 @@ function normalizeDownloadItem(raw: unknown): DownloadItem | null {
     id: d.id.trim(),
     name: typeof d.name === "string" ? d.name.trim() : "",
     description: typeof d.description === "string" ? d.description.trim() : "",
+    logo: typeof d.logo === "string" ? d.logo.trim() : "",
     version: typeof d.version === "string" ? d.version.trim() : "",
     files,
     published: Boolean(d.published),
@@ -340,6 +341,7 @@ export async function upsertDownloadItem(
     id,
     name: item.name.trim(),
     description: item.description.trim(),
+    logo: item.logo?.trim() ?? "",
     version: item.version.trim(),
     files: item.files ?? [],
     published: Boolean(item.published),
@@ -444,6 +446,40 @@ export async function reorderDownloadItems(orderedIds: string[]): Promise<void> 
       .map((item) => ({ ...item, sortOrder: idOrder.get(item.id) ?? 0 })),
   ];
   await writeDownloadItems(reordered);
+}
+
+/**
+ * Fetch an external URL and save it to local storage.
+ * Returns the local URL path if successful.
+ */
+export async function fetchExternalUrlAndSave(url: string): Promise<{ localPath: string } | { error: string }> {
+  try {
+    const urlObj = new URL(url);
+    const response = await fetch(urlObj.toString(), {
+      headers: {
+        "User-Agent": "ClawOS/1.0",
+        Accept: "image/*",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) {
+      return { error: `Failed to fetch: ${response.status} ${response.statusText}` };
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.startsWith("image/")) {
+      return { error: "URL does not point to an image" };
+    }
+    const extMatch = contentType.match(/image\/(\w+)/);
+    const ext = extMatch ? `.${extMatch[1]}` : ".png";
+    const fileName = `logo-${Date.now()}-${randomUUID()}${ext}`;
+    const dir = resolve(getEnv().storageDir, "assets", "downloads-logos");
+    await mkdir(dir, { recursive: true });
+    const arrayBuffer = await response.arrayBuffer();
+    await writeFile(resolve(dir, fileName), new Uint8Array(arrayBuffer));
+    return { localPath: `/admin-assets/downloads-logos/${fileName}` };
+  } catch (err) {
+    return { error: `Failed to fetch external URL: ${(err as Error).message}` };
+  }
 }
 
 // ---------------------------------------------------------------------------

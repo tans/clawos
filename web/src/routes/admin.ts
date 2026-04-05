@@ -11,12 +11,18 @@ import {
   verifyAdminCredentials,
 } from "../lib/auth";
 import {
+  deleteDownloadItem,
   deleteProduct,
   deleteTask,
+  fetchExternalUrlAndSave,
+  readDownloadItems,
   readProducts,
   readSiteSettings,
   readTasks,
+  reorderDownloadItems,
+  storeDownloadFile,
   toggleTask,
+  upsertDownloadItem,
   upsertProduct,
   upsertTask,
   writeSiteSettings,
@@ -52,7 +58,7 @@ function toPublished(raw: string | undefined): boolean {
   return raw === "true" || raw === "on" || raw === "1";
 }
 
-type AdminSection = "settings" | "products" | "tasks";
+type AdminSection = "settings" | "products" | "tasks" | "downloads";
 
 function sectionPath(section: AdminSection): string {
   if (section === "settings") {
@@ -247,5 +253,127 @@ adminRoutes.get("/admin-assets/:fileName", async (c) => {
     return new Response(content, { headers: { "content-type": contentType, "cache-control": "public, max-age=3600" } });
   } catch {
     return c.text("Not Found", 404);
+  }
+});
+
+adminRoutes.get("/admin-assets/downloads-logos/:fileName", async (c) => {
+  const fileName = c.req.param("fileName");
+  if (!/^[A-Za-z0-9._-]+$/.test(fileName)) {
+    return c.text("Not Found", 404);
+  }
+  const filePath = resolve(getEnv().storageDir, "assets", "downloads-logos", fileName);
+  try {
+    const content = await readFile(filePath);
+    const ext = extname(fileName).toLowerCase();
+    const contentType =
+      ext === ".png" ? "image/png" :
+      ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+      ext === ".webp" ? "image/webp" :
+      ext === ".gif" ? "image/gif" :
+      ext === ".svg" ? "image/svg+xml" :
+      "application/octet-stream";
+    return new Response(content, { headers: { "content-type": contentType, "cache-control": "public, max-age=3600" } });
+  } catch {
+    return c.text("Not Found", 404);
+  }
+});
+
+// Download Items Management
+
+adminRoutes.get("/admin/downloads", requireAdminAuth, async (c) => {
+  const downloads = await readDownloadItems();
+  return c.html(
+    renderAdminPage({
+      activeSection: "downloads",
+      downloads,
+      products: [],
+      tasks: [],
+      notice: c.req.query("notice") || undefined,
+      settings: {
+        brandName: getBrandConfig().brandName,
+        siteName: getBrandConfig().siteName,
+        brandLogoUrl: getBrandConfig().brandLogoUrl,
+        brandUrl: getBrandConfig().brandUrl,
+        seoTitle: getBrandConfig().seoTitle,
+        seoDescription: getBrandConfig().seoDescription,
+        seoKeywords: getBrandConfig().seoKeywords,
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+  );
+});
+
+adminRoutes.post("/admin/downloads/save", requireAdminAuth, async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    await upsertDownloadItem({
+      id: firstValue(body.id)?.trim() || "",
+      name: firstValue(body.name)?.trim() || "",
+      description: firstValue(body.description)?.trim() || "",
+      logo: firstValue(body.logo)?.trim() || "",
+      version: firstValue(body.version)?.trim() || "",
+      files: [],
+      published: toPublished(firstValue(body.published)),
+      sortOrder: parseInt(firstValue(body.sortOrder) || "0", 10) || 0,
+    });
+    return noticeRedirect(c, "下载项已保存", "downloads");
+  } catch (error) {
+    return noticeRedirect(c, `保存失败: ${(error as Error).message}`, "downloads");
+  }
+});
+
+adminRoutes.post("/admin/downloads/delete", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  await deleteDownloadItem(firstValue(body.id)?.trim() || "");
+  return noticeRedirect(c, "下载项已删除", "downloads");
+});
+
+adminRoutes.post("/admin/downloads/upload-file", requireAdminAuth, async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const itemId = firstValue(body.itemId)?.trim() || "";
+    if (!itemId) {
+      return noticeRedirect(c, "缺少下载项 ID", "downloads");
+    }
+    const file = firstFile(body.file);
+    if (!file) {
+      return noticeRedirect(c, "请选择要上传的文件", "downloads");
+    }
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    await storeDownloadFile(itemId, safeName, new Uint8Array(await file.arrayBuffer()));
+    return noticeRedirect(c, `文件 ${safeName} 上传成功`, "downloads");
+  } catch (error) {
+    return noticeRedirect(c, `上传失败: ${(error as Error).message}`, "downloads");
+  }
+});
+
+adminRoutes.post("/admin/downloads/fetch-external", requireAdminAuth, async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const url = firstValue(body.url)?.trim() || "";
+    if (!url) {
+      return c.json({ ok: false, error: "缺少 URL" }, 400);
+    }
+    const result = await fetchExternalUrlAndSave(url);
+    if ("error" in result) {
+      return c.json({ ok: false, error: result.error }, 400);
+    }
+    return c.json({ ok: true, url: result.localPath });
+  } catch (error) {
+    return c.json({ ok: false, error: (error as Error).message }, 400);
+  }
+});
+
+adminRoutes.post("/admin/downloads/reorder", requireAdminAuth, async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const ids = firstValue(body.ids)?.trim() || "";
+    if (!ids) {
+      return noticeRedirect(c, "缺少排序数据", "downloads");
+    }
+    await reorderDownloadItems(ids.split(",").map((s) => s.trim()).filter(Boolean));
+    return noticeRedirect(c, "排序已更新", "downloads");
+  } catch (error) {
+    return noticeRedirect(c, `排序失败: ${(error as Error).message}`, "downloads");
   }
 });

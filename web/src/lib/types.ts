@@ -117,6 +117,8 @@ export interface DownloadItem {
   id: string;
   name: string;
   description: string;
+  /** Logo URL - can be local path or external URL */
+  logo: string;
   version: string;
   files: DownloadFile[];
   published: boolean;

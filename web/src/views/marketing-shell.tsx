@@ -95,8 +95,8 @@ export function renderMarketingShell({
             </nav>
 
             <div class="flex items-center gap-3">
-              <a href="/contact" class="btn-primary-warm text-sm hidden sm:inline-flex">
-                咨询方案
+              <a href="/shop" class="btn-primary-warm text-sm hidden sm:inline-flex">
+                购买主机
               </a>
             </div>
           </div>

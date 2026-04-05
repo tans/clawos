@@ -125,8 +125,8 @@ export function HomeHero({ brandName }: { brandName: string }) {
 
           {/* CTA */}
           <div class="flex flex-wrap justify-center gap-4 mb-16 animate-on-scroll stagger-3">
-            <a href="/contact" class="btn-primary-warm">
-              申请部署评估
+            <a href="/shop" class="btn-primary-warm">
+              购买主机
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
                 <polyline points="12 5 19 12 12 19"></polyline>
@@ -253,8 +253,8 @@ export function ArchitectureSection({ brandName }: { brandName: string }) {
             </p>
 
             <div class="flex flex-wrap gap-4">
-              <a href="/contact" class="btn-primary-warm">
-                申请评估
+              <a href="/shop" class="btn-primary-warm">
+                购买主机
               </a>
             </div>
           </div>
@@ -371,7 +371,7 @@ export function ScenarioSection() {
 export function GovernanceSection() {
   return (
     <section id="governance" class="section-spacing relative">
-      <div class="absolute inset-0 bg-ink"></div>
+      <div class="absolute inset-0 bg-[#1a1a2e]"></div>
       <div class="absolute inset-0 opacity-5">
         <div class="absolute inset-0 bg-grid-pattern"></div>
       </div>
@@ -382,10 +382,10 @@ export function GovernanceSection() {
             <span class="deco-circle" style={{ background: '#60a5fa' }}></span>
             Governance
           </div>
-          <h2 class="text-display-md text-surface mb-4">
+          <h2 class="text-display-md mb-4" style={{ color: '#f8f9fa' }}>
             部署前需要确认的事
           </h2>
-          <p class="text-body-lg text-surface/70">
+          <p class="text-body-lg" style={{ color: 'rgba(248, 249, 250, 0.7)' }}>
             企业级系统不是先上线再说。先把数据怎么管、谁能用什么确认清楚，后续运行才不出问题。
           </p>
         </div>
@@ -398,11 +398,11 @@ export function GovernanceSection() {
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
               <div class="rounded-2xl p-8 border border-white/10 bg-white/5 backdrop-blur-sm">
-                <div class="text-4xl font-display font-bold text-accent/30 mb-4">
+                <div class="text-4xl font-display font-bold mb-4" style={{ color: 'rgba(37, 99, 235, 0.3)' }}>
                   {String(index + 1).padStart(2, '0')}
                 </div>
-                <h3 class="text-xl font-semibold text-surface mb-3">{item.title}</h3>
-                <p class="text-body-md text-surface/60">{item.description}</p>
+                <h3 class="text-xl font-semibold mb-3" style={{ color: '#f8f9fa' }}>{item.title}</h3>
+                <p class="text-body-md" style={{ color: 'rgba(248, 249, 250, 0.6)' }}>{item.description}</p>
               </div>
             </article>
           ))}
@@ -476,11 +476,11 @@ export function PocPathSection() {
               <span class="deco-circle" style={{ background: '#60a5fa' }}></span>
               Marketplace Highlight
             </div>
-            <h3 class="text-display-sm text-surface mb-4">Agent 众包市场</h3>
-            <p class="text-body-md text-surface/70 mb-8">
+            <h3 class="text-display-sm mb-4" style={{ color: '#f8f9fa' }}>Agent 众包市场</h3>
+            <p class="text-body-md mb-8" style={{ color: 'rgba(248, 249, 250, 0.7)' }}>
               支持企业发布任务、服务方接单、里程碑验收与交付评价。把"临时需求"沉淀为"可复用任务模板"。
             </p>
-            <ul class="space-y-3 text-body-md text-surface/60 mb-8">
+            <ul class="space-y-3 text-body-md mb-8" style={{ color: 'rgba(248, 249, 250, 0.6)' }}>
               <li class="flex items-start gap-3">
                 <span class="text-accent mt-1">—</span>
                 <span>任务模板：客服自动化、线索触达、内容生产、数据分析</span>
@@ -494,7 +494,7 @@ export function PocPathSection() {
                 <span>交付方式：里程碑拆分 + 结果验收</span>
               </li>
             </ul>
-            <a href="/market" class="inline-flex items-center gap-2 text-surface font-semibold hover:text-accent transition-colors group">
+            <a href="/market" class="inline-flex items-center gap-2 font-semibold transition-colors group" style={{ color: '#f8f9fa' }}>
               <span>发布任务或成为服务方</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transform group-hover:translate-x-1 transition-transform">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -633,11 +633,11 @@ export function FinalCtaSection() {
             确认怎么<span class="text-accent">用起来</span>
           </h2>
           <p class="text-body-lg text-ink-soft mb-10 max-w-2xl mx-auto">
-            适合已经明确要把 AI 引入业务流程，但需要确认部署方式和接入方案的团队。
+            虾壳主机预装 OpenClaw，到手即用，快速部署企业 AI 能力。
           </p>
           <div class="flex flex-wrap justify-center gap-4">
-            <a href="/contact" class="btn-primary-warm">
-              申请部署评估
+            <a href="/shop" class="btn-primary-warm">
+              购买主机
             </a>
             <a href="/downloads" class="btn-outline-warm">
               下载试用

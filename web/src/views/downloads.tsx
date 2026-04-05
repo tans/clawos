@@ -1,174 +1,159 @@
 /** @jsxImportSource hono/jsx */
 
+import type { DownloadItem } from "../lib/types";
 import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
-interface DownloadChannelCard {
-  id: "stable" | "beta" | "alpha";
-  label: string;
-  badgeClass: string;
-  version: string;
-  publishedAt: string;
-  hasInstaller: boolean;
-  windowsUrl: string;
-  macosUrl: string;
-  linuxUrl: string;
+function getFileDownloadUrl(item: DownloadItem, fileName: string): string {
+  return `/downloads/${item.id}/${encodeURIComponent(fileName)}`;
 }
 
-interface DownloadHistoryItem {
-  fileName: string;
-  platformLabel: string;
-  version: string;
-  uploadedAt: string;
+function getPlatformFromFileName(fileName: string): string {
+  const lower = fileName.toLowerCase();
+  if (lower.includes("windows") || lower.includes("win")) return "Windows";
+  if (lower.includes("macos") || lower.includes("darwin") || lower.includes("mac")) return "macOS";
+  if (lower.includes("linux") || lower.includes("ubuntu") || lower.includes("centos")) return "Linux";
+  return "Other";
 }
 
-function formatPublishedAt(value: string | null): string {
-  if (!value) return "暂无发布时间";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "暂无发布时间";
-  return date.toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function renderDownloadsPage(cards: DownloadChannelCard[], history: DownloadHistoryItem[]): string {
+function DownloadsPage({ items }: { items: DownloadItem[] }) {
   const { brandName } = getBrandConfig();
-  return renderMarketingShell({
-    title: "下载试用",
-    description: `${brandName} 下载试用入口与企业部署评估入口。`,
-    currentPath: "/downloads",
-    children: <DownloadsPage cards={cards} history={history} brandName={brandName} />,
-  });
-}
 
-function DownloadsPage({
-  cards,
-  history,
-  brandName,
-}: {
-  cards: DownloadChannelCard[];
-  history: DownloadHistoryItem[];
-  brandName: string;
-}) {
-  const stable = cards.find((card) => card.id === "stable");
+  if (items.length === 0) {
+    return (
+      <section class="marketing-section py-10 sm:py-14">
+        <div class="marketing-section-inner">
+          <div class="marketing-card marketing-page-hero p-6 sm:p-8 text-center">
+            <p class="marketing-kicker">Downloads</p>
+            <h1 class="marketing-h2 mt-2">下载中心</h1>
+            <p class="marketing-lead mt-4">暂无下载内容</p>
+            <p class="text-base text-[color:var(--ink-soft)] mt-2">
+              请在管理后台添加下载项
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <>
       <section class="marketing-section py-10 sm:py-14">
         <div class="marketing-section-inner">
           <div class="marketing-card marketing-page-hero p-6 sm:p-8">
-            <p class="marketing-kicker">Trial Entry</p>
-            <h1 class="marketing-h2 mt-2 text-3xl font-bold tracking-tight text-[color:var(--ink-strong)] sm:text-4xl">{`下载 ${brandName}，开始你的企业 AI 试点`}</h1>
-            <p class="marketing-lead mt-4 max-w-3xl text-base leading-8 text-[color:var(--ink-soft)]">先从桌面试用开始；如果需要本地优先部署或虾壳主机交付，可直接咨询企业部署方案。</p>
+            <p class="marketing-kicker">Downloads</p>
+            <h1 class="marketing-h2 mt-2">下载中心</h1>
+            <p class="marketing-lead mt-4">
+              找到你需要的工具和软件，快速开始使用 {brandName}。
+            </p>
           </div>
         </div>
       </section>
 
       <section class="marketing-section py-6 sm:py-8">
-        <div class="marketing-section-inner lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)] lg:gap-6">
-          <article class="marketing-card marketing-download-primary p-6 sm:p-8">
-            <p class="marketing-kicker">Stable</p>
-            <h2 class="mt-2 text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">下载稳定版</h2>
-            <p class="mt-3 text-sm text-[color:var(--ink-soft)]">{`当前版本：${stable?.version ?? "dev"}`}</p>
-            <div class="marketing-platform-list mt-5 grid gap-3 sm:flex sm:flex-wrap">
-              <a class="marketing-primary-button" href={stable?.windowsUrl ?? "/downloads/latest/windows"}>下载 Windows</a>
-              <a class="marketing-secondary-button" href={stable?.macosUrl ?? "/downloads/latest/macos"}>下载 macOS</a>
-              <a class="marketing-secondary-button" href={stable?.linuxUrl ?? "/downloads/latest/linux"}>下载 Linux</a>
-            </div>
-          </article>
+        <div class="marketing-section-inner">
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {items.map((item) => (
+              <article key={item.id} class="marketing-card rounded-2xl overflow-hidden hover:shadow-warm-lg transition-all duration-300">
+                {/* Logo */}
+                <div class="aspect-[3/1] bg-[color:var(--color-surface-muted)] flex items-center justify-center p-6">
+                  {item.logo ? (
+                    <img
+                      src={item.logo}
+                      alt={item.name}
+                      class="max-h-16 max-w-full object-contain"
+                      onError="this.style.display='none'"
+                    />
+                  ) : (
+                    <div class="text-4xl font-display text-[color:var(--ink-faint)]">
+                      {item.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
 
-          <aside class="marketing-card marketing-download-consult mt-6 p-6 sm:p-8 lg:mt-0">
-            <h2 class="text-2xl font-bold tracking-tight text-[color:var(--ink-strong)]">需要企业部署？</h2>
-            <p class="mt-3 text-sm leading-7 text-[color:var(--ink-soft)]">如果你需要本地优先部署、虾壳主机交付或上线前评估，可直接发起部署评估。</p>
-            <a class="marketing-primary-button mt-5" href="/contact">申请部署评估</a>
-          </aside>
+                {/* Content */}
+                <div class="p-6">
+                  <div class="flex items-center gap-2 flex-wrap mb-2">
+                    <h3 class="text-xl font-semibold text-[color:var(--ink-strong)]">{item.name}</h3>
+                    {item.version && (
+                      <span class="badge badge-outline badge-sm">{item.version}</span>
+                    )}
+                  </div>
+
+                  {item.description && (
+                    <p class="text-sm text-[color:var(--ink-soft)] line-clamp-2 mb-4">
+                      {item.description}
+                    </p>
+                  )}
+
+                  {/* Files */}
+                  {item.files.length > 0 ? (
+                    <div class="space-y-2">
+                      {item.files.slice(0, 4).map((file) => {
+                        const platform = getPlatformFromFileName(file.name);
+                        return (
+                          <a
+                            key={file.name}
+                            href={getFileDownloadUrl(item, file.name)}
+                            class="flex items-center justify-between gap-3 p-3 rounded-xl bg-[color:var(--color-surface-muted)] hover:bg-[color:var(--color-accent-subtle)] transition-colors group"
+                          >
+                            <div class="flex items-center gap-3 min-w-0">
+                              <span class="text-lg">📦</span>
+                              <div class="min-w-0">
+                                <p class="text-sm font-medium text-[color:var(--ink-strong)] truncate">{platform}</p>
+                                <p class="text-xs text-[color:var(--ink-faint)] truncate">{file.name}</p>
+                              </div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                              <span class="text-xs text-[color:var(--ink-faint)]">{formatFileSize(file.size)}</span>
+                              <span class="text-[color:var(--ink-faint)] group-hover:text-[color:var(--color-accent)] transition-colors">↓</span>
+                            </div>
+                          </a>
+                        );
+                      })}
+                      {item.files.length > 4 && (
+                        <p class="text-xs text-center text-[color:var(--ink-faint)] pt-2">
+                          还有 {item.files.length - 4} 个文件
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p class="text-sm text-[color:var(--ink-faint)] text-center py-4">暂无下载文件</p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section class="marketing-section py-6 sm:py-10">
+      <section class="marketing-section py-6">
         <div class="marketing-section-inner">
-          <article class="marketing-card p-5 sm:p-6">
-            <h3 class="text-lg font-semibold text-[color:var(--ink-strong)]">历史版本</h3>
-            {history.length === 0 ? (
-              <p class="mt-3 text-sm text-[color:var(--ink-soft)]">暂无历史版本记录</p>
-            ) : (
-              <ul class="mt-4 space-y-3">
-                {history.map((item) => (
-                  <li key={`${item.fileName}-${item.platformLabel}`} class="rounded-2xl border border-[color:var(--line-soft)] px-4 py-3">
-                    <p class="text-sm font-medium text-[color:var(--ink-strong)]">{item.version}</p>
-                    <p class="mt-1 text-xs text-[color:var(--ink-soft)]">{`${item.platformLabel} · ${item.uploadedAt}`}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
+          <aside class="marketing-card rounded-2xl p-8 text-center">
+            <h2 class="text-2xl font-semibold text-[color:var(--ink-strong)] mb-3">需要企业部署？</h2>
+            <p class="marketing-lead mb-6 max-w-xl mx-auto">
+              虾壳主机预装 OpenClaw，到手即用，快速部署企业 AI 能力。
+            </p>
+            <a class="marketing-primary-button" href="/shop">购买主机</a>
+          </aside>
         </div>
       </section>
     </>
   );
 }
 
-export function buildDownloadHistory(input: Array<{
-  fileName: string;
-  platform: "windows" | "macos" | "linux";
-  uploadedAt: string;
-  versionHint: string | null;
-}>): DownloadHistoryItem[] {
-  const platformLabel: Record<"windows" | "macos" | "linux", string> = {
-    windows: "Windows",
-    macos: "macOS",
-    linux: "Linux",
-  };
-  return input.slice(0, 12).map((item) => ({
-    fileName: item.fileName,
-    platformLabel: platformLabel[item.platform],
-    version: item.versionHint?.trim() || item.fileName,
-    uploadedAt: formatPublishedAt(item.uploadedAt),
-  }));
-}
-
-export function buildDownloadCards(input: {
-  stableVersion: string | null;
-  stablePublishedAt: string | null;
-  hasStableInstaller: boolean;
-  betaVersion: string | null;
-  betaPublishedAt: string | null;
-  hasBetaInstaller: boolean;
-  alphaVersion: string | null;
-  alphaPublishedAt: string | null;
-  hasAlphaInstaller: boolean;
-}): DownloadChannelCard[] {
-  return [
-    {
-      id: "stable",
-      label: "稳定版",
-      badgeClass: "badge-neutral",
-      version: input.stableVersion?.trim() || "dev",
-      publishedAt: formatPublishedAt(input.stablePublishedAt),
-      hasInstaller: input.hasStableInstaller,
-      windowsUrl: "/downloads/latest/windows",
-      macosUrl: "/downloads/latest/macos",
-      linuxUrl: "/downloads/latest/linux",
-    },
-    {
-      id: "beta",
-      label: "测试版",
-      badgeClass: "badge-warning",
-      version: input.betaVersion?.trim() || "dev",
-      publishedAt: formatPublishedAt(input.betaPublishedAt),
-      hasInstaller: input.hasBetaInstaller,
-      windowsUrl: "/downloads/beta/windows",
-      macosUrl: "/downloads/beta/macos",
-      linuxUrl: "/downloads/beta/linux",
-    },
-    {
-      id: "alpha",
-      label: "内测版",
-      badgeClass: "badge-info",
-      version: input.alphaVersion?.trim() || "dev",
-      publishedAt: formatPublishedAt(input.alphaPublishedAt),
-      hasInstaller: input.hasAlphaInstaller,
-      windowsUrl: "/downloads/alpha/windows",
-      macosUrl: "/downloads/alpha/macos",
-      linuxUrl: "/downloads/alpha/linux",
-    },
-  ];
+export function renderDownloadsPage(items: DownloadItem[]): string {
+  const { brandName } = getBrandConfig();
+  return renderMarketingShell({
+    title: "下载中心",
+    description: `${brandName} 下载中心 - 提供各类工具和软件安装包。`,
+    currentPath: "/downloads",
+    children: <DownloadsPage items={items} />,
+  });
 }

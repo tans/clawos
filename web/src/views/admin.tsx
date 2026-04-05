@@ -2,6 +2,7 @@
 
 import { renderToString } from "hono/jsx/dom/server";
 import { getBrandConfig } from "../lib/branding";
+import { renderDownloadsSection } from "./admin-sections/downloads";
 import { renderProductsSection } from "./admin-sections/products";
 import { renderSettingsSection } from "./admin-sections/settings";
 import { renderTasksSection } from "./admin-sections/tasks";
@@ -123,7 +124,10 @@ function renderActiveSection(props: AdminPageProps) {
   if (props.activeSection === "products") {
     return renderProductsSection(props.products);
   }
-  return renderTasksSection(props.tasks);
+  if (props.activeSection === "tasks") {
+    return renderTasksSection(props.tasks);
+  }
+  return renderDownloadsSection(props.downloads ?? []);
 }
 
 function AdminPage(props: AdminPageProps) {
@@ -211,6 +215,14 @@ function AdminPage(props: AdminPageProps) {
                     class={props.activeSection === "tasks" ? "active" : ""}
                   >
                     任务管理
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={sectionHref("downloads")}
+                    class={props.activeSection === "downloads" ? "active" : ""}
+                  >
+                    下载管理
                   </a>
                 </li>
               </ul>
@@ -336,6 +348,121 @@ function AdminPage(props: AdminPageProps) {
           bindAutoUpload('logo-upload-file', 'brand-logo-url', 'logo', 'logo-upload-status');
           bindAutoUpload('product-image-file', 'product-image-url', 'product', 'product-image-upload-status');
           bindAutoUpload('task-image-file', 'task-image-url', 'task', 'task-image-upload-status');
+
+          // Download item functions
+          const downloadModal = document.getElementById('download-modal');
+          const uploadFileModal = document.getElementById('upload-file-modal');
+
+          function openCreateDownloadModal() {
+            document.getElementById('download-modal-title').textContent = '新建下载项';
+            document.getElementById('download-id').value = '';
+            document.getElementById('download-id').readOnly = false;
+            document.getElementById('download-name').value = '';
+            document.getElementById('download-version').value = '';
+            document.getElementById('download-sort-order').value = '0';
+            document.getElementById('download-description').value = '';
+            document.getElementById('download-logo-url').value = '';
+            document.getElementById('download-logo-preview').src = '';
+            document.getElementById('download-logo-preview').classList.add('hidden');
+            document.getElementById('download-published').checked = false;
+            document.getElementById('download-original-id').value = '';
+            if (downloadModal) downloadModal.showModal();
+          }
+
+          function openEditDownloadModal(itemId) {
+            const item = window.__downloadItems?.find(i => i.id === itemId);
+            if (!item) return;
+            document.getElementById('download-modal-title').textContent = '编辑下载项';
+            document.getElementById('download-id').value = item.id || '';
+            document.getElementById('download-id').readOnly = true;
+            document.getElementById('download-name').value = item.name || '';
+            document.getElementById('download-version').value = item.version || '';
+            document.getElementById('download-sort-order').value = item.sortOrder || 0;
+            document.getElementById('download-description').value = item.description || '';
+            document.getElementById('download-logo-url').value = item.logo || '';
+            document.getElementById('download-logo-preview').src = item.logo || '';
+            document.getElementById('download-logo-preview').classList.toggle('hidden', !item.logo);
+            document.getElementById('download-published').checked = Boolean(item.published);
+            document.getElementById('download-original-id').value = item.id;
+            if (downloadModal) downloadModal.showModal();
+          }
+
+          function openUploadFileModal(itemId) {
+            document.getElementById('upload-file-item-id').value = itemId;
+            const item = window.__downloadItems?.find(i => i.id === itemId);
+            document.getElementById('upload-file-name').textContent = item ? '上传到: ' + item.name : '';
+            if (uploadFileModal) uploadFileModal.showModal();
+          }
+
+          async function uploadDownloadLogo(fileInput) {
+            const file = fileInput?.files?.[0];
+            if (!file) return;
+            const status = document.getElementById('download-logo-status');
+            const urlInput = document.getElementById('download-logo-url');
+            const preview = document.getElementById('download-logo-preview');
+            if (status) status.textContent = '上传中...';
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.set('kind', 'logo');
+            try {
+              const response = await fetch('/admin/upload/image', { method: 'POST', body: formData });
+              const payload = await response.json();
+              if (!response.ok || !payload.ok) {
+                if (status) status.textContent = payload.error || '上传失败';
+                return;
+              }
+              urlInput.value = payload.url;
+              preview.src = payload.url;
+              preview.classList.remove('hidden');
+              if (status) status.textContent = '上传成功，已自动回填';
+            } catch (err) {
+              if (status) status.textContent = '上传失败: ' + err.message;
+            }
+          }
+
+          async function fetchDownloadLogo() {
+            const urlInput = document.getElementById('download-logo-url');
+            const status = document.getElementById('download-logo-status');
+            const preview = document.getElementById('download-logo-preview');
+            const url = urlInput.value.trim();
+            if (!url) {
+              if (status) status.textContent = '请先输入外链 URL';
+              return;
+            }
+            if (status) status.textContent = '抓取中...';
+            try {
+              const response = await fetch('/admin/downloads/fetch-external', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+              });
+              const payload = await response.json();
+              if (!response.ok || !payload.ok) {
+                if (status) status.textContent = payload.error || '抓取失败';
+                return;
+              }
+              urlInput.value = payload.url;
+              preview.src = payload.url;
+              preview.classList.remove('hidden');
+              if (status) status.textContent = '抓取成功，已保存到本地';
+            } catch (err) {
+              if (status) status.textContent = '抓取失败: ' + err.message;
+            }
+          }
+
+          // Listen for logo URL changes to update preview
+          document.getElementById('download-logo-url')?.addEventListener('input', function() {
+            const preview = document.getElementById('download-logo-preview');
+            if (this.value) {
+              preview.src = this.value;
+              preview.classList.remove('hidden');
+            } else {
+              preview.classList.add('hidden');
+            }
+          });
+
+          // Expose download items for modal access
+          window.__downloadItems = window.__downloadItems || [];
         `,
           }}
         />
@@ -349,5 +476,8 @@ export function renderAdminLoginPage(error?: string): string {
 }
 
 export function renderAdminPage(props: AdminPageProps): string {
-  return `<!doctype html>${renderToString(<AdminPage {...props} />)}`;
+  const html = renderToString(<AdminPage {...props} />);
+  const downloadsJson = JSON.stringify(props.downloads ?? []);
+  const script = `<script>window.__downloadItems=${downloadsJson};</script>`;
+  return `<!doctype html>${html.replace('</body>', `${script}</body>`)}`;
 }

@@ -18,22 +18,7 @@ pageRoutes.get("/", (c) => {
 
 pageRoutes.get("/downloads", async (c) => {
   const items = await listPublishedDownloadItems();
-  return c.html(renderDownloadsPage(
-    items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      version: item.version,
-      fileCount: item.files.length,
-      firstFile: item.files[0]
-        ? { name: item.files[0].name, size: item.files[0].size, sha256: item.files[0].sha256 }
-        : null,
-      downloadUrl: item.files[0]
-        ? `/downloads/${item.id}/${encodeURIComponent(item.files[0].name)}`
-        : null,
-      updatedAt: item.updatedAt,
-    })),
-  ));
+  return c.html(renderDownloadsPage(items));
 });
 
 pageRoutes.get("/shop", async (c) => {
