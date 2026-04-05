@@ -6,7 +6,6 @@ import { renderProductsSection } from "./admin-sections/products";
 import { renderSettingsSection } from "./admin-sections/settings";
 import { renderTasksSection } from "./admin-sections/tasks";
 import type { AdminPageProps, AdminSection } from "./admin-sections/types";
-import { renderVersionsSection } from "./admin-sections/versions";
 
 function LoginPage({ error }: { error?: string }) {
   const { brandName, siteName, brandLogoUrl, seoDescription, seoKeywords } =
@@ -121,9 +120,6 @@ function renderActiveSection(props: AdminPageProps) {
   if (props.activeSection === "settings") {
     return renderSettingsSection(props.settings);
   }
-  if (props.activeSection === "versions") {
-    return renderVersionsSection(props.releases);
-  }
   if (props.activeSection === "products") {
     return renderProductsSection(props.products);
   }
@@ -199,14 +195,6 @@ function AdminPage(props: AdminPageProps) {
                     class={props.activeSection === "settings" ? "active" : ""}
                   >
                     品牌与 SEO
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={sectionHref("versions")}
-                    class={props.activeSection === "versions" ? "active" : ""}
-                  >
-                    软件管理
                   </a>
                 </li>
                 <li>

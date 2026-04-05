@@ -13,18 +13,12 @@ import {
 import {
   deleteProduct,
   deleteTask,
-  normalizeInstallerPlatform,
-  normalizeReleaseChannel,
-  listInstallerHistory,
-  readLatestRelease,
   readProducts,
   readSiteSettings,
   readTasks,
-  storeInstaller,
   toggleTask,
   upsertProduct,
   upsertTask,
-  writeLatestRelease,
   writeSiteSettings,
 } from "../lib/storage";
 import { getEnv } from "../lib/env";
@@ -58,7 +52,7 @@ function toPublished(raw: string | undefined): boolean {
   return raw === "true" || raw === "on" || raw === "1";
 }
 
-type AdminSection = "settings" | "versions" | "products" | "tasks";
+type AdminSection = "settings" | "products" | "tasks";
 
 function sectionPath(section: AdminSection): string {
   if (section === "settings") {
@@ -72,12 +66,10 @@ function noticeRedirect(c: Context, message: string, section: AdminSection = "se
 }
 
 async function renderAdminSection(c: Context, activeSection: AdminSection): Promise<Response> {
-  const [products, tasks, settings, stableRelease, installerHistory] = await Promise.all([
+  const [products, tasks, settings] = await Promise.all([
     readProducts(),
     readTasks(),
     readSiteSettings(),
-    readLatestRelease("stable"),
-    listInstallerHistory(),
   ]);
   const fallback = getBrandConfig();
   return c.html(
@@ -95,10 +87,6 @@ async function renderAdminSection(c: Context, activeSection: AdminSection): Prom
         seoDescription: fallback.seoDescription,
         seoKeywords: fallback.seoKeywords,
         updatedAt: new Date().toISOString(),
-      },
-      releases: {
-        latest: stableRelease,
-        history: installerHistory,
       },
     }),
   );
@@ -137,10 +125,6 @@ adminRoutes.post("/admin/logout", (c) => {
 
 adminRoutes.get("/admin", requireAdminAuth, async (c) => {
   return renderAdminSection(c, "settings");
-});
-
-adminRoutes.get("/admin/versions", requireAdminAuth, async (c) => {
-  return renderAdminSection(c, "versions");
 });
 
 adminRoutes.get("/admin/products", requireAdminAuth, async (c) => {
@@ -189,57 +173,6 @@ adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
   });
   resetBrandConfigCache();
   return noticeRedirect(c, "品牌与 SEO 设置已保存", "settings");
-});
-
-adminRoutes.post("/admin/releases/save", requireAdminAuth, async (c) => {
-  const body = await c.req.parseBody();
-  const channel = "stable";
-  const current = await readLatestRelease(channel);
-  const version = firstValue(body.version)?.trim() || "dev";
-  const changelog = firstValue(body.changelog)?.trim() || "";
-  const thumbnailUrl = firstValue(body.thumbnailUrl)?.trim() || "";
-  await writeLatestRelease({
-    version,
-    changelog,
-    thumbnailUrl,
-    publishedAt: new Date().toISOString(),
-    installer: current?.installer || null,
-    installers: current?.installers || {},
-    xiakeConfig: current?.xiakeConfig || null,
-    updaterAssets: current?.updaterAssets || [],
-  }, channel);
-  return noticeRedirect(c, `已更新版本为 ${version}`, "versions");
-});
-
-adminRoutes.post("/admin/upload/installer", requireAdminAuth, async (c) => {
-  try {
-    const body = await c.req.parseBody();
-    const file = firstFile(body.file) || firstFile(body.upload);
-    if (!file) {
-      return c.json({ ok: false, error: "缺少安装包文件" }, 400);
-    }
-    const channel = normalizeReleaseChannel(firstValue(body.channel)) || "stable";
-    const version = firstValue(body.version)?.trim() || undefined;
-    const platform = normalizeInstallerPlatform(firstValue(body.platform)) || undefined;
-    const result = await storeInstaller({
-      fileName: file.name || "clawos-setup.zip",
-      bytes: new Uint8Array(await file.arrayBuffer()),
-      channel,
-      version,
-      platform,
-    });
-    return c.json({
-      ok: true,
-      channel,
-      version: result.release.version,
-      fileName: result.asset.name,
-      platform: platform || null,
-      size: result.asset.size,
-      downloadUrl: `/downloads/${channel === "stable" ? "latest" : channel}`,
-    });
-  } catch (error) {
-    return c.json({ ok: false, error: (error as Error).message }, 400);
-  }
 });
 
 adminRoutes.post("/admin/tasks/save", requireAdminAuth, async (c) => {

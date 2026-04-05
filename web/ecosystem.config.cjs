@@ -3,8 +3,8 @@ module.exports = {
     {
       name: "clawos",
       cwd: __dirname,
-      script: "bun",
-      args: "run start",
+      script: "/root/.bun/bin/bun",
+      args: "run src/index.ts",
       interpreter: "none",
       autorestart: true,
       env: {
