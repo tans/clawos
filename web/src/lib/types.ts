@@ -11,11 +11,22 @@ export type ReleaseChannel = "stable" | "beta" | "alpha" | "canary";
 
 export interface LatestRelease {
   version: string;
+  changelog?: string;
+  thumbnailUrl?: string;
   publishedAt: string;
   installer: ReleaseAsset | null;
   installers?: Partial<Record<InstallerPlatform, ReleaseAsset>>;
   xiakeConfig: ReleaseAsset | null;
   updaterAssets?: ReleaseAsset[];
+}
+
+export interface AdminInstallerHistoryItem {
+  fileName: string;
+  platform: InstallerPlatform;
+  size: number;
+  uploadedAt: string;
+  relativePath: string;
+  versionHint: string | null;
 }
 
 export interface McpManifest {

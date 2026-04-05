@@ -6,21 +6,10 @@ export function renderTasksSection(tasks: AdminTask[]) {
   return (
     <section id="tasks" class="card bg-base-100 shadow">
       <div class="card-body">
-        <h2 class="card-title">任务管理</h2>
-        <form method="post" action="/admin/tasks/save" class="grid gap-3 md:grid-cols-4">
-          <input class="input input-bordered w-full md:col-span-2" name="title" placeholder="任务标题" required />
-          <select class="select select-bordered w-full" name="priority" defaultValue="medium">
-            <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
-          </select>
-          <input class="input input-bordered w-full" type="date" name="dueDate" />
-          <textarea class="textarea textarea-bordered w-full md:col-span-4" name="description" placeholder="任务描述" />
-          <input id="task-image-url" class="input input-bordered w-full md:col-span-3" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
-          <div class="space-y-2 md:col-span-1">
-            <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-            <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
-          </div>
-          <button class="btn btn-primary md:col-span-4" type="submit">新增任务</button>
-        </form>
+        <div class="flex items-center justify-between">
+          <h2 class="card-title">任务管理</h2>
+          <button class="btn btn-primary btn-sm" type="button" onclick={"openCreateTaskModal()"}>新增任务</button>
+        </div>
         <div class="divider" />
         <div class="space-y-2">
           {tasks.length === 0 ? <p class="text-sm text-base-content/60">暂无任务</p> : tasks.map((task) => (
@@ -38,6 +27,28 @@ export function renderTasksSection(tasks: AdminTask[]) {
           ))}
         </div>
       </div>
+      <dialog id="task-modal" class="modal">
+        <div class="modal-box">
+          <h3 class="font-bold text-lg">新增任务</h3>
+          <form method="post" action="/admin/tasks/save" class="mt-4 grid gap-3 md:grid-cols-4">
+            <input id="task-title" class="input input-bordered w-full md:col-span-2" name="title" placeholder="任务标题" required />
+            <select id="task-priority" class="select select-bordered w-full" name="priority" defaultValue="medium">
+              <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
+            </select>
+            <input id="task-due-date" class="input input-bordered w-full" type="date" name="dueDate" />
+            <textarea id="task-description" class="textarea textarea-bordered w-full md:col-span-4" name="description" placeholder="任务描述" />
+            <input id="task-image-url" class="input input-bordered w-full md:col-span-3" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
+            <div class="space-y-2 md:col-span-1">
+              <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
+              <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
+            </div>
+            <button class="btn btn-primary md:col-span-4" type="submit">提交任务</button>
+          </form>
+          <div class="modal-action">
+            <form method="dialog"><button class="btn" type="submit">关闭</button></form>
+          </div>
+        </div>
+      </dialog>
     </section>
   );
 }

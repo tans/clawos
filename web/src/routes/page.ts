@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { listPublishedDownloadItems, listPublishedProducts } from "../lib/storage";
+import { listInstallerHistory, listPublishedProducts, readLatestRelease } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
 import { renderAgentMarketPage } from "../views/agent-market";
 import { renderCeoLetterPage } from "../views/ceo-letter";
 import { renderContactPage } from "../views/contact";
-import { renderDownloadsPage } from "../views/downloads";
+import { buildDownloadCards, buildDownloadHistory, renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
 import { renderOemPage } from "../views/oem";
@@ -17,23 +17,27 @@ pageRoutes.get("/", (c) => {
 });
 
 pageRoutes.get("/downloads", async (c) => {
-  const items = await listPublishedDownloadItems();
-  return c.html(renderDownloadsPage(
-    items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      version: item.version,
-      fileCount: item.files.length,
-      firstFile: item.files[0]
-        ? { name: item.files[0].name, size: item.files[0].size, sha256: item.files[0].sha256 }
-        : null,
-      downloadUrl: item.files[0]
-        ? `/downloads/${item.id}/${encodeURIComponent(item.files[0].name)}`
-        : null,
-      updatedAt: item.updatedAt,
-    })),
-  ));
+  const [stableLatest, betaLatest, alphaLatest, installerHistory] = await Promise.all([
+    readLatestRelease("stable"),
+    readLatestRelease("beta"),
+    readLatestRelease("alpha"),
+    listInstallerHistory(),
+  ]);
+
+  const cards = buildDownloadCards({
+    stableVersion: stableLatest?.version ?? null,
+    stablePublishedAt: stableLatest?.publishedAt ?? null,
+    hasStableInstaller: Boolean(stableLatest?.installer),
+    betaVersion: betaLatest?.version ?? null,
+    betaPublishedAt: betaLatest?.publishedAt ?? null,
+    hasBetaInstaller: Boolean(betaLatest?.installer),
+    alphaVersion: alphaLatest?.version ?? null,
+    alphaPublishedAt: alphaLatest?.publishedAt ?? null,
+    hasAlphaInstaller: Boolean(alphaLatest?.installer),
+  });
+
+  const history = buildDownloadHistory(installerHistory);
+  return c.html(renderDownloadsPage(cards, history));
 });
 
 pageRoutes.get("/shop", async (c) => {

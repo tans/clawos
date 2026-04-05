@@ -174,4 +174,64 @@ describe("admin routes", () => {
     const stored = await readFile(join(tempStorageDir, "assets", "admin-images", fileName), "utf-8");
     expect(stored).toBe("fake-image-bytes");
   });
+
+  it("supports saving release changelog/thumbnail in versions management", async () => {
+    const loginForm = new FormData();
+    loginForm.set("username", "admin");
+    loginForm.set("password", "secret");
+    const loginResponse = await app.request("http://localhost/admin/login", {
+      method: "POST",
+      body: loginForm,
+    });
+    const cookie = loginResponse.headers.get("set-cookie") || "";
+
+    const releaseForm = new FormData();
+    releaseForm.set("channel", "stable");
+    releaseForm.set("version", "9.9.9");
+    releaseForm.set("changelog", "修复关键问题\n优化下载体验");
+    releaseForm.set("thumbnailUrl", "/admin-assets/logo-1.png");
+    const saveResponse = await app.request("http://localhost/admin/releases/save", {
+      method: "POST",
+      headers: { cookie },
+      body: releaseForm,
+    });
+    expect(saveResponse.status).toBe(302);
+
+    const raw = await readFile(join(tempStorageDir, "releases", "latest.json"), "utf-8");
+    expect(raw).toContain('"version": "9.9.9"');
+    expect(raw).toContain('"changelog": "修复关键问题\\n优化下载体验"');
+    expect(raw).toContain('"thumbnailUrl": "/admin-assets/logo-1.png"');
+  });
+
+  it("supports installer upload from versions management", async () => {
+    const loginForm = new FormData();
+    loginForm.set("username", "admin");
+    loginForm.set("password", "secret");
+    const loginResponse = await app.request("http://localhost/admin/login", {
+      method: "POST",
+      body: loginForm,
+    });
+    const cookie = loginResponse.headers.get("set-cookie") || "";
+
+    const body = new FormData();
+    body.set("channel", "stable");
+    body.set("version", "4.0.0");
+    body.set("file", new File([new TextEncoder().encode("fake-installer")], "clawos-4.0.0.exe", { type: "application/octet-stream" }));
+
+    const uploadResponse = await app.request("http://localhost/admin/upload/installer", {
+      method: "POST",
+      headers: { cookie },
+      body,
+    });
+    const payload = (await uploadResponse.json()) as Record<string, unknown>;
+    expect(uploadResponse.status).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.version).toBe("4.0.0");
+    expect(payload.fileName).toBe("clawos-4.0.0.exe");
+    expect(payload.channel).toBe("stable");
+
+    const latestRaw = await readFile(join(tempStorageDir, "releases", "latest.json"), "utf-8");
+    expect(latestRaw).toContain('"version": "4.0.0"');
+    expect(latestRaw).toContain('"name": "clawos-4.0.0.exe"');
+  });
 });
