@@ -4,7 +4,29 @@
 
 ## 正式域名
 
-- 官网域名：`https://clawos.minapp.xin`
+- 官网域名：`https://clawos.cc`
+
+## 服务器部署
+
+服务器路径：`/root/clawos_web/web`
+
+SSH 连接：
+```bash
+ssh root@clawos.cc -i /Users/ke/code/clawos/ssh/id_ed25519_1panel
+```
+
+部署步骤（需先同步代码）：
+```bash
+rsync -avz -e "ssh -i /Users/ke/code/clawos/ssh/id_ed25519_1panel" \
+  --exclude 'node_modules' --exclude 'storage' --exclude 'dist' --exclude '.git' \
+  /Users/ke/code/clawos/web/ root@clawos.cc:/root/clawos_web/web/
+
+ssh root@clawos.cc -i /Users/ke/code/clawos/ssh/id_ed25519_1panel \
+  "export PATH=\$PATH:/root/.bun/bin && cd /root/clawos_web/web && /root/.bun/bin/bun install && /root/.bun/bin/bun run tailwind:build && pm2 restart clawos"
+```
+
+PM2 服务名：`clawos`
+服务端口：`26222`
 
 ## 目标
 
