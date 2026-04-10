@@ -80,7 +80,7 @@ function renderShell({ title }: { title: string }) {
           <div class="product">
             <div class="product-name">${p.name}</div>
             <div class="product-desc">${p.description}</div>
-            <div class="product-price">¥${(p.priceCents / 100).toFixed(0)} <span>面值 ¥${p.redemptionValue}</span></div>
+            <div class="product-price">¥${(p.priceCents / 100).toFixed(2)} <span>面值 ¥${p.redemptionValue}</span></div>
             <button class="btn" onclick="buy('${p.id}')">立即购买</button>
           </div>
         `).join("")}
@@ -339,12 +339,12 @@ app.get("/api/order/:orderId", async (c) => {
     return c.json({ ok: false, error: "暂无可用兑换码，请联系客服" }, 500);
   }
 
-  const unused = codes.find((c) => c.status === "unused");
+  const unused = codes.find((c) => c.status === 1);
   if (!unused) {
     return c.json({ ok: false, error: "暂无可用兑换码，请联系客服" }, 500);
   }
 
-  return c.json({ ok: true, code: unused.code, value: unused.value, name: unused.name });
+  return c.json({ ok: true, code: unused.code, value: unused.quota, name: unused.name });
 });
 
 app.post("/api/notify", async (c) => {

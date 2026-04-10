@@ -14,6 +14,14 @@ export interface Product {
 
 export const PRODUCTS: Product[] = [
   {
+    id: "token-0.01",
+    name: "0.01元 Token 充值码",
+    description: "可充值到 ClawOS Token 账户，抵扣 API 调用费用。面额 0.01 元，永久有效。",
+    priceCents: 1,
+    redemptionValue: 0.01,
+    stock: -1,
+  },
+  {
     id: "token-10",
     name: "10元 Token 充值码",
     description: "可充值到 ClawOS Token 账户，抵扣 API 调用费用。面额 10 元，永久有效。",
