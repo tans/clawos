@@ -96,12 +96,28 @@ function buildFaqItems(brandName: string) {
   ] as const;
 }
 
-export function HomeHero({ brandName }: { brandName: string }) {
+export function HomeHero({ brandName, heroBannerUrl }: { brandName: string; heroBannerUrl: string }) {
   return (
     <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-hero-section">
-      {/* Subtle Background */}
-      <div class="absolute inset-0 bg-grid-pattern opacity-[0.015]"></div>
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-accent/[0.03] blur-3xl -translate-y-1/2"></div>
+      {/* Hero Banner Background */}
+      {heroBannerUrl && (
+        <div class="absolute inset-0 z-0">
+          <img
+            src={heroBannerUrl}
+            alt=""
+            class="w-full h-full object-cover opacity-20"
+          />
+          <div class="absolute inset-0 bg-gradient-to-b from-surface/80 via-surface/60 to-surface"></div>
+        </div>
+      )}
+
+      {/* Subtle Background Pattern */}
+      {!heroBannerUrl && (
+        <>
+          <div class="absolute inset-0 bg-grid-pattern opacity-[0.015]"></div>
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-accent/[0.03] blur-3xl -translate-y-1/2"></div>
+        </>
+      )}
 
       <div class="section-inner relative z-10 py-20 lg:py-28">
         <div class="max-w-4xl mx-auto text-center">

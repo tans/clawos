@@ -8,6 +8,7 @@ export interface BrandConfig {
   brandUrl: string;
   brandDomain: string;
   brandLogoUrl: string;
+  heroBannerUrl: string;
   seoTitle: string;
   seoDescription: string;
   seoKeywords: string;
@@ -90,6 +91,8 @@ export function getBrandConfig(): BrandConfig {
     envSeoDescription;
   const seoKeywords =
     (typeof settingsOverride?.seoKeywords === "string" && settingsOverride.seoKeywords.trim()) || envSeoKeywords;
+  const heroBannerUrl =
+    (typeof settingsOverride?.heroBannerUrl === "string" && settingsOverride.heroBannerUrl.trim()) || "";
 
   cachedBrandConfig = {
     brandName,
@@ -97,6 +100,7 @@ export function getBrandConfig(): BrandConfig {
     brandUrl,
     brandDomain: deriveBrandDomain(brandUrl),
     brandLogoUrl,
+    heroBannerUrl,
     seoTitle,
     seoDescription,
     seoKeywords,

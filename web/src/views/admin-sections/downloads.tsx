@@ -111,29 +111,29 @@ export function renderDownloadsSection(items: DownloadItem[]) {
           <h3 class="font-bold text-lg" id="download-modal-title">新建下载项</h3>
           <form method="post" action="/admin/downloads/save" class="mt-4 space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
-              <div class="form-control">
-                <label class="label"><span class="label-text">唯一 ID *</span></label>
+              <label class="label">
+                <span class="label-text">唯一 ID *</span>
                 <input id="download-id" name="id" class="input input-bordered" placeholder="如 git-install" required />
-              </div>
-              <div class="form-control">
-                <label class="label"><span class="label-text">显示名称 *</span></label>
+              </label>
+              <label class="label">
+                <span class="label-text">显示名称 *</span>
                 <input id="download-name" name="name" class="input input-bordered" placeholder="如 Git for Windows" required />
-              </div>
+              </label>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">
-              <div class="form-control">
-                <label class="label"><span class="label-text">版本号</span></label>
+              <label class="label">
+                <span class="label-text">版本号</span>
                 <input id="download-version" name="version" class="input input-bordered" placeholder="如 2.45.0" />
-              </div>
-              <div class="form-control">
-                <label class="label"><span class="label-text">排序（数字越小越靠前）</span></label>
+              </label>
+              <label class="label">
+                <span class="label-text">排序（数字越小越靠前）</span>
                 <input id="download-sort-order" name="sortOrder" type="number" class="input input-bordered" placeholder="0" defaultValue="0" />
-              </div>
+              </label>
             </div>
 
-            <div class="form-control">
-              <label class="label"><span class="label-text">简介</span></label>
+            <label class="label">
+              <span class="label-text">简介</span>
               <textarea
                 id="download-description"
                 name="description"
@@ -141,11 +141,11 @@ export function renderDownloadsSection(items: DownloadItem[]) {
                 placeholder="描述（可选）"
                 rows={2}
               />
-            </div>
+            </label>
 
             {/* Logo */}
-            <div class="form-control">
-              <label class="label"><span class="label-text">Logo</span></label>
+            <label class="label">
+              <span class="label-text">Logo</span>
               <div class="flex items-center gap-3">
                 <input
                   id="download-logo-url"
@@ -180,14 +180,12 @@ export function renderDownloadsSection(items: DownloadItem[]) {
                   class="hidden w-20 h-20 rounded-lg object-cover border border-base-300"
                 />
               </div>
-            </div>
+            </label>
 
-            <div class="form-control">
-              <label class="label cursor-pointer justify-start gap-3">
-                <input id="download-published" name="published" type="checkbox" class="checkbox" value="true" />
-                <span class="label-text">发布到前台</span>
-              </label>
-            </div>
+            <label class="label cursor-pointer justify-start gap-3">
+              <input id="download-published" name="published" type="checkbox" class="checkbox" value="true" />
+              <span class="label-text">发布到前台</span>
+            </label>
 
             <input type="hidden" name="originalId" id="download-original-id" value="" />
             <div class="modal-action">
@@ -204,10 +202,10 @@ export function renderDownloadsSection(items: DownloadItem[]) {
           <h3 class="font-bold text-lg" id="upload-file-modal-title">上传文件</h3>
           <form method="post" action="/admin/downloads/upload-file" encType="multipart/form-data" class="mt-4 space-y-3">
             <input type="hidden" name="itemId" id="upload-file-item-id" value="" />
-            <div class="form-control">
-              <label class="label"><span class="label-text">选择文件</span></label>
+            <label class="label">
+              <span class="label-text">选择文件</span>
               <input name="file" type="file" class="file-input file-input-bordered w-full" required />
-            </div>
+            </label>
             <div id="upload-file-name" class="text-sm text-base-content/60"></div>
             <button class="btn btn-primary w-full" type="submit">上传</button>
             <div class="modal-action">

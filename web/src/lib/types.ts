@@ -77,6 +77,26 @@ export interface McpShelfItem {
   updatedAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+export type OrderStatus = "pending" | "paid" | "failed";
+
+export interface Order {
+  id: string;
+  productId: string;
+  productName: string;
+  productPriceCny: string;
+  status: OrderStatus;
+  alipayTradeNo?: string;
+  alipayQrCodeUrl?: string;
+  alipayOutTradeNo?: string;
+  createdAt: string;
+  paidAt?: string;
+  notifyData?: Record<string, unknown>;
+}
+
 export interface AdminTask {
   id: string;
   title: string;
@@ -92,6 +112,7 @@ export interface SiteSettings {
   brandName: string;
   siteName: string;
   brandLogoUrl: string;
+  heroBannerUrl: string;
   brandUrl: string;
   seoTitle: string;
   seoDescription: string;

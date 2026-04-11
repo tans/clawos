@@ -17,10 +17,10 @@ import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
 function HomePage() {
-  const { brandName } = getBrandConfig();
+  const { brandName, heroBannerUrl } = getBrandConfig();
   return (
     <>
-      <HomeHero brandName={brandName} />
+      <HomeHero brandName={brandName} heroBannerUrl={heroBannerUrl} />
       <CoreValueSection />
       <CapabilityMatrixSection />
       <ArchitectureSection brandName={brandName} />

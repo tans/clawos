@@ -74,7 +74,7 @@ function LoginPage({ error }: { error?: string }) {
                 ) : null}
 
                 <form class="space-y-5" method="post" action="/admin/login">
-                  <label class="form-control">
+                  <label class="label">
                     <span class="label-text mb-1 text-sm">账号</span>
                     <input
                       class="input input-bordered h-11"
@@ -85,7 +85,7 @@ function LoginPage({ error }: { error?: string }) {
                       required
                     />
                   </label>
-                  <label class="form-control">
+                  <label class="label">
                     <span class="label-text mb-1 text-sm">密码</span>
                     <input
                       class="input input-bordered h-11"
@@ -346,6 +346,7 @@ function AdminPage(props: AdminPageProps) {
           }
 
           bindAutoUpload('logo-upload-file', 'brand-logo-url', 'logo', 'logo-upload-status');
+          bindAutoUpload('hero-banner-file', 'hero-banner-url', 'banner', 'hero-banner-upload-status');
           bindAutoUpload('product-image-file', 'product-image-url', 'product', 'product-image-upload-status');
           bindAutoUpload('task-image-file', 'task-image-url', 'task', 'task-image-upload-status');
 
