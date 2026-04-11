@@ -11,6 +11,8 @@ import type {
   McpRegistryEntry,
   McpRelease,
   McpShelfItem,
+  Order,
+  OrderStatus,
   Product,
   ReleaseChannel,
   SiteSettings,
@@ -30,6 +32,7 @@ const PRODUCTS_FILE_NAME = "products.json";
 const TASKS_FILE_NAME = "tasks.json";
 const SITE_SETTINGS_FILE_NAME = "site-settings.json";
 const DOWNLOAD_ITEMS_FILE_NAME = "download-items.json";
+const ORDERS_FILE_NAME = "orders.json";
 const MCP_ID_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
 const MCP_PACKAGE_EXTENSIONS = [".zip", ".tgz", ".tar.gz"];
 
@@ -121,6 +124,11 @@ function getSiteSettingsFilePath(): string {
 function getDownloadItemsFilePath(): string {
   const env = getEnv();
   return resolve(env.storageDir, "releases", DOWNLOAD_ITEMS_FILE_NAME);
+}
+
+function getOrdersFilePath(): string {
+  const env = getEnv();
+  return resolve(env.storageDir, "releases", ORDERS_FILE_NAME);
 }
 
 async function ensureStorageDirs(): Promise<void> {
@@ -689,6 +697,11 @@ export async function listPublishedProducts(): Promise<Product[]> {
   return (await readProducts()).filter((item) => item.published);
 }
 
+export async function getProductById(productId: string): Promise<Product | null> {
+  const all = await readProducts();
+  return all.find((item) => item.id === productId.trim().toLowerCase()) ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Tasks (kept)
 // ---------------------------------------------------------------------------
@@ -820,6 +833,113 @@ export async function listPublishedMcpShelf(channel: ReleaseChannel = "stable"):
     .filter((item) => item.channel === channel && item.published)
     .map((item) => index.get(`${item.mcpId}@${item.version}@${channel}`))
     .filter((r): r is McpRelease => Boolean(r));
+}
+
+// ---------------------------------------------------------------------------
+// Orders
+// ---------------------------------------------------------------------------
+
+function normalizeOrder(raw: unknown): Order | null {
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw as Record<string, unknown>;
+  if (
+    typeof d.id !== "string" ||
+    !d.id.trim() ||
+    typeof d.productId !== "string" ||
+    !d.productId.trim() ||
+    typeof d.productName !== "string" ||
+    !d.productName.trim() ||
+    typeof d.productPriceCny !== "string" ||
+    !d.productPriceCny.trim() ||
+    typeof d.status !== "string"
+  ) {
+    return null;
+  }
+  const validStatuses: OrderStatus[] = ["pending", "paid", "failed"];
+  if (!validStatuses.includes(d.status as OrderStatus)) return null;
+  return {
+    id: d.id.trim(),
+    productId: d.productId.trim(),
+    productName: d.productName.trim(),
+    productPriceCny: d.productPriceCny.trim(),
+    status: d.status as OrderStatus,
+    alipayTradeNo: typeof d.alipayTradeNo === "string" ? d.alipayTradeNo.trim() : undefined,
+    alipayQrCodeUrl: typeof d.alipayQrCodeUrl === "string" ? d.alipayQrCodeUrl.trim() : undefined,
+    alipayOutTradeNo: typeof d.alipayOutTradeNo === "string" ? d.alipayOutTradeNo.trim() : undefined,
+    createdAt: typeof d.createdAt === "string" && d.createdAt.trim() ? d.createdAt.trim() : nowIso(),
+    paidAt: typeof d.paidAt === "string" && d.paidAt.trim() ? d.paidAt.trim() : undefined,
+    notifyData: typeof d.notifyData === "object" && d.notifyData !== null ? d.notifyData : undefined,
+  };
+}
+
+export async function readOrders(): Promise<Order[]> {
+  await ensureStorageDirs();
+  try {
+    const content = await readFile(getOrdersFilePath(), "utf-8");
+    const raw = JSON.parse(content);
+    if (!Array.isArray(raw)) return [];
+    return raw.map(normalizeOrder).filter((o): o is Order => Boolean(o));
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+export async function writeOrders(orders: Order[]): Promise<void> {
+  await ensureStorageDirs();
+  await writeFile(getOrdersFilePath(), `${JSON.stringify(orders, null, 2)}\n`, "utf-8");
+}
+
+export async function createOrder(params: {
+  productId: string;
+  productName: string;
+  productPriceCny: string;
+  alipayQrCodeUrl?: string;
+  alipayOutTradeNo?: string;
+}): Promise<Order> {
+  const orders = await readOrders();
+  const id = `order-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+  const order: Order = {
+    id,
+    productId: params.productId,
+    productName: params.productName,
+    productPriceCny: params.productPriceCny,
+    status: "pending",
+    alipayQrCodeUrl: params.alipayQrCodeUrl,
+    alipayOutTradeNo: params.alipayOutTradeNo,
+    createdAt: nowIso(),
+  };
+  orders.push(order);
+  await writeOrders(orders);
+  return order;
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  extra?: Partial<Order>,
+): Promise<void> {
+  const orders = await readOrders();
+  const idx = orders.findIndex((o) => o.id === orderId);
+  if (idx < 0) throw new Error(`订单不存在: ${orderId}`);
+  orders[idx] = {
+    ...orders[idx],
+    status,
+    ...extra,
+    ...(status === "paid" ? { paidAt: nowIso() } : {}),
+  };
+  await writeOrders(orders);
+}
+
+export async function getOrderById(orderId: string): Promise<Order | null> {
+  const orders = await readOrders();
+  return orders.find((o) => o.id === orderId) ?? null;
+}
+
+export async function getOrdersByProductId(productId: string): Promise<Order[]> {
+  const orders = await readOrders();
+  return orders.filter((o) => o.productId === productId);
 }
 
 // ---------------------------------------------------------------------------

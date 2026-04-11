@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Hono } from "hono";
 import { constants as fsConstants } from "node:fs";
 import { access, stat } from "node:fs/promises";
@@ -6,6 +7,7 @@ import { getEnv, validateStartupEnv } from "./lib/env";
 import { adminRoutes } from "./routes/admin";
 import { downloadRoutes } from "./routes/download";
 import { pageRoutes } from "./routes/page";
+import { payRoutes } from "./routes/pay";
 import { releaseRoutes } from "./routes/release";
 import { remoteRoutes } from "./routes/remote";
 import { uploadRoutes } from "./routes/upload";
@@ -83,6 +85,7 @@ app.get("/public/*", async (c) => {
 });
 
 app.route("/", pageRoutes);
+app.route("/", payRoutes);
 app.route("/", releaseRoutes);
 app.route("/", downloadRoutes);
 app.route("/", uploadRoutes);

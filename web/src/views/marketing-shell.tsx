@@ -14,7 +14,8 @@ type MarketingShellProps = PropsWithChildren<{
     | "/shop"
     | "/contact"
     | "/agent-market"
-    | "/market";
+    | "/market"
+    | "/pay-success";
 }>;
 
 const topNavItems = [

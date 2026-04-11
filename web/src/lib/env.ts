@@ -10,6 +10,12 @@ export interface AppEnv {
   maxMcpPackageSizeBytes: number;
   storageDir: string;
   marketplaceEnabled: boolean;
+  // Alipay
+  alipayAppId: string | null;
+  alipayPrivateKey: string | null;
+  alipayPublicKey: string | null;
+  alipayNotifyUrl: string | null;
+  alipayGateway: string;
 }
 
 export interface StartupEnvCheck {
@@ -79,6 +85,12 @@ export function getEnv(): AppEnv {
     maxMcpPackageSizeBytes: mbToBytes(maxMcpPackageSizeMb),
     storageDir: resolve(process.env.STORAGE_DIR || resolve(process.cwd(), "storage")),
     marketplaceEnabled,
+    // Alipay
+    alipayAppId: process.env.ALIPAY_APP_ID?.trim() || null,
+    alipayPrivateKey: process.env.ALIPAY_PRIVATE_KEY?.trim() || null,
+    alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY?.trim() || null,
+    alipayNotifyUrl: process.env.ALIPAY_NOTIFY_URL?.trim() || null,
+    alipayGateway: process.env.ALIPAY_GATEWAY?.trim() || "https://openapi.alipay.com/gateway.do",
   };
 
   return cachedEnv;

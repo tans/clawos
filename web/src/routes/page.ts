@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { listPublishedDownloadItems, listPublishedProducts } from "../lib/storage";
+import { listPublishedDownloadItems, listPublishedProducts, getProductById } from "../lib/storage";
 import { renderAgentPage } from "../views/agent";
 import { renderAgentMarketPage } from "../views/agent-market";
 import { renderCeoLetterPage } from "../views/ceo-letter";
@@ -8,6 +8,8 @@ import { renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
 import { renderOemPage } from "../views/oem";
+import { renderPaySuccessPage } from "../views/pay-success";
+import { renderProductPage } from "../views/product";
 import { renderShopPage } from "../views/shop";
 
 export const pageRoutes = new Hono();
@@ -52,4 +54,36 @@ pageRoutes.get("/contact", (c) => {
 
 pageRoutes.get("/oem", (c) => {
   return c.html(renderOemPage());
+});
+
+// Product detail page
+pageRoutes.get("/shop/:id", async (c) => {
+  const productId = c.req.param("id");
+  const product = await getProductById(productId);
+  if (!product) {
+    return c.html(renderProductPage(null, "商品不存在"));
+  }
+  return c.html(renderProductPage(product));
+});
+
+// Payment success page
+pageRoutes.get("/pay-success", async (c) => {
+  const orderId = c.req.query("orderId");
+  if (!orderId) {
+    return c.html(renderPaySuccessPage(null, "缺少订单号"));
+  }
+  const { getOrderById } = await import("../lib/storage");
+  const order = await getOrderById(orderId);
+  if (!order) {
+    return c.html(renderPaySuccessPage(null, "订单不存在"));
+  }
+  return c.html(renderPaySuccessPage({
+    id: order.id,
+    productId: order.productId,
+    productName: order.productName,
+    productPriceCny: order.productPriceCny,
+    status: order.status,
+    createdAt: order.createdAt,
+    paidAt: order.paidAt,
+  }));
 });
