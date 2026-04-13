@@ -44,10 +44,8 @@ export function renderTasksSection(tasks: AdminTask[]) {
             </div>
             <button class="btn btn-primary md:col-span-4" type="submit">提交任务</button>
           </form>
-          <div class="modal-action">
-            <form method="dialog"><button class="btn" type="submit">关闭</button></form>
-          </div>
         </div>
+        <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>
       </dialog>
     </section>
   );

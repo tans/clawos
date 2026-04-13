@@ -188,12 +188,10 @@ export function renderDownloadsSection(items: DownloadItem[]) {
             </label>
 
             <input type="hidden" name="originalId" id="download-original-id" value="" />
-            <div class="modal-action">
-              <button class="btn btn-primary" type="submit">保存</button>
-              <form method="dialog"><button class="btn" type="submit">关闭</button></form>
-            </div>
+            <button class="btn btn-primary" type="submit">保存</button>
           </form>
         </div>
+        <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>
       </dialog>
 
       {/* Upload File Modal */}
@@ -208,11 +206,9 @@ export function renderDownloadsSection(items: DownloadItem[]) {
             </label>
             <div id="upload-file-name" class="text-sm text-base-content/60"></div>
             <button class="btn btn-primary w-full" type="submit">上传</button>
-            <div class="modal-action">
-              <form method="dialog"><button class="btn" type="submit">关闭</button></form>
-            </div>
           </form>
         </div>
+        <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>
       </dialog>
     </section>
   );
