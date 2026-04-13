@@ -14,7 +14,7 @@ function LoginPage({ error }: { error?: string }) {
   const pageTitle = `${siteName} 管理后台登录`;
 
   return (
-    <html lang="zh-CN" data-theme="enterprise">
+    <html lang="zh-CN" data-theme="light">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -134,7 +134,7 @@ function AdminPage(props: AdminPageProps) {
   const pageTitle = `${props.settings.siteName} 管理后台`;
 
   return (
-    <html lang="zh-CN" data-theme="enterprise">
+    <html lang="zh-CN" data-theme="light">
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
