@@ -54,10 +54,8 @@ export function renderProductsSection(products: Product[]) {
             </label>
             <button class="btn btn-primary md:col-span-2" type="submit">保存商品</button>
           </form>
-          <div class="modal-action">
-            <form method="dialog"><button class="btn" type="submit">关闭</button></form>
-          </div>
         </div>
+        <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>
       </dialog>
     </section>
   );
