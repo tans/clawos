@@ -37,22 +37,55 @@ export function renderProductsSection(products: Product[]) {
       <dialog id="product-modal" class="modal">
         <div class="modal-box">
           <h3 class="font-bold text-lg" id="product-modal-title">新增商品</h3>
-          <form method="post" action="/admin/products/save" class="mt-4 grid gap-3 md:grid-cols-2">
-            <input id="product-id" class="input input-bordered w-full" name="id" placeholder="商品ID (如 pro-plan)" required />
-            <input id="product-name" class="input input-bordered w-full" name="name" placeholder="商品名称" required />
-            <input id="product-description" class="input input-bordered w-full md:col-span-2" name="description" placeholder="商品描述" />
-            <input id="product-image-url" class="input input-bordered w-full md:col-span-2" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
-            <div class="md:col-span-2 space-y-2">
-              <input id="product-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-              <p id="product-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
+          <form method="post" action="/admin/products/save" class="mt-4 space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="label">
+                <span class="label-text">商品 ID *</span>
+                <input id="product-id" name="id" class="input input-bordered w-full" placeholder="如 pro-plan" required />
+              </label>
+              <label class="label">
+                <span class="label-text">商品名称 *</span>
+                <input id="product-name" name="name" class="input input-bordered w-full" placeholder="如 Pro Plan" required />
+              </label>
             </div>
-            <input id="product-price" class="input input-bordered w-full" name="priceCny" placeholder="价格 (如 199/月)" />
-            <input id="product-link" class="input input-bordered w-full" name="link" placeholder="购买链接" />
-            <label class="label cursor-pointer justify-start gap-3 md:col-span-2">
+
+            <label class="label">
+              <span class="label-text">商品描述</span>
+              <textarea
+                id="product-description"
+                name="description"
+                class="textarea textarea-bordered w-full"
+                placeholder="描述（可选）"
+                rows={2}
+              />
+            </label>
+
+            <label class="label">
+              <span class="label-text">图片</span>
+              <div class="space-y-2">
+                <input id="product-image-url" name="imageUrl" class="input input-bordered w-full" placeholder="选择文件后自动上传并回填地址" readonly />
+                <input id="product-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
+                <p id="product-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
+              </div>
+            </label>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="label">
+                <span class="label-text">价格</span>
+                <input id="product-price" name="priceCny" class="input input-bordered w-full" placeholder="如 199/月" />
+              </label>
+              <label class="label">
+                <span class="label-text">购买链接</span>
+                <input id="product-link" name="link" class="input input-bordered w-full" placeholder="https://..." />
+              </label>
+            </div>
+
+            <label class="label cursor-pointer justify-start gap-3">
               <input id="product-published" class="checkbox" type="checkbox" name="published" value="true" />
               <span class="label-text">发布到前台</span>
             </label>
-            <button class="btn btn-primary md:col-span-2" type="submit">保存商品</button>
+
+            <button class="btn btn-primary w-full" type="submit">保存商品</button>
           </form>
         </div>
         <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>

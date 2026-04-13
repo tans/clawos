@@ -30,19 +30,46 @@ export function renderTasksSection(tasks: AdminTask[]) {
       <dialog id="task-modal" class="modal">
         <div class="modal-box">
           <h3 class="font-bold text-lg">新增任务</h3>
-          <form method="post" action="/admin/tasks/save" class="mt-4 grid gap-3 md:grid-cols-4">
-            <input id="task-title" class="input input-bordered w-full md:col-span-2" name="title" placeholder="任务标题" required />
-            <select id="task-priority" class="select select-bordered w-full" name="priority" defaultValue="medium">
-              <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
-            </select>
-            <input id="task-due-date" class="input input-bordered w-full" type="date" name="dueDate" />
-            <textarea id="task-description" class="textarea textarea-bordered w-full md:col-span-4" name="description" placeholder="任务描述" />
-            <input id="task-image-url" class="input input-bordered w-full md:col-span-3" name="imageUrl" placeholder="选择文件后自动上传并回填地址" readonly />
-            <div class="space-y-2 md:col-span-1">
-              <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-              <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
+          <form method="post" action="/admin/tasks/save" class="mt-4 space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+              <label class="label">
+                <span class="label-text">任务标题 *</span>
+                <input id="task-title" name="title" class="input input-bordered w-full" placeholder="任务标题" required />
+              </label>
+              <label class="label">
+                <span class="label-text">优先级</span>
+                <select id="task-priority" name="priority" class="select select-bordered w-full" defaultValue="medium">
+                  <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
+                </select>
+              </label>
             </div>
-            <button class="btn btn-primary md:col-span-4" type="submit">提交任务</button>
+
+            <label class="label">
+              <span class="label-text">截止日期</span>
+              <input id="task-due-date" name="dueDate" class="input input-bordered w-full" type="date" />
+            </label>
+
+            <label class="label">
+              <span class="label-text">任务描述</span>
+              <textarea
+                id="task-description"
+                name="description"
+                class="textarea textarea-bordered w-full"
+                placeholder="描述（可选）"
+                rows={2}
+              />
+            </label>
+
+            <label class="label">
+              <span class="label-text">图片</span>
+              <div class="space-y-2">
+                <input id="task-image-url" name="imageUrl" class="input input-bordered w-full" placeholder="选择文件后自动上传并回填地址" readonly />
+                <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
+                <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
+              </div>
+            </label>
+
+            <button class="btn btn-primary w-full" type="submit">提交任务</button>
           </form>
         </div>
         <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>
