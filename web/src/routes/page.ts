@@ -8,6 +8,7 @@ import { renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
 import { renderOemPage } from "../views/oem";
+import { renderHelpPage } from "../views/help";
 import { renderPaySuccessPage } from "../views/pay-success";
 import { renderProductPage } from "../views/product";
 import { renderShopPage } from "../views/shop";
@@ -54,6 +55,10 @@ pageRoutes.get("/contact", (c) => {
 
 pageRoutes.get("/oem", (c) => {
   return c.html(renderOemPage());
+});
+
+pageRoutes.get("/help", (c) => {
+  return c.html(renderHelpPage());
 });
 
 // Product detail page

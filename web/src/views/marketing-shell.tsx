@@ -15,7 +15,8 @@ type MarketingShellProps = PropsWithChildren<{
     | "/contact"
     | "/agent-market"
     | "/market"
-    | "/pay-success";
+    | "/pay-success"
+    | "/help";
 }>;
 
 const topNavItems = [
@@ -24,6 +25,7 @@ const topNavItems = [
   { href: "/shop", label: "商城" },
   { href: "/market", label: "众包市场" },
   { href: "/contact", label: "联系我们" },
+  { href: "/help", label: "帮助" },
 ] as const;
 
 export function renderMarketingShell({
