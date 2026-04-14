@@ -2,6 +2,9 @@
 
 @source "../src/**/*.{js,jsx,ts,tsx}";
 
+/* Theme configuration - auto-generated from .env */
+@import "./_theme.css";
+
 @plugin "daisyui" {
     themes:
         enterprise --default,

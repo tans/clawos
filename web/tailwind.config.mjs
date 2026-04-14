@@ -1,4 +1,16 @@
 /** @type {import('tailwindcss').Config} */
+import 'dotenv/config';
+
+const themeColor = process.env.THEME_COLOR || '#2563eb';
+
+function adjustBrightness(hex, percent) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + percent));
+  const b = Math.min(255, Math.max(0, (num & 0x0000ff) + percent));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
 export default {
   content: ["./src/**/*.{js,jsx,ts,tsx}", "./public/**/*.{html,svg}"],
   theme: {
@@ -127,15 +139,15 @@ export default {
     themes: [
       {
         enterprise: {
-          'primary': '#2563eb',
+          'primary': themeColor,
           'secondary': '#1a1a2e',
-          'accent': '#3b82f6',
+          'accent': adjustBrightness(themeColor, -5),
           'neutral': '#f8f9fa',
           'base-100': '#ffffff',
           'base-200': '#eef1f3',
           'base-300': '#e4e7eb',
           'base-content': '#1a1a2e',
-          'info': '#3b82f6',
+          'info': adjustBrightness(themeColor, -5),
           'success': '#10b981',
           'warning': '#f59e0b',
           'error': '#ef4444',
