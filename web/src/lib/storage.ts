@@ -566,21 +566,6 @@ export async function resolveMcpPackageByVersion(
   version: string,
   channel: ReleaseChannel = "stable",
 ): Promise<{ release: McpRelease; asset: import("./types").ReleaseAsset; absolutePath: string }> {
-  const versions = await listMcpReleaseVersions(mcpId, channel);
-  const normalizedVersion = version.trim();
-  if (!normalizedVersion) throw new Error("version 不能为空");
-  const release = versions.find((v) => v.version === normalizedVersion);
-  if (!release) throw new Error(`MCP 版本不存在: ${mcpId}@${normalizedVersion}`);
-  const absolutePath = resolve(getEnv().storageDir, release.package.relativePath);
-  await ensureReadable(absolutePath);
-  return { release, asset: release.package, absolutePath };
-}
-
-export async function resolveMcpPackageByVersion(
-  mcpId: string,
-  version: string,
-  channel: ReleaseChannel = "stable",
-): Promise<{ release: McpRelease; asset: import("./types").ReleaseAsset; absolutePath: string }> {
   const normalizedId = assertMcpId(mcpId);
   const normalizedVersion = version.trim();
   if (!normalizedVersion) throw new Error("version 不能为空");
