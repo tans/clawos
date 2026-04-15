@@ -72,11 +72,9 @@ pageRoutes.get("/shop/:id", async (c) => {
   return c.html(renderProductPage(product));
 });
 
-// User orders page
+// User orders page (orders stored in localStorage)
 pageRoutes.get("/orders", async (c) => {
-  const { readOrders } = await import("../lib/storage");
-  const orders = await readOrders();
-  return c.html(renderOrdersPage(orders));
+  return c.html(renderOrdersPage([]));
 });
 
 // Payment success page

@@ -178,6 +178,19 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
               throw new Error(data.error || '创建订单失败');
             }
 
+            // Save order to localStorage
+            var orderData = {
+              id: data.orderId,
+              productId: productId,
+              productName: data.productName,
+              productPriceCny: data.priceCny,
+              status: 'pending',
+              createdAt: new Date().toISOString()
+            };
+            var savedOrders = JSON.parse(localStorage.getItem('clawos_orders') || '[]');
+            savedOrders.push(orderData);
+            localStorage.setItem('clawos_orders', JSON.stringify(savedOrders));
+
             // Show QR code
             qrLoading.classList.add('hidden');
             qrLoading.insertAdjacentHTML('beforebegin', '<img src="' + data.qrCodeUrl + '" alt="支付二维码" class="w-64 h-64 rounded-xl" />');
@@ -200,7 +213,17 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
                   statusText.textContent = '支付成功！';
                   statusText.className = 'text-sm text-green-600';
                   document.querySelector('#payment-status span').className = 'w-2 h-2 rounded-full bg-green-400';
-                  setTimeout(() => {
+                  // Update order status in localStorage
+                  var savedOrders = JSON.parse(localStorage.getItem('clawos_orders') || '[]');
+                  savedOrders = savedOrders.map(function(o) {
+                    if (o.id === data.orderId) {
+                      o.status = 'paid';
+                      o.paidAt = new Date().toISOString();
+                    }
+                    return o;
+                  });
+                  localStorage.setItem('clawos_orders', JSON.stringify(savedOrders));
+                  setTimeout(function() {
                     window.location.href = '/pay-success?orderId=' + data.orderId;
                   }, 1000);
                 } else if (statusData.status === 'failed') {
