@@ -9,6 +9,7 @@ import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
 import { renderOemPage } from "../views/oem";
 import { renderHelpPage } from "../views/help";
+import { renderOrdersPage } from "../views/orders";
 import { renderPaySuccessPage } from "../views/pay-success";
 import { renderProductPage } from "../views/product";
 import { renderShopPage } from "../views/shop";
@@ -69,6 +70,13 @@ pageRoutes.get("/shop/:id", async (c) => {
     return c.html(renderProductPage(null, "商品不存在"));
   }
   return c.html(renderProductPage(product));
+});
+
+// User orders page
+pageRoutes.get("/orders", async (c) => {
+  const { readOrders } = await import("../lib/storage");
+  const orders = await readOrders();
+  return c.html(renderOrdersPage(orders));
 });
 
 // Payment success page

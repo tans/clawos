@@ -14,14 +14,17 @@ import {
   deleteDownloadItem,
   deleteProduct,
   deleteTask,
+  expireOldPendingOrders,
   fetchExternalUrlAndSave,
   readDownloadItems,
+  readOrders,
   readProducts,
   readSiteSettings,
   readTasks,
   reorderDownloadItems,
   storeDownloadFile,
   toggleTask,
+  updateOrderStatus,
   upsertDownloadItem,
   upsertProduct,
   upsertTask,
@@ -377,5 +380,60 @@ adminRoutes.post("/admin/downloads/reorder", requireAdminAuth, async (c) => {
     return noticeRedirect(c, "排序已更新", "downloads");
   } catch (error) {
     return noticeRedirect(c, `排序失败: ${(error as Error).message}`, "downloads");
+  }
+});
+
+// Orders Management
+
+adminRoutes.get("/admin/orders", requireAdminAuth, async (c) => {
+  // Expire old pending orders first
+  await expireOldPendingOrders(24);
+  const orders = await readOrders();
+  return c.html(
+    renderAdminPage({
+      activeSection: "orders",
+      orders,
+      products: [],
+      tasks: [],
+      notice: c.req.query("notice") || undefined,
+      settings: {
+        brandName: getBrandConfig().brandName,
+        siteName: getBrandConfig().siteName,
+        brandLogoUrl: getBrandConfig().brandLogoUrl,
+        brandUrl: getBrandConfig().brandUrl,
+        seoTitle: getBrandConfig().seoTitle,
+        seoDescription: getBrandConfig().seoDescription,
+        seoKeywords: getBrandConfig().seoKeywords,
+        updatedAt: new Date().toISOString(),
+      },
+    }),
+  );
+});
+
+adminRoutes.post("/admin/orders/cancel", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const id = firstValue(body.id)?.trim() || "";
+  if (!id) {
+    return noticeRedirect(c, "缺少订单号", "orders");
+  }
+  try {
+    await updateOrderStatus(id, "cancelled");
+    return noticeRedirect(c, "订单已取消", "orders");
+  } catch (error) {
+    return noticeRedirect(c, `操作失败: ${(error as Error).message}`, "orders");
+  }
+});
+
+adminRoutes.post("/admin/orders/refund", requireAdminAuth, async (c) => {
+  const body = await c.req.parseBody();
+  const id = firstValue(body.id)?.trim() || "";
+  if (!id) {
+    return noticeRedirect(c, "缺少订单号", "orders");
+  }
+  try {
+    await updateOrderStatus(id, "refunded");
+    return noticeRedirect(c, "订单已退款", "orders");
+  } catch (error) {
+    return noticeRedirect(c, `操作失败: ${(error as Error).message}`, "orders");
   }
 });

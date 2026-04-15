@@ -23,6 +23,7 @@ const topNavItems = [
   { href: "/", label: "首页" },
   { href: "/downloads", label: "下载" },
   { href: "/shop", label: "商城" },
+  { href: "/orders", label: "我的订单" },
   { href: "/market", label: "众包市场" },
   { href: "/contact", label: "联系我们" },
   { href: "/help", label: "帮助" },

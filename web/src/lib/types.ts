@@ -81,7 +81,7 @@ export interface McpShelfItem {
 // Orders
 // ---------------------------------------------------------------------------
 
-export type OrderStatus = "pending" | "paid" | "failed";
+export type OrderStatus = "pending" | "paid" | "failed" | "expired" | "cancelled" | "refunded";
 
 export interface Order {
   id: string;
