@@ -11,6 +11,7 @@ import { renderOemPage } from "../views/oem";
 import { renderHelpPage } from "../views/help";
 import { renderOrdersPage } from "../views/orders";
 import { renderPaySuccessPage } from "../views/pay-success";
+import { renderPaymentPage } from "../views/pay";
 import { renderProductPage } from "../views/product";
 import { renderShopPage } from "../views/shop";
 
@@ -75,6 +76,28 @@ pageRoutes.get("/shop/:id", async (c) => {
 // User orders page (orders stored in localStorage)
 pageRoutes.get("/orders", async (c) => {
   return c.html(renderOrdersPage([]));
+});
+
+// Payment page (accessed via registered domain)
+pageRoutes.get("/pay/:orderId", async (c) => {
+  const orderId = c.req.param("orderId");
+  if (!orderId) {
+    return c.html(renderPaymentPage(null, "缺少订单号"));
+  }
+  const { getOrderById } = await import("../lib/storage");
+  const order = await getOrderById(orderId);
+  if (!order) {
+    return c.html(renderPaymentPage(null, "订单不存在"));
+  }
+  return c.html(renderPaymentPage({
+    id: order.id,
+    productId: order.productId,
+    productName: order.productName,
+    productPriceCny: order.productPriceCny,
+    status: order.status,
+    createdAt: order.createdAt,
+    paidAt: order.paidAt,
+  }));
 });
 
 // Payment success page

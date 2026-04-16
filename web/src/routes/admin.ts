@@ -187,6 +187,7 @@ adminRoutes.post("/admin/settings/save", requireAdminAuth, async (c) => {
     brandLogoUrl: firstValue(body.brandLogoUrl)?.trim() || "/public/logo.png",
     heroBannerUrl: firstValue(body.heroBannerUrl)?.trim() || "",
     brandUrl: firstValue(body.brandUrl)?.trim() || "https://clawos.cc",
+    registeredDomain: firstValue(body.registeredDomain)?.trim() || "",
     customerServiceWechat: firstValue(body.customerServiceWechat)?.trim() || "",
     seoTitle: firstValue(body.seoTitle)?.trim() || "ClawOS",
     seoDescription: firstValue(body.seoDescription)?.trim() || "",

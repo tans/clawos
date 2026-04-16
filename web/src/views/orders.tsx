@@ -1,6 +1,7 @@
 /** @jsxImportSource hono/jsx */
 
 import type { Order } from "../lib/types";
+import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
 function formatDate(dateStr: string): string {
@@ -39,9 +40,10 @@ function statusBadge(status: Order["status"]) {
 
 interface OrdersPageProps {
   orders: Order[];
+  registeredDomain?: string;
 }
 
-function OrdersPage({ orders }: OrdersPageProps) {
+function OrdersPage({ orders, registeredDomain }: OrdersPageProps) {
   return (
     <section class="marketing-section py-12 sm:py-20">
       <div class="marketing-section-inner max-w-4xl mx-auto">
@@ -61,6 +63,7 @@ function OrdersPage({ orders }: OrdersPageProps) {
         (function() {
           var orders = JSON.parse(localStorage.getItem('clawos_orders') || '[]');
           var container = document.getElementById('orders-list');
+          var registeredDomain = '${registeredDomain || ""}';
 
           if (orders.length === 0) {
             container.innerHTML = '<div class="rounded-2xl border border-[color:var(--line-soft)] bg-white/70 p-8 text-center"><p class="text-[color:var(--ink-soft)]">暂无订单记录</p><a href="/shop" class="btn btn-primary btn-sm mt-4">去商城看看</a></div>';
@@ -105,7 +108,13 @@ function OrdersPage({ orders }: OrdersPageProps) {
 
             if (order.status === 'pending') {
               html += '<div class="mt-4 pt-4 border-t border-[color:var(--line-soft)]">';
-              html += '<a href="/shop/' + order.productId + '" class="btn btn-warning btn-sm">继续支付</a></div>';
+              if (registeredDomain) {
+                var payUrl = registeredDomain.replace(/\\/$/, '') + '/pay/' + order.id;
+                html += '<a href="' + payUrl + '" target="_blank" class="btn btn-warning btn-sm">继续支付</a>';
+              } else {
+                html += '<a href="/shop/' + order.productId + '" class="btn btn-warning btn-sm">继续支付</a>';
+              }
+              html += '</div>';
             }
             html += '</div>';
           });
@@ -118,10 +127,11 @@ function OrdersPage({ orders }: OrdersPageProps) {
 }
 
 export function renderOrdersPage(_orders: Order[]) {
+  const { registeredDomain } = getBrandConfig();
   return renderMarketingShell({
     title: "我的订单",
     description: "查看您的所有订单记录",
     currentPath: "/orders",
-    children: <OrdersPage orders={[]} />,
+    children: <OrdersPage orders={[]} registeredDomain={registeredDomain} />,
   });
 }

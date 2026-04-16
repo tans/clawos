@@ -32,6 +32,16 @@ export function renderSettingsSection(settings: SiteSettings) {
 
           <div class="form-control w-full">
             <label class="label">
+              <span class="label-text">备案域名（支付用）</span>
+            </label>
+            <input class="input input-bordered w-full" name="registeredDomain" value={settings.registeredDomain || ""} placeholder="https://pay.example.com" />
+            <label class="label">
+              <span class="label-text-alt text-orange-500">设置后将通过此域名展示支付二维码</span>
+            </label>
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
               <span class="label-text">客服微信</span>
             </label>
             <input class="input input-bordered w-full" name="customerServiceWechat" value={settings.customerServiceWechat} placeholder="输入客服微信号" />

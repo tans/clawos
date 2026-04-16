@@ -320,51 +320,58 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
             savedOrders.push(orderData);
             localStorage.setItem('clawos_orders', JSON.stringify(savedOrders));
 
-            // Show QR code
-            qrLoading.classList.add('hidden');
-            qrLoading.insertAdjacentHTML('beforebegin', '<img src="' + data.qrCodeUrl + '" alt="支付二维码" class="w-64 h-64 rounded-xl" />');
-
             // Show order info
             orderInfo.classList.remove('hidden');
             orderIdEl.textContent = data.orderId;
 
-            // Start polling
-            paymentStatus.classList.remove('hidden');
-            statusText.textContent = '等待支付...';
+            // Check if we have a payUrl (registered domain configured) or direct qrCodeUrl
+            if (data.payUrl) {
+              // Redirect to registered domain for payment
+              qrLoading.classList.add('hidden');
+              qrContainer.insertAdjacentHTML('beforebegin', '<div class="mb-4"><p class="text-sm text-[color:var(--color-ink-soft)] mb-4">点击下方按钮跳转到支付页面</p><a href="' + data.payUrl + '" target="_blank" class="btn btn-primary btn-lg">前往支付</a></div>');
+            } else if (data.qrCodeUrl) {
+              // Show QR code directly
+              qrLoading.classList.add('hidden');
+              qrLoading.insertAdjacentHTML('beforebegin', '<img src="' + data.qrCodeUrl + '" alt="支付二维码" class="w-64 h-64 rounded-xl" />');
 
-            pollInterval = setInterval(async () => {
-              try {
-                const statusRes = await fetch('/api/pay/status/' + data.orderId);
-                const statusData = await statusRes.json();
+              // Start polling
+              paymentStatus.classList.remove('hidden');
+              statusText.textContent = '等待支付...';
 
-                if (statusData.status === 'paid') {
-                  clearInterval(pollInterval);
-                  statusText.textContent = '支付成功！';
-                  statusText.className = 'text-sm text-green-600';
-                  document.querySelector('#payment-status span').className = 'w-2 h-2 rounded-full bg-green-400';
-                  // Update order status in localStorage
-                  var savedOrders = JSON.parse(localStorage.getItem('clawos_orders') || '[]');
-                  savedOrders = savedOrders.map(function(o) {
-                    if (o.id === data.orderId) {
-                      o.status = 'paid';
-                      o.paidAt = new Date().toISOString();
-                    }
-                    return o;
-                  });
-                  localStorage.setItem('clawos_orders', JSON.stringify(savedOrders));
-                  setTimeout(function() {
-                    window.location.href = '/pay-success?orderId=' + data.orderId;
-                  }, 1000);
-                } else if (statusData.status === 'failed') {
-                  clearInterval(pollInterval);
-                  paymentError.classList.remove('hidden');
-                  paymentError.textContent = '支付失败，请重试';
-                  paymentStatus.classList.add('hidden');
+              pollInterval = setInterval(async () => {
+                try {
+                  const statusRes = await fetch('/api/pay/status/' + data.orderId);
+                  const statusData = await statusRes.json();
+
+                  if (statusData.status === 'paid') {
+                    clearInterval(pollInterval);
+                    statusText.textContent = '支付成功！';
+                    statusText.className = 'text-sm text-green-600';
+                    document.querySelector('#payment-status span').className = 'w-2 h-2 rounded-full bg-green-400';
+                    // Update order status in localStorage
+                    var savedOrders = JSON.parse(localStorage.getItem('clawos_orders') || '[]');
+                    savedOrders = savedOrders.map(function(o) {
+                      if (o.id === data.orderId) {
+                        o.status = 'paid';
+                        o.paidAt = new Date().toISOString();
+                      }
+                      return o;
+                    });
+                    localStorage.setItem('clawos_orders', JSON.stringify(savedOrders));
+                    setTimeout(function() {
+                      window.location.href = '/pay-success?orderId=' + data.orderId;
+                    }, 1000);
+                  } else if (statusData.status === 'failed') {
+                    clearInterval(pollInterval);
+                    paymentError.classList.remove('hidden');
+                    paymentError.textContent = '支付失败，请重试';
+                    paymentStatus.classList.add('hidden');
+                  }
+                } catch (e) {
+                  console.error('Poll error:', e);
                 }
-              } catch (e) {
-                console.error('Poll error:', e);
-              }
-            }, 2000);
+              }, 2000);
+            }
 
           } catch (err) {
             qrContainer.classList.add('hidden');

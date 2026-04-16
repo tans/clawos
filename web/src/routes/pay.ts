@@ -11,6 +11,7 @@ import {
   updateOrderStatus as updateOrderStatusStorage,
   listPublishedProducts,
 } from "../lib/storage";
+import { getBrandConfig } from "../lib/branding";
 
 export const payRoutes = new Hono();
 
@@ -93,6 +94,23 @@ payRoutes.post("/api/pay/create", async (c) => {
       shippingAddress: shippingAddress,
     });
 
+    // Check if registered domain is configured
+    const brandConfig = getBrandConfig();
+    const hasRegisteredDomain = brandConfig.registeredDomain && brandConfig.registeredDomain.trim();
+
+    if (hasRegisteredDomain) {
+      // Return pay URL instead of QR code directly - user will be redirected to registered domain for payment
+      const payUrl = `${brandConfig.registeredDomain.replace(/\/$/, "")}/pay/${order.id}`;
+      return c.json({
+        ok: true,
+        orderId: order.id,
+        payUrl,
+        productName: product.name,
+        priceCny: product.priceCny,
+      });
+    }
+
+    // No registered domain configured, return QR code directly (original behavior)
     return c.json({
       ok: true,
       orderId: order.id,
@@ -183,6 +201,31 @@ payRoutes.get("/api/pay/status/:orderId", async (c) => {
   } catch (err) {
     const error = err as Error;
     console.error("[pay] status check error:", error);
+    return c.json({ ok: false, error: "查询失败" }, 500);
+  }
+});
+
+// GET /api/pay/qr/:orderId - Get QR code URL for an order
+payRoutes.get("/api/pay/qr/:orderId", async (c) => {
+  try {
+    const orderId = c.req.param("orderId");
+    const order = await getOrderByIdStorage(orderId);
+
+    if (!order) {
+      return c.json({ ok: false, error: "订单不存在" }, 404);
+    }
+
+    if (!order.alipayQrCodeUrl) {
+      return c.json({ ok: false, error: "支付二维码不可用" }, 400);
+    }
+
+    return c.json({
+      ok: true,
+      qrCodeUrl: order.alipayQrCodeUrl,
+    });
+  } catch (err) {
+    const error = err as Error;
+    console.error("[pay] get qr error:", error);
     return c.json({ ok: false, error: "查询失败" }, 500);
   }
 });

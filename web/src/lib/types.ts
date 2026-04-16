@@ -120,6 +120,7 @@ export interface SiteSettings {
   brandLogoUrl: string;
   heroBannerUrl: string;
   brandUrl: string;
+  registeredDomain: string;
   customerServiceWechat: string;
   seoTitle: string;
   seoDescription: string;

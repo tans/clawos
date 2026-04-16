@@ -234,6 +234,7 @@ function normalizeSiteSettings(raw: unknown): SiteSettings | null {
     siteName: d.siteName.trim(),
     brandLogoUrl: typeof d.brandLogoUrl === "string" ? d.brandLogoUrl.trim() : "",
     brandUrl: typeof d.brandUrl === "string" ? d.brandUrl.trim() : "",
+    registeredDomain: typeof d.registeredDomain === "string" ? d.registeredDomain.trim() : "",
     seoTitle: typeof d.seoTitle === "string" ? d.seoTitle.trim() : "",
     seoDescription: typeof d.seoDescription === "string" ? d.seoDescription.trim() : "",
     seoKeywords: typeof d.seoKeywords === "string" ? d.seoKeywords.trim() : "",

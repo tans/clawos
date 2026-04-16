@@ -7,6 +7,7 @@ export interface BrandConfig {
   siteName: string;
   brandUrl: string;
   brandDomain: string;
+  registeredDomain: string;
   brandLogoUrl: string;
   heroBannerUrl: string;
   customerServiceWechat: string;
@@ -96,12 +97,16 @@ export function getBrandConfig(): BrandConfig {
     (typeof settingsOverride?.heroBannerUrl === "string" && settingsOverride.heroBannerUrl.trim()) || "";
   const customerServiceWechat =
     (typeof settingsOverride?.customerServiceWechat === "string" && settingsOverride.customerServiceWechat.trim()) || "";
+  const registeredDomain =
+    (typeof settingsOverride?.registeredDomain === "string" && settingsOverride.registeredDomain.trim()) ||
+    process.env.OEM_REGISTERED_DOMAIN?.trim() || "";
 
   cachedBrandConfig = {
     brandName,
     siteName,
     brandUrl,
     brandDomain: deriveBrandDomain(brandUrl),
+    registeredDomain,
     brandLogoUrl,
     heroBannerUrl,
     customerServiceWechat,
