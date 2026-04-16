@@ -152,13 +152,68 @@ export async function createPagePayOrder(params: {
 
   const response = res.alipay_trade_page_pay_response as Record<string, unknown>;
 
-  if (!response || !response.qr_code) {
+  if (!response || !response.pay_url) {
     throw new Error("支付宝未返回支付链接");
   }
 
   return {
     outTradeNo: params.outTradeNo,
-    payUrl: response.qr_code as string,
+    payUrl: response.pay_url as string,
+    totalAmount: params.totalAmount,
+  };
+}
+
+export interface CreateWapPayResult {
+  outTradeNo: string;
+  payUrl: string;
+  totalAmount: string;
+}
+
+export async function createWapPayOrder(params: {
+  outTradeNo: string;
+  totalAmount: string;
+  subject: string;
+  returnUrl: string;
+}): Promise<CreateWapPayResult> {
+  const client = getAlipayClient();
+  if (!client) {
+    throw new Error("支付宝未配置");
+  }
+
+  const env = getEnv();
+
+  const result = await client.exec(
+    "alipay.trade.wap.pay",
+    {
+      outTradeNo: params.outTradeNo,
+      totalAmount: params.totalAmount,
+      subject: params.subject,
+      productCode: "QUICK_WAP_WAY",
+      notifyUrl: env.alipayNotifyUrl || undefined,
+      returnUrl: params.returnUrl,
+    },
+    { signType: "RSA2" },
+  );
+
+  if (!result || typeof result !== "object") {
+    throw new Error("支付宝返回无效");
+  }
+
+  const res = result as Record<string, unknown>;
+
+  if (res.code !== "10000") {
+    throw new Error(`支付宝错误: ${res.msg} (${res.code})`);
+  }
+
+  const response = res.alipay_trade_wap_pay_response as Record<string, unknown>;
+
+  if (!response || !response.pay_url) {
+    throw new Error("支付宝未返回支付链接");
+  }
+
+  return {
+    outTradeNo: params.outTradeNo,
+    payUrl: response.pay_url as string,
     totalAmount: params.totalAmount,
   };
 }

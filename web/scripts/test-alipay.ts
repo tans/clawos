@@ -14,6 +14,7 @@ import { getEnv } from "../src/lib/env.ts";
 import {
   createQrCodeOrder,
   createPagePayOrder,
+  createWapPayOrder,
   queryOrderStatus,
   isAlipayConfigured,
 } from "../src/lib/alipay.ts";
@@ -248,6 +249,34 @@ async function runOrderSimulation() {
     console.log(`\x1b[31m✗ Page Pay order failed: ${error.message}\x1b[0m`);
     results.push({
       name: "Page Pay Order",
+      passed: false,
+      message: error.message,
+    });
+  }
+
+  // Test 4: Simulate WAP pay order (alipay.trade.wap.pay)
+  console.log("\n\x1b[36m[Test 4] WAP Pay Order (alipay.trade.wap.pay)\x1b[0m");
+  try {
+    const returnUrl = "https://example.com/pay-success";
+    const wapResult = await createWapPayOrder({
+      outTradeNo: `${testOrderNo}-wap`,
+      totalAmount: testProduct.priceCny,
+      subject: testProduct.name,
+      returnUrl,
+    });
+    console.log(`\x1b[32m✓ WAP Pay created successfully\x1b[0m`);
+    console.log(`  outTradeNo: ${wapResult.outTradeNo}`);
+    console.log(`  payUrl: ${wapResult.payUrl}`);
+    results.push({
+      name: "WAP Pay Order",
+      passed: true,
+      message: `Created: ${wapResult.outTradeNo}`,
+    });
+  } catch (err) {
+    const error = err as Error;
+    console.log(`\x1b[31m✗ WAP Pay order failed: ${error.message}\x1b[0m`);
+    results.push({
+      name: "WAP Pay Order",
       passed: false,
       message: error.message,
     });
