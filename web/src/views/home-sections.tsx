@@ -102,6 +102,18 @@ function isVideoUrl(url: string): boolean {
   return VIDEO_EXTENSIONS.some(ext => url.toLowerCase().endsWith(ext));
 }
 
+function isIframeUrl(url: string): boolean {
+  return url.includes('player.bilibili.com') || url.includes('<iframe');
+}
+
+function extractIframeSrc(url: string): string {
+  if (url.includes('<iframe')) {
+    const match = url.match(/src=["']([^"']+)["']/);
+    return match ? match[1] : url;
+  }
+  return url;
+}
+
 export function HomeHero({ brandName, heroBannerUrl }: { brandName: string; heroBannerUrl: string }) {
   return (
     <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-hero-section">
@@ -116,6 +128,14 @@ export function HomeHero({ brandName, heroBannerUrl }: { brandName: string; hero
               loop
               playsInline
               class="w-full h-full object-cover opacity-20"
+            />
+          ) : isIframeUrl(heroBannerUrl) ? (
+            <iframe
+              src={extractIframeSrc(heroBannerUrl)}
+              class="w-full h-full object-cover opacity-20"
+              scrolling="no"
+              frameBorder="0"
+              allowFullScreen
             />
           ) : (
             <img

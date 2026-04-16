@@ -61,7 +61,7 @@ export function renderSettingsSection(settings: SiteSettings) {
               class="input input-bordered w-full"
               name="heroBannerUrl"
               value={settings.heroBannerUrl}
-              placeholder="Banner 图片或视频 URL（外链或上传后自动填充）"
+              placeholder="Banner 图片、视频 URL 或 Bilibili 嵌入代码"
             />
           </div>
 
