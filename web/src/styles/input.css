@@ -718,6 +718,67 @@
     .marketing-section[id] {
         scroll-margin-top: 5rem;
     }
+
+    .input,
+    .textarea,
+    .file-input {
+        width: 100%;
+        border: 1px solid var(--color-line-medium);
+        background: var(--color-surface-raised);
+        color: var(--color-ink-strong);
+        border-radius: 0.75rem;
+        transition:
+            border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+            box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+            background-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .input,
+    .file-input {
+        min-height: 2.75rem;
+        padding: 0.75rem 0.875rem;
+    }
+
+    .textarea {
+        min-height: 5.5rem;
+        padding: 0.75rem 0.875rem;
+        line-height: 1.6;
+    }
+
+    .input::placeholder,
+    .textarea::placeholder {
+        color: var(--color-ink-faint);
+    }
+
+    .input-bordered,
+    .textarea-bordered,
+    .file-input-bordered {
+        border-color: var(--color-line-medium);
+    }
+
+    .input:hover,
+    .textarea:hover,
+    .file-input:hover {
+        border-color: var(--color-line-strong);
+    }
+
+    .input:focus,
+    .textarea:focus,
+    .file-input:focus {
+        outline: none;
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(var(--color-accent-rgb), 0.12);
+    }
+
+    .input:disabled,
+    .textarea:disabled,
+    .file-input:disabled,
+    .input[readonly],
+    .textarea[readonly] {
+        background: var(--color-surface-muted);
+        color: var(--color-ink-soft);
+        cursor: not-allowed;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

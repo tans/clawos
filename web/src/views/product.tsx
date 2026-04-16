@@ -34,7 +34,6 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
                   src={product.imageUrl}
                   alt={product.name}
                   class="w-full aspect-square rounded-2xl object-cover shadow-lg"
-                  style={{ maxHeight: "500px" }}
                 />
               ) : (
                 <div class="w-full aspect-square rounded-2xl bg-gradient-to-br from-[color:var(--color-accent)]/10 to-[color:var(--color-accent)]/5 flex items-center justify-center">
@@ -109,8 +108,8 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
       </div>
 
       {/* Payment Modal */}
-      <dialog id="payment-modal" class="modal-overlay">
-        <div class="modal-content p-8 max-w-md w-full mx-auto rounded-2xl bg-white shadow-2xl">
+      <dialog id="payment-modal" class="modal">
+        <div class="modal-box max-w-md p-8 rounded-2xl bg-white shadow-2xl">
           <div class="text-center">
             <h3 class="text-xl font-semibold text-[color:var(--color-ink-strong)] mb-2">请扫码支付</h3>
             <p id="modal-product-name" class="text-sm text-[color:var(--color-ink-soft)] mb-6">{product?.name}</p>
@@ -173,6 +172,9 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
             </button>
           </div>
         </div>
+        <form method="dialog" class="modal-backdrop">
+          <button type="submit" aria-label="关闭支付弹框">close</button>
+        </form>
       </dialog>
 
       {/* Payment Script */}
