@@ -28,8 +28,13 @@ function parsePriceCny(priceCny: string): string {
 // POST /api/pay/create - Create payment order and get Alipay QR code
 payRoutes.post("/api/pay/create", async (c) => {
   try {
-    const body = await c.req.json<{ productId: string }>();
-    const { productId } = body;
+    const body = await c.req.json<{
+      productId: string;
+      shippingName?: string;
+      shippingPhone?: string;
+      shippingAddress?: string;
+    }>();
+    const { productId, shippingName, shippingPhone, shippingAddress } = body;
 
     if (!productId || typeof productId !== "string") {
       return c.json({ ok: false, error: "商品 ID 不能为空" }, 400);
@@ -46,6 +51,16 @@ payRoutes.post("/api/pay/create", async (c) => {
 
     if (!product) {
       return c.json({ ok: false, error: "商品不存在" }, 404);
+    }
+
+    // Check if shipping info is required
+    if (product.requiresLogistics) {
+      if (!shippingName || !shippingPhone || !shippingAddress) {
+        return c.json({ ok: false, error: "请填写完整的收货信息" }, 400);
+      }
+      if (!/^1[3-9]\d{9}$/.test(shippingPhone)) {
+        return c.json({ ok: false, error: "手机号格式不正确" }, 400);
+      }
     }
 
     // Parse price
@@ -73,6 +88,9 @@ payRoutes.post("/api/pay/create", async (c) => {
       productPriceCny: product.priceCny,
       alipayQrCodeUrl: qrResult.qrCodeUrl,
       alipayOutTradeNo: qrResult.outTradeNo,
+      shippingName: shippingName,
+      shippingPhone: shippingPhone,
+      shippingAddress: shippingAddress,
     });
 
     return c.json({
@@ -85,7 +103,13 @@ payRoutes.post("/api/pay/create", async (c) => {
   } catch (err) {
     const error = err as Error;
     console.error("[pay] create order error:", error);
-    return c.json({ ok: false, error: error.message || "支付初始化失败" }, 500);
+    // Check for Alipay permission errors
+    const errorMsg = error.message || "支付初始化失败";
+    if (errorMsg.includes("40006") || errorMsg.includes("Insufficient Permissions")) {
+      console.error("[pay] Alipay permission error - 可能未开通当面付功能");
+      return c.json({ ok: false, error: "支付宝权限不足，请联系管理员开通当面付功能" }, 500);
+    }
+    return c.json({ ok: false, error: errorMsg }, 500);
   }
 });
 

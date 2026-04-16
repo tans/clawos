@@ -61,6 +61,10 @@ function toPublished(raw: string | undefined): boolean {
   return raw === "true" || raw === "on" || raw === "1";
 }
 
+function toRequiresLogistics(raw: string | undefined): boolean {
+  return raw === "true" || raw === "on" || raw === "1";
+}
+
 type AdminSection = "settings" | "products" | "tasks" | "downloads";
 
 function sectionPath(section: AdminSection): string {
@@ -156,6 +160,7 @@ adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
       priceCny: firstValue(body.priceCny)?.trim() || "",
       link: firstValue(body.link)?.trim() || "",
       published: toPublished(firstValue(body.published)),
+      requiresLogistics: toRequiresLogistics(firstValue(body.requiresLogistics)),
     });
     return noticeRedirect(c, "商品已保存", "products");
   } catch (error) {

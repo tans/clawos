@@ -163,6 +163,19 @@ function OrdersSection({ orders }: OrdersSectionProps) {
           if (order.alipayTradeNo) {
             html += '<div><dt class="text-base-content/60">商户单号</dt><dd class="font-mono break-all">' + order.alipayTradeNo + '</dd></div>';
           }
+          if (order.shippingName || order.shippingPhone || order.shippingAddress) {
+            html += '<div class="col-span-2 mt-4 p-3 bg-stone-50 rounded-lg"><dt class="text-base-content/60 mb-2">收货信息</dt>';
+            if (order.shippingName) {
+              html += '<dd class="font-medium">' + order.shippingName + '</dd>';
+            }
+            if (order.shippingPhone) {
+              html += '<dd class="text-base-content/70">' + order.shippingPhone + '</dd>';
+            }
+            if (order.shippingAddress) {
+              html += '<dd class="text-base-content/70">' + order.shippingAddress + '</dd>';
+            }
+            html += '</div>';
+          }
           html += '</dl>';
           content.innerHTML = html;
           document.getElementById('order-modal').showModal();

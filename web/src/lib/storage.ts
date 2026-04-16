@@ -200,6 +200,7 @@ function normalizeProduct(raw: unknown): Product | null {
     priceCny: typeof d.priceCny === "string" ? d.priceCny.trim() : "",
     link: typeof d.link === "string" ? d.link.trim() : "",
     published: Boolean(d.published),
+    requiresLogistics: Boolean(d.requiresLogistics),
     updatedAt: typeof d.updatedAt === "string" && d.updatedAt.trim() ? d.updatedAt.trim() : nowIso(),
   };
 }
@@ -854,6 +855,9 @@ function normalizeOrder(raw: unknown): Order | null {
     createdAt: typeof d.createdAt === "string" && d.createdAt.trim() ? d.createdAt.trim() : nowIso(),
     paidAt: typeof d.paidAt === "string" && d.paidAt.trim() ? d.paidAt.trim() : undefined,
     notifyData: typeof d.notifyData === "object" && d.notifyData !== null ? d.notifyData : undefined,
+    shippingName: typeof d.shippingName === "string" && d.shippingName.trim() ? d.shippingName.trim() : undefined,
+    shippingPhone: typeof d.shippingPhone === "string" && d.shippingPhone.trim() ? d.shippingPhone.trim() : undefined,
+    shippingAddress: typeof d.shippingAddress === "string" && d.shippingAddress.trim() ? d.shippingAddress.trim() : undefined,
   };
 }
 
@@ -882,6 +886,9 @@ export async function createOrder(params: {
   productPriceCny: string;
   alipayQrCodeUrl?: string;
   alipayOutTradeNo?: string;
+  shippingName?: string;
+  shippingPhone?: string;
+  shippingAddress?: string;
 }): Promise<Order> {
   const orders = await readOrders();
   const id = `order-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -894,6 +901,9 @@ export async function createOrder(params: {
     alipayQrCodeUrl: params.alipayQrCodeUrl,
     alipayOutTradeNo: params.alipayOutTradeNo,
     createdAt: nowIso(),
+    shippingName: params.shippingName,
+    shippingPhone: params.shippingPhone,
+    shippingAddress: params.shippingAddress,
   };
   orders.push(order);
   await writeOrders(orders);

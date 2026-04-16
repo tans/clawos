@@ -66,6 +66,7 @@ export interface Product {
   priceCny: string;
   link: string;
   published: boolean;
+  requiresLogistics: boolean;
   updatedAt: string;
 }
 
@@ -95,6 +96,10 @@ export interface Order {
   createdAt: string;
   paidAt?: string;
   notifyData?: Record<string, unknown>;
+  // Shipping info
+  shippingName?: string;
+  shippingPhone?: string;
+  shippingAddress?: string;
 }
 
 export interface AdminTask {

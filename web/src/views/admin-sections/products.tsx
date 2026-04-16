@@ -97,11 +97,53 @@ export function renderProductsSection(products: Product[]) {
               </label>
             </div>
 
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-3">
+                <input id="product-requires-logistics" class="checkbox" type="checkbox" name="requiresLogistics" value="true" />
+                <span class="label-text">需要物流配送（用户需填写收货信息）</span>
+              </label>
+            </div>
+
             <button class="btn btn-primary w-full" type="submit">保存商品</button>
           </form>
         </div>
         <form method="dialog" class="modal-backdrop"><button type="submit">close</button></form>
       </dialog>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        window.openCreateProductModal = function() {
+          document.getElementById('product-modal-title').textContent = '新增商品';
+          document.getElementById('product-id').value = '';
+          document.getElementById('product-id').disabled = false;
+          document.getElementById('product-name').value = '';
+          document.getElementById('product-description').value = '';
+          document.getElementById('product-image-url').value = '';
+          document.getElementById('product-price').value = '';
+          document.getElementById('product-link').value = '';
+          document.getElementById('product-published').checked = false;
+          document.getElementById('product-requires-logistics').checked = false;
+          document.getElementById('product-modal').showModal();
+        };
+
+        window.openEditProductModalFromEncoded = function(encodedProduct) {
+          try {
+            var product = JSON.parse(decodeURIComponent(encodedProduct));
+            document.getElementById('product-modal-title').textContent = '编辑商品';
+            document.getElementById('product-id').value = product.id || '';
+            document.getElementById('product-id').disabled = true;
+            document.getElementById('product-name').value = product.name || '';
+            document.getElementById('product-description').value = product.description || '';
+            document.getElementById('product-image-url').value = product.imageUrl || '';
+            document.getElementById('product-price').value = product.priceCny || '';
+            document.getElementById('product-link').value = product.link || '';
+            document.getElementById('product-published').checked = !!product.published;
+            document.getElementById('product-requires-logistics').checked = !!product.requiresLogistics;
+            document.getElementById('product-modal').showModal();
+          } catch (e) {
+            console.error('Failed to parse product:', e);
+          }
+        };
+      `}} />
     </section>
   );
 }

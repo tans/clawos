@@ -102,8 +102,31 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
             <h3 class="text-xl font-semibold text-[color:var(--color-ink-strong)] mb-2">请扫码支付</h3>
             <p id="modal-product-name" class="text-sm text-[color:var(--color-ink-soft)] mb-6">{product?.name}</p>
 
+            {/* Shipping Form */}
+            <div id="shipping-form" class="hidden mb-6 text-left">
+              <h4 class="text-sm font-medium text-[color:var(--color-ink-strong)] mb-3">请填写收货信息</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="text-xs text-[color:var(--color-ink-soft)]">收货人姓名</label>
+                  <input id="shipping-name" type="text" class="input input-bordered w-full mt-1" placeholder="请输入收货人姓名" />
+                </div>
+                <div>
+                  <label class="text-xs text-[color:var(--color-ink-soft)]">手机号</label>
+                  <input id="shipping-phone" type="tel" class="input input-bordered w-full mt-1" placeholder="请输入手机号" maxlength="11" />
+                </div>
+                <div>
+                  <label class="text-xs text-[color:var(--color-ink-soft)]">收货地址</label>
+                  <textarea id="shipping-address" class="textarea textarea-bordered w-full mt-1" placeholder="请输入详细收货地址" rows="2"></textarea>
+                </div>
+              </div>
+              <div class="mt-4 flex gap-2">
+                <button type="button" id="shipping-back" class="btn btn-outline flex-1" onclick="hideShippingForm()">返回</button>
+                <button type="button" id="shipping-submit" class="btn btn-primary flex-1" onclick="submitShippingInfo()">确认并支付</button>
+              </div>
+            </div>
+
             {/* QR Code */}
-            <div id="qrcode-container" class="mb-6 flex justify-center">
+            <div id="qrcode-container" class="mb-6 flex justify-center hidden">
               <div id="qrcode-loading" class="w-64 h-64 flex items-center justify-center bg-stone-50 rounded-xl">
                 <span class="text-[color:var(--color-ink-soft)]">加载中...</span>
               </div>
@@ -142,8 +165,10 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
       {/* Payment Script */}
       <script dangerouslySetInnerHTML={{ __html: `
         let pollInterval = null;
+        var pendingProductId = null;
+        var requiresLogistics = ${product?.requiresLogistics || false};
 
-        window.initiatePayment = async function() {
+        window.initiatePayment = function() {
           const productId = '${product?.id || ""}';
           const button = document.getElementById('buy-button');
           const modal = document.getElementById('payment-modal');
@@ -154,23 +179,109 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
           const paymentError = document.getElementById('payment-error');
           const statusText = document.getElementById('status-text');
           const orderIdEl = document.getElementById('order-id');
+          const shippingForm = document.getElementById('shipping-form');
 
           // Disable button
           if (button) button.disabled = true;
 
+          pendingProductId = productId;
+
           // Show modal
           modal.showModal();
+
+          // If requires logistics, show shipping form first
+          if (requiresLogistics) {
+            qrContainer.classList.add('hidden');
+            qrLoading.classList.add('hidden');
+            orderInfo.classList.add('hidden');
+            paymentStatus.classList.add('hidden');
+            paymentError.classList.add('hidden');
+            if (shippingForm) shippingForm.classList.remove('hidden');
+            if (button) button.disabled = false;
+            return;
+          }
+
+          // Proceed directly to payment
+          qrContainer.classList.remove('hidden');
+          qrLoading.classList.remove('hidden');
+          orderInfo.classList.add('hidden');
+          paymentStatus.classList.add('hidden');
+          paymentError.classList.add('hidden');
+          if (shippingForm) shippingForm.classList.add('hidden');
+
+          createOrder(productId, null, null, null);
+        };
+
+        window.hideShippingForm = function() {
+          const shippingForm = document.getElementById('shipping-form');
+          const button = document.getElementById('buy-button');
+          if (shippingForm) shippingForm.classList.add('hidden');
+          if (button) button.disabled = false;
+          pendingProductId = null;
+        };
+
+        window.submitShippingInfo = async function() {
+          const shippingName = document.getElementById('shipping-name').value.trim();
+          const shippingPhone = document.getElementById('shipping-phone').value.trim();
+          const shippingAddress = document.getElementById('shipping-address').value.trim();
+
+          // Validation
+          if (!shippingName) {
+            alert('请填写收货人姓名');
+            return;
+          }
+          if (!shippingPhone) {
+            alert('请填写手机号');
+            return;
+          }
+          if (!/^1[3-9]\\d{9}$/.test(shippingPhone)) {
+            alert('手机号格式不正确');
+            return;
+          }
+          if (!shippingAddress) {
+            alert('请填写收货地址');
+            return;
+          }
+
+          const shippingForm = document.getElementById('shipping-form');
+          const qrContainer = document.getElementById('qrcode-container');
+          const qrLoading = document.getElementById('qrcode-loading');
+          const orderInfo = document.getElementById('order-info');
+          const paymentStatus = document.getElementById('payment-status');
+          const paymentError = document.getElementById('payment-error');
+
+          if (shippingForm) shippingForm.classList.add('hidden');
           qrContainer.classList.remove('hidden');
           qrLoading.classList.remove('hidden');
           orderInfo.classList.add('hidden');
           paymentStatus.classList.add('hidden');
           paymentError.classList.add('hidden');
 
+          createOrder(pendingProductId, shippingName, shippingPhone, shippingAddress);
+        };
+
+        async function createOrder(productId, shippingName, shippingPhone, shippingAddress) {
+          const qrContainer = document.getElementById('qrcode-container');
+          const qrLoading = document.getElementById('qrcode-loading');
+          const orderInfo = document.getElementById('order-info');
+          const paymentStatus = document.getElementById('payment-status');
+          const paymentError = document.getElementById('payment-error');
+          const statusText = document.getElementById('status-text');
+          const orderIdEl = document.getElementById('order-id');
+          const button = document.getElementById('buy-button');
+
           try {
+            const requestBody = { productId: productId };
+            if (shippingName) {
+              requestBody.shippingName = shippingName;
+              requestBody.shippingPhone = shippingPhone;
+              requestBody.shippingAddress = shippingAddress;
+            }
+
             const res = await fetch('/api/pay/create', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ productId })
+              body: JSON.stringify(requestBody)
             });
             const data = await res.json();
 
@@ -187,6 +298,11 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
               status: 'pending',
               createdAt: new Date().toISOString()
             };
+            if (shippingName) {
+              orderData.shippingName = shippingName;
+              orderData.shippingPhone = shippingPhone;
+              orderData.shippingAddress = shippingAddress;
+            }
             var savedOrders = JSON.parse(localStorage.getItem('clawos_orders') || '[]');
             savedOrders.push(orderData);
             localStorage.setItem('clawos_orders', JSON.stringify(savedOrders));
@@ -245,7 +361,7 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
 
             if (button) button.disabled = false;
           }
-        };
+        }
 
         window.closePaymentModal = function() {
           if (pollInterval) {
