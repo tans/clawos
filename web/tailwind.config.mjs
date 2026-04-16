@@ -30,11 +30,11 @@ export default {
           recessed: '#e4e7eb',
         },
         accent: {
-          DEFAULT: '#2563eb',
-          strong: '#1d4ed8',
-          subtle: '#dbeafe',
-          glow: '#60a5fa',
-          muted: '#3b82f6',
+          DEFAULT: themeColor,
+          strong: adjustBrightness(themeColor, -15),
+          subtle: adjustBrightness(themeColor, 85),
+          glow: adjustBrightness(themeColor, 40),
+          muted: adjustBrightness(themeColor, -5),
         },
         line: {
           soft: 'rgba(26, 26, 46, 0.08)',

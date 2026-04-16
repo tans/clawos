@@ -653,7 +653,7 @@
     .marketing-primary-button:hover {
         background: var(--color-accent-strong);
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+        box-shadow: 0 6px 20px rgba(var(--color-accent-rgb), 0.35);
     }
 
     .marketing-secondary-button {
@@ -676,7 +676,7 @@
     .marketing-secondary-button:hover {
         border-color: var(--color-accent);
         color: var(--color-accent);
-        background: rgba(37, 99, 235, 0.04);
+        background: rgba(var(--color-accent-rgb), 0.04);
     }
 
     .marketing-page-hero {

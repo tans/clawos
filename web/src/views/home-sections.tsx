@@ -411,8 +411,8 @@ export function GovernanceSection() {
 
       <div class="section-inner relative z-10">
         <div class="max-w-3xl mb-16 animate-on-scroll">
-          <div class="deco-badge mb-6" style={{ background: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa' }}>
-            <span class="deco-circle" style={{ background: '#60a5fa' }}></span>
+          <div class="deco-badge mb-6" style={{ background: 'rgba(var(--color-accent-rgb), 0.15)', color: 'var(--color-accent-glow)' }}>
+            <span class="deco-circle" style={{ background: 'var(--color-accent-glow)' }}></span>
             Governance
           </div>
           <h2 class="text-display-md mb-4" style={{ color: '#f8f9fa' }}>
@@ -431,7 +431,7 @@ export function GovernanceSection() {
               style={{ transitionDelay: `${(index + 1) * 100}ms` }}
             >
               <div class="rounded-2xl p-8 border border-white/10 bg-white/5 backdrop-blur-sm">
-                <div class="text-4xl font-display font-bold mb-4" style={{ color: 'rgba(37, 99, 235, 0.3)' }}>
+                <div class="text-4xl font-display font-bold mb-4" style={{ color: 'rgba(var(--color-accent-rgb), 0.3)' }}>
                   {String(index + 1).padStart(2, '0')}
                 </div>
                 <h3 class="text-xl font-semibold mb-3" style={{ color: '#f8f9fa' }}>{item.title}</h3>
@@ -505,8 +505,8 @@ export function PocPathSection() {
         <div class="grid gap-8 lg:grid-cols-2">
           {/* Agent Market Card */}
           <article class="card-ink rounded-3xl p-10 animate-on-scroll">
-            <div class="deco-badge mb-6" style={{ background: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa' }}>
-              <span class="deco-circle" style={{ background: '#60a5fa' }}></span>
+            <div class="deco-badge mb-6" style={{ background: 'rgba(var(--color-accent-rgb), 0.15)', color: 'var(--color-accent-glow)' }}>
+              <span class="deco-circle" style={{ background: 'var(--color-accent-glow)' }}></span>
               Marketplace Highlight
             </div>
             <h3 class="text-display-sm mb-4" style={{ color: '#f8f9fa' }}>Agent 众包市场</h3>

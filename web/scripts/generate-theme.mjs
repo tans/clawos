@@ -8,9 +8,13 @@ const themeColorSubtle = adjustBrightness(themeColor, 85);
 const themeColorGlow = adjustBrightness(themeColor, 40);
 const themeColorMuted = adjustBrightness(themeColor, -5);
 
+const themeColorRgb = themeColor.replace('#', '');
+const themeColorRgbStr = `${parseInt(themeColorRgb.slice(0, 2), 16)}, ${parseInt(themeColorRgb.slice(2, 4), 16)}, ${parseInt(themeColorRgb.slice(4, 6), 16)}`;
+
 const themeCss = `/* Auto-generated theme - do not edit manually */
 :root {
   --color-accent: ${themeColor};
+  --color-accent-rgb: ${themeColorRgbStr};
   --color-accent-strong: ${themeColorStrong};
   --color-accent-subtle: ${themeColorSubtle};
   --color-accent-glow: ${themeColorGlow};
