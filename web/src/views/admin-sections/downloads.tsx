@@ -111,41 +111,53 @@ export function renderDownloadsSection(items: DownloadItem[]) {
           <h3 class="font-bold text-lg" id="download-modal-title">新建下载项</h3>
           <form method="post" action="/admin/downloads/save" class="mt-4 space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
-              <label class="label">
-                <span class="label-text">唯一 ID *</span>
-                <input id="download-id" name="id" class="input input-bordered" placeholder="如 git-install" required />
-              </label>
-              <label class="label">
-                <span class="label-text">显示名称 *</span>
-                <input id="download-name" name="name" class="input input-bordered" placeholder="如 Git for Windows" required />
-              </label>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">唯一 ID *</span>
+                </label>
+                <input id="download-id" name="id" class="input input-bordered w-full" placeholder="如 git-install" required />
+              </div>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">显示名称 *</span>
+                </label>
+                <input id="download-name" name="name" class="input input-bordered w-full" placeholder="如 Git for Windows" required />
+              </div>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">
-              <label class="label">
-                <span class="label-text">版本号</span>
-                <input id="download-version" name="version" class="input input-bordered" placeholder="如 2.45.0" />
-              </label>
-              <label class="label">
-                <span class="label-text">排序（数字越小越靠前）</span>
-                <input id="download-sort-order" name="sortOrder" type="number" class="input input-bordered" placeholder="0" defaultValue="0" />
-              </label>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">版本号</span>
+                </label>
+                <input id="download-version" name="version" class="input input-bordered w-full" placeholder="如 2.45.0" />
+              </div>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">排序（数字越小越靠前）</span>
+                </label>
+                <input id="download-sort-order" name="sortOrder" type="number" class="input input-bordered w-full" placeholder="0" defaultValue="0" />
+              </div>
             </div>
 
-            <label class="label">
-              <span class="label-text">简介</span>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">简介</span>
+              </label>
               <textarea
                 id="download-description"
                 name="description"
-                class="textarea textarea-bordered"
+                class="textarea textarea-bordered w-full"
                 placeholder="描述（可选）"
                 rows={2}
               />
-            </label>
+            </div>
 
             {/* Logo */}
-            <label class="label">
-              <span class="label-text">Logo</span>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Logo</span>
+              </label>
               <div class="flex items-center gap-3">
                 <input
                   id="download-logo-url"
@@ -172,20 +184,20 @@ export function renderDownloadsSection(items: DownloadItem[]) {
                 </button>
               </div>
               <div id="download-logo-status" class="text-xs mt-1 text-base-content/50"></div>
-              <div class="mt-2">
-                <img
-                  id="download-logo-preview"
-                  src=""
-                  alt="Logo 预览"
-                  class="hidden w-20 h-20 rounded-lg object-cover border border-base-300"
-                />
-              </div>
-            </label>
+              <img
+                id="download-logo-preview"
+                src=""
+                alt="Logo 预览"
+                class="hidden w-20 h-20 rounded-lg object-cover border border-base-300 mt-2"
+              />
+            </div>
 
-            <label class="label cursor-pointer justify-start gap-3">
-              <input id="download-published" name="published" type="checkbox" class="checkbox" value="true" />
-              <span class="label-text">发布到前台</span>
-            </label>
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-3">
+                <input id="download-published" name="published" type="checkbox" class="checkbox" value="true" />
+                <span class="label-text">发布到前台</span>
+              </label>
+            </div>
 
             <input type="hidden" name="originalId" id="download-original-id" value="" />
             <button class="btn btn-primary" type="submit">保存</button>
@@ -200,10 +212,12 @@ export function renderDownloadsSection(items: DownloadItem[]) {
           <h3 class="font-bold text-lg" id="upload-file-modal-title">上传文件</h3>
           <form method="post" action="/admin/downloads/upload-file" encType="multipart/form-data" class="mt-4 space-y-3">
             <input type="hidden" name="itemId" id="upload-file-item-id" value="" />
-            <label class="label">
-              <span class="label-text">选择文件</span>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">选择文件</span>
+              </label>
               <input name="file" type="file" class="file-input file-input-bordered w-full" required />
-            </label>
+            </div>
             <div id="upload-file-name" class="text-sm text-base-content/60"></div>
             <button class="btn btn-primary w-full" type="submit">上传</button>
           </form>

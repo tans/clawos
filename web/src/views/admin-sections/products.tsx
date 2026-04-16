@@ -39,18 +39,24 @@ export function renderProductsSection(products: Product[]) {
           <h3 class="font-bold text-lg" id="product-modal-title">新增商品</h3>
           <form method="post" action="/admin/products/save" class="mt-4 space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
-              <label class="label">
-                <span class="label-text">商品 ID *</span>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">商品 ID *</span>
+                </label>
                 <input id="product-id" name="id" class="input input-bordered w-full" placeholder="如 pro-plan" required />
-              </label>
-              <label class="label">
-                <span class="label-text">商品名称 *</span>
+              </div>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">商品名称 *</span>
+                </label>
                 <input id="product-name" name="name" class="input input-bordered w-full" placeholder="如 Pro Plan" required />
-              </label>
+              </div>
             </div>
 
-            <label class="label">
-              <span class="label-text">商品描述</span>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">商品描述</span>
+              </label>
               <textarea
                 id="product-description"
                 name="description"
@@ -58,32 +64,38 @@ export function renderProductsSection(products: Product[]) {
                 placeholder="描述（可选）"
                 rows={2}
               />
-            </label>
-
-            <label class="label">
-              <span class="label-text">图片</span>
-              <div class="space-y-2">
-                <input id="product-image-url" name="imageUrl" class="input input-bordered w-full" placeholder="选择文件后自动上传并回填地址" readonly />
-                <input id="product-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-                <p id="product-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
-              </div>
-            </label>
-
-            <div class="grid gap-4 md:grid-cols-2">
-              <label class="label">
-                <span class="label-text">价格</span>
-                <input id="product-price" name="priceCny" class="input input-bordered w-full" placeholder="如 199/月" />
-              </label>
-              <label class="label">
-                <span class="label-text">购买链接</span>
-                <input id="product-link" name="link" class="input input-bordered w-full" placeholder="https://..." />
-              </label>
             </div>
 
-            <label class="label cursor-pointer justify-start gap-3">
-              <input id="product-published" class="checkbox" type="checkbox" name="published" value="true" />
-              <span class="label-text">发布到前台</span>
-            </label>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">图片</span>
+              </label>
+              <input id="product-image-url" name="imageUrl" class="input input-bordered w-full" placeholder="选择文件后自动上传并回填地址" readonly />
+              <input id="product-image-file" class="file-input file-input-bordered w-full mt-2" type="file" accept="image/*" />
+              <p id="product-image-upload-status" class="text-xs text-base-content/60 mt-1">选择图片后自动上传</p>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">价格</span>
+                </label>
+                <input id="product-price" name="priceCny" class="input input-bordered w-full" placeholder="如 199/月" />
+              </div>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">购买链接</span>
+                </label>
+                <input id="product-link" name="link" class="input input-bordered w-full" placeholder="https://..." />
+              </div>
+            </div>
+
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-3">
+                <input id="product-published" class="checkbox" type="checkbox" name="published" value="true" />
+                <span class="label-text">发布到前台</span>
+              </label>
+            </div>
 
             <button class="btn btn-primary w-full" type="submit">保存商品</button>
           </form>
