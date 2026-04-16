@@ -566,21 +566,6 @@ export async function resolveMcpPackageByVersion(
   version: string,
   channel: ReleaseChannel = "stable",
 ): Promise<{ release: McpRelease; asset: import("./types").ReleaseAsset; absolutePath: string }> {
-  const versions = await listMcpReleaseVersions(mcpId, channel);
-  const normalizedVersion = version.trim();
-  if (!normalizedVersion) throw new Error("version 不能为空");
-  const release = versions.find((v) => v.version === normalizedVersion);
-  if (!release) throw new Error(`MCP 版本不存在: ${mcpId}@${normalizedVersion}`);
-  const absolutePath = resolve(getEnv().storageDir, release.package.relativePath);
-  await ensureReadable(absolutePath);
-  return { release, asset: release.package, absolutePath };
-}
-
-export async function resolveMcpPackageByVersion(
-  mcpId: string,
-  version: string,
-  channel: ReleaseChannel = "stable",
-): Promise<{ release: McpRelease; asset: import("./types").ReleaseAsset; absolutePath: string }> {
   const normalizedId = assertMcpId(mcpId);
   const normalizedVersion = version.trim();
   if (!normalizedVersion) throw new Error("version 不能为空");
@@ -855,7 +840,7 @@ function normalizeOrder(raw: unknown): Order | null {
   ) {
     return null;
   }
-  const validStatuses: OrderStatus[] = ["pending", "paid", "failed"];
+  const validStatuses: OrderStatus[] = ["pending", "paid", "failed", "expired", "cancelled", "refunded"];
   if (!validStatuses.includes(d.status as OrderStatus)) return null;
   return {
     id: d.id.trim(),
@@ -940,6 +925,27 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
 export async function getOrdersByProductId(productId: string): Promise<Order[]> {
   const orders = await readOrders();
   return orders.filter((o) => o.productId === productId);
+}
+
+export async function expireOldPendingOrders(maxAgeHours: number = 24): Promise<number> {
+  const orders = await readOrders();
+  const now = Date.now();
+  let expiredCount = 0;
+  const updated = orders.map((order) => {
+    if (order.status === "pending") {
+      const createdAt = new Date(order.createdAt).getTime();
+      const ageHours = (now - createdAt) / (1000 * 60 * 60);
+      if (ageHours >= maxAgeHours) {
+        expiredCount++;
+        return { ...order, status: "expired" as OrderStatus };
+      }
+    }
+    return order;
+  });
+  if (expiredCount > 0) {
+    await writeOrders(updated);
+  }
+  return expiredCount;
 }
 
 // ---------------------------------------------------------------------------

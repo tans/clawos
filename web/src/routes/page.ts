@@ -8,6 +8,8 @@ import { renderDownloadsPage } from "../views/downloads";
 import { renderHomePage } from "../views/home";
 import { renderMarketPage } from "../views/market";
 import { renderOemPage } from "../views/oem";
+import { renderHelpPage } from "../views/help";
+import { renderOrdersPage } from "../views/orders";
 import { renderPaySuccessPage } from "../views/pay-success";
 import { renderProductPage } from "../views/product";
 import { renderShopPage } from "../views/shop";
@@ -56,6 +58,10 @@ pageRoutes.get("/oem", (c) => {
   return c.html(renderOemPage());
 });
 
+pageRoutes.get("/help", (c) => {
+  return c.html(renderHelpPage());
+});
+
 // Product detail page
 pageRoutes.get("/shop/:id", async (c) => {
   const productId = c.req.param("id");
@@ -64,6 +70,11 @@ pageRoutes.get("/shop/:id", async (c) => {
     return c.html(renderProductPage(null, "商品不存在"));
   }
   return c.html(renderProductPage(product));
+});
+
+// User orders page (orders stored in localStorage)
+pageRoutes.get("/orders", async (c) => {
+  return c.html(renderOrdersPage([]));
 });
 
 // Payment success page

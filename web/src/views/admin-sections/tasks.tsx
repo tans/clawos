@@ -32,25 +32,33 @@ export function renderTasksSection(tasks: AdminTask[]) {
           <h3 class="font-bold text-lg">新增任务</h3>
           <form method="post" action="/admin/tasks/save" class="mt-4 space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
-              <label class="label">
-                <span class="label-text">任务标题 *</span>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">任务标题 *</span>
+                </label>
                 <input id="task-title" name="title" class="input input-bordered w-full" placeholder="任务标题" required />
-              </label>
-              <label class="label">
-                <span class="label-text">优先级</span>
+              </div>
+              <div class="form-control w-full">
+                <label class="label">
+                  <span class="label-text">优先级</span>
+                </label>
                 <select id="task-priority" name="priority" class="select select-bordered w-full" defaultValue="medium">
                   <option value="high">高</option><option value="medium">中</option><option value="low">低</option>
                 </select>
-              </label>
+              </div>
             </div>
 
-            <label class="label">
-              <span class="label-text">截止日期</span>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">截止日期</span>
+              </label>
               <input id="task-due-date" name="dueDate" class="input input-bordered w-full" type="date" />
-            </label>
+            </div>
 
-            <label class="label">
-              <span class="label-text">任务描述</span>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">任务描述</span>
+              </label>
               <textarea
                 id="task-description"
                 name="description"
@@ -58,16 +66,16 @@ export function renderTasksSection(tasks: AdminTask[]) {
                 placeholder="描述（可选）"
                 rows={2}
               />
-            </label>
+            </div>
 
-            <label class="label">
-              <span class="label-text">图片</span>
-              <div class="space-y-2">
-                <input id="task-image-url" name="imageUrl" class="input input-bordered w-full" placeholder="选择文件后自动上传并回填地址" readonly />
-                <input id="task-image-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
-                <p id="task-image-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
-              </div>
-            </label>
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">图片</span>
+              </label>
+              <input id="task-image-url" name="imageUrl" class="input input-bordered w-full" placeholder="选择文件后自动上传并回填地址" readonly />
+              <input id="task-image-file" class="file-input file-input-bordered w-full mt-2" type="file" accept="image/*" />
+              <p id="task-image-upload-status" class="text-xs text-base-content/60 mt-1">选择图片后自动上传</p>
+            </div>
 
             <button class="btn btn-primary w-full" type="submit">提交任务</button>
           </form>

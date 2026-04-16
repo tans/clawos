@@ -383,7 +383,9 @@
                   "pattern": "^#?[0-9a-fA-F]{6}$"
                 }
               },
-              "required": ["color"],
+              "required": [
+                "color"
+              ],
               "additionalProperties": false
             }
           }
@@ -448,7 +450,10 @@
                   "type": "string"
                 }
               },
-              "required": ["provider", "mode"],
+              "required": [
+                "provider",
+                "mode"
+              ],
               "additionalProperties": false
             }
           },
@@ -707,12 +712,18 @@
                         "additionalProperties": false
                       }
                     },
-                    "required": ["id", "name"],
+                    "required": [
+                      "id",
+                      "name"
+                    ],
                     "additionalProperties": false
                   }
                 }
               },
-              "required": ["baseUrl", "models"],
+              "required": [
+                "baseUrl",
+                "models"
+              ],
               "additionalProperties": false
             }
           },
@@ -1079,7 +1090,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["command"],
+                  "required": [
+                    "command"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -2955,15 +2968,27 @@
                       "properties": {
                         "host": {
                           "type": "string",
-                          "enum": ["sandbox", "gateway", "node"]
+                          "enum": [
+                            "sandbox",
+                            "gateway",
+                            "node"
+                          ]
                         },
                         "security": {
                           "type": "string",
-                          "enum": ["deny", "allowlist", "full"]
+                          "enum": [
+                            "deny",
+                            "allowlist",
+                            "full"
+                          ]
                         },
                         "ask": {
                           "type": "string",
-                          "enum": ["off", "on-miss", "always"]
+                          "enum": [
+                            "off",
+                            "on-miss",
+                            "always"
+                          ]
                         },
                         "node": {
                           "type": "string"
@@ -3055,7 +3080,9 @@
                   "additionalProperties": false
                 }
               },
-              "required": ["id"],
+              "required": [
+                "id"
+              ],
               "additionalProperties": false
             }
           }
@@ -3480,7 +3507,9 @@
                               "additionalProperties": false
                             }
                           },
-                          "required": ["action"],
+                          "required": [
+                            "action"
+                          ],
                           "additionalProperties": false
                         }
                       }
@@ -3811,7 +3840,9 @@
                               "additionalProperties": false
                             }
                           },
-                          "required": ["action"],
+                          "required": [
+                            "action"
+                          ],
                           "additionalProperties": false
                         }
                       }
@@ -4142,7 +4173,9 @@
                               "additionalProperties": false
                             }
                           },
-                          "required": ["action"],
+                          "required": [
+                            "action"
+                          ],
                           "additionalProperties": false
                         }
                       }
@@ -4476,7 +4509,9 @@
                           "additionalProperties": false
                         }
                       },
-                      "required": ["action"],
+                      "required": [
+                        "action"
+                      ],
                       "additionalProperties": false
                     }
                   }
@@ -4518,7 +4553,9 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["command"],
+                  "required": [
+                    "command"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -4618,15 +4655,27 @@
             "properties": {
               "host": {
                 "type": "string",
-                "enum": ["sandbox", "gateway", "node"]
+                "enum": [
+                  "sandbox",
+                  "gateway",
+                  "node"
+                ]
               },
               "security": {
                 "type": "string",
-                "enum": ["deny", "allowlist", "full"]
+                "enum": [
+                  "deny",
+                  "allowlist",
+                  "full"
+                ]
               },
               "ask": {
                 "type": "string",
-                "enum": ["off", "on-miss", "always"]
+                "enum": [
+                  "off",
+                  "on-miss",
+                  "always"
+                ]
               },
               "node": {
                 "type": "string"
@@ -4786,7 +4835,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["kind", "id"],
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
                   "additionalProperties": false
                 },
                 "guildId": {
@@ -4796,11 +4848,16 @@
                   "type": "string"
                 }
               },
-              "required": ["channel"],
+              "required": [
+                "channel"
+              ],
               "additionalProperties": false
             }
           },
-          "required": ["agentId", "match"],
+          "required": [
+            "agentId",
+            "match"
+          ],
           "additionalProperties": false
         }
       },
@@ -4809,7 +4866,10 @@
         "properties": {
           "strategy": {
             "type": "string",
-            "enum": ["parallel", "sequential"]
+            "enum": [
+              "parallel",
+              "sequential"
+            ]
           }
         },
         "additionalProperties": {
@@ -4837,7 +4897,9 @@
                 "maximum": 9007199254740991
               }
             },
-            "required": ["command"],
+            "required": [
+              "command"
+            ],
             "additionalProperties": false
           }
         },
@@ -4949,38 +5011,6 @@
                     ]
                   },
                   "telegram": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "const": "steer"
-                      },
-                      {
-                        "type": "string",
-                        "const": "followup"
-                      },
-                      {
-                        "type": "string",
-                        "const": "collect"
-                      },
-                      {
-                        "type": "string",
-                        "const": "steer-backlog"
-                      },
-                      {
-                        "type": "string",
-                        "const": "steer+backlog"
-                      },
-                      {
-                        "type": "string",
-                        "const": "queue"
-                      },
-                      {
-                        "type": "string",
-                        "const": "interrupt"
-                      }
-                    ]
-                  },
-                  "discord": {
                     "anyOf": [
                       {
                         "type": "string",
@@ -5274,7 +5304,12 @@
           },
           "ackReactionScope": {
             "type": "string",
-            "enum": ["group-mentions", "group-all", "direct", "all"]
+            "enum": [
+              "group-mentions",
+              "group-all",
+              "direct",
+              "all"
+            ]
           },
           "removeAckAfterReply": {
             "type": "boolean"
@@ -5284,18 +5319,30 @@
             "properties": {
               "auto": {
                 "type": "string",
-                "enum": ["off", "always", "inbound", "tagged"]
+                "enum": [
+                  "off",
+                  "always",
+                  "inbound",
+                  "tagged"
+                ]
               },
               "enabled": {
                 "type": "boolean"
               },
               "mode": {
                 "type": "string",
-                "enum": ["final", "all"]
+                "enum": [
+                  "final",
+                  "all"
+                ]
               },
               "provider": {
                 "type": "string",
-                "enum": ["elevenlabs", "openai", "edge"]
+                "enum": [
+                  "elevenlabs",
+                  "openai",
+                  "edge"
+                ]
               },
               "summaryModel": {
                 "type": "string"
@@ -5352,7 +5399,11 @@
                   },
                   "applyTextNormalization": {
                     "type": "string",
-                    "enum": ["auto", "on", "off"]
+                    "enum": [
+                      "auto",
+                      "on",
+                      "off"
+                    ]
                   },
                   "languageCode": {
                     "type": "string"
@@ -5529,7 +5580,10 @@
             }
           }
         },
-        "required": ["native", "nativeSkills"],
+        "required": [
+          "native",
+          "nativeSkills"
+        ],
         "additionalProperties": false
       },
       "approvals": {
@@ -5596,7 +5650,10 @@
                       ]
                     }
                   },
-                  "required": ["channel", "to"],
+                  "required": [
+                    "channel",
+                    "to"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -5940,7 +5997,9 @@
                       "additionalProperties": false
                     }
                   },
-                  "required": ["action"],
+                  "required": [
+                    "action"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6082,10 +6141,6 @@
                     },
                     {
                       "type": "string",
-                      "const": "discord"
-                    },
-                    {
-                      "type": "string",
                       "const": "slack"
                     },
                     {
@@ -6126,7 +6181,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["module"],
+                  "required": [
+                    "module"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -6266,7 +6323,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["event", "module"],
+                  "required": [
+                    "event",
+                    "module"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -6352,7 +6412,9 @@
                       }
                     }
                   },
-                  "required": ["source"],
+                  "required": [
+                    "source"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -6427,7 +6489,11 @@
             "properties": {
               "mode": {
                 "type": "string",
-                "enum": ["off", "minimal", "full"]
+                "enum": [
+                  "off",
+                  "minimal",
+                  "full"
+                ]
               }
             },
             "additionalProperties": false
@@ -6924,7 +6990,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["path"],
+                  "required": [
+                    "path"
+                  ],
                   "additionalProperties": false
                 }
               },
@@ -7074,7 +7142,9 @@
                           "additionalProperties": false
                         }
                       },
-                      "required": ["action"],
+                      "required": [
+                        "action"
+                      ],
                       "additionalProperties": false
                     }
                   }
@@ -7299,23 +7369,6 @@
                 "additionalProperties": false
               },
               "diagnostics-otel": {
-                "type": "object",
-                "properties": {
-                  "enabled": {
-                    "type": "boolean"
-                  },
-                  "config": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string"
-                    },
-                    "additionalProperties": false,
-                    "properties": {}
-                  }
-                },
-                "additionalProperties": false
-              },
-              "discord": {
                 "type": "object",
                 "properties": {
                   "enabled": {
@@ -7570,7 +7623,9 @@
                             ]
                           }
                         },
-                        "required": ["apiKey"]
+                        "required": [
+                          "apiKey"
+                        ]
                       },
                       "dbPath": {
                         "type": "string"
@@ -7582,7 +7637,9 @@
                         "type": "boolean"
                       }
                     },
-                    "required": ["embedding"]
+                    "required": [
+                      "embedding"
+                    ]
                   }
                 },
                 "additionalProperties": false
@@ -7826,7 +7883,12 @@
                       },
                       "provider": {
                         "type": "string",
-                        "enum": ["telnyx", "twilio", "plivo", "mock"]
+                        "enum": [
+                          "telnyx",
+                          "twilio",
+                          "plivo",
+                          "mock"
+                        ]
                       },
                       "telnyx": {
                         "type": "object",
@@ -7877,7 +7939,12 @@
                       },
                       "inboundPolicy": {
                         "type": "string",
-                        "enum": ["disabled", "allowlist", "pairing", "open"]
+                        "enum": [
+                          "disabled",
+                          "allowlist",
+                          "pairing",
+                          "open"
+                        ]
                       },
                       "allowFrom": {
                         "type": "array",
@@ -7895,7 +7962,10 @@
                         "properties": {
                           "defaultMode": {
                             "type": "string",
-                            "enum": ["notify", "conversation"]
+                            "enum": [
+                              "notify",
+                              "conversation"
+                            ]
                           },
                           "notifyHangupDelaySec": {
                             "type": "integer",
@@ -7945,7 +8015,11 @@
                         "properties": {
                           "mode": {
                             "type": "string",
-                            "enum": ["off", "serve", "funnel"]
+                            "enum": [
+                              "off",
+                              "serve",
+                              "funnel"
+                            ]
                           },
                           "path": {
                             "type": "string"
@@ -7985,7 +8059,9 @@
                           },
                           "sttProvider": {
                             "type": "string",
-                            "enum": ["openai-realtime"]
+                            "enum": [
+                              "openai-realtime"
+                            ]
                           },
                           "openaiApiKey": {
                             "type": "string"
@@ -8019,7 +8095,9 @@
                         "properties": {
                           "provider": {
                             "type": "string",
-                            "enum": ["openai"]
+                            "enum": [
+                              "openai"
+                            ]
                           },
                           "model": {
                             "type": "string"
@@ -8032,18 +8110,30 @@
                         "properties": {
                           "auto": {
                             "type": "string",
-                            "enum": ["off", "always", "inbound", "tagged"]
+                            "enum": [
+                              "off",
+                              "always",
+                              "inbound",
+                              "tagged"
+                            ]
                           },
                           "enabled": {
                             "type": "boolean"
                           },
                           "mode": {
                             "type": "string",
-                            "enum": ["final", "all"]
+                            "enum": [
+                              "final",
+                              "all"
+                            ]
                           },
                           "provider": {
                             "type": "string",
-                            "enum": ["openai", "elevenlabs", "edge"]
+                            "enum": [
+                              "openai",
+                              "elevenlabs",
+                              "edge"
+                            ]
                           },
                           "summaryModel": {
                             "type": "string"
@@ -8101,7 +8191,11 @@
                               },
                               "applyTextNormalization": {
                                 "type": "string",
-                                "enum": ["auto", "on", "off"]
+                                "enum": [
+                                  "auto",
+                                  "on",
+                                  "off"
+                                ]
                               },
                               "languageCode": {
                                 "type": "string"
@@ -8315,7 +8409,9 @@
                   "type": "string"
                 }
               },
-              "required": ["source"],
+              "required": [
+                "source"
+              ],
               "additionalProperties": false
             }
           }
@@ -8323,7 +8419,9 @@
         "additionalProperties": false
       }
     },
-    "required": ["commands"],
+    "required": [
+      "commands"
+    ],
     "additionalProperties": false,
     "title": "OpenClawConfig"
   },
@@ -9169,7 +9267,7 @@
     },
     "commands.native": {
       "label": "Native Commands",
-      "help": "Register native commands with channels that support it (Discord/Slack/Telegram)."
+      "help": "Register native commands with channels that support it (Slack/Telegram)."
     },
     "commands.nativeSkills": {
       "label": "Native Skill Commands",
@@ -9265,9 +9363,6 @@
       "label": "Telegram Custom Commands",
       "help": "Additional Telegram bot menu commands (merged with native; conflicts ignored)."
     },
-    "channels.discord": {
-      "label": "Discord"
-    },
     "channels.slack": {
       "label": "Slack"
     },
@@ -9361,47 +9456,6 @@
       "label": "BlueBubbles DM Policy",
       "help": "Direct message access control (\"pairing\" recommended). \"open\" requires channels.bluebubbles.allowFrom=[\"*\"]."
     },
-    "channels.discord.dm.policy": {
-      "label": "Discord DM Policy",
-      "help": "Direct message access control (\"pairing\" recommended). \"open\" requires channels.discord.dm.allowFrom=[\"*\"]."
-    },
-    "channels.discord.retry.attempts": {
-      "label": "Discord Retry Attempts",
-      "help": "Max retry attempts for outbound Discord API calls (default: 3)."
-    },
-    "channels.discord.retry.minDelayMs": {
-      "label": "Discord Retry Min Delay (ms)",
-      "help": "Minimum retry delay in ms for Discord outbound calls."
-    },
-    "channels.discord.retry.maxDelayMs": {
-      "label": "Discord Retry Max Delay (ms)",
-      "help": "Maximum retry delay cap in ms for Discord outbound calls."
-    },
-    "channels.discord.retry.jitter": {
-      "label": "Discord Retry Jitter",
-      "help": "Jitter factor (0-1) applied to Discord retry delays."
-    },
-    "channels.discord.maxLinesPerMessage": {
-      "label": "Discord Max Lines Per Message",
-      "help": "Soft max line count per Discord message (default: 17)."
-    },
-    "channels.discord.intents.presence": {
-      "label": "Discord Presence Intent",
-      "help": "Enable the Guild Presences privileged intent. Must also be enabled in the Discord Developer Portal. Allows tracking user activities (e.g. Spotify). Default: false."
-    },
-    "channels.discord.intents.guildMembers": {
-      "label": "Discord Guild Members Intent",
-      "help": "Enable the Guild Members privileged intent. Must also be enabled in the Discord Developer Portal. Default: false."
-    },
-    "channels.discord.pluralkit.enabled": {
-      "label": "Discord PluralKit Enabled",
-      "help": "Resolve PluralKit proxied messages and treat system members as distinct senders."
-    },
-    "channels.discord.pluralkit.token": {
-      "label": "Discord PluralKit Token",
-      "help": "Optional PluralKit token for resolving private systems or members.",
-      "sensitive": true
-    },
     "channels.slack.dm.policy": {
       "label": "Slack DM Policy",
       "help": "Direct message access control (\"pairing\" recommended). \"open\" requires channels.slack.dm.allowFrom=[\"*\"]."
@@ -9409,10 +9463,6 @@
     "channels.slack.allowBots": {
       "label": "Slack Allow Bot Messages",
       "help": "Allow bot-authored messages to trigger Slack replies (default: false)."
-    },
-    "channels.discord.token": {
-      "label": "Discord Bot Token",
-      "sensitive": true
     },
     "channels.slack.botToken": {
       "label": "Slack Bot Token",
@@ -9602,9 +9652,6 @@
     "channels.mattermost.configWrites": {
       "help": "Allow Mattermost to write config in response to channel events/commands (default: true)."
     },
-    "channels.discord.configWrites": {
-      "help": "Allow Discord to write config in response to channel events/commands (default: true)."
-    },
     "channels.whatsapp.configWrites": {
       "help": "Allow WhatsApp to write config in response to channel events/commands (default: true)."
     },
@@ -9616,12 +9663,6 @@
     },
     "channels.msteams.configWrites": {
       "help": "Allow Microsoft Teams to write config in response to channel events/commands (default: true)."
-    },
-    "channels.discord.commands.native": {
-      "help": "Override native commands for Discord (bool or \"auto\")."
-    },
-    "channels.discord.commands.nativeSkills": {
-      "help": "Override native skill commands for Discord (bool or \"auto\")."
     },
     "channels.telegram.commands.native": {
       "help": "Override native commands for Telegram (bool or \"auto\")."
@@ -9682,17 +9723,6 @@
     "plugins.entries.diagnostics-otel.config": {
       "label": "@openclaw/diagnostics-otel Config",
       "help": "Plugin-defined config payload for diagnostics-otel."
-    },
-    "plugins.entries.discord": {
-      "label": "@openclaw/discord",
-      "help": "OpenClaw Discord channel plugin (plugin: discord)"
-    },
-    "plugins.entries.discord.enabled": {
-      "label": "Enable @openclaw/discord"
-    },
-    "plugins.entries.discord.config": {
-      "label": "@openclaw/discord Config",
-      "help": "Plugin-defined config payload for discord."
     },
     "plugins.entries.feishu": {
       "label": "@openclaw/feishu",
@@ -10195,11 +10225,11 @@
       "help": "Plugin-defined config payload for zalouser."
     },
     "agents.defaults.heartbeat.target": {
-      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, googlechat, slack, signal, imessage.",
+      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, googlechat, slack, signal, imessage.",
       "placeholder": "last"
     },
     "agents.list.*.heartbeat.target": {
-      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, discord, googlechat, slack, signal, imessage.",
+      "help": "Delivery target (\"last\", \"none\", or a channel id). Known channels: telegram, whatsapp, googlechat, slack, signal, imessage.",
       "placeholder": "last"
     }
   },

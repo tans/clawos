@@ -3,6 +3,7 @@
 import { renderToString } from "hono/jsx/dom/server";
 import { getBrandConfig } from "../lib/branding";
 import { renderDownloadsSection } from "./admin-sections/downloads";
+import { renderOrdersSection } from "./admin-sections/orders";
 import { renderProductsSection } from "./admin-sections/products";
 import { renderSettingsSection } from "./admin-sections/settings";
 import { renderTasksSection } from "./admin-sections/tasks";
@@ -127,7 +128,13 @@ function renderActiveSection(props: AdminPageProps) {
   if (props.activeSection === "tasks") {
     return renderTasksSection(props.tasks);
   }
-  return renderDownloadsSection(props.downloads ?? []);
+  if (props.activeSection === "downloads") {
+    return renderDownloadsSection(props.downloads ?? []);
+  }
+  if (props.activeSection === "orders") {
+    return renderOrdersSection(props.orders ?? []);
+  }
+  return null;
 }
 
 function AdminPage(props: AdminPageProps) {
@@ -223,6 +230,14 @@ function AdminPage(props: AdminPageProps) {
                     class={props.activeSection === "downloads" ? "active" : ""}
                   >
                     下载管理
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={sectionHref("orders")}
+                    class={props.activeSection === "orders" ? "active" : ""}
+                  >
+                    订单管理
                   </a>
                 </li>
               </ul>
@@ -479,6 +494,7 @@ export function renderAdminLoginPage(error?: string): string {
 export function renderAdminPage(props: AdminPageProps): string {
   const html = renderToString(<AdminPage {...props} />);
   const downloadsJson = JSON.stringify(props.downloads ?? []);
-  const script = `<script>window.__downloadItems=${downloadsJson};</script>`;
+  const ordersJson = JSON.stringify(props.orders ?? []);
+  const script = `<script>window.__downloadItems=${downloadsJson};window.__orders=${ordersJson};</script>`;
   return `<!doctype html>${html.replace('</body>', `${script}</body>`)}`;
 }

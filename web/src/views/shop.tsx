@@ -12,7 +12,7 @@ function ShopPage({ items }: { items: Product[] }) {
           <p class="marketing-kicker">Product Catalog</p>
           <h1 class="marketing-h1">商城</h1>
           <p class="text-base leading-8 text-[color:var(--ink-soft)]">
-            浏览已发布商品。你可以直接跳转到购买链接，或联系团队获取部署与采购支持。
+            浏览已发布商品，点击查看详情并完成购买。
           </p>
         </div>
 
@@ -34,15 +34,9 @@ function ShopPage({ items }: { items: Product[] }) {
                     {product.description || "暂无描述"}
                   </p>
                   <p class="text-sm font-medium text-[color:var(--ink-strong)]">{product.priceCny || "联系销售"}</p>
-                  {product.link ? (
-                    <a class="marketing-primary-button inline-flex" href={product.link} target="_blank" rel="noreferrer">
-                      立即购买
-                    </a>
-                  ) : (
-                    <a class="marketing-secondary-button inline-flex" href="/contact">
-                      联系销售
-                    </a>
-                  )}
+                  <a class="marketing-primary-button inline-flex" href={`/shop/${product.id}`}>
+                    查看详情
+                  </a>
                 </div>
               </article>
             ))}

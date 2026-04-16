@@ -172,7 +172,7 @@ payRoutes.post("/api/pay/alipay/notify", async (c) => {
 
     // Verify signature
     if (!verifyNotification(postData)) {
-      console.error("[pay] Alipay notify signature verification failed");
+      console.error("[pay] Alipay notify signature verification failed, postData:", postData);
       return c.text("fail", 400);
     }
 
