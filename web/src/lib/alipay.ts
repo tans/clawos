@@ -26,11 +26,10 @@ function rawToPem(key: string, type: "private" | "public"): string {
     .filter((line) => !line.includes("：") && !line.includes(":"))
     .join("");
 
-  // Alipay raw keys are PKCS#1 format
   if (type === "private") {
     return `-----BEGIN RSA PRIVATE KEY-----\n${base64Content}\n-----END RSA PRIVATE KEY-----`;
   } else {
-    return `-----BEGIN RSA PUBLIC KEY-----\n${base64Content}\n-----END RSA PUBLIC KEY-----`;
+    return `-----BEGIN PUBLIC KEY-----\n${base64Content}\n-----END PUBLIC KEY-----`;
   }
 }
 
@@ -78,9 +77,11 @@ export async function createQrCodeOrder(params: {
   const result = await client.exec(
     "alipay.trade.precreate",
     {
-      outTradeNo: params.outTradeNo,
-      totalAmount: params.totalAmount,
-      subject: params.subject,
+      bizContent: {
+        out_trade_no: params.outTradeNo,
+        total_amount: params.totalAmount,
+        subject: params.subject,
+      },
       notifyUrl: env.alipayNotifyUrl || undefined,
     },
     { signType: "RSA2" },
@@ -127,38 +128,24 @@ export async function createPagePayOrder(params: {
 
   const env = getEnv();
 
-  const result = await client.exec(
+  const payUrl = client.pageExecute(
     "alipay.trade.page.pay",
+    "GET",
     {
-      outTradeNo: params.outTradeNo,
-      totalAmount: params.totalAmount,
-      subject: params.subject,
-      productCode: "FAST_INSTANT_TRADE_PAY",
+      bizContent: {
+        out_trade_no: params.outTradeNo,
+        total_amount: params.totalAmount,
+        subject: params.subject,
+        product_code: "FAST_INSTANT_TRADE_PAY",
+      },
       notifyUrl: env.alipayNotifyUrl || undefined,
       returnUrl: params.returnUrl,
     },
-    { signType: "RSA2" },
   );
-
-  if (!result || typeof result !== "object") {
-    throw new Error("支付宝返回无效");
-  }
-
-  const res = result as Record<string, unknown>;
-
-  if (res.code !== "10000") {
-    throw new Error(`支付宝错误: ${res.msg} (${res.code})`);
-  }
-
-  const response = res.alipay_trade_page_pay_response as Record<string, unknown>;
-
-  if (!response || !response.pay_url) {
-    throw new Error("支付宝未返回支付链接");
-  }
 
   return {
     outTradeNo: params.outTradeNo,
-    payUrl: response.pay_url as string,
+    payUrl,
     totalAmount: params.totalAmount,
   };
 }
@@ -182,38 +169,24 @@ export async function createWapPayOrder(params: {
 
   const env = getEnv();
 
-  const result = await client.exec(
+  const payUrl = client.pageExecute(
     "alipay.trade.wap.pay",
+    "GET",
     {
-      outTradeNo: params.outTradeNo,
-      totalAmount: params.totalAmount,
-      subject: params.subject,
-      productCode: "QUICK_WAP_WAY",
+      bizContent: {
+        out_trade_no: params.outTradeNo,
+        total_amount: params.totalAmount,
+        subject: params.subject,
+        product_code: "QUICK_WAP_WAY",
+      },
       notifyUrl: env.alipayNotifyUrl || undefined,
       returnUrl: params.returnUrl,
     },
-    { signType: "RSA2" },
   );
-
-  if (!result || typeof result !== "object") {
-    throw new Error("支付宝返回无效");
-  }
-
-  const res = result as Record<string, unknown>;
-
-  if (res.code !== "10000") {
-    throw new Error(`支付宝错误: ${res.msg} (${res.code})`);
-  }
-
-  const response = res.alipay_trade_wap_pay_response as Record<string, unknown>;
-
-  if (!response || !response.pay_url) {
-    throw new Error("支付宝未返回支付链接");
-  }
 
   return {
     outTradeNo: params.outTradeNo,
-    payUrl: response.pay_url as string,
+    payUrl,
     totalAmount: params.totalAmount,
   };
 }

@@ -16,6 +16,11 @@ import { getBrandConfig } from "../lib/branding";
 
 export const payRoutes = new Hono();
 
+function isAlipayPermissionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  return message.includes("40006") || message.includes("Insufficient Permissions");
+}
+
 function parsePriceCny(priceCny: string): string {
   // Remove anything after "/" (e.g., "99/月" -> "99")
   // Remove currency symbols and spaces
@@ -82,6 +87,7 @@ payRoutes.post("/api/pay/create", async (c) => {
     const successReturnUrl = `${brandConfig.brandUrl.replace(/\/$/, "")}/pay-success`;
 
     let alipayQrCodeUrl: string | undefined;
+    let responsePayUrl: string | undefined;
 
     if (hasRegisteredDomain) {
       // Use page pay API - returns payment URL for redirect
@@ -93,13 +99,29 @@ payRoutes.post("/api/pay/create", async (c) => {
       });
       alipayQrCodeUrl = payResult.payUrl;
     } else {
-      // Use QR code precreate API - original behavior
-      const qrResult = await createQrCodeOrder({
-        outTradeNo,
-        totalAmount: priceAmount,
-        subject: product.name,
-      });
-      alipayQrCodeUrl = qrResult.qrCodeUrl;
+      // Prefer QR code precreate when no registered domain is configured.
+      try {
+        const qrResult = await createQrCodeOrder({
+          outTradeNo,
+          totalAmount: priceAmount,
+          subject: product.name,
+        });
+        alipayQrCodeUrl = qrResult.qrCodeUrl;
+      } catch (error) {
+        if (!isAlipayPermissionError(error)) {
+          throw error;
+        }
+
+        console.error("[pay] QR precreate unavailable, falling back to page pay:", error);
+        const payResult = await createPagePayOrder({
+          outTradeNo,
+          totalAmount: priceAmount,
+          subject: product.name,
+          returnUrl: successReturnUrl,
+        });
+        alipayQrCodeUrl = payResult.payUrl;
+        responsePayUrl = payResult.payUrl;
+      }
     }
 
     // Store order in database
@@ -114,13 +136,14 @@ payRoutes.post("/api/pay/create", async (c) => {
       shippingAddress: shippingAddress,
     });
 
-    if (hasRegisteredDomain) {
+    if (hasRegisteredDomain || responsePayUrl) {
       // Return pay URL for redirect to Alipay payment page
-      const payUrl = `${brandConfig.registeredDomain.replace(/\/$/, "")}/pay/${order.id}`;
       return c.json({
         ok: true,
         orderId: order.id,
-        payUrl,
+        payUrl: hasRegisteredDomain
+          ? `${brandConfig.registeredDomain.replace(/\/$/, "")}/pay/${order.id}`
+          : responsePayUrl,
         productName: product.name,
         priceCny: product.priceCny,
       });
@@ -139,7 +162,7 @@ payRoutes.post("/api/pay/create", async (c) => {
     console.error("[pay] create order error:", error);
     // Check for Alipay permission errors
     const errorMsg = error.message || "支付初始化失败";
-    if (errorMsg.includes("40006") || errorMsg.includes("Insufficient Permissions")) {
+    if (isAlipayPermissionError(error)) {
       console.error("[pay] Alipay permission error - 可能未开通当面付功能");
       return c.json({ ok: false, error: "支付宝权限不足，请联系管理员开通当面付功能" }, 500);
     }
