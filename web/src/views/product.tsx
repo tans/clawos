@@ -51,7 +51,7 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
                       key={index}
                       src={url}
                       alt={`${product.name} 详情图 ${index + 1}`}
-                      class="w-full aspect-square rounded-xl object-cover shadow-sm"
+                      class="w-full max-w-md rounded-xl object-cover shadow-sm"
                     />
                   ))}
                 </div>
