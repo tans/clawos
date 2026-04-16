@@ -17,6 +17,7 @@ function getAlipayClient(): AlipaySdk | null {
       alipayPublicKey: env.alipayPublicKey,
       signType: "RSA2",
       gateway: env.alipayGateway,
+      keyType: "PKCS8",
     };
     alipayClient = new AlipaySdk(config);
   }
