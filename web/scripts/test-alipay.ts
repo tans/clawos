@@ -31,17 +31,32 @@ function test(name: string, passed: boolean, message: string): void {
 function isValidRSA2Key(key: string): boolean {
   if (!key) return false;
   const trimmed = key.trim();
-  // RSA2 private key should start with -----BEGIN RSA PRIVATE KEY----- or -----BEGIN PRIVATE KEY-----
-  // and end with -----END RSA PRIVATE KEY----- or -----END PRIVATE KEY-----
+
+  // Format 1: Standard PEM format with headers/footers
+  // Private key: -----BEGIN RSA PRIVATE KEY----- / -----BEGIN PRIVATE KEY-----
   const validBeginPrivate = trimmed.startsWith("-----BEGIN RSA PRIVATE KEY-----") ||
                             trimmed.startsWith("-----BEGIN PRIVATE KEY-----");
   const validEndPrivate = trimmed.endsWith("-----END RSA PRIVATE KEY-----") ||
                           trimmed.endsWith("-----END PRIVATE KEY-----");
-  // Alipay public key should start with -----BEGIN PUBLIC KEY----- and end with -----END PUBLIC KEY-----
+  // Public key: -----BEGIN PUBLIC KEY-----
   const validBeginPublic = trimmed.startsWith("-----BEGIN PUBLIC KEY-----");
   const validEndPublic = trimmed.endsWith("-----END PUBLIC KEY-----");
 
-  return (validBeginPrivate && validEndPrivate) || (validBeginPublic && validEndPublic);
+  if ((validBeginPrivate && validEndPrivate) || (validBeginPublic && validEndPublic)) {
+    return true;
+  }
+
+  // Format 2: Alipay "应用公钥RSA2048.txt" format - raw base64 without PEM headers
+  // This is a multiline base64 string, typically starts with MII for RSA2048 public keys
+  const base64Regex = /^[A-Za-z0-9+/=\s]+$/;
+  const lines = trimmed.split("\n").filter(l => l.trim().length > 0);
+
+  // Remove any possible content description lines (like "应用公钥" label)
+  const base64Content = lines.filter(l => !l.includes("：") && !l.includes(":")).join("");
+
+  // Check if it's valid base64 content of appropriate length for RSA2048
+  // RSA2048 public key base64 is typically 256+ chars, private key is 512+ chars
+  return base64Regex.test(base64Content) && base64Content.length >= 200;
 }
 
 async function main() {
@@ -83,8 +98,8 @@ async function main() {
       "ALIPAY_PRIVATE_KEY format",
       isValidKey,
       isValidKey
-        ? "Valid RSA2 private key format"
-        : "Invalid RSA2 private key format (should be PEM format)"
+        ? "Valid RSA2 private key format (PEM or Alipay raw format)"
+        : "Invalid RSA2 private key format"
     );
   }
 
@@ -104,8 +119,8 @@ async function main() {
       "ALIPAY_PUBLIC_KEY format",
       isValidKey,
       isValidKey
-        ? "Valid RSA2 public key format"
-        : "Invalid RSA2 public key format (should be PEM format)"
+        ? "Valid RSA2 public key format (PEM or Alipay raw format)"
+        : "Invalid RSA2 public key format"
     );
   }
 
