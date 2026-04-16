@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "clawos",
       cwd: __dirname,
-      script: "/Users/ke/.bun/bin/bun",
+      script: "bun",
       args: "run src/index.ts",
       interpreter: "none",
       autorestart: true,
