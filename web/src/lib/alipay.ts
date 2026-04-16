@@ -4,6 +4,31 @@ import { getEnv } from "./env";
 
 let alipayClient: AlipaySdk | null = null;
 
+/**
+ * Convert raw RSA key (Alipay "应用公钥RSA2048.txt" format) to PEM format
+ */
+function rawToPem(key: string, type: "private" | "public"): string {
+  const trimmed = key.trim();
+
+  // Already PEM format
+  if (trimmed.startsWith("-----BEGIN")) {
+    return trimmed;
+  }
+
+  // Remove any description lines (e.g., "应用公钥：" prefix)
+  const base64Content = trimmed
+    .split("\n")
+    .filter((line) => !line.includes("：") && !line.includes(":"))
+    .join("")
+    .replace(/\s/g, "");
+
+  if (type === "private") {
+    return `-----BEGIN RSA PRIVATE KEY-----\n${base64Content}\n-----END RSA PRIVATE KEY-----`;
+  } else {
+    return `-----BEGIN PUBLIC KEY-----\n${base64Content}\n-----END PUBLIC KEY-----`;
+  }
+}
+
 function getAlipayClient(): AlipaySdk | null {
   const env = getEnv();
   if (!env.alipayAppId || !env.alipayPrivateKey || !env.alipayPublicKey) {
@@ -13,8 +38,8 @@ function getAlipayClient(): AlipaySdk | null {
   if (!alipayClient) {
     const config: AlipaySdkConfig = {
       appId: env.alipayAppId,
-      privateKey: env.alipayPrivateKey,
-      alipayPublicKey: env.alipayPublicKey,
+      privateKey: rawToPem(env.alipayPrivateKey, "private"),
+      alipayPublicKey: rawToPem(env.alipayPublicKey, "public"),
       signType: "RSA2",
       gateway: env.alipayGateway,
     };
