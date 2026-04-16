@@ -75,6 +75,16 @@ export function renderProductsSection(products: Product[]) {
               <p id="product-image-upload-status" class="text-xs text-base-content/60 mt-1">选择图片后自动上传</p>
             </div>
 
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">详情图片（可多张）</span>
+              </label>
+              <input id="product-image-urls" name="imageUrls" class="input input-bordered w-full" placeholder="已上传的详情图片地址（逗号分隔）" readonly />
+              <div id="product-image-urls-preview" class="flex flex-wrap gap-2 mt-2"></div>
+              <input id="product-images-files" class="file-input file-input-bordered w-full mt-2" type="file" accept="image/*" multiple />
+              <p id="product-images-upload-status" class="text-xs text-base-content/60 mt-1">选择多张图片后自动上传，自动追加到详情图</p>
+            </div>
+
             <div class="grid gap-4 md:grid-cols-2">
               <div class="form-control w-full">
                 <label class="label">
@@ -111,38 +121,112 @@ export function renderProductsSection(products: Product[]) {
       </dialog>
 
       <script dangerouslySetInnerHTML={{ __html: `
+        var currentImageUrls = [];
+
         window.openCreateProductModal = function() {
+          currentImageUrls = [];
           document.getElementById('product-modal-title').textContent = '新增商品';
           document.getElementById('product-id').value = '';
           document.getElementById('product-id').disabled = false;
           document.getElementById('product-name').value = '';
           document.getElementById('product-description').value = '';
           document.getElementById('product-image-url').value = '';
+          document.getElementById('product-image-urls').value = '';
           document.getElementById('product-price').value = '';
           document.getElementById('product-link').value = '';
           document.getElementById('product-published').checked = false;
           document.getElementById('product-requires-logistics').checked = false;
+          updateImageUrlsPreview();
           document.getElementById('product-modal').showModal();
         };
 
         window.openEditProductModalFromEncoded = function(encodedProduct) {
           try {
             var product = JSON.parse(decodeURIComponent(encodedProduct));
+            currentImageUrls = product.imageUrls || [];
             document.getElementById('product-modal-title').textContent = '编辑商品';
             document.getElementById('product-id').value = product.id || '';
             document.getElementById('product-id').disabled = true;
             document.getElementById('product-name').value = product.name || '';
             document.getElementById('product-description').value = product.description || '';
             document.getElementById('product-image-url').value = product.imageUrl || '';
+            document.getElementById('product-image-urls').value = currentImageUrls.join(',');
             document.getElementById('product-price').value = product.priceCny || '';
             document.getElementById('product-link').value = product.link || '';
             document.getElementById('product-published').checked = !!product.published;
             document.getElementById('product-requires-logistics').checked = !!product.requiresLogistics;
+            updateImageUrlsPreview();
             document.getElementById('product-modal').showModal();
           } catch (e) {
             console.error('Failed to parse product:', e);
           }
         };
+
+        function updateImageUrlsPreview() {
+          var preview = document.getElementById('product-image-urls-preview');
+          if (!preview) return;
+          var html = '';
+          currentImageUrls.forEach(function(url, index) {
+            html += '<div class="relative group">';
+            html += '<img src="' + url + '" class="w-20 h-20 object-cover rounded" />';
+            html += '<button type="button" class="absolute -top-2 -right-2 btn btn-xs btn-circle btn-error" onclick="removeImageUrl(' + index + ')">×</button>';
+            html += '</div>';
+          });
+          preview.innerHTML = html;
+        }
+
+        window.removeImageUrl = function(index) {
+          currentImageUrls.splice(index, 1);
+          document.getElementById('product-image-urls').value = currentImageUrls.join(',');
+          updateImageUrlsPreview();
+        };
+
+        // Main image upload
+        document.getElementById('product-image-file').addEventListener('change', async function(e) {
+          var file = e.target.files[0];
+          if (!file) return;
+          var status = document.getElementById('product-image-upload-status');
+          status.textContent = '上传中...';
+          try {
+            var formData = new FormData();
+            formData.append('file', file);
+            var res = await fetch('/admin/upload', { method: 'POST', body: formData });
+            var data = await res.json();
+            if (data.url) {
+              document.getElementById('product-image-url').value = data.url;
+              status.textContent = '上传成功';
+            } else {
+              status.textContent = '上传失败';
+            }
+          } catch (err) {
+            status.textContent = '上传失败';
+          }
+        });
+
+        // Detail images upload (multiple)
+        document.getElementById('product-images-files').addEventListener('change', async function(e) {
+          var files = Array.from(e.target.files);
+          if (!files.length) return;
+          var status = document.getElementById('product-images-upload-status');
+          status.textContent = '上传中... (' + files.length + '张)';
+          try {
+            for (var i = 0; i < files.length; i++) {
+              var formData = new FormData();
+              formData.append('file', files[i]);
+              var res = await fetch('/admin/upload', { method: 'POST', body: formData });
+              var data = await res.json();
+              if (data.url) {
+                currentImageUrls.push(data.url);
+              }
+            }
+            document.getElementById('product-image-urls').value = currentImageUrls.join(',');
+            updateImageUrlsPreview();
+            status.textContent = '上传成功';
+            e.target.value = '';
+          } catch (err) {
+            status.textContent = '上传失败';
+          }
+        });
       `}} />
     </section>
   );

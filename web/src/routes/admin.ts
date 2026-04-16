@@ -153,6 +153,8 @@ adminRoutes.get("/admin/tasks", requireAdminAuth, async (c) => {
 adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
   try {
     const body = await c.req.parseBody();
+    const imageUrlsRaw = firstValue(body.imageUrls)?.trim() || "";
+    const imageUrls = imageUrlsRaw ? imageUrlsRaw.split(",").map((u: string) => u.trim()).filter((u: string) => Boolean(u)) : [];
     await upsertProduct({
       id: firstValue(body.id)?.trim() || "",
       name: firstValue(body.name)?.trim() || "",
@@ -162,6 +164,7 @@ adminRoutes.post("/admin/products/save", requireAdminAuth, async (c) => {
       link: firstValue(body.link)?.trim() || "",
       published: toPublished(firstValue(body.published)),
       requiresLogistics: toRequiresLogistics(firstValue(body.requiresLogistics)),
+      imageUrls,
     });
     return noticeRedirect(c, "商品已保存", "products");
   } catch (error) {

@@ -192,6 +192,9 @@ function normalizeProduct(raw: unknown): Product | null {
   if (!raw || typeof raw !== "object") return null;
   const d = raw as Record<string, unknown>;
   if (typeof d.id !== "string" || !d.id.trim() || typeof d.name !== "string" || !d.name.trim()) return null;
+  const imageUrls = Array.isArray(d.imageUrls)
+    ? d.imageUrls.filter((u): u is string => typeof u === "string").map((u) => u.trim())
+    : [];
   return {
     id: d.id.trim(),
     name: d.name.trim(),
@@ -201,6 +204,7 @@ function normalizeProduct(raw: unknown): Product | null {
     link: typeof d.link === "string" ? d.link.trim() : "",
     published: Boolean(d.published),
     requiresLogistics: Boolean(d.requiresLogistics),
+    imageUrls,
     updatedAt: typeof d.updatedAt === "string" && d.updatedAt.trim() ? d.updatedAt.trim() : nowIso(),
   };
 }
@@ -659,6 +663,9 @@ export async function upsertProduct(product: Omit<Product, "updatedAt">): Promis
   if (!id) throw new Error("商品 ID 不能为空");
   if (!product.name.trim()) throw new Error("商品名称不能为空");
   const all = await readProducts();
+  const imageUrls = Array.isArray(product.imageUrls)
+    ? product.imageUrls.filter((u): u is string => typeof u === "string").map((u) => u.trim())
+    : [];
   const next: Product = {
     ...product,
     id,
@@ -667,6 +674,7 @@ export async function upsertProduct(product: Omit<Product, "updatedAt">): Promis
     imageUrl: product.imageUrl.trim(),
     priceCny: product.priceCny.trim(),
     link: product.link.trim(),
+    imageUrls,
     updatedAt: nowIso(),
   };
   const filtered = all.filter((item) => item.id !== id);

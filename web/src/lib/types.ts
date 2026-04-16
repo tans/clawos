@@ -67,6 +67,7 @@ export interface Product {
   link: string;
   published: boolean;
   requiresLogistics: boolean;
+  imageUrls: string[];
   updatedAt: string;
 }
 

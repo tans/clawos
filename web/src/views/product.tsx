@@ -43,6 +43,19 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
                   </svg>
                 </div>
               )}
+              {/* Detail Images */}
+              {product.imageUrls && product.imageUrls.length > 0 && (
+                <div class="mt-4 space-y-3">
+                  {product.imageUrls.map((url, index) => (
+                    <img
+                      key={index}
+                      src={url}
+                      alt={`${product.name} 详情图 ${index + 1}`}
+                      class="w-full rounded-xl object-cover shadow-sm"
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
