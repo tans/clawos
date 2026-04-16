@@ -78,6 +78,61 @@ export async function createQrCodeOrder(params: {
   };
 }
 
+export interface CreatePagePayResult {
+  outTradeNo: string;
+  payUrl: string;
+  totalAmount: string;
+}
+
+export async function createPagePayOrder(params: {
+  outTradeNo: string;
+  totalAmount: string;
+  subject: string;
+  returnUrl: string;
+}): Promise<CreatePagePayResult> {
+  const client = getAlipayClient();
+  if (!client) {
+    throw new Error("支付宝未配置");
+  }
+
+  const env = getEnv();
+
+  const result = await client.exec(
+    "alipay.trade.page.pay",
+    {
+      outTradeNo: params.outTradeNo,
+      totalAmount: params.totalAmount,
+      subject: params.subject,
+      productCode: "FAST_INSTANT_TRADE_PAY",
+      notifyUrl: env.alipayNotifyUrl || undefined,
+      returnUrl: params.returnUrl,
+    },
+    { signType: "RSA2" },
+  );
+
+  if (!result || typeof result !== "object") {
+    throw new Error("支付宝返回无效");
+  }
+
+  const res = result as Record<string, unknown>;
+
+  if (res.code !== "10000") {
+    throw new Error(`支付宝错误: ${res.msg} (${res.code})`);
+  }
+
+  const response = res.alipay_trade_page_pay_response as Record<string, unknown>;
+
+  if (!response || !response.qr_code) {
+    throw new Error("支付宝未返回支付链接");
+  }
+
+  return {
+    outTradeNo: params.outTradeNo,
+    payUrl: response.qr_code as string,
+    totalAmount: params.totalAmount,
+  };
+}
+
 export async function queryOrderStatus(outTradeNo: string): Promise<{
   status: "pending" | "paid" | "failed";
   tradeNo?: string;

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import {
   createQrCodeOrder,
+  createPagePayOrder,
   isAlipayConfigured,
   queryOrderStatus,
   verifyNotification,
@@ -75,31 +76,46 @@ payRoutes.post("/api/pay/create", async (c) => {
     // Generate order ID
     const outTradeNo = `order-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
-    // Create Alipay QR code
-    const qrResult = await createQrCodeOrder({
-      outTradeNo,
-      totalAmount: priceAmount,
-      subject: product.name,
-    });
+    // Check if registered domain is configured - use page pay for redirect flow
+    const brandConfig = getBrandConfig();
+    const hasRegisteredDomain = brandConfig.registeredDomain && brandConfig.registeredDomain.trim();
+    const successReturnUrl = `${brandConfig.brandUrl.replace(/\/$/, "")}/pay-success`;
+
+    let alipayQrCodeUrl: string | undefined;
+
+    if (hasRegisteredDomain) {
+      // Use page pay API - returns payment URL for redirect
+      const payResult = await createPagePayOrder({
+        outTradeNo,
+        totalAmount: priceAmount,
+        subject: product.name,
+        returnUrl: successReturnUrl,
+      });
+      alipayQrCodeUrl = payResult.payUrl;
+    } else {
+      // Use QR code precreate API - original behavior
+      const qrResult = await createQrCodeOrder({
+        outTradeNo,
+        totalAmount: priceAmount,
+        subject: product.name,
+      });
+      alipayQrCodeUrl = qrResult.qrCodeUrl;
+    }
 
     // Store order in database
     const order = await createOrderStorage({
       productId: product.id,
       productName: product.name,
       productPriceCny: product.priceCny,
-      alipayQrCodeUrl: qrResult.qrCodeUrl,
-      alipayOutTradeNo: qrResult.outTradeNo,
+      alipayQrCodeUrl,
+      alipayOutTradeNo: outTradeNo,
       shippingName: shippingName,
       shippingPhone: shippingPhone,
       shippingAddress: shippingAddress,
     });
 
-    // Check if registered domain is configured
-    const brandConfig = getBrandConfig();
-    const hasRegisteredDomain = brandConfig.registeredDomain && brandConfig.registeredDomain.trim();
-
     if (hasRegisteredDomain) {
-      // Return pay URL instead of QR code directly - user will be redirected to registered domain for payment
+      // Return pay URL for redirect to Alipay payment page
       const payUrl = `${brandConfig.registeredDomain.replace(/\/$/, "")}/pay/${order.id}`;
       return c.json({
         ok: true,
@@ -114,7 +130,7 @@ payRoutes.post("/api/pay/create", async (c) => {
     return c.json({
       ok: true,
       orderId: order.id,
-      qrCodeUrl: qrResult.qrCodeUrl,
+      qrCodeUrl: alipayQrCodeUrl,
       productName: product.name,
       priceCny: product.priceCny,
     });
