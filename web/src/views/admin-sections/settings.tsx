@@ -45,20 +45,20 @@ export function renderSettingsSection(settings: SiteSettings) {
           </label>
 
           <label class="label">
-            <span class="label-text">首页 Banner 图片地址</span>
+            <span class="label-text">首页 Banner 地址</span>
             <input
               id="hero-banner-url"
               class="input input-bordered w-full"
               name="heroBannerUrl"
               value={settings.heroBannerUrl}
-              placeholder="Banner 图片 URL（外链或上传后自动填充）"
+              placeholder="Banner 图片或视频 URL（外链或上传后自动填充）"
             />
           </label>
 
           <label class="label">
             <span class="label-text">首页 Banner 图片上传</span>
             <div class="space-y-2">
-              <input id="hero-banner-file" class="file-input file-input-bordered w-full" type="file" accept="image/*" />
+              <input id="hero-banner-file" class="file-input file-input-bordered w-full" type="file" accept="image/*,video/*" />
               <p id="hero-banner-upload-status" class="text-xs text-base-content/60">选择图片后自动上传</p>
             </div>
           </label>

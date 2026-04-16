@@ -96,17 +96,34 @@ function buildFaqItems(brandName: string) {
   ] as const;
 }
 
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+
+function isVideoUrl(url: string): boolean {
+  return VIDEO_EXTENSIONS.some(ext => url.toLowerCase().endsWith(ext));
+}
+
 export function HomeHero({ brandName, heroBannerUrl }: { brandName: string; heroBannerUrl: string }) {
   return (
     <section class="relative min-h-[85vh] flex items-center overflow-hidden bg-hero-section">
       {/* Hero Banner Background */}
       {heroBannerUrl && (
         <div class="absolute inset-0 z-0">
-          <img
-            src={heroBannerUrl}
-            alt=""
-            class="w-full h-full object-cover opacity-20"
-          />
+          {isVideoUrl(heroBannerUrl) ? (
+            <video
+              src={heroBannerUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              class="w-full h-full object-cover opacity-20"
+            />
+          ) : (
+            <img
+              src={heroBannerUrl}
+              alt=""
+              class="w-full h-full object-cover opacity-20"
+            />
+          )}
           <div class="absolute inset-0 bg-gradient-to-b from-surface/80 via-surface/60 to-surface"></div>
         </div>
       )}
