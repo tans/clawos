@@ -13,29 +13,19 @@ let alipayClient: AlipaySdk | null = null;
 function rawToPem(key: string, type: "private" | "public"): string {
   const trimmed = key.trim();
 
-  // Already properly formatted PEM
+  // Already properly formatted PEM - pass through as-is
+  // Node.js crypto and alipay-sdk handle both PKCS#1 and PKCS#8 formats
   if (trimmed.startsWith("-----BEGIN")) {
-    // Normalize headers: convert PKCS#1 to PKCS#8 for consistency
-    if (type === "private") {
-      if (trimmed.includes("-----BEGIN RSA PRIVATE KEY-----")) {
-        return trimmed.replace("-----BEGIN RSA PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----")
-                      .replace("-----END RSA PRIVATE KEY-----", "-----END PRIVATE KEY-----");
-      }
-    } else {
-      if (trimmed.includes("-----BEGIN RSA PUBLIC KEY-----")) {
-        return trimmed.replace("-----BEGIN RSA PUBLIC KEY-----", "-----BEGIN PUBLIC KEY-----")
-                      .replace("-----END RSA PUBLIC KEY-----", "-----END PUBLIC KEY-----");
-      }
-    }
     return trimmed;
   }
 
-  // Remove any description lines (e.g., "应用公钥：" prefix)
+  // Raw base64 content without PEM headers
+  // Remove description lines (e.g., "应用公钥：" prefix) and join lines
+  // NOTE: Do NOT use .replace(/\s/g, "") as base64 can contain + which matches \s
   const base64Content = trimmed
     .split("\n")
     .filter((line) => !line.includes("：") && !line.includes(":"))
-    .join("")
-    .replace(/\s/g, "");
+    .join("");
 
   if (type === "private") {
     return `-----BEGIN PRIVATE KEY-----\n${base64Content}\n-----END PRIVATE KEY-----`;
