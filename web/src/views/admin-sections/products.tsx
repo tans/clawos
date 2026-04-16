@@ -190,7 +190,7 @@ export function renderProductsSection(products: Product[]) {
           try {
             var formData = new FormData();
             formData.append('file', file);
-            var res = await fetch('/admin/upload', { method: 'POST', body: formData });
+            var res = await fetch('/admin/upload/image', { method: 'POST', body: formData });
             var data = await res.json();
             if (data.url) {
               document.getElementById('product-image-url').value = data.url;
@@ -213,7 +213,7 @@ export function renderProductsSection(products: Product[]) {
             for (var i = 0; i < files.length; i++) {
               var formData = new FormData();
               formData.append('file', files[i]);
-              var res = await fetch('/admin/upload', { method: 'POST', body: formData });
+              var res = await fetch('/admin/upload/image', { method: 'POST', body: formData });
               var data = await res.json();
               if (data.url) {
                 currentImageUrls.push(data.url);

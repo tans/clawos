@@ -33,7 +33,7 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
                 <img
                   src={product.imageUrl}
                   alt={product.name}
-                  class="w-full rounded-2xl object-cover shadow-lg"
+                  class="w-full aspect-square rounded-2xl object-cover shadow-lg"
                   style={{ maxHeight: "500px" }}
                 />
               ) : (
@@ -51,7 +51,7 @@ function ProductDetailPage({ product, error }: ProductDetailProps) {
                       key={index}
                       src={url}
                       alt={`${product.name} 详情图 ${index + 1}`}
-                      class="w-full rounded-xl object-cover shadow-sm"
+                      class="w-full aspect-square rounded-xl object-cover shadow-sm"
                     />
                   ))}
                 </div>
