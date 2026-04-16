@@ -32,6 +32,13 @@ export function renderSettingsSection(settings: SiteSettings) {
 
           <div class="form-control w-full">
             <label class="label">
+              <span class="label-text">客服微信</span>
+            </label>
+            <input class="input input-bordered w-full" name="customerServiceWechat" value={settings.customerServiceWechat} placeholder="输入客服微信号" />
+          </div>
+
+          <div class="form-control w-full">
+            <label class="label">
               <span class="label-text">Logo 图片地址</span>
             </label>
             <input

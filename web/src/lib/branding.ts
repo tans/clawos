@@ -9,6 +9,7 @@ export interface BrandConfig {
   brandDomain: string;
   brandLogoUrl: string;
   heroBannerUrl: string;
+  customerServiceWechat: string;
   seoTitle: string;
   seoDescription: string;
   seoKeywords: string;
@@ -93,6 +94,8 @@ export function getBrandConfig(): BrandConfig {
     (typeof settingsOverride?.seoKeywords === "string" && settingsOverride.seoKeywords.trim()) || envSeoKeywords;
   const heroBannerUrl =
     (typeof settingsOverride?.heroBannerUrl === "string" && settingsOverride.heroBannerUrl.trim()) || "";
+  const customerServiceWechat =
+    (typeof settingsOverride?.customerServiceWechat === "string" && settingsOverride.customerServiceWechat.trim()) || "";
 
   cachedBrandConfig = {
     brandName,
@@ -101,6 +104,7 @@ export function getBrandConfig(): BrandConfig {
     brandDomain: deriveBrandDomain(brandUrl),
     brandLogoUrl,
     heroBannerUrl,
+    customerServiceWechat,
     seoTitle,
     seoDescription,
     seoKeywords,

@@ -1,5 +1,6 @@
 /** @jsxImportSource hono/jsx */
 
+import { getBrandConfig } from "../lib/branding";
 import { renderMarketingShell } from "./marketing-shell";
 
 const MANUAL_URL = "https://gx50d0q123.feishu.cn/wiki/CueLw8F8TiwjEMkGiCFclxtXnnh?from=from_copylink";
@@ -14,6 +15,7 @@ export function renderContactPage(): string {
 }
 
 function ContactPage() {
+  const { customerServiceWechat } = getBrandConfig();
   return (
     <>
       <section class="marketing-section py-24 sm:py-32">
@@ -36,7 +38,7 @@ function ContactPage() {
               确认适合从哪个业务场景开始，以及部署边界和实施条件。
             </p>
             <ul class="mt-4 space-y-2 text-sm leading-7 text-[color:var(--ink-soft)]">
-              <li>客服微信：tianshe00</li>
+              {customerServiceWechat ? <li>客服微信：{customerServiceWechat}</li> : null}
               <li>沟通重点：业务切入点、部署方式、系统边界</li>
             </ul>
           </article>
