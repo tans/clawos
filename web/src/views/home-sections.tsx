@@ -190,15 +190,15 @@ export function HomeHero({ brandName, heroBannerUrl }: { brandName: string; hero
             </a>
           </div>
 
-          {/* Product Visual */}
-          <div class="card-warm-static rounded-3xl p-6 sm:p-10 max-w-3xl mx-auto animate-on-scroll stagger-4">
-            <div class="text-left mb-6">
+          {/* Product Visual - Enlarged and Prominent */}
+          <div class="card-warm-static rounded-3xl p-8 sm:p-12 max-w-5xl mx-auto animate-on-scroll stagger-4">
+            <div class="text-left mb-8">
               <div class="deco-badge mb-4">交付形态</div>
-              <h3 class="text-display-sm text-ink-strong">
+              <h3 class="text-display-md text-ink-strong">
                 {brandName} + 虾壳主机
               </h3>
             </div>
-            <div class="aspect-[16/9] rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden">
+            <div class="aspect-[21/9] rounded-2xl bg-surface-muted flex items-center justify-center overflow-hidden shadow-2xl">
               <img
                 src="/public/delivery-ui.webp"
                 alt="交付形态"
